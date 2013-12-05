@@ -575,8 +575,12 @@ async def cmd_support(ctx: commands.Context):
     async with ctx.typing():
         as_embed = await __get_use_embeds(ctx.guild)
 
+        if ctx.guild is None:
+            nick = BOT.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
         about = core.read_about_file()
-        title = 'Join support server'
+        title = f'Join {nick} support server'
         guild_invite = about['support']
 
         if as_embed:
