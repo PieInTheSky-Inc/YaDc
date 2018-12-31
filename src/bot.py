@@ -7,6 +7,7 @@ from discord.ext import commands
 import discord
 import logging
 import os
+import pss_prestige as p
 import sys
 
 
@@ -40,7 +41,7 @@ async def on_command_error(ctx, err):
         await ctx.send('Error: {}'.format(err))
 
 
-# ----- Bot Commands ----------------------------------------------------------
+# ----- General Bot Commands ----------------------------------------------------------
 @bot.command(brief='Ping the server')
 async def ping(ctx):
     """Ping the server to verify that it\'s listening for commands"""
@@ -54,7 +55,24 @@ async def shell(ctx, *, cmd):
     txt = utility.shell_cmd(cmd)
     await ctx.send(txt)
 
-    
+
+# ----- PSS Bot Commands --------------------------------------------------------------
+@bot.command(brief='Get prestige combos of crew')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def prestige(ctx, *, name: str=None):
+    """Get the prestige combinations of the character specified"""
+    if name is None:
+        help_txt = 'Enter: {}prestige [character name]'.format(command_prefix)
+        await ctx.send(help_txt)
+        return
+
+    write_log(ctx.prefix, ctx.command, '{}'.format(name),
+              ctx.author, ctx.guild)
+    prestige_txt, success = p.get_prestige(name, 'from', tbl_i2n, tbl_n2i)
+    for txt in prestige_txt:
+        await ctx.send(txt)
+        
+
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
