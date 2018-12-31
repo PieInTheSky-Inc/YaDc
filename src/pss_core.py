@@ -7,6 +7,10 @@ import urllib.request
 import xml.etree.ElementTree
 
 
+PSS_CHARS_FILE = 'pss-chars.txt'
+PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
+
+
 # ----- Utilities --------------------------------
 def get_data_from_url(url):
     data = urllib.request.urlopen(url).read()
@@ -123,14 +127,14 @@ def get_real_name(search_str, lst_original):
 
 # ----- Get Production Server -----
 def get_production_server():
-    url = 'http://api.pixelstarships.com/SettingService/GetLatestVersion?languageKey=en'
+    url = 'http://api2.pixelstarships.com/SettingService/GetLatestVersion2?languageKey=en'
     raw_text = get_data_from_url(url)
     d = xmltree_to_dict2(raw_text, key=None)
     return d['ProductionServer']
 
 
 # ----- Character Sheets -----
-def save_char_brief(d, filename='pss-chars.txt'):
+def save_char_brief(d, filename=PSS_CHARS_FILE):
     with open(filename, 'w') as f:
         for key in d.keys():
             entry = d[key]
@@ -140,7 +144,7 @@ def save_char_brief(d, filename='pss-chars.txt'):
                 d[key]['Rarity']))
 
 
-def load_char_brief(filename='pss-chars.txt'):
+def load_char_brief(filename=PSS_CHARS_FILE):
     with open(filename, 'r') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         tbl, rtbl, rarity = {}, {}, {}
@@ -160,7 +164,7 @@ def get_extra_tables(d):
     return rtbl, rarity
 
 
-def load_char_brief_cache(url, filename='pss-chars.txt', raw_file='pss-chars-raw.txt'):
+def load_char_brief_cache(url, filename=PSS_CHARS_FILE, raw_file=PSS_CHARS_RAW_FILE):
     if is_old_file(filename, max_seconds=3600):
         raw_text = load_data_from_url(raw_file, url, refresh='auto')
         tbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
