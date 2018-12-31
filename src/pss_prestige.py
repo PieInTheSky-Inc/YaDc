@@ -39,6 +39,11 @@ next_target = {'Common': 'Elite',
                'Hero': 'Legendary',
                'all': 'all'}
 
+reqd_folders = ['raw', 'data']
+for folder in reqd_folders:
+    if os.path.isdir(folder) is not True:
+        os.mkdir(folder)
+
 
 # ----- Character Sheet -----------------------------------------------
 def request_new_char_sheet():
