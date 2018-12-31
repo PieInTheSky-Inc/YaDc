@@ -9,7 +9,9 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, 'src/')
+
+PWD = os.getcwd()
+sys.path.insert(0, PWD + '/src/')
 import utility
 
 logging.basicConfig(
@@ -54,7 +56,6 @@ async def shell(ctx, *, cmd):
     
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
-    PWD = os.getcwd()
     print('Current Working Directory: {}'.format(PWD))
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
