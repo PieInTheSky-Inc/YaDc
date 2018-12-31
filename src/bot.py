@@ -11,6 +11,7 @@ import sys
 
 
 PWD = os.getcwd()
+print('Current Working Directory: {}'.format(PWD))
 sys.path.insert(0, PWD + '/src/')
 import utility
 
@@ -56,6 +57,5 @@ async def shell(ctx, *, cmd):
     
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
-    print('Current Working Directory: {}'.format(PWD))
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
