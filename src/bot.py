@@ -11,6 +11,10 @@ import pss_prestige as p
 import sys
 
 
+RATE = 3
+COOLDOWN = 30.0
+
+
 PWD = os.getcwd()
 print('Current Working Directory: {}'.format(PWD))
 sys.path.insert(0, PWD + '/src/')
