@@ -13,6 +13,7 @@ import sys
 
 RATE = 3
 COOLDOWN = 30.0
+command_prefix=';'
 
 
 PWD = os.getcwd()
@@ -63,16 +64,9 @@ async def shell(ctx, *, cmd):
 # ----- PSS Bot Commands --------------------------------------------------------------
 @bot.command(brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def prestige(ctx, *, name: str=None):
+async def prestige(ctx, *, name):
     """Get the prestige combinations of the character specified"""
-    if name is None:
-        help_txt = 'Enter: {}prestige [character name]'.format(command_prefix)
-        await ctx.send(help_txt)
-        return
-
-    write_log(ctx.prefix, ctx.command, '{}'.format(name),
-              ctx.author, ctx.guild)
-    prestige_txt, success = p.get_prestige(name, 'from', tbl_i2n, tbl_n2i)
+    prestige_txt, success = p.get_prestige(name, 'from')
     for txt in prestige_txt:
         await ctx.send(txt)
         

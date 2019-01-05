@@ -358,8 +358,8 @@ def prestige_tbl_to_txt(ptbl, tbl_i2n, direction):
     return txt_list
 
 
-def get_prestige(char_input, direction, tbl_i2n, tbl_n2i,
-                 raw=False):
+def get_prestige(char_input, direction, raw=False):
+    ctbl, tbl_i2n, tbl_n2i, rarity = get_char_sheet()
     char_id, char_fixed = char2id(char_input, tbl_n2i)
     if char_id is None:
         return ["Character '{}' not found".format(char_fixed)], False
