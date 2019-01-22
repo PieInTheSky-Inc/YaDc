@@ -259,7 +259,6 @@ async def stars(ctx, *, division=None):
 async def daily(ctx):
     """Show the dailies"""
     txt = dropship.get_dropship_text()
-    write_log(ctx.prefix, ctx.command, '', ctx.author, ctx.guild)
     await ctx.message.delete()
     await ctx.send(txt)
 
