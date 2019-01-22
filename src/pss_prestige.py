@@ -906,13 +906,10 @@ def get_char_list(action):
         char_df = char_df.sort_values('CharacterDesignId', ascending=True)
 
     if action in ['newchars', 'newcrew']:
-        with open('pss-last-char.txt') as f:
-            last_char = int(f.read().strip())
-            # print('Last character = {}'.format(last_char))
-
         cols = ['CharacterDesignId', 'CharacterDesignName']
         char_df['CharacterDesignId'] = char_df['CharacterDesignId'].astype(int)
-        new_chars = char_df.loc[char_df['CharacterDesignId'] > last_char, cols]
+        # new_chars = char_df.loc[char_df['CharacterDesignId'] > last_char, cols]
+        new_chars = char_df.iloc[-15:,:][cols]
 
         txt = ''
         for i, row in enumerate(new_chars.iterrows()):
