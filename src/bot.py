@@ -89,13 +89,13 @@ async def prestige(ctx, *, name):
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def recipe(ctx, *, name=None):
+async def recipe(ctx, *, name=''):
     """Get the prestige recipes of a character or ingredients for an item"""
-    ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
-    if name[:6] == '--raw ':
-        prestige_txt, success = p.get_prestige(name[6:], 'to', tbl_i2n, tbl_n2i, raw=True)
+    if len(name) > 6:
+        if name[:6] == '--raw ':
+            prestige_txt, success = p.get_prestige(name[6:], 'to', raw=True)
     else:
-        prestige_txt, success = p.get_prestige(name, 'to', tbl_i2n, tbl_n2i)
+        prestige_txt, success = p.get_prestige(name, 'to', raw=False)
     if success is True:
         for txt in prestige_txt:
             await ctx.send(txt)
