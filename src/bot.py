@@ -24,7 +24,7 @@ import time
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
-command_prefix=';'
+command_prefix='/'
 
 PWD = os.getcwd()
 print('Current Working Directory: {}'.format(PWD))
