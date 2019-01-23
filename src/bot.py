@@ -24,7 +24,10 @@ import time
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
-command_prefix='/'
+if "COMMAND_PREFIX" in os.environ:
+    COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
+else:
+    COMMAND_PREFIX='/'
 
 PWD = os.getcwd()
 print('Current Working Directory: {}'.format(PWD))
@@ -43,7 +46,7 @@ logging.basicConfig(
     datefmt = "%Y%m%d %H:%M:%S",
     format = "{asctime} [{levelname:<8}] {name}: {message}")
 
-bot = commands.Bot(command_prefix=';',
+bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships')
 
 setattr(bot, "logger", logging.getLogger("bot.py"))
