@@ -212,13 +212,8 @@ async def best(ctx, slot=None, enhancement=None):
 
 @bot.command(brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def research(ctx, *, research=None):
+async def research(ctx, *, research=''):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
-    if research is None:
-        txt = 'Enter: {}research [research]'.format(command_prefix)
-        await ctx.send(txt)
-        return
-
     df_research_designs = rs.get_research_designs()
     df_selected = rs.filter_researchdf(df_research_designs, research)
     txt = rs.research_to_txt(df_selected)
@@ -270,8 +265,6 @@ async def daily(ctx):
 @bot.command(hidden=True, brief='Get crew levelling costs')
 async def level(ctx, level):
     """Shows the cost for a crew to reach a certain level"""
-    write_log(ctx.prefix, ctx.command, '{}'.format(level),
-              ctx.author, ctx.guild)
     txt = p.get_level_cost(level)
     await ctx.send(txt)
 
@@ -280,8 +273,6 @@ async def level(ctx, level):
 @bot.command(hidden=True, brief='(beta) Get room infos')
 async def roomsbeta(ctx, *, room_name=None):
     """(beta) Shows the information for specific room types. This command is currently under testing"""
-    write_log(ctx.prefix, ctx.command, '{}'.format(room_name),
-              ctx.author, ctx.guild)
     txt = rs.get_room_description(room_name)
     await ctx.send(txt)
 
