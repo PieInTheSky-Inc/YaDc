@@ -58,7 +58,7 @@ def fleet_df_to_scores(df, division_id):
     if 'Score' in df.columns:
         col = 'Score'
     else:
-        col = 'Trophy':    
+        col = 'Trophy'
     df = df[df.DivisionDesignId == division_id].sort_values(
         by=col, ascending=False)
 
@@ -68,7 +68,7 @@ def fleet_df_to_scores(df, division_id):
         if col == 'Score':
             row_txt = '{}⭐ {} ({} 🏆)'.format(
                 data[col], sym, data['AllianceName'], data['Trophy'])
-        elif col == 'Trophies':
+        elif col == 'Trophy':
             row_txt = '{}🏆 {}'.format(
                 data[col], sym, data['AllianceName'])
         
