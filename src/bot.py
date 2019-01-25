@@ -55,8 +55,8 @@ setattr(bot, "logger", logging.getLogger("bot.py"))
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
 async def on_ready():
-    print('Bot logged in as {} (id={})'.format(
-        bot.user.name, bot.user.id))
+    print('Bot logged in as {} (id={}) on {} servers'.format(
+        bot.user.name, bot.user.id, len(bot.guilds)))
 
 
 @bot.event
@@ -93,27 +93,32 @@ async def prestige(ctx, *, name):
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def recipe(ctx, *, name=''):
-    """Get the prestige recipes of a character or ingredients for an item"""
-    if len(name) > 6:
-        if name[:6] == '--raw ':
-            prestige_txt, success = p.get_prestige(name[6:], 'to', raw=True)
-    else:
-        prestige_txt, success = p.get_prestige(name, 'to', raw=False)
-    if success is True:
-        for txt in prestige_txt:
-            await ctx.send(txt)
+    """Get the prestige recipes of a character"""
+    async with ctx.typing():
+        if len(name) > 6:
+            if name[:6] == '--raw ':
+                name=name[6:]
+                prestige_txt, success = p.get_prestige(name, 'to', raw=True)
+        else:
+            prestige_txt, success = p.get_prestige(name, 'to', raw=False)
+        if success is True:
+            for txt in prestige_txt:
+                await ctx.send(txt)
+        else:
+            await ctx.send(f'Failed to find a recipe for {name}')
 
 
 @bot.command(brief='Get item ingredients')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def ingredients(ctx, *, name=None):
     """Get the ingredients for an item"""
-    content, real_name = mkt.get_item_recipe(name, levels=5)
-    if real_name is not None:
-        content = '**Recipe for {}**\n'.format(real_name) + content
-        content = content + '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
-        await ctx.send(content)
-        recipe_found = True
+    async with ctx.typing():
+        content, real_name = mkt.get_item_recipe(name, levels=5)
+        if real_name is not None:
+            content = '**Ingredients for {}**\n'.format(real_name) + content
+            content = content + '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
+            await ctx.send(content)
+            recipe_found = True
 
 
 @bot.command(brief='Get item prices from the PSS API')
@@ -184,11 +189,6 @@ async def stats(ctx, *, name=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def best(ctx, slot=None, enhancement=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
-    if slot is None:
-        txt = 'Enter: {}best [slot] [enhancement]'.format(command_prefix)
-        await ctx.send(txt)
-        return
-
     raw_text = mkt.load_item_design_raw()
     item_lookup = mkt.parse_item_designs(raw_text)
     df_items = mkt.rtbl2items(item_lookup)
@@ -227,11 +227,6 @@ async def research(ctx, *, research=''):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def collection(ctx, *, collection=None):
     """Get the details on a specific collection."""
-    if collection is None:
-        txt = 'Enter: {}collection [collection]'.format(command_prefix)
-        await ctx.send(txt)
-        return
-
     txt = p.show_collection(collection)
     if txt is None:
         await ctx.send("No entries found for '{}'".format(collection))
@@ -243,11 +238,6 @@ async def collection(ctx, *, collection=None):
 @bot.command(hidden=True, brief='Division stars')
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week"""
-    if division is None:
-        txt = 'Enter: {}stars [division]'.format(command_prefix)
-        await ctx.send(txt)
-        return
-    txt = command_prefix + 'stars {}'.format(division)
     txt = flt.get_division_stars(division)
     await ctx.send(txt)
 
@@ -339,6 +329,9 @@ async def testing(ctx, *, action=None):
                 txt = ''
             else:
                 txt = txt + txt1
+        await ctx.send(txt)
+    elif action == 'invite':
+        txt = '{}'.format(bot.invite_url)
         await ctx.send(txt)
     elif action == 'invoked':
         txt  = 'ctx.prefix = `{}`\n'.format(ctx.prefix)

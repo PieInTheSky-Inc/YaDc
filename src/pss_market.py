@@ -246,7 +246,7 @@ def itemfilter2txt(df_filter):
     return txt
 
 
-# ----- Item Recipes --------------------------------------------------
+# ----- Item Ingredients ----------------------------------------------
 def get_item_rlookup(df):
     item_rlookup = {}
     for row in df.iterrows():
