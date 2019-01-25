@@ -57,8 +57,13 @@ def fleet_df_to_scores(df, division_id):
     # alliancetxt_to_df converts it
     if 'Score' in df.columns:
         col = 'Score'
-    else:
+    elif 'Trophy' in df.columns:
         col = 'Trophy'
+    else:
+        txt = 'Score / Trophy columns are not found in the table\n'
+        txt += 'Columns: {}'.format(df.columns)
+        return txt
+    
     df = df[df.DivisionDesignId == division_id].sort_values(
         by=col, ascending=False)
 
@@ -67,10 +72,10 @@ def fleet_df_to_scores(df, division_id):
         data = row[1]
         if col == 'Score':
             row_txt = '{}⭐ {} ({} 🏆)'.format(
-                data[col], sym, data['AllianceName'], data['Trophy'])
+                data[col], data['AllianceName'], data['Trophy'])
         elif col == 'Trophy':
             row_txt = '{}🏆 {}'.format(
-                data[col], sym, data['AllianceName'])
+                data[col], data['AllianceName'])
         
         if i == 0:
             txt += row_txt
