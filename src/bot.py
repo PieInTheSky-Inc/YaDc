@@ -142,14 +142,14 @@ async def price(ctx, *, item_name=None):
 @bot.command(name='list', brief='List items/characters')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def list(ctx, *, action=''):
-    """action=chars: shows all characters
-    action=newchars: shows the newest 10 characters that have been added to the game
+    """action=crew:  shows all characters
+    action=newcrew:  shows the newest 10 characters that have been added to the game
     action=items:    shows all items
     action=research: shows all research
     action=rooms:    shows all rooms"""
 
     txt_list = []
-    if action in ['chars', 'newchars']:
+    if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
         txt_list = p.get_char_list(action)
     elif action == 'items':
         txt_list = mkt.get_item_list()
@@ -162,7 +162,7 @@ async def list(ctx, *, action=''):
         await ctx.send(txt)
 
 
-@bot.command(name='stats', aliases=['item'],
+@bot.command(name='stats', aliases=['char', 'item'],
     brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=None):
@@ -176,10 +176,11 @@ async def stats(ctx, *, name=None):
             found_match = True
 
     # Next try to find an item match
-    market_txt = mkt.get_item_stats(name)
-    if market_txt is not None:
-        await ctx.send(market_txt)
-        found_match = True
+    if ctx.invoked_with != 'char':
+        market_txt = mkt.get_item_stats(name)
+        if market_txt is not None:
+            await ctx.send(market_txt)
+            found_match = True
 
     if found_match is False:
         await ctx.send('Could not find {}'.format(name))
@@ -295,15 +296,11 @@ async def time(ctx):
 @bot.command(hidden=True,
     brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def testing(ctx, *, action=None):
     """These are testing commands, usually for debugging purposes"""
-    if action == 'refresh':
-        tbl, rtbl = p.get_char_sheet(refresh=True)
-        raw_text = mkt.load_item_design_raw(refresh=True)
-        await ctx.send('Refreshed')
-    elif action == 'restart':
-        await ctx.send('Bot will restart')
+    if action == 'restart':
+        await ctx.send('Bot will attempt a restart')
     elif action == 'info':
         guild = ctx.guild  # server = ctx.server
         author = ctx.author
@@ -322,7 +319,7 @@ async def testing(ctx, *, action=None):
         txt = ''
         for guild in guilds:
             owner = str(guild.owner)
-            txt1 = '{}: {} ({}, {})\n'.format(
+            txt1 = '{}: {} ({}, owner - {})\n'.format(
                 guild.id, guild.name, guild.region, owner)
             if len(txt + txt1) > 1900:
                 await ctx.send(txt + txt1)
@@ -331,13 +328,13 @@ async def testing(ctx, *, action=None):
                 txt = txt + txt1
         await ctx.send(txt)
     elif action == 'invite':
-        txt = '{}'.format(bot.invite_url)
+        txt = '{}'.format(bot.get_invite())
         await ctx.send(txt)
     elif action == 'invoked':
         txt  = 'ctx.prefix = `{}`\n'.format(ctx.prefix)
         txt += 'ctx.invoke = `{}`\n'.format(ctx.invoke)
         txt += 'ctx.invoked_subcommand = `{}`\n'.format(ctx.invoked_subcommand)
-        txt += 'ctx.invoked_with = `{}`'.format(ctx.invoked_with)
+        txt += 'ctx.invoked_with = `{}`\n'.format(ctx.invoked_with)
         txt += 'ctx.invoked_with methods: `{}`'.format(dir(ctx.invoked_with))
         await ctx.send(txt)
     elif action == 'actions':
@@ -345,8 +342,9 @@ async def testing(ctx, *, action=None):
         await ctx.send(txt)
     elif action[:4] == 'doc ':
         # /testing doc ctx.invoke
+        txt = '{}'.format(dir(action[4:]))
         exec(txt)
-        # await ctx.send(txt)
+        await ctx.send(f'`{txt}`')
     elif action[:5] == 'exec ':
         # /testing exec print(dir(ctx.invoke))
         # /testing exec print(ctx.invoke)

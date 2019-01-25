@@ -900,7 +900,7 @@ def show_collection(search_str):
 
 # ----- List ----------------------------------------------------------
 def get_char_list(action):
-    if action in ['newchars', 'chars', 'newcrew', 'crew']:
+    if action in ['characters', 'chars', 'crew', 'newchars', 'newcrew']:
         char_sheet_raw = load_char_sheet_raw(refresh=True)
         char_df = charsheet_to_df(char_sheet_raw)
         char_df = char_df.sort_values('CharacterDesignId', ascending=True)
@@ -917,7 +917,7 @@ def get_char_list(action):
             txt += '{:3}: {}\n'.format(data['CharacterDesignId'], data['CharacterDesignName'])
         return [txt]
 
-    elif action in ['chars', 'crew']:
+    elif action in ['characters', 'chars', 'crew']:
         names = list(char_df['CharacterDesignName'].values)
         print('List of characters: ' + ', '.join(names))
         txt_list = list_to_text(names)
