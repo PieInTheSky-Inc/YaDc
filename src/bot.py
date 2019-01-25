@@ -24,6 +24,7 @@ import time
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
+
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
 else:
