@@ -294,6 +294,14 @@ async def time(ctx):
     await ctx.send(str_time)
 
 
+@bot.command(brief='Show links')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def links(ctx):
+    """Shows the links for useful sites in Pixel Starships"""
+    txt = read_links_file()
+    await ctx.send(txt)
+
+
 @bot.command(hidden=True,
     brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()

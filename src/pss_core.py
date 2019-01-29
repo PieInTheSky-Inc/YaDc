@@ -9,6 +9,7 @@ import xml.etree.ElementTree
 
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
+PSS_LINKS_FILE = 'data/links.csv'
 
 
 # ----- Utilities --------------------------------
@@ -173,3 +174,14 @@ def load_char_brief_cache(url, filename=PSS_CHARS_FILE, raw_file=PSS_CHARS_RAW_F
     else:
         tbl, rtbl, rarity = load_char_brief(filename)
     return tbl, rtbl, rarity
+
+
+# ----- Links -----
+def read_links_file():
+    with open(PSS_LINKS_FILE) as f:
+        csv_file = csv.reader(f, delimiter=',')
+        txt = '**Links**'
+        for row in csv_file:
+            title, url = row
+            txt += '\n{}: <{}>'.format(title, url.strip())
+    return txt
