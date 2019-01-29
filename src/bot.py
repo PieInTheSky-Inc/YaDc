@@ -11,6 +11,7 @@ import discord
 import holidays
 import logging
 import os
+import pss_core as core
 import pss_dropship as dropship
 import pss_fleets as flt
 import pss_market as mkt
@@ -298,7 +299,7 @@ async def time(ctx):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
-    txt = read_links_file()
+    txt = core.read_links_file()
     await ctx.send(txt)
 
 
