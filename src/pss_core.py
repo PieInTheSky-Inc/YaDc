@@ -9,7 +9,7 @@ import xml.etree.ElementTree
 
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
-PSS_LINKS_FILE = 'data/links.csv'
+PSS_LINKS_FILE = 'src/data/links.csv'
 
 
 # ----- Utilities --------------------------------
