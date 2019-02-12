@@ -303,6 +303,15 @@ async def links(ctx):
     await ctx.send(txt)
 
 
+@bot.command(hidden=True, brief='Parse URL')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def parse(ctx, *, url):
+    """Parses the data from a URL"""
+    txt_list = core.parse_links3(url)
+    for txt in txt_list:
+        await ctx.send(txt)
+
+
 @bot.command(hidden=True,
     brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()

@@ -1,4 +1,7 @@
-
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+=
+# ----- Packages ------------------------------------------------------
 import csv
 import datetime
 import os
@@ -10,12 +13,14 @@ import xml.etree.ElementTree
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILE = 'src/data/links.csv'
+MAXIMUM_CHARACTERS = 1900
 
 
 # ----- Utilities --------------------------------
 def get_data_from_url(url):
     data = urllib.request.urlopen(url).read()
     return data.decode('utf-8')
+
 
 def save_raw_text(raw_text, filename):
     try:
@@ -87,8 +92,32 @@ def create_reverse_lookup(d, new_key, new_value):
     return rlookup
 
 
+def parse_links3(url):
+    data = urllib.request.urlopen(url).read()
+    root = xml.etree.ElementTree.fromstring(data.decode('utf-8'))
+
+    txt_list = []
+    txt = ''
+    for c in root:
+        if len(root) == 1:
+            txt += f'{c.tag}'
+        for cc in c:
+            if len(c) == 1:
+                txt += f'/{cc.tag}'
+            for ccc in cc:
+                if len(cc) == 1:
+                    txt += f'/{ccc.tag}'
+                if isinstance(ccc.attrib, dict):
+                    for k,v in ccc.attrib.items():
+                        txt += f'\n▪️ {k}: {v}'
+                        if len(txt) > MAXIMUM_CHARACTERS:
+                            txt_list += [txt]
+                            txt = ''
+    return txt_list + [txt]
+
+
 # ----- Display -----
-def list_to_text(lst, max_chars=1900):
+def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
     txt_list = []
     txt = ''
     for i, item in enumerate(lst):
@@ -128,7 +157,7 @@ def get_real_name(search_str, lst_original):
 
 # ----- Get Production Server -----
 def get_production_server():
-    url = 'http://api2.pixelstarships.com/SettingService/GetLatestVersion2?languageKey=en'
+    url = 'http://api.pixelstarships.com/SettingService/GetLatestVersion2?languageKey=en'
     raw_text = get_data_from_url(url)
     d = xmltree_to_dict2(raw_text, key=None)
     return d['ProductionServer']
