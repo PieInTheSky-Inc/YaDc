@@ -97,10 +97,9 @@ async def prestige(ctx, *, name):
 async def recipe(ctx, *, name=''):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
-        if len(name) > 6:
-            if name[:6] == '--raw ':
-                name=name[6:]
-                prestige_txt, success = p.get_prestige(name, 'to', raw=True)
+        if name.startswith('--raw '):
+            name = re.sub('^--raw[ ]*', '', name)
+            prestige_txt, success = p.get_prestige(name, 'to', raw=True)
         else:
             prestige_txt, success = p.get_prestige(name, 'to', raw=False)
         if success is True:

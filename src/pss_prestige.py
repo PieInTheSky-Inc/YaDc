@@ -1045,7 +1045,7 @@ if __name__ == '__main__':
         # python3 pss_prestige.py --raw to 'Alien Queen'
         # python3 pss_prestige.py --raw to 'Xin'
         prestige_txt, success = get_prestige(
-            args.character, args.prestige, tbl_i2n, tbl_n2i, args.raw)
+            args.character, args.prestige, args.raw)
         if success is True:
             for txt in prestige_txt:
                 print(txt)
