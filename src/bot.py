@@ -18,6 +18,7 @@ import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
 import pytz
+import re
 import sys
 import time
 
@@ -98,7 +99,7 @@ async def recipe(ctx, *, name=''):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
         if name.startswith('--raw '):
-            name = re.sub('^--raw[ ]*', '', name)
+            name = re.sub('^--raw[ ]+', '', name)
             prestige_txt, success = p.get_prestige(name, 'to', raw=True)
         else:
             prestige_txt, success = p.get_prestige(name, 'to', raw=False)
@@ -106,7 +107,7 @@ async def recipe(ctx, *, name=''):
             for txt in prestige_txt:
                 await ctx.send(txt)
         else:
-            await ctx.send(f'Failed to find a recipe for {name}')
+            await ctx.send(f'Failed to find a recipe for crew "{name}" (note that item recipes now use the `/ingredients` command)')
 
 
 @bot.command(brief='Get item ingredients')
@@ -129,7 +130,7 @@ async def price(ctx, *, item_name=None):
     raw_text = mkt.load_item_design_raw()
     item_lookup = mkt.parse_item_designs(raw_text)
     real_name = mkt.get_real_name(item_name, item_lookup)
-    if len(item_name) < 2:
+    if len(item_name) < 2 and real_name != 'U':
         await ctx.send("Please enter at least two characters for item name")
     elif real_name is not None:
         market_txt = mkt.filter_item_designs(item_name, item_lookup, filter='price')
@@ -166,12 +167,18 @@ async def list(ctx, *, action=''):
 @bot.command(name='stats', aliases=['char', 'item'],
     brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def stats(ctx, *, name=None):
+async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
+    if len(name) == 0:
+        return
     # First try to find a character match
     # (skip this section if command was invoked with 'item'
     if ctx.invoked_with != 'item':
-        result = p.get_stats(name, embed=False)
+        if name.startswith('--raw '):
+            name = re.sub('^--raw[ ]+', '', name)
+            result = p.get_stats(name, embed=False, raw=True)
+        else:
+            result = p.get_stats(name, embed=False, raw=False)
         if result is not None:
             await ctx.send(result)
             found_match = True
@@ -184,7 +191,7 @@ async def stats(ctx, *, name=None):
             found_match = True
 
     if found_match is False:
-        await ctx.send('Could not find {}'.format(name))
+        await ctx.send('Could not find entry for "{}"'.format(name))
 
 
 @bot.command(brief='Get best items for a slot')

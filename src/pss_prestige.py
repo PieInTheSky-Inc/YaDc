@@ -777,9 +777,19 @@ def stats2dict(raw_text):
     return d
 
 
-def get_stats(char_name, embed=False):
+def get_stats(char_name, embed=False, raw=False):
     raw_text = load_char_sheet_raw()
     d = stats2dict(raw_text)
+    if raw == True:
+        txt = f'**{char_name}**'
+        _, _, tbl_n2i, _ = get_char_sheet()
+        char_name = parse_char_name(char_name, tbl_n2i)
+        if char_name is None:
+            txt = f'Character "{char_name}" was not found'
+        else:
+            for k, v in d[char_name].items():
+                txt += f'\n▪️ {k}: {v}'''
+        return txt
     if embed is True:
         return embed_stats(d, char_name)
     else:
@@ -787,6 +797,7 @@ def get_stats(char_name, embed=False):
 
 
 def print_stats(d, char_input):
+    _, _, tbl_n2i, _ = get_char_sheet()
     char_name = parse_char_name(char_input, tbl_n2i)
     if char_name is None:
         return None
@@ -981,8 +992,8 @@ if __name__ == '__main__':
     if args.prestige == 'refresh':
         ctbl, tbl_i2n, tbl_n2i, rarity = get_char_sheet()
     elif args.prestige == 'stats':
-        # python3 pss_prestige.py stats "Ron"
-        result = get_stats(args.character, embed=False)
+        # python3 pss_prestige.py stats "Ron" --raw
+        result = get_stats(args.character, embed=False, raw=args.raw)
         print(result)
         # print_stats(rtbl, args.character)
     elif args.prestige == 'collection':
