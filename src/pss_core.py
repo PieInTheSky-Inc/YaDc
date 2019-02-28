@@ -109,7 +109,7 @@ def parse_links3(url):
                     txt += f'/{ccc.tag}'
                 if isinstance(ccc.attrib, dict):
                     for k,v in ccc.attrib.items():
-                        txt += f'\n▪️ {k}: {v}'
+                        txt += f'\n - {k}: {v}'
                         if len(txt) > MAXIMUM_CHARACTERS:
                             txt_list += [txt]
                             txt = ''

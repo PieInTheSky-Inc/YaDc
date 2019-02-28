@@ -342,10 +342,10 @@ async def testing(ctx, *, action=None):
         guilds = bot.guilds
         txt_list = []
         txt = ''
-        for guild in guilds:
+        for i, guild in enumerate(guilds):
             owner = str(guild.owner)
-            txt1 = '{}: {} ({}, owner - {})\n'.format(
-                guild.id, guild.name, guild.region, owner)
+            txt1 = '{}. {}: {} ({}, owner - {})\n'.format(
+                i+1, guild.id, guild.name, guild.region, owner)
             if len(txt + txt1) > 1900:
                 await ctx.send(txt + txt1)
                 txt = ''

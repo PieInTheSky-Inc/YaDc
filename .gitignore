@@ -1,4 +1,8 @@
 raw/
+items-*.txt
+*.swp
+*.db
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
