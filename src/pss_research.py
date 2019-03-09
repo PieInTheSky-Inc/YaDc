@@ -224,6 +224,62 @@ def get_room_description(room_name):
     return txt
 
 
+# ----- Missiles ------------------------------------------------------
+def get_missile_designs():
+    raw_file = 'raw/missile-designs-raw.txt'
+    url = base_url + 'RoomService/ListMissileDesigns'
+    raw_text = load_data_from_url(raw_file, url, refresh='auto')
+    return xmltree_to_dict3(raw_text, 'MissileDesignName')
+
+
+def get_missile_names():
+    missiles = get_missile_designs()
+    missile_names = list(missiles.keys())
+    return list_to_text(missile_names)
+
+
+def split_camel_case(txt):
+    m = re.search('[a-z][A-Z]', txt)
+    while m is not None:
+        x = m.start()+1
+        txt = f'{txt[:x]} {txt[x:]}'
+        m = re.search('[a-z][A-Z]', txt)
+    return txt
+
+
+def missile_to_txt_description(missile, id2missilename):
+    txt = 'MISSILE DESCRIPTIONS BETA (this command is under testing, USE IT AT YOUR OWN RISK)\n'
+    txt += '\n**{MissileDesignName}** (Type: {MissileType})'.format(**missile)
+
+    attributes = ['SystemDamage', 'HullDamage', 'StunLength', 'EMPLength', 'CharacterDamage',
+                  'FireLength', 'BreachChance', 'FlightType', 'ExplosionType', 'ExplosionRadius',
+                  'Speed', 'Volley', 'VolleyDelay', 'HullPercentageDamage', 'DirectSystemDamage',
+                  'ShieldDamage']
+    for k, v in missile.items():
+        if k in attributes:
+            if v != '0':
+                txt += f'\n{split_camel_case(k)}: {v}'
+    return txt
+
+
+def get_missile_description(missile_name):
+    missiles = get_missile_designs()
+    id2missilename = create_reverse_lookup(missiles, 'MissileDesignId', 'MissileDesignName')
+
+    raw_description = False
+    if missile_name[0] == '*':
+        missile_name = missile_name[1:]
+        raw_description = True
+    if missile_name in missiles.keys():
+        if raw_description is True:
+            txt = missiles[missile_name]
+        else:
+            txt = missile_to_txt_description(missiles[missile_name], id2missilename)
+    else:
+        txt = f'Missile name {missile_name} not found'
+    return txt
+
+
 # ----- Main ----------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=
@@ -234,6 +290,8 @@ if __name__ == "__main__":
         help='Get Research Data')
     parser.add_argument('--rooms', default=None,
         help='Get Room Data')
+    parser.add_argument('--missile', default=None,
+        help='Get Missile Data')
     args = parser.parse_args()
 
     if args.list is not None:
@@ -291,3 +349,7 @@ if __name__ == "__main__":
         print(txt)
         # room_str = args.rooms
         # print(room_str)
+    if args.missile is not None:
+        # python3 pss_research.py --missile "Mining Beam"
+        txt = get_missile_description(args.missile)
+        print(txt)

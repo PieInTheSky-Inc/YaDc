@@ -33,7 +33,8 @@ else:
     COMMAND_PREFIX='/'
 
 PWD = os.getcwd()
-print('Current Working Directory: {}'.format(PWD))
+print(f'Current Working Directory: {PWD}')
+print(f'Bot prefix is: {COMMAND_PREFIX}')
 sys.path.insert(0, PWD + '/src/')
 import utility
 
@@ -148,7 +149,8 @@ async def list(ctx, *, action=''):
     action=newcrew:  shows the newest 10 characters that have been added to the game
     action=items:    shows all items
     action=research: shows all research
-    action=rooms:    shows all rooms"""
+    action=rooms:    shows all rooms
+    action=missiles: shows all missiles"""
 
     txt_list = []
     if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
@@ -159,6 +161,8 @@ async def list(ctx, *, action=''):
         txt_list = rs.get_research_names()
     elif action == 'rooms':
         txt_list = rs.get_room_names()
+    elif action == 'missiles':
+        txt_list = rs.get_missile_names()
 
     for txt in txt_list:
         await ctx.send(txt)
@@ -273,6 +277,14 @@ async def level(ctx, level):
 async def roomsbeta(ctx, *, room_name=None):
     """(beta) Shows the information for specific room types. This command is currently under testing"""
     txt = rs.get_room_description(room_name)
+    await ctx.send(txt)
+
+
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@bot.command(hidden=True, brief='(beta) Get missile info')
+async def missilebeta(ctx, *, missile_name=None):
+    """(beta) Shows the information for specific missile types. This command is currently under testing"""
+    txt = rs.get_missile_description(missile_name)
     await ctx.send(txt)
 
 

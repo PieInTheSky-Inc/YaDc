@@ -70,9 +70,9 @@ in the background. Note that it is not necessary to use
 for example using the `nohup` command.
 
 ```bash
-cd $HOME/heroku-pss/src/
+cd $HOME/heroku-pss/
 screen -S pss    # Create a screen session named "pss"
-while true; do python36 bot.py; sleep 5; done
+while true; do python36 src/bot.py; sleep 5; done
 ```
 
 Press Ctrl-A, Ctrl-D to exit the screen session.
