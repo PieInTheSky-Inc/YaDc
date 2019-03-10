@@ -217,19 +217,31 @@ def get_room_description(room_name):
     if room_name in shortname_lookup.keys():
         room_name = shortname_lookup[room_name]
     if room_name in rooms.keys():
+        room = rooms[room_name]
         if raw_description is True:
-            txt = rooms[room_name]
+            return str(room)
         else:
-            txt = room_to_txt_description(rooms[room_name], id2roomname)
+            txt = room_to_txt_description(room, id2roomname)
+
+        if 'MissileDesignId' in room.keys():
+            missile_id = room['MissileDesignId']
+
+            missiles = get_missile_designs()
+            id2missilename = create_reverse_lookup(missiles, 'MissileDesignId', 'MissileDesignName')
+
+            if missile_id != '0' and missile_id in id2missilename.keys():
+                missile=missiles[id2missilename[missile_id]]
+                missile_txt = missile_to_txt_description(missile, id2missilename)
+                txt += f'\n\n{missile_txt}'
     return txt
 
 
 # ----- Missiles ------------------------------------------------------
-def get_missile_designs():
+def get_missile_designs(index='MissileDesignName'):
     raw_file = 'raw/missile-designs-raw.txt'
     url = base_url + 'RoomService/ListMissileDesigns'
     raw_text = load_data_from_url(raw_file, url, refresh='auto')
-    return xmltree_to_dict3(raw_text, 'MissileDesignName')
+    return xmltree_to_dict3(raw_text, index)
 
 
 def get_missile_names():
