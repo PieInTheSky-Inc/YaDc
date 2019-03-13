@@ -6,6 +6,7 @@ import csv
 import datetime
 import os
 import re
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
@@ -114,6 +115,19 @@ def parse_links3(url):
                             txt_list += [txt]
                             txt = ''
     return txt_list + [txt]
+
+
+def parse_unicode(text, action):
+    if text[0] == '"' and text[-1] == '"':
+        text = text.strip('"')
+    if text[0] == "'" and text[-1] == "'":
+        text = text.strip("'")
+    if text[0] == "“" and text[-1] == "“":
+        text = text.strip("“")
+    if action == 'quote':
+        return urllib.parse.quote(text)
+    elif action == 'unquote':
+        return urllib.parse.unquote(text)
 
 
 # ----- Display -----

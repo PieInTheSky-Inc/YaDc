@@ -33,8 +33,6 @@ else:
     COMMAND_PREFIX='/'
 
 PWD = os.getcwd()
-print(f'Current Working Directory: {PWD}')
-print(f'Bot prefix is: {COMMAND_PREFIX}')
 sys.path.insert(0, PWD + '/src/')
 import utility
 
@@ -59,6 +57,8 @@ setattr(bot, "logger", logging.getLogger("bot.py"))
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
 async def on_ready():
+    print(f'Current Working Directory: {PWD}')
+    print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
 
@@ -321,7 +321,18 @@ async def links(ctx):
     await ctx.send(txt)
 
 
+@bot.command(hidden=True, aliases=['unquote'],
+    brief='Quote/unquote text')
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def quote(ctx, *, txt=''):
+    """Quote or unquote text"""
+    txt = core.parse_unicode(txt, str(ctx.invoked_with))
+    await ctx.send(txt)
+
+
 @bot.command(hidden=True, brief='Parse URL')
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def parse(ctx, *, url):
     """Parses the data from a URL"""
