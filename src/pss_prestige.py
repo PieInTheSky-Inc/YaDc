@@ -990,7 +990,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.prestige == 'refresh':
+        # python3 pss_prestige.py refresh crew
         ctbl, tbl_i2n, tbl_n2i, rarity = get_char_sheet()
+        txt = ''
+        for k,v in tbl_i2n.items():
+            txt += f'{k},{v}\n'
+        with open('characters.csv', 'w') as f:
+            f.write(txt)
     elif args.prestige == 'stats':
         # python3 pss_prestige.py stats "Ron" --raw
         result = get_stats(args.character, embed=False, raw=args.raw)
