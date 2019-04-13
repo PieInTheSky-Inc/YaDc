@@ -264,7 +264,7 @@ async def collection(ctx, *, collection=None):
         await ctx.send(txt)
 
 
-@bot.command(brief='Division stars (works only during tournament)')
+@bot.command(brief='Division stars (works only during tournament finals)')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week"""
