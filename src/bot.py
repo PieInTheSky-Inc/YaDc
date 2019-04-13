@@ -264,8 +264,8 @@ async def collection(ctx, *, collection=None):
         await ctx.send(txt)
 
 
+@bot.command(brief='Division stars (works only during tournament)')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@bot.command(hidden=True, brief='Division stars')
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week"""
     txt = flt.get_division_stars(division)
@@ -281,8 +281,8 @@ async def daily(ctx):
     await ctx.send(txt)
 
 
+@bot.command(brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@bot.command(hidden=True, brief='Get crew levelling costs')
 async def level(ctx, level):
     """Shows the cost for a crew to reach a certain level"""
     txt = p.get_level_cost(level)
