@@ -152,7 +152,7 @@ def filter_item_designs(search_str, rtbl, filter):
                 continue
 
             # Process
-            # item_price = d['FairPrice']
+            item_fairprice = d['FairPrice']
             item_price = d['MarketPrice']
             item_slot  = re.sub('Equipment', '', d['ItemSubType'])
             item_stat  = d['EnhancementType']
@@ -167,6 +167,10 @@ def filter_item_designs(search_str, rtbl, filter):
                     continue
                 txt += '{}: {} +{} ({})\n'.format(item_name,
                     item_stat, item_stat_value, item_slot)
+            elif filter == 'fairprice':
+                if item_fairprice == '0':
+                    item_fairprice = 'NA'
+                txt += '{}: {}\n'.format(item_name, item_fairprice)
             else:
                 print('Invalid filter')
                 quit()
@@ -375,6 +379,8 @@ if __name__ == "__main__":
         help='Get Recipe for Item')
     parser.add_argument('--price', default=None,
         help='Get Price on Item')
+    parser.add_argument('--fairprice', default=None,
+        help='Get Savy Fair Price on Item')
     parser.add_argument('--list', action='store_true',
         help='Get List of items')
     args = parser.parse_args()
@@ -407,7 +413,21 @@ if __name__ == "__main__":
             print(mkt_text)
         else:
             print('{} not found'.format(item_name))
+    elif args.fairprice is not None:
+        # python3 pss_market.py --fairprice 'assault armor'
+        item_name = args.fairprice
+        raw_text = load_item_design_raw()
+        rtbl = parse_item_designs(raw_text)
+        real_name = get_real_name(item_name, rtbl)
+
+        if real_name is not None:
+            print('Getting the fair price of {}'.format(real_name))
+            mkt_text = filter_item_designs(real_name, rtbl, filter='fairprice')
+            print(mkt_text)
+        else:
+            print('{} not found'.format(item_name))
     else:
         print('Problem parsing argument list')
         print('args.stats = {}'.format(args.stats))
         print('args.price = {}'.format(args.price))
+        print('args.fairprice = {}'.format(args.fairprice))
