@@ -267,7 +267,7 @@ async def collection(ctx, *, collection=None):
 @bot.command(brief='Division stars (works only during tournament finals)')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stars(ctx, *, division=None):
-    """Get stars earned by each fleet during final tournament week"""
+    """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     txt = flt.get_division_stars(division)
     await ctx.send(txt)
 
@@ -284,7 +284,7 @@ async def daily(ctx):
 @bot.command(brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def level(ctx, level):
-    """Shows the cost for a crew to reach a certain level"""
+    """Shows the cost for a crew to reach a certain level. Replace <level> with a value between 2 and 40"""
     txt = p.get_level_cost(level)
     await ctx.send(txt)
 
