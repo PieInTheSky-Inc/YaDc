@@ -473,7 +473,9 @@ async def test(ctx):
     txt = str(user)
     
     await ctx.send(txt)
-    await ctx.send_message(ctx.author, txt)
+    await ctx.bot.send_message(user, 'user')
+    await ctx.bot.send_message(member, 'member')
+    await ctx.bot.send_message(ctx.author, 'ctx.author')
 
 
 # ----- Run the Bot -----------------------------------------------------------
