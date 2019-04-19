@@ -467,9 +467,12 @@ async def alliance(ctx, *, fleet_name=None):
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx):
-    user = USER_PSS_TOOLKIT
+    pss_toolkit = USER_PSS_TOOLKIT
+    user = bot.fetch_user(281491870788354049)
     txt = str(user)
+    
     await ctx.send(txt)
+    await ctx.bot.send_message(user, txt)
 
 
 # ----- Run the Bot -----------------------------------------------------------
