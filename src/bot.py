@@ -466,8 +466,11 @@ async def alliance(ctx, *, fleet_name=None):
 
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx, *, action=None):
-    act = int(action)
+async def test(ctx, *, action=0):
+    try:
+        act = int(action)
+    except:
+        await ctx.send('Failed to convert arg to int')
     
     if act >= 1:
         await bot.send_message(ctx.author, 'ctx.author')
