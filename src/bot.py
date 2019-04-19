@@ -63,6 +63,7 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
+    nonlocal USER_PSS_TOOLKIT
     USER_PSS_TOOLKIT = await bot.fetch_user(487398795756437514)
 
 
