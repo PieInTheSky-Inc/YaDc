@@ -471,7 +471,7 @@ async def test(ctx):
     user = await bot.fetch_user(281491870788354049)
     txt = str(user)
     
-    await ctx.send(txt)
+    #await ctx.send(txt)
     await ctx.bot.send_message(user, txt)
 
 
