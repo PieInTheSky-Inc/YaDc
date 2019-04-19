@@ -16,6 +16,7 @@ import pss_core as core
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
+user_pss_toolkit = client.get_user('487398795756437514')
 
 async def get_fleet_spreadsheet(ctx, fleet_name):
     txt = '#fleet {}'.format(fleet_name)
