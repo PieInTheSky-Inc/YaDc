@@ -470,13 +470,13 @@ async def test(ctx, *, action):
     user = await bot.fetch_user(281491870788354049)
     txt = str(user)
     await ctx.send(txt)
-    if action == 1:
+    if action == 'a':
         await bot.send_message(user, 'user')
     
-    if action == 2:
+    if action == 'b':
         await bot.send_message(ctx.author, 'ctx.author')
         
-    if action == 3
+    if action == 'c':
         member = await commands.MemberConverter.Convert(ctx, user)
         await bot.send_message(member, 'member')
         
