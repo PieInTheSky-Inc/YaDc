@@ -17,6 +17,6 @@ import pss_core as core
 
 base_url = 'http://{}/'.format(core.get_production_server())
 
-def get_fleet_spreadsheet(ctx, fleet_name)
+async def get_fleet_spreadsheet(ctx, fleet_name)
     txt = '#fleet ' + fleet_name
     await ctx.send(txt)
