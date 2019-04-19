@@ -17,6 +17,7 @@ import pss_fleets as flt
 import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
+import pss_toolkis as toolkit
 import pytz
 import re
 import sys
@@ -456,7 +457,7 @@ async def testing(ctx, *, action=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def alliance(ctx, *, fleet_name):
     """Gets a spreadsheet containing current data on the specified fleet"""
-    get_fleet_spreadsheet(ctx, fleet_name)
+    toolkit.get_fleet_spreadsheet(ctx, fleet_name)
 
 
 # ----- Run the Bot -----------------------------------------------------------
