@@ -452,6 +452,13 @@ async def testing(ctx, *, action=None):
         quit()
 
 
+@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def alliance(ctx, *, fleet_name):
+    """Gets a spreadsheet containing current data on the specified fleet"""
+    get_fleet_spreadsheet(ctx, fleet_name)
+
+
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
