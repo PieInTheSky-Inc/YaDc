@@ -467,7 +467,7 @@ async def alliance(ctx, *, fleet_name=None):
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, *, action):
-    user = await bot.fetch_user(281491870788354049)
+    user = bot.get_user(281491870788354049)
     txt = str(user)
     await ctx.send(txt)
     if action == 'a':
