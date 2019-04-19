@@ -466,33 +466,29 @@ async def alliance(ctx, *, fleet_name=None):
 
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx):
-    try:
+async def testing(ctx, *, action=None):
+    act = int(action)
+    
+    if act >= 1:
         await bot.send_message(ctx.author, 'ctx.author')
-    except:
-        await ctx.send('Unexpected error (ctx.author): ', sys.exc_info()[0])
-    #pss_toolkit = USER_PSS_TOOLKIT
-    try:
+    
+    if act >= 2:
         user = await bot.fetch_user(281491870788354049)
-    except:
-        await ctx.send('Unexpected error (bot.fetch_user): ', sys.exc_info()[0])
-    try:
+        
+    if act >= 3:
         txt = str(user)
-    except:
-        await ctx.send('Unexpected error (str(user)): ', sys.exc_info()[0])
-    await ctx.send(txt)
-    try:
+        
+    if act >= 4:
+        await ctx.send(txt)
+        
+    if act >= 5:
         await bot.send_message(user, 'user')
-    except:
-        await ctx.send('Unexpected error (user): ', sys.exc_info()[0])
-    try: 
+        
+    if act >= 6:
         member = await commands.MemberConverter.Convert(ctx, user)
-    except:
-        await ctx.send('Unexpected error (convert): ', sys.exc_info()[0])
-    try:
+        
+    if act >= 7:
         await bot.send_message(member, 'member')
-    except:
-        await ctx.send('Unexpected error (member): ', sys.exc_info()[0])
         
 
 
