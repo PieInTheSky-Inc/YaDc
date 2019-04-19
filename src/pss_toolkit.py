@@ -17,8 +17,8 @@ import utility as util
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
-user_pss_toolkit = util.get_user_pss_toolkit()
+
 
 def get_fleet_spreadsheet(ctx, fleet_name):
     txt = '#fleet {}'.format(fleet_name)
-    return str(user_pss_toolkit)
+    return str(USER_PSS_TOOLKIT)
