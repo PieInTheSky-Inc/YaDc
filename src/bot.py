@@ -466,7 +466,7 @@ async def alliance(ctx, *, fleet_name=None):
 
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def testing(ctx, *, action=None):
+async def test(ctx, *, action=None):
     act = int(action)
     
     if act >= 1:
