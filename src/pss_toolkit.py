@@ -13,10 +13,11 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import pss_core as core
+import utility as util
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
-user_pss_toolkit = utility.get_user_pss_toolkit()
+user_pss_toolkit = util.get_user_pss_toolkit()
 
 async def get_fleet_spreadsheet(ctx, fleet_name):
     txt = '#fleet {}'.format(fleet_name)
