@@ -457,7 +457,8 @@ async def testing(ctx, *, action=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def alliance(ctx, *, fleet_name=None):
     """Gets a spreadsheet containing current data on the specified fleet"""
-    await toolkit.get_fleet_spreadsheet(ctx, fleet_name)
+    txt = toolkit.get_fleet_spreadsheet(ctx, fleet_name)
+    await ctx.send(txt)
 
 
 # ----- Run the Bot -----------------------------------------------------------
