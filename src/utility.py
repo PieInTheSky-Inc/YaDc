@@ -7,4 +7,4 @@ def shell_cmd(cmd):
     return result.stdout.decode('utf-8')
     
 def get_user_pss_toolkit():
-    return bot.fetch_user(487398795756437514)
+    return bot.get_user(487398795756437514)
