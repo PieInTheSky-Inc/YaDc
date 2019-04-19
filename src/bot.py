@@ -466,17 +466,7 @@ async def alliance(ctx, *, fleet_name=None):
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx):
-    try:
-        user = await bot.fetch_user(487398795756437514)
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
-        user = None
-        
-    if user == None:
-        txt = 'User with id \'487398795756437514\' not found!'
-    else:
-        txt = str(user)
-        
+    txt = str(USER_PSS_TOOLKIT)
     await ctx.send(txt)
 
 
