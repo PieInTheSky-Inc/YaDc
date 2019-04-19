@@ -473,19 +473,19 @@ async def test(ctx, *, action=0):
         await ctx.send('Failed to convert arg to int')
     
     if act >= 1:
-        await bot.send_message(ctx.author, 'ctx.author')
-    
-    if act >= 2:
         user = await bot.fetch_user(281491870788354049)
         
-    if act >= 3:
+    if act >= 2:
         txt = str(user)
         
-    if act >= 4:
+    if act >= 3:
         await ctx.send(txt)
         
-    if act >= 5:
+    if act >= 4:
         await bot.send_message(user, 'user')
+    
+    if act >= 5:
+        await bot.send_message(ctx.author, 'ctx.author')
         
     if act >= 6:
         member = await commands.MemberConverter.Convert(ctx, user)
