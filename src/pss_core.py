@@ -14,6 +14,7 @@ import xml.etree.ElementTree
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILE = 'src/data/links.csv'
+PSS_ABOUT_FILE = 'src/data/about.txt'
 MAXIMUM_CHARACTERS = 1900
 
 
@@ -224,6 +225,17 @@ def read_links_file():
     with open(PSS_LINKS_FILE) as f:
         csv_file = csv.reader(f, delimiter=',')
         txt = '**Links**'
+        for row in csv_file:
+            title, url = row
+            txt += '\n{}: <{}>'.format(title, url.strip())
+    return txt
+
+
+# ----- About -----
+def read_about_file():
+    with open(PSS_ABOUT_FILE) as f:
+        csv_file = csv.reader(f, delimiter=',')
+        txt = '**About**'
         for row in csv_file:
             title, url = row
             txt += '\n{}: <{}>'.format(title, url.strip())
