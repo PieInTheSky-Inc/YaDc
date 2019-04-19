@@ -9,6 +9,6 @@ def shell_cmd(cmd):
     
 def get_user_pss_toolkit():
     if user_pss_toolkit == None:
-        user_pss_toolkit = client.get_user('487398795756437514')
+        user_pss_toolkit = discord.client.get_user('487398795756437514')
     return user_pss_toolkit
     
