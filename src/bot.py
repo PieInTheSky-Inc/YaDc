@@ -461,6 +461,17 @@ async def alliance(ctx, *, fleet_name=None):
     """Gets a spreadsheet containing current data on the specified fleet"""
     txt = toolkit.get_fleet_spreadsheet(ctx, fleet_name)
     await ctx.send(txt)
+    
+
+@bot.command(hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def test(ctx):
+    user = await bot.fetch_user(487398795756437514)
+    if user == None:
+        txt = 'User with id \'487398795756437514\' not found!'
+    else:
+        txt = str(user)
+    await ctw.send(txt)
 
 
 # ----- Run the Bot -----------------------------------------------------------
