@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+# PSS Toolkit API
+
+
 # ----- Packages ------------------------------------------------------
 from __future__ import absolute_import
 from __future__ import division
@@ -10,10 +13,10 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import pss_core as core
-import pss_prestige as p
-import pss_research as rs
-import xml.etree.ElementTree
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
 
+def get_fleet_spreadsheet(ctx, fleet_name)
+    txt = '#fleet ' + fleet_name
+    await ctx.send(txt)
