@@ -63,7 +63,7 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
-    nonlocal USER_PSS_TOOLKIT
+    global USER_PSS_TOOLKIT
     USER_PSS_TOOLKIT = await bot.fetch_user(487398795756437514)
 
 
@@ -467,7 +467,8 @@ async def alliance(ctx, *, fleet_name=None):
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx):
-    txt = str(USER_PSS_TOOLKIT)
+    user = USER_PSS_TOOLKIT
+    txt = str(user)
     await ctx.send(txt)
 
 
