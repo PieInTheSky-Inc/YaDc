@@ -54,6 +54,8 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX,
 
 setattr(bot, "logger", logging.getLogger("bot.py"))
 
+user_pss_toolkit = await bot.fetch_user(487398795756437514)
+
 
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
