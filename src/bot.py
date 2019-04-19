@@ -17,7 +17,7 @@ import pss_fleets as flt
 import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
-#import pss_toolkit as toolkit
+import pss_toolkit as toolkit
 import pytz
 import re
 import sys
@@ -453,11 +453,12 @@ async def testing(ctx, *, action=None):
         quit()
 
 
-#@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
-#@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-#async def alliance(ctx, *, fleet_name=None):
-#    """Gets a spreadsheet containing current data on the specified fleet"""
-#    await toolkit.get_fleet_spreadsheet(ctx, fleet_name)
+@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def alliance(ctx, *, fleet_name=None):
+    """Gets a spreadsheet containing current data on the specified fleet"""
+    txt = '#alliance {}'.format(fleet_name)
+    await ctx.send(txt)
 
 
 # ----- Run the Bot -----------------------------------------------------------
