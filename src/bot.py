@@ -22,6 +22,7 @@ import pytz
 import re
 import sys
 import time
+import utility
 
 
 # ----- Setup ---------------------------------------------------------
@@ -36,7 +37,6 @@ else:
 
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
-import utility
 
 for folder in ['raw', 'data']:
     if not os.path.exists(folder):
@@ -467,14 +467,33 @@ async def alliance(ctx, *, fleet_name=None):
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx):
-    await bot.send_message(ctx.author, 'ctx.author')
+    try:
+        await bot.send_message(ctx.author, 'ctx.author')
+    except:
+        ctx.send('Unexpected error (ctx.author): ', sys.exc_info()[0])
     #pss_toolkit = USER_PSS_TOOLKIT
-    user = await bot.fetch_user(281491870788354049)
-    txt = str(user)
+    try:
+        user = await bot.fetch_user(281491870788354049)
+    except:
+        ctx.send('Unexpected error (bot.fetch_user): ', sys.exc_info()[0])
+    try:
+        txt = str(user)
+    except:
+        ctx.send('Unexpected error (str(user)): ', sys.exc_info()[0])
     await ctx.send(txt)
-    await bot.send_message(user, 'user')
-    member = await commands.MemberConverter.Convert(ctx, user)
-    await bot.send_message(member, 'member')
+    try:
+        await bot.send_message(user, 'user')
+    except:
+        ctx.send('Unexpected error (user): ', sys.exc_info()[0])
+    try: 
+        member = await commands.MemberConverter.Convert(ctx, user)
+    except:
+        ctx.send('Unexpected error (convert): ', sys.exc_info()[0])
+    try:
+        await bot.send_message(member, 'member')
+    except:
+        ctx.send('Unexpected error (member): ', sys.exc_info()[0])
+        
 
 
 # ----- Run the Bot -----------------------------------------------------------
