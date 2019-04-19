@@ -469,10 +469,11 @@ async def alliance(ctx, *, fleet_name=None):
 async def test(ctx):
     pss_toolkit = USER_PSS_TOOLKIT
     user = await bot.fetch_user(281491870788354049)
+    member = await commands.MemberConverter.Convert(ctx, user)
     txt = str(user)
     
-    #await ctx.send(txt)
-    await ctx.bot.send_message(user, txt)
+    await ctx.send(txt)
+    await ctx.send_message(member, txt)
 
 
 # ----- Run the Bot -----------------------------------------------------------
