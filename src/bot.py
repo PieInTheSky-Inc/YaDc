@@ -470,29 +470,29 @@ async def test(ctx):
     try:
         await bot.send_message(ctx.author, 'ctx.author')
     except:
-        ctx.send('Unexpected error (ctx.author): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (ctx.author): ', sys.exc_info()[0])
     #pss_toolkit = USER_PSS_TOOLKIT
     try:
         user = await bot.fetch_user(281491870788354049)
     except:
-        ctx.send('Unexpected error (bot.fetch_user): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (bot.fetch_user): ', sys.exc_info()[0])
     try:
         txt = str(user)
     except:
-        ctx.send('Unexpected error (str(user)): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (str(user)): ', sys.exc_info()[0])
     await ctx.send(txt)
     try:
         await bot.send_message(user, 'user')
     except:
-        ctx.send('Unexpected error (user): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (user): ', sys.exc_info()[0])
     try: 
         member = await commands.MemberConverter.Convert(ctx, user)
     except:
-        ctx.send('Unexpected error (convert): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (convert): ', sys.exc_info()[0])
     try:
         await bot.send_message(member, 'member')
     except:
-        ctx.send('Unexpected error (member): ', sys.exc_info()[0])
+        await ctx.send('Unexpected error (member): ', sys.exc_info()[0])
         
 
 
