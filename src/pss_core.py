@@ -232,11 +232,11 @@ def read_links_file():
 
 
 # ----- About -----
-def read_about_file():
-    with open(PSS_ABOUT_FILE) as f:
-        csv_file = csv.reader(f, delimiter=',')
-        txt = '**About**'
-        for row in csv_file:
-            title, url = row
-            txt += '\n{}: <{}>'.format(title, url.strip())
-    return txt
+#def read_about_file():
+#    with open(PSS_ABOUT_FILE) as f:
+#        csv_file = csv.reader(f, delimiter=',')
+#        txt = '**About**'
+#        for row in csv_file:
+#            title, url = row
+#            txt += '\n{}: <{}>'.format(title, url.strip())
+#    return txt
