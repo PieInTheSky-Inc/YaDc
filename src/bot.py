@@ -27,6 +27,7 @@ import time
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
+USER_PSS_TOOLKIT = None
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
@@ -54,8 +55,6 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX,
 
 setattr(bot, "logger", logging.getLogger("bot.py"))
 
-user_pss_toolkit = await bot.fetch_user(487398795756437514)
-
 
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
@@ -64,6 +63,7 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
+    USER_PSS_TOOLKIT = await bot.fetch_user(487398795756437514)
 
 
 @bot.event
