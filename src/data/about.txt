@@ -1,0 +1,2 @@
+**PSS Statistics bot for Discord**
+This bot is based on the Discord bot _Dolores_ by jzx3
