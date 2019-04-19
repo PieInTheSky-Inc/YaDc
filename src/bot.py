@@ -466,14 +466,19 @@ async def alliance(ctx, *, fleet_name=None):
 
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx,):
+async def test(ctx, *, action):
     user = await bot.fetch_user(281491870788354049)
     txt = str(user)
     await ctx.send(txt)
-    #await bot.send_message(user, 'user')
-    #await bot.send_message(ctx.author, 'ctx.author')
-    #member = await commands.MemberConverter.Convert(ctx, user)
-    #await bot.send_message(member, 'member')
+    if action == 1:
+        await bot.send_message(user, 'user')
+    
+    if action == 2:
+        await bot.send_message(ctx.author, 'ctx.author')
+        
+    if action == 3
+        member = await commands.MemberConverter.Convert(ctx, user)
+        await bot.send_message(member, 'member')
         
 
 
