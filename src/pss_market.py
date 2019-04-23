@@ -108,6 +108,31 @@ def xmltext_to_df(raw_text):
                 df = df.append(pd.DataFrame(ccc.attrib, index=[i]))
     return df
 
+def get_item_name_column_width(item_name_fixed, item_original, item_lookup, items_data):
+    result = 0
+    
+    for i, item_name in enumerate(item_lookup):            
+        m = re.search(item_name_fixed, item_name)
+        if m is not None:
+            item_name = item_original[i]
+            d = items_data[item_name]
+
+            # Filter out items
+            if (item_name == 'Gas'            or
+                item_name == 'Mineral'        or
+                d['MissileDesignId']   != '0' or
+                d['CraftDesignId']     != '0' or
+                d['CharacterDesignId'] != '0'):
+                continue
+             
+            item_name_length = len(item_name)
+            
+            if item_name_length > result:
+                result = item_name_length
+                
+    return result
+
+
 
 # ----- Lists ---------------------------------------------------------
 def get_lists(df_items):
@@ -136,6 +161,8 @@ def filter_item_designs(search_str, rtbl, filter):
     item_fixed  = fix_item(search_str)
 
     txt = ''
+    item_name_colum_width = get_item_name_column_width(item_fixed, item_original, item_lookup, rtbl)
+    
     for i, item_name in enumerate(item_lookup):
 
         m = re.search(item_fixed, item_name)
@@ -150,7 +177,7 @@ def filter_item_designs(search_str, rtbl, filter):
                 d['CraftDesignId']     != '0' or
                 d['CharacterDesignId'] != '0'):
                 continue
-
+                
             # Process
             item_fairprice = d['FairPrice']
             item_price = d['MarketPrice']
@@ -163,7 +190,10 @@ def filter_item_designs(search_str, rtbl, filter):
                     item_price = 'NA'
                 if item_fairprice == '0':
                     item_fairprice = 'NA'
-                txt += '**{}:**  {} (fair: {})\n'.format(item_name, item_price, item_fairprice)
+                item_name = item_name.ljust(item_name_colum_width)
+                item_price = item_price.rjust(12)
+                item_fairprice = item_fairprice.rjust(15)
+                txt += '{} | {} | {} \n'.format(item_name, item_price, item_fairprice)
             elif filter == 'stats':
                 if item_stat == 'None':
                     continue
