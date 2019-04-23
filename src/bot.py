@@ -138,9 +138,13 @@ async def price(ctx, *, item_name=None):
     if len(item_name) < 2 and real_name != 'U':
         await ctx.send("Please enter at least two characters for item name")
     elif real_name is not None:
-        market_txt = "__**Prices matching '{}'**__\n\n".format(item_name)
-        market_txt += mkt.filter_item_designs(item_name, item_lookup, filter='price')
-        market_txt += '\n\n**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
+        item_list = mkt.filter_item_designs(item_name, item_lookup, filter='price')
+        item_name_column_width = item_list.index('|') - 1
+        market_txt = "__Prices matching '{}'__```\n".format(item_name)
+        market_txt += '{} | Market price | Savy fair price\n'.format('Item name'.ljust(item_name_column_width))
+        market_txt += '{}-+--------------+----------------\n'.format(''.ljust(item_name_column_width, '-'))
+        market_txt += item_list
+        market_txt += '\n```**Note:** Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
         await ctx.send(market_txt)
     else:
         await ctx.send("Could not find item name '{}'".format(item_name))
