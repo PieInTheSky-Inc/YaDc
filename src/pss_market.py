@@ -161,16 +161,14 @@ def filter_item_designs(search_str, rtbl, filter):
             if filter == 'price':
                 if item_price == '0':
                     item_price = 'NA'
-                txt += '{}: {}\n'.format(item_name, item_price)
+                if item_fairprice == '0':
+                    item_fairprice = 'NA'
+                txt += '**{}:**  {}; {}\n'.format(item_name, item_price, item_fairprice)
             elif filter == 'stats':
                 if item_stat == 'None':
                     continue
                 txt += '{}: {} +{} ({})\n'.format(item_name,
                     item_stat, item_stat_value, item_slot)
-            elif filter == 'fairprice':
-                if item_fairprice == '0':
-                    item_fairprice = 'NA'
-                txt += '{}: {}\n'.format(item_name, item_fairprice)
             else:
                 print('Invalid filter')
                 quit()
@@ -408,21 +406,8 @@ if __name__ == "__main__":
         real_name = get_real_name(item_name, rtbl)
 
         if real_name is not None:
-            print('Getting the price of {}'.format(real_name))
+            print('Getting the price of {} (1st is market price; 2nd is Savy fair price)'.format(real_name))
             mkt_text = filter_item_designs(real_name, rtbl, filter='price')
-            print(mkt_text)
-        else:
-            print('{} not found'.format(item_name))
-    elif args.fairprice is not None:
-        # python3 pss_market.py --fairprice 'assault armor'
-        item_name = args.fairprice
-        raw_text = load_item_design_raw()
-        rtbl = parse_item_designs(raw_text)
-        real_name = get_real_name(item_name, rtbl)
-
-        if real_name is not None:
-            print('Getting the fair price of {}'.format(real_name))
-            mkt_text = filter_item_designs(real_name, rtbl, filter='fairprice')
             print(mkt_text)
         else:
             print('{} not found'.format(item_name))
@@ -430,4 +415,3 @@ if __name__ == "__main__":
         print('Problem parsing argument list')
         print('args.stats = {}'.format(args.stats))
         print('args.price = {}'.format(args.price))
-        print('args.fairprice = {}'.format(args.fairprice))
