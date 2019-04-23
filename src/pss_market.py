@@ -163,7 +163,7 @@ def filter_item_designs(search_str, rtbl, filter):
                     item_price = 'NA'
                 if item_fairprice == '0':
                     item_fairprice = 'NA'
-                txt += '**{}:**  {}; {}\n'.format(item_name, item_price, item_fairprice)
+                txt += '**{}:**  {} (fair: {})\n'.format(item_name, item_price, item_fairprice)
             elif filter == 'stats':
                 if item_stat == 'None':
                     continue
