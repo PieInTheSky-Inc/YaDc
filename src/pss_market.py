@@ -161,16 +161,14 @@ def filter_item_designs(search_str, rtbl, filter):
             if filter == 'price':
                 if item_price == '0':
                     item_price = 'NA'
-                txt += '{}: {}\n'.format(item_name, item_price)
+                if item_fairprice == '0':
+                    item_fairprice = 'NA'
+                txt += '**{}:**  {} (fair: {})\n'.format(item_name, item_price, item_fairprice)
             elif filter == 'stats':
                 if item_stat == 'None':
                     continue
                 txt += '{}: {} +{} ({})\n'.format(item_name,
                     item_stat, item_stat_value, item_slot)
-            elif filter == 'fairprice':
-                if item_fairprice == '0':
-                    item_fairprice = 'NA'
-                txt += '{}: {}\n'.format(item_name, item_fairprice)
             else:
                 print('Invalid filter')
                 quit()
