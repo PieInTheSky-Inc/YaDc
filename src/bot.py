@@ -125,36 +125,19 @@ async def ingredients(ctx, *, name=None):
             recipe_found = True
 
 
-@bot.command(brief='Get item prices from the PSS API')
+@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def price(ctx, *, item_name=None):
-    """Get the average price in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
+    """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     raw_text = mkt.load_item_design_raw()
     item_lookup = mkt.parse_item_designs(raw_text)
     real_name = mkt.get_real_name(item_name, item_lookup)
     if len(item_name) < 2 and real_name != 'U':
         await ctx.send("Please enter at least two characters for item name")
     elif real_name is not None:
-        market_txt = mkt.filter_item_designs(item_name, item_lookup, filter='price')
-        market_txt = "**Prices matching '{}'**\n".format(item_name) + market_txt
-        market_txt += '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
-        await ctx.send(market_txt)
-    else:
-        await ctx.send("Could not find item name '{}'".format(item_name))
-
-
-@bot.command(brief='Get item fair prices from the PSS API')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def fairprice(ctx, *, item_name=None):
-    """Get Savy's fair price in bux of the item(s) specified, as returned by the PSS API."""
-    raw_text = mkt.load_item_design_raw()
-    item_lookup = mkt.parse_item_designs(raw_text)
-    real_name = mkt.get_real_name(item_name, item_lookup)
-    if len(item_name) < 2 and real_name != 'U':
-        await ctx.send("Please enter at least two characters for item name")
-    elif real_name is not None:
-        market_txt = mkt.filter_item_designs(item_name, item_lookup, filter='fairprice')
-        market_txt = "**Fair prices matching '{}'**\n".format(item_name) + market_txt
+        market_txt = "__**Prices matching '{}'**__\n\n".format(item_name)
+        market_txt += mkt.filter_item_designs(item_name, item_lookup, filter='price')
+        market_txt += '\n\n**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
         await ctx.send(market_txt)
     else:
         await ctx.send("Could not find item name '{}'".format(item_name))
