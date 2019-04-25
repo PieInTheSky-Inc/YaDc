@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
-import datetime
+from datetime import datetime, date, time
+
 import discord
 import holidays
 import logging
@@ -21,7 +22,6 @@ import pss_toolkit as toolkit
 import pytz
 import re
 import sys
-import time
 import utility
 
 
@@ -443,19 +443,28 @@ async def testing(ctx, *, action=None):
         quit()
     
 
-@bot.command(hidden=True)
+@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes'))
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, *, action):
+    print('test command called')
     datetime_format = '%Y%m%d %H:%M:%S'
     if action == 'now':
+        print('action == now')
         now = datetime.today()
+        print('created datetime object')
         txt = now.strftime(datetime_format)
+        print('created formatted datetime string')
         await ctx.send(txt)
+        print('sent datetime string to channel')
     if action == 'utcnow':
+        print('action == utcnow')
         utcnow = datetime.now(timezone.utc)
+        print('created datetime object')
         txt = utcnow.strftime(datetime_format)
+        print('created formatted datetime string')
         await ctx.send(txt)
-        
+        print('sent datetime string to channel')
 
 
 # ----- Run the Bot -----------------------------------------------------------
