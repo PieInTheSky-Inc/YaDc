@@ -474,7 +474,7 @@ async def test(ctx, *, action):
         await ctx.send(txt)
         print('sent string to channel')
     if action == 'tourney' or action == 'tournament' or action == 't':
-        print('action == t[ourn(ey|ament)])
+        print('action == t[ourn(ey|ament)]')
 
 
 # ----- Run the Bot -----------------------------------------------------------
