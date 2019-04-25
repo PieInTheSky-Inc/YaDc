@@ -452,13 +452,19 @@ async def test(ctx, *, action):
     if action == 'utcnow':
         print('action == utcnow')
         utcnow = util.get_utcnow()
+        print('retrieved datetime utc now')
         txt = util.get_formatted_datetime(utcnow)
+        print('formatted datetime object')
         await ctx.send(txt)
+        print('sent formatted datetime to channel')
     if action == 'first':
         print('action == first')
         next_first_of_month = util.get_first_of_next_month()
+        print('retrieved first of next month')
         txt = util.get_formatted_datetime(next_first_of_month)
+        print('formatted datetime object')
         await ctx.send(txt)
+        print('sent formatted datetime to channel')
     if action == 'tourney' or action == 'tournament' or action == 't':
         print('action == t[ourn(ey|ament)]')
 
