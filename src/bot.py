@@ -441,31 +441,20 @@ async def testing(ctx, *, action=None):
         print(txt)
         bot.close()
         quit()
-
-
-@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def alliance(ctx, *, fleet_name=None):
-    """Gets a spreadsheet containing current data on the specified fleet"""
-    txt = toolkit.get_fleet_spreadsheet(ctx, fleet_name)
-    await ctx.send(txt)
     
 
 @bot.command(hidden=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, *, action):
-    user = bot.get_user(281491870788354049)
-    txt = str(user)
-    await ctx.send(txt)
-    if action == 'a':
-        await bot.send_message(user, 'user')
-    
-    if action == 'b':
-        await bot.send_message(ctx.author, 'ctx.author')
-        
-    if action == 'c':
-        member = await commands.MemberConverter.Convert(ctx, user)
-        await bot.send_message(member, 'member')
+    datetime_format = '%Y%m%d %H:%M:%S'
+    if action == 'now':
+        now = datetime.today()
+        txt = now.strftime(datetime_format)
+        await ctx.send(txt)
+    if action == 'utcnow':
+        utcnow = datetime.now(timezone.utc)
+        txt = utcnow.strftime(datetime_format)
+        await ctx.send(txt)
         
 
 
