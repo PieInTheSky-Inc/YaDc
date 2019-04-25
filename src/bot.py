@@ -470,7 +470,7 @@ async def test(ctx, *, action):
         next_first_of_month = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
         print('created datetime of first next month')
         txt = next_first_of_month.strftime(datetime_format)
-        print('created formatted datetime string')
+        print('created formatted datetime string: {}'.format(txt))
         await ctx.send(txt)
         print('sent string to channel')
     if action == 'tourney' or action == 'tournament' or action == 't':
