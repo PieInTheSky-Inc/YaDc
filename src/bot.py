@@ -443,7 +443,7 @@ async def testing(ctx, *, action=None):
         quit()
     
 
-@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes'))
+@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, *, action):
