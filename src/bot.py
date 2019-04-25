@@ -469,7 +469,7 @@ async def test(ctx, *, action):
             print('fixed month + 1: {}'.format(month))
         next_first_of_month = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
         print('created datetime of first next month')
-        txt = utcnow.strftime(datetime_format)
+        txt = next_first_of_month.strftime(datetime_format)
         print('created formatted datetime string')
         await ctx.send(txt)
         print('sent string to channel')
