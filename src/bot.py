@@ -448,23 +448,33 @@ async def testing(ctx, *, action=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, *, action):
     print('test command called')
-    datetime_format = '%Y%m%d %H:%M:%S'
-    if action == 'now':
-        print('action == now')
-        now = datetime.today()
-        print('created datetime object')
-        txt = now.strftime(datetime_format)
-        print('created formatted datetime string')
-        await ctx.send(txt)
-        print('sent datetime string to channel')
+    datetime_format = '%Y-%m-%d %H:%M:%S'
     if action == 'utcnow':
-        print('action == utcnow')
         utcnow = datetime.now(timezone.utc)
-        print('created datetime object')
+        txt = utcnow.strftime(datetime_format)
+        await ctx.send(txt)
+    if action == 'first':
+        print('action == first')
+        utcnow = datetime.now(timezone.utc)
+        print('retrieved current datetime in UTC')
+        year = utcnow.year
+        print('retrieved year: {}'.format(year))
+        month = utcnow.month + 1
+        print('retrieved month + 1: {}'.format(month))
+        if (month == 13):
+            print('fix month and year')
+            year += 1
+            print('fixed year: {}'.format(year))
+            month = 1
+            print('fixed month + 1: {}'.format(month))
+        next_first_of_month = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
+        print('created datetime of first next month)
         txt = utcnow.strftime(datetime_format)
         print('created formatted datetime string')
         await ctx.send(txt)
-        print('sent datetime string to channel')
+        print('sent string to channel')
+    if action == 'tourney' or action == 'tournament' or action == 't':
+        print('action == t[ourn(ey|ament)])
 
 
 # ----- Run the Bot -----------------------------------------------------------
