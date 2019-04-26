@@ -53,7 +53,6 @@ def download_top_100():
 
 
 def fleet_df_to_scores(df, division_id):
-    print('fleet_df_to_scores(df, {})'.format(division_id))
     # Note: division_id is int because
     # alliancetxt_to_df converts it
     if 'Score' in df.columns:
@@ -65,10 +64,7 @@ def fleet_df_to_scores(df, division_id):
         txt += 'Columns: {}'.format(df.columns)
         return txt
     
-    df = df[df.DivisionDesignId == division_id].sort_values(
-        by=col, ascending=False)
-    
-    print('prepared division printing')
+    df = df[df.DivisionDesignId == division_id].sort_values(by=col, ascending=False)
 
     txt = ''
     for i, row in enumerate(df.iterrows()):
