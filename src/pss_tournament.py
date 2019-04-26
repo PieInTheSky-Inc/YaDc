@@ -40,7 +40,7 @@ def format_tourney_start(start_date, utcnow):
     result = 'Tournament in {} {} on: {}\n'.format(start_date.strftime('%B'), starts, formatted_date)
     print('created output string: {}'.format(result))
     delta = start_date - utcnow
-    print('calculated delta of start_date & utcnow: {}'.format(delta)
+    print('calculated delta of start_date & utcnow: {}'.format(delta))
     result += '({})'.format(utility.get_formatted_timedelta(delta))
     print('created result: {}'.format(result))
     return result
