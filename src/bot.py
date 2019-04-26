@@ -271,7 +271,7 @@ async def stars(ctx, *, division=None):
 @bot.command(hidden=True, brief='Show the dailies')
 async def daily(ctx):
     """Show the dailies"""
-    async with channel.typing():
+    async with ctx.typing():
         txt = dropship.get_dropship_text()
         await ctx.message.delete()
         await ctx.send(txt)
