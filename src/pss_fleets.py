@@ -103,11 +103,15 @@ def get_all_division_stars():
     txt = ''
     for i, division in enumerate(division_list):
         division_id = i + 1
-        print('{}: {}'.format(division_id, division))
+        if i >= 1:
+            print('{}: {}'.format(division_id, division))
         title = '__**Division {}**__'.format(division)
-        print(title)
+        if i >= 1:
+            print(title)
         division_list = fleet_df_to_scores(df_alliances.copy(), division_id)
         txt += '{}\n{}\n\n'.format(title, division_list)
+        if i == 0:
+            print(txt)
     return txt.strip()
 
 
