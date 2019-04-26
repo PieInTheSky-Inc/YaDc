@@ -30,7 +30,7 @@ def format_tourney_start(start_date, utcnow):
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
         delta_end = end_date - utcnow
-        result += '({}, running for another {})'.format(utility.get_formatted_timedelta(delta_start), utility.get_formatted_timedelta(delta_end))
+        result += '({}, running for another {})'.format(utility.get_formatted_timedelta(delta_start), utility.get_formatted_timedelta(delta_end, False))
     else:
         result += '({})'.format(utility.get_formatted_timedelta(delta_start))
     print('created result: {}'.format(result))
