@@ -31,23 +31,23 @@ def get_formatted_datetime(date_time):
 
 def get_formatted_timedelta(delta, include_relative_indicator=True):
     print('get_formatted_timedelta({})'.format(delta))
-    is_past = delta.total_seconds() < 0
-    days = abs(delta.days)
+    total_seconds = delta.total_seconds()
+    is_past = total_seconds < 0
     if is_past:
-        days -= 1
-    seconds = delta.seconds
-    weeks = math.floor(days/7)
+        total_seconds = abs(total_seconds)
+    minutes, seconds = divmod(total_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+    weeks, days = divmod(days, 7)
+    seconds = math.floor(seconds)
+    minutes = math.floor(minutes)
+    hours = math.floor(hours)
+    days = math.floor(days)
+    weeks = math.floor(weeks)
     result = ''
     if (weeks > 0):
-        days = days % 7
-        result += '{}w {}d '.format(weeks, days)
-    else:
-        result += '{}d '.format(days)
-    hours = math.floor(seconds/3600)
-    seconds = seconds % 3600
-    minutes = math.floor(seconds/60)
-    seconds = seconds % 60
-    result += '{}h {}m {}s'.format(hours, minutes, seconds)
+        result += '{:d}w '.format(weeks)
+    result += '{:d}d {:d}h {:d}m {:d}s'.format(days, hours, minutes, seconds)
     if include_relative_indicator:
         if is_past:
             result += ' ago'
