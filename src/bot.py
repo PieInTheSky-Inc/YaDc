@@ -459,14 +459,36 @@ async def test(ctx, *, action):
         print('sent formatted datetime to channel')
     if action == 'first':
         print('action == first')
-        next_first_of_month = utility.get_first_of_next_month()
+        first_of_next_month = utility.get_first_of_next_month()
         print('retrieved first of next month')
-        txt = utility.get_formatted_datetime(next_first_of_month)
+        txt = utility.get_formatted_datetime(first_of_next_month)
         print('formatted datetime object')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
-    if action == 'tourney' or action == 'tournament' or action == 't':
-        print('action == t[ourn(ey|ament)]')
+    if action == 'current':
+        print('action == current')
+        next_first_of_next_month = utility.get_first_of_next_month()
+        print('retrieved first of next month')
+        a_week_prior = timedelta(-7)
+        print('created time delta')
+        start_of_tourney = next_first_of_next_month + a_week_prior
+        print('created datetime object holding start date of tourney in current month')
+        txt = utility.get_formatted_datetime(start_of_tourney)
+        print('formatted datetime object')
+        await ctx.send(txt)
+        print('sent formatted datetime to channel')
+    if action == 'next':
+        print('action == next')
+        next_first_of_next_month = utility.get_first_of_following_month(utility.get_first_of_next_month())
+        print('retrieved first of the month after next month')
+        a_week_prior = timedelta(-7)
+        print('created time delta')
+        start_of_tourney = next_first_of_next_month + a_week_prior
+        print('created datetime object holding start date of tourney in next month')
+        txt = utility.get_formatted_datetime(start_of_tourney)
+        print('formatted datetime object')
+        await ctx.send(txt)
+        print('sent formatted datetime to channel')
 
 
 # ----- Run the Bot -----------------------------------------------------------
