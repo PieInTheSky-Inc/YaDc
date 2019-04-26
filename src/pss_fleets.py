@@ -100,9 +100,9 @@ def get_all_division_stars():
     df_alliances = download_top_100()
     division_list = ['A', 'B', 'C', 'D']
     txt = ''
-    for division_id in division_list:
-        txt += '__**Division {}**__\n'.format(division_id)
-        txt += fleet_df_to_scores(df_alliances, division_id)
+    for division_id, division in enumerate(division_list):
+        txt += '__**Division {}**__\n'.format(division)
+        txt += fleet_df_to_scores(df_alliances, division_id + 1)
         txt += '\n\n'
     return txt.strip('\n')
 
