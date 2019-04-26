@@ -30,7 +30,8 @@ def get_formatted_datetime(date_time):
 
 
 def get_formatted_timedelta(delta):
-    days = delta.days
+    is_past = delta.total_seconds() < 0
+    days = math.abs(delta.days)
     seconds = delta.seconds
     weeks = math.floor(days/7)
     result = ''
@@ -44,7 +45,7 @@ def get_formatted_timedelta(delta):
     minutes = math.floor(seconds/60)
     seconds = seconds % 60
     result += '{}h {}m {}s'.format(hours, minutes, seconds)
-    if delta.total_seconds() < 0:
+    if is_past:
         result += ' ago'
     else:
         result = 'in {}'.format(result)
