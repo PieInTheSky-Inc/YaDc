@@ -71,11 +71,9 @@ def fleet_df_to_scores(df, division_id):
     for i, row in enumerate(df.iterrows()):
         data = row[1]
         if col == 'Score':
-            row_txt = '{}⭐ {} ({} 🏆)'.format(
-                data[col], data['AllianceName'], data['Trophy'])
+            row_txt = '{:d}. {}⭐ {} ({} 🏆)'.format(i, data[col], data['AllianceName'], data['Trophy'])
         elif col == 'Trophy':
-            row_txt = '{}🏆 {}'.format(
-                data[col], data['AllianceName'])
+            row_txt = '{:d}. {}🏆 {}'.format(i, data[col], data['AllianceName'])
         
         if i == 0:
             txt += row_txt
