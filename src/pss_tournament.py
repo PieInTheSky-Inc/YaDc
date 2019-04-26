@@ -32,7 +32,7 @@ def format_tourney_start(start_date, utcnow = None):
     print('format_tourney_start({}, {})'.format(start_date, utcnow))
     if utcnow == None:
         utcnow = datetime.fromordinal(1)
-        print('fixed utcnow')
+        print('fixed utcnow: {}'.format(utcnow))
     starts = 'starts'
     print('created string: starts = \'starts\'')
     if start_date < utcnow:
