@@ -44,6 +44,10 @@ def get_formatted_timedelta(delta):
     minutes = math.floor(seconds/60)
     seconds = seconds % 60
     result += '{}h {}m {}s'.format(hours, minutes, seconds)
+    if delta.total_seconds() < 0:
+        result += ' ago'
+    else:
+        result = 'in {}'.format(result)
     return result
 
 
