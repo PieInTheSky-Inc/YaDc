@@ -92,7 +92,6 @@ def get_division_stars(division):
     if (division == None):
         return get_all_division_stars()
     df_alliances = download_top_100()
-    print(df_alliances.copy())
     division_table = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
     division = division.upper()
     if division not in division_table.keys():
@@ -105,7 +104,6 @@ def get_division_stars(division):
 def get_all_division_stars():
     print('get_all_division_stars()')
     df_alliances = download_top_100()
-    print(df_alliances.copy())
     division_list = ['A', 'B', 'C', 'D']
     txt = ''
     for i, division in enumerate(division_list):
