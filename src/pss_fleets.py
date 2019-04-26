@@ -67,6 +67,8 @@ def fleet_df_to_scores(df, division_id):
     
     df = df[df.DivisionDesignId == division_id].sort_values(
         by=col, ascending=False)
+    
+    print('prepared division printing')
 
     txt = ''
     for i, row in enumerate(df.iterrows()):
@@ -79,6 +81,7 @@ def fleet_df_to_scores(df, division_id):
         
         if i == 0:
             txt += row_txt
+            print(row_text)
         else:
             txt += '\n{}'.format(row_txt)
     return txt
