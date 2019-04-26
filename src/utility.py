@@ -32,8 +32,9 @@ def get_formatted_datetime(date_time):
 def get_formatted_timedelta(delta, include_relative_indicator=True):
     print('get_formatted_timedelta({})'.format(delta))
     is_past = delta.total_seconds() < 0
-    print('is_past = '.format(is_past))
     days = abs(delta.days)
+    if is_past:
+        days -= 1
     seconds = delta.seconds
     weeks = math.floor(days/7)
     result = ''
