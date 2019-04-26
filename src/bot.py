@@ -475,6 +475,8 @@ async def test(ctx, *, action):
         print('created datetime object holding start date of tourney in current month')
         txt = utility.get_formatted_datetime(start_of_tourney)
         print('formatted datetime object')
+        txt = 'Tournament in {} starts on: {}'.format(start_of_tourney.strftime('%B'), txt)
+        print('created output text')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
     if action == 'next':
@@ -487,6 +489,8 @@ async def test(ctx, *, action):
         print('created datetime object holding start date of tourney in next month')
         txt = utility.get_formatted_datetime(start_of_tourney)
         print('formatted datetime object')
+        txt = 'Tournament in {} starts on: {}'.format(start_of_tourney.strftime('%B'), txt)
+        print('created output text')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
 
