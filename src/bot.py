@@ -74,15 +74,17 @@ async def on_command_error(ctx, err):
 @bot.command(brief='Ping the server')
 async def ping(ctx):
     """Ping the server to verify that it\'s listening for commands"""
-    await ctx.send('Pong!')
+    async with ctx.typing():
+        await ctx.send('Pong!')
 
     
 @bot.command(hidden=True, brief='Run shell command')
 @commands.is_owner()
 async def shell(ctx, *, cmd):
     """Run a shell command"""
-    txt = utility.shell_cmd(cmd)
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = utility.shell_cmd(cmd)
+        await ctx.send(txt)
 
 
 # ----- PSS Bot Commands --------------------------------------------------------------
@@ -90,9 +92,10 @@ async def shell(ctx, *, cmd):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def prestige(ctx, *, name):
     """Get the prestige combinations of the character specified"""
-    prestige_txt, success = p.get_prestige(name, 'from')
-    for txt in prestige_txt:
-        await ctx.send(txt)
+    async with ctx.typing():
+        prestige_txt, success = p.get_prestige(name, 'from')
+        for txt in prestige_txt:
+            await ctx.send(txt)
         
 
 @bot.command(brief='Get character recipes')
@@ -129,18 +132,19 @@ async def ingredients(ctx, *, name=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def price(ctx, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
-    raw_text = mkt.load_item_design_raw()
-    item_lookup = mkt.parse_item_designs(raw_text)
-    real_name = mkt.get_real_name(item_name, item_lookup)
-    if len(item_name) < 2 and real_name != 'U':
-        await ctx.send("Please enter at least two characters for item name")
-    elif real_name is not None:
-        market_txt = "__**Prices matching '{}'**__\n\n".format(item_name)
-        market_txt += mkt.filter_item_designs(item_name, item_lookup, filter='price')
-        market_txt += '\n\n**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
-        await ctx.send(market_txt)
-    else:
-        await ctx.send("Could not find item name '{}'".format(item_name))
+    async with ctx.typing():
+        raw_text = mkt.load_item_design_raw()
+        item_lookup = mkt.parse_item_designs(raw_text)
+        real_name = mkt.get_real_name(item_name, item_lookup)
+        if len(item_name) < 2 and real_name != 'U':
+            await ctx.send("Please enter at least two characters for item name")
+        elif real_name is not None:
+            market_txt = "__**Prices matching '{}'**__\n\n".format(item_name)
+            market_txt += mkt.filter_item_designs(item_name, item_lookup, filter='price')
+            market_txt += '\n\n**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
+            await ctx.send(market_txt)
+        else:
+            await ctx.send("Could not find item name '{}'".format(item_name))
 
 
 @bot.command(name='list', brief='List items/characters')
@@ -153,24 +157,24 @@ async def list(ctx, *, action=''):
     action=rooms:    shows all rooms
     action=missiles: shows all missiles"""
 
-    txt_list = []
-    if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
-        txt_list = p.get_char_list(action)
-    elif action == 'items':
-        txt_list = mkt.get_item_list()
-    elif action == 'research':
-        txt_list = rs.get_research_names()
-    elif action == 'rooms':
-        txt_list = rs.get_room_names()
-    elif action == 'missiles':
-        txt_list = rs.get_missile_names()
+    async with ctx.typing():
+        txt_list = []
+        if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
+            txt_list = p.get_char_list(action)
+        elif action == 'items':
+            txt_list = mkt.get_item_list()
+        elif action == 'research':
+            txt_list = rs.get_research_names()
+        elif action == 'rooms':
+            txt_list = rs.get_room_names()
+        elif action == 'missiles':
+            txt_list = rs.get_missile_names()
 
-    for txt in txt_list:
-        await ctx.send(txt)
+        for txt in txt_list:
+            await ctx.send(txt)
 
 
-@bot.command(name='stats', aliases=['char', 'item'],
-    brief='Get item/character stats')
+@bot.command(name='stats', aliases=['char', 'item'], brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
@@ -178,160 +182,171 @@ async def stats(ctx, *, name=''):
         return
     # First try to find a character match
     # (skip this section if command was invoked with 'item'
-    if ctx.invoked_with != 'item':
-        if name.startswith('--raw '):
-            name = re.sub('^--raw[ ]+', '', name)
-            result = p.get_stats(name, embed=False, raw=True)
-        else:
-            result = p.get_stats(name, embed=False, raw=False)
-        if result is not None:
-            await ctx.send(result)
-            found_match = True
+    async with ctx.typing():
+        if ctx.invoked_with != 'item':
+            if name.startswith('--raw '):
+                name = re.sub('^--raw[ ]+', '', name)
+                result = p.get_stats(name, embed=False, raw=True)
+            else:
+                result = p.get_stats(name, embed=False, raw=False)
+            if result is not None:
+                await ctx.send(result)
+                found_match = True
 
-    # Next try to find an item match
-    if ctx.invoked_with != 'char':
-        market_txt = mkt.get_item_stats(name)
-        if market_txt is not None:
-            await ctx.send(market_txt)
-            found_match = True
+        # Next try to find an item match
+        if ctx.invoked_with != 'char':
+            market_txt = mkt.get_item_stats(name)
+            if market_txt is not None:
+                await ctx.send(market_txt)
+                found_match = True
 
-    if found_match is False:
-        await ctx.send('Could not find entry for "{}"'.format(name))
+        if found_match is False:
+            await ctx.send('Could not find entry for "{}"'.format(name))
 
 
 @bot.command(brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def best(ctx, slot=None, enhancement=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
-    raw_text = mkt.load_item_design_raw()
-    item_lookup = mkt.parse_item_designs(raw_text)
-    df_items = mkt.rtbl2items(item_lookup)
-    df_filter = mkt.filter_item(
-        df_items, slot, enhancement,
-        cols=['ItemDesignName', 'EnhancementValue', 'MarketPrice'])
+    async with ctx.typing():
+        raw_text = mkt.load_item_design_raw()
+        item_lookup = mkt.parse_item_designs(raw_text)
+        df_items = mkt.rtbl2items(item_lookup)
+        df_filter = mkt.filter_item(
+            df_items, slot, enhancement,
+            cols=['ItemDesignName', 'EnhancementValue', 'MarketPrice'])
 
-    txt = mkt.itemfilter2txt(df_filter)
-    if txt is None:
-        await ctx.send('No entries found for {} slot, {} enhancement'.format(
-            slot, enhancement))
+        txt = mkt.itemfilter2txt(df_filter)
+        if txt is None:
+            await ctx.send('No entries found for {} slot, {} enhancement'.format(
+                slot, enhancement))
 
-        str_slots = ', '.join(df_items['ItemSubType'].value_counts().index)
-        str_enhancements = ', '.join(df_items['EnhancementType'].value_counts().index)
-        txt  = 'Slots: {}\n'.format(str_slots)
-        txt += 'Enhancements: {}'.format(str_enhancements)
-        await ctx.send(txt)
-    else:
-        await ctx.send(txt)
+            str_slots = ', '.join(df_items['ItemSubType'].value_counts().index)
+            str_enhancements = ', '.join(df_items['EnhancementType'].value_counts().index)
+            txt  = 'Slots: {}\n'.format(str_slots)
+            txt += 'Enhancements: {}'.format(str_enhancements)
+            await ctx.send(txt)
+        else:
+            await ctx.send(txt)
 
 
 @bot.command(brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def research(ctx, *, research=''):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
-    df_research_designs = rs.get_research_designs()
-    df_selected = rs.filter_researchdf(df_research_designs, research)
-    txt = rs.research_to_txt(df_selected)
-    if txt is None:
-        await ctx.send("No entries found for '{}'".format(research))
-    else:
-        await ctx.send(txt)
+    async with ctx.typing():
+        df_research_designs = rs.get_research_designs()
+        df_selected = rs.filter_researchdf(df_research_designs, research)
+        txt = rs.research_to_txt(df_selected)
+        if txt is None:
+            await ctx.send("No entries found for '{}'".format(research))
+        else:
+            await ctx.send(txt)
 
 
 @bot.command(brief='Get collections')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def collection(ctx, *, collection=None):
     """Get the details on a specific collection."""
-    txt = p.show_collection(collection)
-    if txt is None:
-        await ctx.send("No entries found for '{}'".format(collection))
-    else:
-        await ctx.send(txt)
+    async with ctx.typing():
+        txt = p.show_collection(collection)
+        if txt is None:
+            await ctx.send("No entries found for '{}'".format(collection))
+        else:
+            await ctx.send(txt)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
-    txt = flt.get_division_stars(division)
-    txt_split = txt.split('\n\n')
-    for division_list in txt_split:
-        await ctx.send(division_list)
+    async with ctx.typing():
+        txt = flt.get_division_stars(division)
+        txt_split = txt.split('\n\n')
+        for division_list in txt_split:
+            await ctx.send(division_list)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='Show the dailies')
 async def daily(ctx):
     """Show the dailies"""
-    txt = dropship.get_dropship_text()
-    await ctx.message.delete()
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = dropship.get_dropship_text()
+        await ctx.message.delete()
+        await ctx.send(txt)
 
 
 @bot.command(brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def level(ctx, level):
     """Shows the cost for a crew to reach a certain level. Replace <level> with a value between 2 and 40"""
-    txt = p.get_level_cost(level)
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = p.get_level_cost(level)
+        await ctx.send(txt)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='(beta) Get room infos')
 async def roomsbeta(ctx, *, room_name=None):
     """(beta) Shows the information for specific room types. This command is currently under testing"""
-    txt = rs.get_room_description(room_name)
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = rs.get_room_description(room_name)
+        await ctx.send(txt)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='(beta) Get missile info')
 async def missilebeta(ctx, *, missile_name=None):
     """(beta) Shows the information for specific missile types. This command is currently under testing"""
-    txt = rs.get_missile_description(missile_name)
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = rs.get_missile_description(missile_name)
+        await ctx.send(txt)
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def time(ctx):
     """Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia."""
-    now = datetime.datetime.now()
-    today = datetime.date(now.year, now.month, now.day)
-    pss_start = datetime.date(year=2016, month=1, day=6)
-    pss_stardate = (today - pss_start).days
-    str_time = 'Today is Stardate {}\n'.format(pss_stardate)
+    async with ctx.typing():
+        now = datetime.datetime.now()
+        today = datetime.date(now.year, now.month, now.day)
+        pss_start = datetime.date(year=2016, month=1, day=6)
+        pss_stardate = (today - pss_start).days
+        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
 
-    mel_tz = pytz.timezone('Australia/Melbourne')
-    mel_time = now.replace(tzinfo=pytz.utc).astimezone(mel_tz)
-    str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
+        mel_tz = pytz.timezone('Australia/Melbourne')
+        mel_time = now.replace(tzinfo=pytz.utc).astimezone(mel_tz)
+        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
 
-    aus_holidays = holidays.Australia(years=now.year, prov='ACT')
-    mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-    if mel_time in aus_holidays:
-        str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
+        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
+        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        if mel_time in aus_holidays:
+            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
 
-    first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + relativedelta(months=1, days=0)
-    td = first_day_of_next_month - now
-    str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-    await ctx.send(str_time)
+        first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + relativedelta(months=1, days=0)
+        td = first_day_of_next_month - now
+        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
+        await ctx.send(str_time)
 
 
 @bot.command(brief='Show links')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
-    txt = core.read_links_file()
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = core.read_links_file()
+        await ctx.send(txt)
 
 
-@bot.command(hidden=True, aliases=['unquote'],
-    brief='Quote/unquote text')
+@bot.command(hidden=True, aliases=['unquote'], brief='Quote/unquote text')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def quote(ctx, *, txt=''):
     """Quote or unquote text"""
-    txt = core.parse_unicode(txt, str(ctx.invoked_with))
-    await ctx.send(txt)
+    async with ctx.typing():
+        txt = core.parse_unicode(txt, str(ctx.invoked_with))
+        await ctx.send(txt)
 
 
 @bot.command(hidden=True, brief='Parse URL')
@@ -339,9 +354,10 @@ async def quote(ctx, *, txt=''):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def parse(ctx, *, url):
     """Parses the data from a URL"""
-    txt_list = core.parse_links3(url)
-    for txt in txt_list:
-        await ctx.send(txt)
+    async with ctx.typing():
+        txt_list = core.parse_links3(url)
+        for txt in txt_list:
+            await ctx.send(txt)
 
 
 @bot.command(hidden=True,
