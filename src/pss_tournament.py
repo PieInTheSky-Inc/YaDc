@@ -28,14 +28,10 @@ def get_next_tourney_start():
     return result
 
 
-def format_tourney_start(start_date, utcnow = None):
+def format_tourney_start(start_date, utcnow):
     print('format_tourney_start({}, {})'.format(start_date, utcnow))
-    if utcnow == None:
-        utcnow = datetime.fromordinal(1)
-        print('fixed utcnow: {}'.format(utcnow))
     starts = 'starts'
     print('created string: starts = \'starts\'')
-    print('checking start_date < utcnow: {}'.format(start_date < utcnow))
     if start_date < utcnow:
         starts = 'started'
         print('set starts = \'started\'')
