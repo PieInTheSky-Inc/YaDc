@@ -53,6 +53,7 @@ def download_top_100():
 
 
 def fleet_df_to_scores(df, division_id):
+    print('fleet_df_to_scores(df, {})'.format(division_id))
     # Note: division_id is int because
     # alliancetxt_to_df converts it
     if 'Score' in df.columns:
