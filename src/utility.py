@@ -30,7 +30,6 @@ def get_formatted_datetime(date_time):
 
 
 def get_formatted_timedelta(delta, include_relative_indicator=True):
-    print('get_formatted_timedelta({})'.format(delta))
     total_seconds = delta.total_seconds()
     is_past = total_seconds < 0
     if is_past:
