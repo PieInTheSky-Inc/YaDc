@@ -38,7 +38,9 @@ def format_tourney_start(start_date, utcnow):
     formatted_date = utility.get_formatted_datetime(start_date)
     print('formatted specified datetime object')
     result = 'Tournament in {} {} on: {}\n'.format(start_date.strftime('%B'), starts, formatted_date)
-    delta = startdate - utcnow
+    print('created output string: {}'.format(result))
+    delta = start_date - utcnow
+    print('calculated delta of start_date & utcnow: {}'.format(delta)
     result += '({})'.format(utility.get_formatted_timedelta(delta))
     print('created result: {}'.format(result))
     return result
