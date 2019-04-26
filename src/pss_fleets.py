@@ -84,6 +84,7 @@ def fleet_df_to_scores(df, division_id):
 
 
 def get_division_stars(division):
+    print('get_division_stars({})'.format(division))
     if (division == None):
         return get_all_division_stars()
     df_alliances = download_top_100()
@@ -97,10 +98,12 @@ def get_division_stars(division):
 
 
 def get_all_division_stars():
+    print('get_all_division_stars()')
     df_alliances = download_top_100()
     division_list = ['A', 'B', 'C', 'D']
     txt = ''
     for division_id, division in enumerate(division_list):
+        print('{}: {}'.format(division_id, division))
         txt += '__**Division {}**__\n'.format(division)
         txt += fleet_df_to_scores(df_alliances, division_id + 1)
         txt += '\n\n'
