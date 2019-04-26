@@ -84,7 +84,6 @@ def fleet_df_to_scores(df, division_id):
 
 
 def get_division_stars(division):
-def get_division_stars(division):
     if (division == None):
         return get_all_division_stars()
     df_alliances = download_top_100()
