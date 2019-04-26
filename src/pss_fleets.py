@@ -108,7 +108,7 @@ def get_all_division_stars():
         print(title)
         division_list = fleet_df_to_scores(df_alliances.copy(), division_id)
         txt += '{}\n{}\n\n'.format(title, division_list)
-    return txt.strip('\n')
+    return txt.strip()
 
 
 if __name__ == '__main__':
