@@ -77,7 +77,6 @@ def fleet_df_to_scores(df, division_id):
         
         if i == 0:
             txt += row_txt
-            print(row_text)
         else:
             txt += '\n{}'.format(row_txt)
     return txt
