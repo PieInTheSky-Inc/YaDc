@@ -24,7 +24,7 @@ def get_first_of_next_month():
 
 
 def get_formatted_datetime(date_time):
-    txt = date_time.strftime('%Y-%m-%d %H:%M:%S')
+    txt = date_time.strftime('%Y-%m-%d %H:%M:%S %Z (%z)')
     return txt
 
 
