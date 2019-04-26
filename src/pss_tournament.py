@@ -35,6 +35,7 @@ def format_tourney_start(start_date, utcnow = None):
         print('fixed utcnow: {}'.format(utcnow))
     starts = 'starts'
     print('created string: starts = \'starts\'')
+    print('checking start_date < utcnow: {}'.format(start_date < utcnow))
     if start_date < utcnow:
         starts = 'started'
         print('set starts = \'started\'')
