@@ -477,9 +477,11 @@ async def test(ctx, *, action):
         print('sent formatted datetime to channel')
     if action == 'next':
         print('action == next')
+        utcnow = utility.get_utcnow()
+        print('retrieved current datetime')
         start_of_tourney = tourney.get_next_tourney_start()
         print('retrieved start date of next month\'s tourney')
-        txt = tourney.format_tourney_start(start_of_tourney)
+        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
         print('created output text')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
