@@ -253,7 +253,9 @@ async def collection(ctx, *, collection=None):
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     txt = flt.get_division_stars(division)
-    await ctx.send(txt)
+    txt_split = txt.split('\n\n')
+    for division_list in txt_split:
+        await ctx.send(division_list)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
