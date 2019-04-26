@@ -72,9 +72,9 @@ def fleet_df_to_scores(df, division_id):
         position = i+1
         data = row[1]
         if col == 'Score':
-            row_txt = '{:d}: {}⭐ {} ({} 🏆)'.format(position, data[col], data['AllianceName'], data['Trophy'])
+            row_txt = '**{:d}.** {}⭐ {} ({} 🏆)'.format(position, data[col], data['AllianceName'], data['Trophy'])
         elif col == 'Trophy':
-            row_txt = '{:d}: {}🏆 {}'.format(position, data[col], data['AllianceName'])
+            row_txt = '**{:d}.** {}🏆 {}'.format(position, data[col], data['AllianceName'])
         
         if i == 0:
             txt += row_txt
