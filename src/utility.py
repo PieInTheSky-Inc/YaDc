@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta, timezone
 
+import math
 import subprocess
 
 
@@ -14,8 +15,8 @@ def get_first_of_following_month(utcnow):
     if (month == 13):
         year += 1
         month = 1
-    next_first_of_month = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
-    return next_first_of_month
+    result = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
+    return result
     
 
 def get_first_of_next_month():
@@ -24,8 +25,26 @@ def get_first_of_next_month():
 
 
 def get_formatted_datetime(date_time):
-    txt = date_time.strftime('%Y-%m-%d %H:%M:%S %Z (%z)')
-    return txt
+    result = date_time.strftime('%Y-%m-%d %H:%M:%S %Z (%z)')
+    return result
+
+
+def get_formatted_timedelta(delta):
+    days = delta.days
+    seconds = delta.seconds
+    weeks = math.floor(days/7)
+    result = ''
+    if (weeks > 0):
+        days = days % 7
+        result += '{}w {}d '.format(weeks, days)
+    else:
+        result += '{}d '.format(days)
+    hours = math.floor(seconds/3600)
+    seconds = seconds % 3600
+    minutes = math.floor(seconds/60)
+    seconds = seconds % 60
+    result += '{}h {}m {}s'.format(hours, minutes, seconds)
+    return result
 
 
 def get_utcnow():
