@@ -34,8 +34,10 @@ def format_tourney_start(start_date, utcnow = None):
         utcnow = datetime.fromordinal(1)
         print('fixed utcnow')
     starts = 'starts'
+    print('created string: starts = \'starts\'')
     if start_date < utcnow:
         starts = 'started'
+        print('set starts = \'started\'')
     formatted_date = utility.get_formatted_datetime(start_date)
     print('formatted specified datetime object')
     result = 'Tournament in {} {} on: {}'.format(start_date.strftime('%B'), starts, formatted_date)
