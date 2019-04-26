@@ -21,7 +21,19 @@ def get_current_tourney_start():
     result = first_of_next_month + a_week_prior
     return result
 
+
 def get_next_tourney_start():
     next_first_of_next_month = utility.get_first_of_following_month(utility.get_first_of_next_month())
     result = next_first_of_next_month + a_week_prior
+    return result
+
+
+def format_tourney_start(start_date, utcnow = None):
+    if utcnow == None:
+        utcnow = datetime.fromordinal(1)
+    starts = 'starts'
+    if start_date < utcnow:
+        starts = 'started'
+    formatted_date = utility.get_formatted_datetime(start_date)
+    result = 'Tournament in {} {} on: {}'.format(start_date.strftime('%B'), starts, formatted_date)
     return result
