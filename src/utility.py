@@ -29,7 +29,7 @@ def get_formatted_datetime(date_time):
     return result
 
 
-def get_formatted_timedelta(delta):
+def get_formatted_timedelta(delta, include_relative_indicator=True):
     print('get_formatted_timedelta({})'.format(delta))
     is_past = delta.total_seconds() < 0
     print('is_past = '.format(is_past))
@@ -47,10 +47,11 @@ def get_formatted_timedelta(delta):
     minutes = math.floor(seconds/60)
     seconds = seconds % 60
     result += '{}h {}m {}s'.format(hours, minutes, seconds)
-    if is_past:
-        result += ' ago'
-    else:
-        result = 'in {}'.format(result)
+    if include_relative_indicator:
+        if is_past:
+            result += ' ago'
+        else:
+            result = 'in {}'.format(result)
     return result
 
 
