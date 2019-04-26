@@ -48,7 +48,6 @@ def download_top_100_raw():
 def download_top_100():
     raw_text = download_top_100_raw()
     df_alliances = alliancetxt_to_df(raw_text)
-    print('Number of fleets in top 100 downloaded: {}'.format(len(df_alliances)))
     return df_alliances
 
 
@@ -83,7 +82,6 @@ def fleet_df_to_scores(df, division_id):
 
 
 def get_division_stars(division):
-    print('get_division_stars({})'.format(division))
     if (division == None):
         return get_all_division_stars()
     df_alliances = download_top_100()
@@ -97,21 +95,14 @@ def get_division_stars(division):
 
 
 def get_all_division_stars():
-    print('get_all_division_stars()')
     df_alliances = download_top_100()
     division_list = ['A', 'B', 'C', 'D']
     txt = ''
     for i, division in enumerate(division_list):
         division_id = i + 1
-        if i >= 1:
-            print('{}: {}'.format(division_id, division))
         title = '__**Division {}**__'.format(division)
-        if i >= 1:
-            print(title)
-        division_list = fleet_df_to_scores(df_alliances.copy(), division_id)
+        division_list = fleet_df_to_scores(df_alliances, division_id)
         txt += '{}\n{}\n\n'.format(title, division_list)
-        if i == 0:
-            print(txt)
     return txt.strip()
 
 
