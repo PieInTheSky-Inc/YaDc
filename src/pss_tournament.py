@@ -17,25 +17,17 @@ a_week_prior = timedelta(-7)
 
 # ----- Utility methods ---------------------------------------------------------
 def format_tourney_start(start_date, utcnow):
-    print('format_tourney_start({}, {})'.format(start_date, utcnow))
     currently_running = is_tourney_running(start_date, utcnow)
     starts = get_start_string(currently_running)
-    print('created string: starts = \'starts\'')
     formatted_date = utility.get_formatted_datetime(start_date)
-    print('formatted specified datetime object')
     result = 'Tournament in {} {} on: {}\n'.format(start_date.strftime('%B'), starts, formatted_date)
-    print('created output string: {}'.format(result))
     delta_start = start_date - utcnow
-    print('calculated delta of start_date & utcnow: {}'.format(delta_start))
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
-        print('calculated end date: {}'.format(end_date))
         delta_end = end_date - utcnow
-        print('calculated delta of end_date & utcnow: {}'.format(delta_end))
         result += '({}, running for another {})'.format(utility.get_formatted_timedelta(delta_start), utility.get_formatted_timedelta(delta_end, False))
     else:
         result += '({})'.format(utility.get_formatted_timedelta(delta_start))
-    print('created result: {}'.format(result))
     return result
 
 
