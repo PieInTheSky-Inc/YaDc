@@ -92,7 +92,7 @@ def get_division_stars(division):
     if division not in division_table.keys():
         return 'Division has to be A, B, C, or D'
     division_id = division_table[division]
-    txt = fleet_df_to_scores(df_alliances, division_id)
+    txt = '__**Division {}**__\n{}'.format(division, fleet_df_to_scores(df_alliances, division_id))
     return txt
 
 
