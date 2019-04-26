@@ -260,6 +260,7 @@ async def collection(ctx, *, collection=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
+    await bot.send_typing(ctx.channel)
     txt = flt.get_division_stars(division)
     txt_split = txt.split('\n\n')
     for division_list in txt_split:
@@ -270,6 +271,7 @@ async def stars(ctx, *, division=None):
 @bot.command(hidden=True, brief='Show the dailies')
 async def daily(ctx):
     """Show the dailies"""
+    await bot.send_typing(ctx.channel)
     txt = dropship.get_dropship_text()
     await ctx.message.delete()
     await ctx.send(txt)
