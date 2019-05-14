@@ -247,10 +247,6 @@ def read_links_file():
 
 
 # ---------- DataBase ----------
-
-
-
-        
 def init_db():
     success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
     if success:
@@ -303,10 +299,8 @@ def db_fetchall(query):
                 print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
-                db_disconnect()
         else:
             print('[db_fetchall] could not get cursor')
-            db_disconnect()
     else:
         print('[db_fetchall] could not connect to db')
     return result
@@ -314,9 +308,8 @@ def db_fetchall(query):
         
 def db_get_cursor():
     global DB_CONN
-    if db_is_connected(DB_CONN) == False:
-        db_connect()
-    if db_is_connected(DB_CONN):
+    connected = db_connect()
+    if connected:
         return DB_CONN.cursor()
     else:
         print('[db_get_cursor] db is not connected')
@@ -325,14 +318,14 @@ def db_get_cursor():
     
 def db_is_connected(connection):
     if connection:
-        if connection.closed == 0:
-            return True
+        return connection.closed == 0
     return False
     
     
 def db_try_commit():
     global DB_CONN
-    if db_is_connected(DB_CONN):
+    connected = db_connect()
+    if connected:
         try:
             DB_CONN.commit()
             return True
@@ -363,10 +356,8 @@ def db_try_create_table(table_name, columns):
                 print('[db_try_create_table] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
-                db_disconnect()
         else:
             print('[db_try_create_table] could not get cursor')
-            db_disconnect()
     else:
         print('[db_try_create_table] could not connect to db')
     return success
@@ -386,10 +377,8 @@ def db_try_execute(query):
                 print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
-                db_disconnect()
         else:
             print('[db_try_execute] could not get cursor')
-            db_disconnect()
     else:
         print('[db_try_execute] could not connect to db')
     return success
