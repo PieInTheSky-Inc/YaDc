@@ -6,19 +6,18 @@ from __future__ import unicode_literals
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
-from datetime import date, datetime, time, timedelta, timezone
-
+import asyncio
 import discord
 import holidays
 import logging
 import os
 import pss_core as core
+import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
 import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
-import pss_toolkit as toolkit
 import pytz
 import re
 import sys
@@ -64,14 +63,70 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
-    global USER_PSS_TOOLKIT
-    USER_PSS_TOOLKIT = await bot.fetch_user(487398795756437514)
+    core.init_db()
+    bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
 async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
+
+
+# ----- Tasks ----------------------------------------------------------
+async def post_dailies_loop():
+    while True:
+        utc_now = datetime.datetime.now(datetime.timezone.utc)
+        if utc_now.hour == 0:
+            await asyncio.sleep(59)
+        elif utc_now.hour == 1 and utc_now.minute == 0:
+            await post_all_dailies()
+            await asyncio.sleep(3600)
+        else:
+            await asyncio.sleep(3600)
+
+
+async def post_all_dailies():
+    fix_daily_channels()
+    channel_ids = d.get_valid_daily_channel_ids()
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
+    txt = '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
+    txt += dropship.get_dropship_text()
+    for channel_id in channel_ids:
+        text_channel = bot.get_channel(channel_id)
+        if text_channel != None:
+            guild = text_channel.guild
+            try:
+                await text_channel.send(txt)
+            except Exception as error:
+                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+            
+            
+def fix_daily_channels():
+    rows = d.select_daily_channel(None, None)
+    for row in rows:
+        can_post = False
+        guild_id = int(row[0])
+        channel_id = int(row[1])
+        text_channel = bot.get_channel(channel_id)
+        if text_channel != None:
+            guild = bot.get_guild(guild_id)
+            if guild != None:
+                guild_member = guild.get_member(bot.user.id)
+                if guild_member != None:
+                    permissions = text_channel.permissions_for(guild_member)
+                    if permissions != None and permissions.send_messages == True:
+                        print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                        can_post = True
+                    else:
+                        print('[fix_daily_channels] bot is not allowed to post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                else:
+                    print('[fix_daily_channels] couldn\'t fetch member for bot for guild: {} (id: {})'.format(guild.name, guild_id))
+            else:
+                print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
+        else:
+            print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
+        d.fix_daily_channel(guild_id, can_post)
 
 
 # ----- General Bot Commands ----------------------------------------------------------
@@ -283,6 +338,114 @@ async def daily(ctx):
         txt = dropship.get_dropship_text()
         await ctx.message.delete()
         await ctx.send(txt)
+
+
+@bot.command(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
+    """
+    This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
+    The daily announcement is the message that this bot will post, when you use the /daily command.
+    
+    action = set:    Configure a channel on this server to have the daily announcement posted at.
+    action = remove: Stop auto-posting the daily announcement to this Discord server.
+    action = get:    See which channel has been configured on this server to receive the daily announcement.
+    
+    In order to use this command, you need Administrator permissions for this server.
+    """
+    guild = ctx.guild
+    author_is_owner = await bot.is_owner(ctx.author)
+    txt = ''
+    if action == 'set':
+        if text_channel == None:
+            await ctx.send('You need to specify a text channel!')
+        else:
+            await setdaily(ctx, text_channel)
+    elif action == 'remove':
+        await removedaily(ctx)
+    elif action == 'get':
+        await getdaily(ctx)
+    elif action == 'fix':
+        if author_is_owner:
+            fix_daily_channels()
+            await ctx.send('Fixed daily channels')
+    elif action == 'listall':
+        if author_is_owner:
+            await listalldailies(ctx, None)
+    elif action == 'listvalid':
+        if author_is_owner:
+            await listalldailies(ctx, True)
+    elif action == 'listinvalid':
+        if author_is_owner:
+            await listalldailies(ctx, False)
+    elif action == 'post':
+        if author_is_owner:
+            guild = ctx.guild
+            channel_id = d.get_daily_channel_id(guild.id)
+            if channel_id >= 0:
+                text_channel = bot.get_channel(channel_id)
+                await text_channel.send(dropship.get_dropship_text())
+    elif action == 'postall':
+        if author_is_owner:
+            await post_all_dailies()
+                
+
+async def setdaily(ctx, text_channel: discord.TextChannel):
+    guild = ctx.guild
+    success = d.try_store_daily_channel(guild.id, text_channel.id)
+    if success:
+        txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
+    else:
+        txt = 'Could not set auto-posting of the daily announcement for this server :('
+    await ctx.send(txt)
+
+async def getdaily(ctx):
+    guild = ctx.guild
+    channel_id = d.get_daily_channel_id(guild.id)
+    txt = ''
+    if channel_id >= 0:
+        text_channel = bot.get_channel(channel_id)
+        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(text_channel.mention)
+    else:
+        txt += 'Auto-posting of the daily announcement is not configured for this server!'
+    await ctx.send(txt)
+
+async def listalldailies(ctx, valid = None):
+    channels = d.select_daily_channel(None, valid)
+    txt = ''
+    i = 0
+    for channel in channels:
+        text_channel = bot.get_channel(int(channel[1]))
+        guild = text_channel.guild
+        txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+        if i == 20:
+            txt += '\n'
+            i = 0
+    txt_split = txt.split('\n\n')
+    for msg in txt_split:
+        await ctx.send(msg)
+        
+async def removedaily(ctx):
+    guild = ctx.guild
+    txt = ''
+    channel_id = d.get_daily_channel_id(guild.id)
+    if channel_id >= 0:
+        if d.try_remove_daily_channel(guild.id):
+            txt += 'Removed auto-posting the daily announcement from this server.'
+        else:
+            txt += 'Could not remove auto-posting the daily announcement from this server.'
+    else:
+        txt += 'Auto-posting of the daily announcement is not configured for this server!'
+    await ctx.send(txt)
+    
+
+@autodaily.error
+async def autodaily_error(ctx, error):
+    if isinstance(error, commands.ConversionError) or isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('You need to pass an action channel to the `{}autodaily` command!'.format(COMMAND_PREFIX))
+    elif isinstance(error, commands.CheckFailure):
+        await ctx.send('You need the permission `Administrator` in order to be able to use this command!')
 
 
 @bot.command(brief='Get crew levelling costs')
