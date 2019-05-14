@@ -6,6 +6,7 @@ import csv
 import datetime
 import os
 import psycopg2
+from psycopg2 import errors as db_error
 import re
 import urllib.parse
 import urllib.request
