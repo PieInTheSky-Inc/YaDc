@@ -13,11 +13,13 @@ import urllib.request
 import xml.etree.ElementTree
 
 
+DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILE = 'src/data/links.csv'
 PSS_ABOUT_FILE = 'src/data/about.txt'
 MAXIMUM_CHARACTERS = 1900
+DB_CONN = None
 
 
 # ----- Utilities --------------------------------
