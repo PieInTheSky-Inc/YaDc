@@ -250,7 +250,6 @@ def read_links_file():
 
         
 def init_db():
-    print('+ called init_db()')
     success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
     if success:
         print('[init_db] db initialization succeeded')
@@ -270,7 +269,8 @@ def db_connect():
             DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='require')
             return True
         except Exception as error:
-            print('[db_connect] Could not establish connection: {}'.format(error))
+            error_name = error.__class__.__name__
+            print('[db_connect] {} occurred while establishing connection: {}'.format(error_name, error))
             return False
     else:
         return True
@@ -283,7 +283,6 @@ def db_disconnect():
         
         
 def db_execute(query, cursor):
-    print('+ called db_execute({})'.format(query))
     cursor.execute(query)
     success = db_try_commit()
 
@@ -319,7 +318,6 @@ def db_get_cursor():
         return DB_CONN.cursor()
     else:
         print('[db_get_cursor] db is not connected')
-    print('[db_get_cursor] return None')
     return None
     
     
@@ -337,7 +335,8 @@ def db_try_commit():
             DB_CONN.commit()
             return True
         except (Exception, psycopg2.DatabaseError) as error:
-            print('[db_try_commit] {} while committing: {}'.format(error.__class__.__name__, error))
+            error_name = error.__class__.__name__
+            print('[db_try_commit] {} while committing: {}'.format(error_name, error))
             return False
     else:
         print('[db_try_commit] db is not connected')
@@ -358,7 +357,8 @@ def db_try_create_table(table_name, columns):
             except db_error.DuplicateTable:
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
-                print('[db_try_create_table] {} while performing a query: {}'.format(error.__class__.__name__, error))
+                error_name = error.__class__.__name__
+                print('[db_try_create_table] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
@@ -380,7 +380,8 @@ def db_try_execute(query):
                 db_execute(query, cursor)
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
-                print('[db_try_execute] {} while performing a query: {}'.format(error.__class__.__name__, error))
+                error_name = error.__class__.__name__
+                print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
