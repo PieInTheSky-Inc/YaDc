@@ -11,11 +11,13 @@ import urllib.request
 import xml.etree.ElementTree
 
 
+DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILE = 'src/data/links.csv'
 PSS_ABOUT_FILE = 'src/data/about.txt'
 MAXIMUM_CHARACTERS = 1900
+DB_CONN = None
 
 
 # ----- Utilities --------------------------------
@@ -240,3 +242,151 @@ def read_links_file():
 #            title, url = row
 #            txt += '\n{}: <{}>'.format(title, url.strip())
 #    return txt
+
+
+# ---------- DataBase ----------
+
+
+
+        
+def init_db():
+    print('+ called init_db()')
+    success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
+    if success:
+        print('[init_db] db initialization succeeded')
+    else:
+        print('[init_db] db initialization failed')
+
+        
+def db_close_cursor(cursor):
+    if cursor != None:
+        cursor.close()
+      
+
+def db_connect():
+    global DB_CONN
+    if db_is_connected(DB_CONN) == False:
+        try:
+            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='require')
+            return True
+        except Exception as error:
+            print('[db_connect] Could not establish connection: {}'.format(error))
+            return False
+    else:
+        return True
+        
+        
+def db_disconnect():
+    global DB_CONN
+    if db_is_connected(DB_CONN):
+        DB_CONN.close()
+        
+        
+def db_execute(query, cursor):
+    print('+ called db_execute({})'.format(query))
+    cursor.execute(query)
+    success = db_try_commit()
+
+
+def db_fetchall(query):
+    result = None
+    connected = db_connect()
+    if connected:
+        cursor = db_get_cursor()
+        if cursor != None:
+            try:
+                cursor.execute(query)
+                result = cursor.fetchall()
+            except (Exception, psycopg2.DatabaseError) as error:
+                error_name = error.__class__.__name__
+                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+            finally:
+                db_close_cursor(cursor)
+                db_disconnect()
+        else:
+            print('[db_fetchall] could not get cursor')
+            db_disconnect()
+    else:
+        print('[db_fetchall] could not connect to db')
+    return result
+        
+        
+def db_get_cursor():
+    global DB_CONN
+    if db_is_connected(DB_CONN) == False:
+        db_connect()
+    if db_is_connected(DB_CONN):
+        return DB_CONN.cursor()
+    else:
+        print('[db_get_cursor] db is not connected')
+    print('[db_get_cursor] return None')
+    return None
+    
+    
+def db_is_connected(connection):
+    if connection:
+        if connection.closed == 0:
+            return True
+    return False
+    
+    
+def db_try_commit():
+    global DB_CONN
+    if db_is_connected(DB_CONN):
+        try:
+            DB_CONN.commit()
+            return True
+        except (Exception, psycopg2.DatabaseError) as error:
+            print('[db_try_commit] {} while committing: {}'.format(error.__class__.__name__, error))
+            return False
+    else:
+        print('[db_try_commit] db is not connected')
+        return False
+                              
+                              
+def db_try_create_table(table_name, columns):
+    column_list = ', '.join(columns)
+    query = 'CREATE TABLE {} ({});'.format(table_name, column_list)
+    success = False
+    connected = db_connect()
+    if connected:
+        cursor = db_get_cursor()
+        if cursor != None:
+            try:
+                db_execute(query, cursor)
+                success = True
+            except db_error.DuplicateTable:
+                success = True
+            except (Exception, psycopg2.DatabaseError) as error:
+                print('[db_try_create_table] {} while performing a query: {}'.format(error.__class__.__name__, error))
+            finally:
+                db_close_cursor(cursor)
+                db_disconnect()
+        else:
+            print('[db_try_create_table] could not get cursor')
+            db_disconnect()
+    else:
+        print('[db_try_create_table] could not connect to db')
+    return success
+        
+        
+def db_try_execute(query):
+    success = False
+    connected = db_connect()
+    if connected:
+        cursor = db_get_cursor()
+        if cursor != None:
+            try:
+                db_execute(query, cursor)
+                success = True
+            except (Exception, psycopg2.DatabaseError) as error:
+                print('[db_try_execute] {} while performing a query: {}'.format(error.__class__.__name__, error))
+            finally:
+                db_close_cursor(cursor)
+                db_disconnect()
+        else:
+            print('[db_try_execute] could not get cursor')
+            db_disconnect()
+    else:
+        print('[db_try_execute] could not connect to db')
+    return success
