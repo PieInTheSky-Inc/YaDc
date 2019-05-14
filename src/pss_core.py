@@ -5,6 +5,7 @@
 import csv
 import datetime
 import os
+import psycopg2
 import re
 import urllib.parse
 import urllib.request
