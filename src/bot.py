@@ -91,7 +91,7 @@ async def post_dailies_loop():
 async def post_all_dailies():
     if has_dropship_changed():
         utc_now = datetime.datetime.now(datetime.timezone.utc)
-        txt += '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
+        txt = '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
         fix_daily_channels()
         channel_ids = d.get_valid_daily_channel_ids()
         txt += dropship.get_dropship_text()
