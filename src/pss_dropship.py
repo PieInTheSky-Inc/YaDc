@@ -141,11 +141,10 @@ def get_shop_item_text(d, id2item, ctbl, id2roomname):
 
 
 def get_shop_item_cost(d):
-    txt = """Cost: {} {}, Can own (max): {}, Qty remaining: {}""".format(
+    txt = """Cost: {} {}, Can own (max): {}""".format(
         d['LimitedCatalogCurrencyAmount'],
         d['LimitedCatalogCurrencyType'],
-        d['LimitedCatalogMaxTotal'],
-        d['LimitedCatalogQuantity'])
+        d['LimitedCatalogMaxTotal'])
     return txt
 
 
