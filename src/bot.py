@@ -493,9 +493,12 @@ async def listalldailies(ctx, valid = None):
         if i == 20:
             txt += '\n'
             i = 0
-    txt_split = txt.split('\n\n')
-    for msg in txt_split:
-        await ctx.send(msg)
+    if txt == '':
+        await ctx.send('No servers have been configurated to use the autodaily feature.')
+    else:
+        txt_split = txt.split('\n\n')
+        for msg in txt_split:
+            await ctx.send(msg)
         
 async def removedaily(ctx):
     guild = ctx.guild
