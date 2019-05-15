@@ -22,6 +22,7 @@ import pss_research as rs
 import pytz
 import re
 import sys
+import time
 import utility
 import pss_tournament as tourney
 
@@ -78,30 +79,32 @@ async def on_command_error(ctx, err):
 async def post_dailies_loop():
     while True:
         utc_now = datetime.datetime.now(datetime.timezone.utc)
-        if utc_now.hour <= 1:
-            await post_all_dailies()
-            await asyncio.sleep(59)
-        elif utc_now.hour == 1 and utc_now.minute == 0:
-            await post_all_dailies()
-            await asyncio.sleep(3600)
+        if utc.second != 0:
+            await asyncio.sleep(60 - utc.second)
         else:
-            await asyncio.sleep(3600)
+            now = time.time()
+            await post_all_dailies()
+            elapsed = time.time() - now
+            await asyncio.sleep(60 - round(elapsed))
 
 
 async def post_all_dailies():
-    fix_daily_channels()
-    channel_ids = d.get_valid_daily_channel_ids()
-    utc_now = datetime.datetime.now(datetime.timezone.utc)
-    txt = '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
-    txt += dropship.get_dropship_text()
-    for channel_id in channel_ids:
-        text_channel = bot.get_channel(channel_id)
-        if text_channel != None:
-            guild = text_channel.guild
-            try:
-                await text_channel.send(txt)
-            except Exception as error:
-                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+    if has_dropship_changed():
+        utc_now = datetime.datetime.now(datetime.timezone.utc)
+        txt += '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
+        fix_daily_channels()
+        channel_ids = d.get_valid_daily_channel_ids()
+        txt += dropship.get_dropship_text()
+        for channel_id in channel_ids:
+            text_channel = bot.get_channel(channel_id)
+            if text_channel != None:
+                guild = text_channel.guild
+                try:
+                    await text_channel.send(txt)
+                except Exception as error:
+                    print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+    else:
+        print('dropship text hasn\'t changed.')
             
             
 def fix_daily_channels():
@@ -129,6 +132,71 @@ def fix_daily_channels():
         else:
             print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
         d.fix_daily_channel(guild_id, can_post)
+        
+        
+DROPSHIP_NEWS = None
+DROPSHIP_CATALOG = None
+DROPSHIP_MERCHANT = None
+DROPSHIP_SALE = None
+DROPSHIP_CREW = None
+DROPSHIP_DAILYREWARDS = None
+        
+        
+def has_dropship_changed():
+    global DROPSHIP_NEWS
+    global DROPSHIP_CATALOG
+    global DROPSHIP_MERCHANT
+    global DROPSHIP_SALE
+    global DROPSHIP_CREW
+    global DROPSHIP_DAILYREWARDS
+    
+    id2item = dropship.request_id2item()
+    ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
+    rooms = rs.get_room_designs()
+    id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
+    
+    result = False
+
+    dropship_raw = dropship.request_dropship()
+    news_txt = None
+    if 'News' in d.keys():
+        news_txt = d['News']
+    if news_txt != DROPSHIP_NEWS:
+        DROPSHIP_NEWS = news_text
+        print('[has_dropship_changed] dropship news text has changed.')
+        result = True
+        
+    catalog_txt = dropship.get_limited_catalog_txt(dropship_raw, id2item, ctbl, id2roomname)
+    if catalog_txt != DROPSHIP_CATALOG:
+        DROPSHIP_CATALOG = catalog_txt
+        print('[has_dropship_changed] dropship catalog text has changed.')
+        result = True
+        
+    merchantship_txt = dropship.get_merchantship_txt(dropship_raw, id2item)
+    if merchantship_txt != DROPSHIP_MERCHANT:
+        DROPSHIP_MERCHANT = merchantship_txt
+        print('[has_dropship_changed] dropship merchantship text has changed.')
+        result = True
+        
+    sale_txt = dropship.get_sale_text(dropship_raw, id2item, ctbl)
+    if sale_txt != DROPSHIP_SALE:
+        DROPSHIP_SALE = sale_txt
+        print('[has_dropship_changed] dropship sale text has changed.')
+        result = True
+        
+    crew_txt = dropship.get_dropshipcrew_txt(d, ctbl)
+    if crew_txt != DROPSHIP_CREW:
+        DROPSHIP_CREW = crew_txt
+        print('[has_dropship_changed] dropship crew text has changed.')
+        result = True
+        
+    dailyrewards_txt = dropship.get_dailyrewards_txt(d, id2item)
+    if dailyrewards_txt != DROPSHIP_DAILYREWARDS:
+        DROPSHIP_DAILYREWARDS = dailyrewards_txt
+        print('[has_dropship_changed] dropship daily rewards text has changed.')
+        result = True
+    
+    return result
 
 
 # ----- General Bot Commands ----------------------------------------------------------
