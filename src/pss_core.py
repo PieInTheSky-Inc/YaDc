@@ -54,7 +54,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
 def load_data_from_url(filename, url, refresh='auto'):
     if os.path.isfile(filename) and refresh != 'true':
         if refresh == 'auto':
-            if is_old_file(filename, max_seconds=3600):
+            if is_old_file(filename, max_seconds=3600, False):
                 raw_text = get_data_from_url(url)
                 save_raw_text(raw_text, filename)
                 return raw_text
@@ -214,7 +214,7 @@ def get_extra_tables(d):
 
 
 def load_char_brief_cache(url, filename=PSS_CHARS_FILE, raw_file=PSS_CHARS_RAW_FILE):
-    if is_old_file(filename, max_seconds=3600):
+    if is_old_file(filename, max_seconds=3600, False):
         raw_text = load_data_from_url(raw_file, url, refresh='auto')
         tbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
         rtbl, rarity = get_extra_tables(tbl)
