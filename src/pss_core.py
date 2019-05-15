@@ -326,7 +326,7 @@ def db_is_connected(connection):
     
 def db_try_commit():
     global DB_CONN
-    db_is_connected(DB_CONN)
+    connected = db_is_connected(DB_CONN)
     if connected:
         try:
             DB_CONN.commit()
