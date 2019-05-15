@@ -89,7 +89,7 @@ async def post_dailies_loop():
             await asyncio.sleep(60 - math.floor(elapsed.seconds))
 
 
-async def post_all_dailies():
+async def post_all_dailies(verbose=False):
     if has_dropship_changed():
         utc_now = datetime.datetime.now(datetime.timezone.utc)
         txt = '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
@@ -104,11 +104,11 @@ async def post_all_dailies():
                     await text_channel.send(txt)
                 except Exception as error:
                     print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
-    else:
+    elif verbose:
         print('dropship text hasn\'t changed.')
             
             
-def fix_daily_channels():
+def fix_daily_channels(verbose=False):
     rows = d.select_daily_channel(None, None)
     for row in rows:
         can_post = False
@@ -122,15 +122,16 @@ def fix_daily_channels():
                 if guild_member != None:
                     permissions = text_channel.permissions_for(guild_member)
                     if permissions != None and permissions.send_messages == True:
-                        print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                        if verbose:
+                            print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
                         can_post = True
-                    else:
+                    elif verbose:
                         print('[fix_daily_channels] bot is not allowed to post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
-                else:
+                elif verbose:
                     print('[fix_daily_channels] couldn\'t fetch member for bot for guild: {} (id: {})'.format(guild.name, guild_id))
-            else:
+            elif verbose:
                 print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
-        else:
+        elif verbose:
             print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
         d.fix_daily_channel(guild_id, can_post)
         
