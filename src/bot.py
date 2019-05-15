@@ -78,7 +78,8 @@ async def on_command_error(ctx, err):
 async def post_dailies_loop():
     while True:
         utc_now = datetime.datetime.now(datetime.timezone.utc)
-        if utc_now.hour == 0:
+        if utc_now.hour <= 1:
+            await post_all_dailies()
             await asyncio.sleep(59)
         elif utc_now.hour == 1 and utc_now.minute == 0:
             await post_all_dailies()
