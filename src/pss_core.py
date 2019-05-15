@@ -324,7 +324,7 @@ def db_is_connected(connection):
     
 def db_try_commit():
     global DB_CONN
-    connected = db_connect()
+    db_is_connected(DB_CONN)
     if connected:
         try:
             DB_CONN.commit()
@@ -358,6 +358,7 @@ def db_try_create_table(table_name, columns):
                 db_close_cursor(cursor)
         else:
             print('[db_try_create_table] could not get cursor')
+            db_disconnect()
     else:
         print('[db_try_create_table] could not connect to db')
     return success
@@ -379,6 +380,7 @@ def db_try_execute(query):
                 db_close_cursor(cursor)
         else:
             print('[db_try_execute] could not get cursor')
+            db_disconnect()
     else:
         print('[db_try_execute] could not connect to db')
     return success
