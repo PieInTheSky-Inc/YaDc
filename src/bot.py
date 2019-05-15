@@ -90,9 +90,7 @@ async def post_dailies_loop():
 async def post_all_dailies():
     fix_daily_channels()
     channel_ids = d.get_valid_daily_channel_ids()
-    utc_now = datetime.datetime.now(datetime.timezone.utc)
-    txt = '__**{}h {}m**__\n'.format(utc_now.hour, utc_now.minute)
-    txt += dropship.get_dropship_text()
+    txt = dropship.get_dropship_text()
     for channel_id in channel_ids:
         text_channel = bot.get_channel(channel_id)
         if text_channel != None:
