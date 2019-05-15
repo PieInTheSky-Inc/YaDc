@@ -299,8 +299,10 @@ def db_fetchall(query):
                 print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
+                db_disconnect()
         else:
             print('[db_fetchall] could not get cursor')
+            db_disconnect()
     else:
         print('[db_fetchall] could not connect to db')
     return result
@@ -356,6 +358,7 @@ def db_try_create_table(table_name, columns):
                 print('[db_try_create_table] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
+                db_disconnect()
         else:
             print('[db_try_create_table] could not get cursor')
             db_disconnect()
@@ -378,6 +381,7 @@ def db_try_execute(query):
                 print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
+                db_disconnect()
         else:
             print('[db_try_execute] could not get cursor')
             db_disconnect()
