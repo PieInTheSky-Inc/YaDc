@@ -11,6 +11,7 @@ import datetime
 import discord
 import holidays
 import logging
+import math
 import os
 import pss_core as core
 import pss_daily as d
@@ -85,7 +86,7 @@ async def post_dailies_loop():
             utc_now2 = datetime.datetime.now(datetime.timezone.utc)
             await post_all_dailies()
             elapsed = datetime.datetime.now(datetime.timezone.utc) - utc_now2
-            await asyncio.sleep(60 - floor(elapsed.seconds))
+            await asyncio.sleep(60 - math.floor(elapsed.seconds))
 
 
 async def post_all_dailies():
