@@ -159,8 +159,8 @@ def has_dropship_changed():
 
     dropship_raw = dropship.request_dropship()
     news_txt = None
-    if 'News' in d.keys():
-        news_txt = d['News']
+    if 'News' in dropship_raw.keys():
+        news_txt = dropship_raw['News']
     if news_txt != DROPSHIP_NEWS:
         DROPSHIP_NEWS = news_text
         print('[has_dropship_changed] dropship news text has changed.')
@@ -184,13 +184,13 @@ def has_dropship_changed():
         print('[has_dropship_changed] dropship sale text has changed.')
         result = True
         
-    crew_txt = dropship.get_dropshipcrew_txt(d, ctbl)
+    crew_txt = dropship.get_dropshipcrew_txt(dropship_raw, ctbl)
     if crew_txt != DROPSHIP_CREW:
         DROPSHIP_CREW = crew_txt
         print('[has_dropship_changed] dropship crew text has changed.')
         result = True
         
-    dailyrewards_txt = dropship.get_dailyrewards_txt(d, id2item)
+    dailyrewards_txt = dropship.get_dailyrewards_txt(dropship_raw, id2item)
     if dailyrewards_txt != DROPSHIP_DAILYREWARDS:
         DROPSHIP_DAILYREWARDS = dailyrewards_txt
         print('[has_dropship_changed] dropship daily rewards text has changed.')
