@@ -79,13 +79,13 @@ async def on_command_error(ctx, err):
 async def post_dailies_loop():
     while True:
         utc_now = datetime.datetime.now(datetime.timezone.utc)
-        if utc.second != 0:
-            await asyncio.sleep(60 - utc.second)
+        if utc_now.second != 0:
+            await asyncio.sleep(60 - utc_now.second)
         else:
             now = time.time()
             await post_all_dailies()
             elapsed = time.time() - now
-            await asyncio.sleep(60 - round(elapsed))
+            await asyncio.sleep(60 - floor(elapsed))
 
 
 async def post_all_dailies():
