@@ -162,7 +162,7 @@ def has_dropship_changed():
     if 'News' in dropship_raw.keys():
         news_txt = dropship_raw['News']
     if news_txt != DROPSHIP_NEWS:
-        DROPSHIP_NEWS = news_text
+        DROPSHIP_NEWS = news_txt
         print('[has_dropship_changed] dropship news text has changed.')
         result = True
         
