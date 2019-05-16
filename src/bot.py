@@ -165,36 +165,42 @@ def has_dropship_changed():
         news_txt = dropship_raw['News']
     if news_txt != DROPSHIP_NEWS:
         DROPSHIP_NEWS = news_txt
+        news_txt = 'Changed:\n{}'.format(news_txt)
         print('[has_dropship_changed] dropship news text has changed.')
         result = True
         
     catalog_txt = dropship.get_limited_catalog_txt(dropship_raw, id2item, ctbl, id2roomname)
     if catalog_txt != DROPSHIP_CATALOG:
         DROPSHIP_CATALOG = catalog_txt
+        catalog_txt = 'Changed:\n{}'.format(catalog_txt)
         print('[has_dropship_changed] dropship catalog text has changed.')
         result = True
         
     merchantship_txt = dropship.get_merchantship_txt(dropship_raw, id2item)
     if merchantship_txt != DROPSHIP_MERCHANT:
         DROPSHIP_MERCHANT = merchantship_txt
+        merchantship_txt = 'Changed:\n{}'.format(merchantship_txt)
         print('[has_dropship_changed] dropship merchantship text has changed.')
         result = True
         
     sale_txt = dropship.get_sale_text(dropship_raw, id2item, ctbl)
     if sale_txt != DROPSHIP_SALE:
         DROPSHIP_SALE = sale_txt
+        sale_txt = 'Changed:\n{}'.format(sale_txt)
         print('[has_dropship_changed] dropship sale text has changed.')
         result = True
         
     crew_txt = dropship.get_dropshipcrew_txt(dropship_raw, ctbl)
     if crew_txt != DROPSHIP_CREW:
         DROPSHIP_CREW = crew_txt
+        crew_txt = 'Changed:\n{}'.format(crew_txt)
         print('[has_dropship_changed] dropship crew text has changed.')
         result = True
         
     dailyrewards_txt = dropship.get_dailyrewards_txt(dropship_raw, id2item)
     if dailyrewards_txt != DROPSHIP_DAILYREWARDS:
         DROPSHIP_DAILYREWARDS = dailyrewards_txt
+        dailyrewards_txt = 'Changed:\n{}'.format(dailyrewards_txt)
         print('[has_dropship_changed] dropship daily rewards text has changed.')
         result = True
     
