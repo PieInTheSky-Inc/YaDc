@@ -244,7 +244,7 @@ def db_try_update_dropship_text(text_parts, utc_now):
             success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
             if success == False:
                 print('[] Could not insert dropship text for part \'{}\' into db'.format(text_parts_key))
-        elif:
+        else:
             db_value = results[0]
             if db_value != text_parts[text_parts_key]:
                 updated = True
