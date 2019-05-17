@@ -352,6 +352,30 @@ def db_is_connected(connection):
 def db_select_any_from(table_name):
     query = 'SELECT * FROM {}'.format(table_name)
     return db_fetchall(query)
+
+
+def db_select_any_from_where(table_name, where):
+    if where:
+        query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
+        return db_fetchall(query)
+    else:
+        return db_select_any_from(table_name)
+
+
+def db_select_any_from_where_and(table_name, where_collection):
+    if where_collection:
+        where = ' AND '.join(where_collection)
+        return db_select_any_from_where(table_name, where)
+    else:
+        return db_select_any_from_where(table_name, where_collection)
+
+
+def db_select_any_from_where_or(table_name, where_collection):
+    if where_collection:
+        where = ' OR '.join(where_collection)
+        return db_select_any_from_where(table_name, where)
+    else:
+        return db_select_any_from_where(table_name, where_collection)
     
     
 def db_try_commit():
