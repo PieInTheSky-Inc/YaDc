@@ -89,13 +89,14 @@ async def post_dailies_loop():
 async def post_all_dailies(verbose=False):
     utc_now = datetime.datetime.now(datetime.timezone.utc)
     dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-    channel_count = len(d.get_all_daily_channel_ids())
-    if dropship_txt and updated_parts_ids and channel_count > 0:
+    configured_channel_count = len(d.get_all_daily_channel_ids())
+    if dropship_txt and updated_parts_ids and configured_channel_count > 0:
         fix_daily_channels()
-        channel_ids = d.get_valid_daily_channel_ids()
+        valid_channel_ids = d.get_valid_daily_channel_ids()
+        print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
         txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
         txt += dropship_txt
-        for channel_id in channel_ids:
+        for channel_id in valid_channel_ids:
             text_channel = bot.get_channel(channel_id)
             if text_channel != None:
                 guild = text_channel.guild
@@ -399,7 +400,6 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
                 
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
-    print('+ called setdaily(ctx, {})'.format(text_channel))
     guild = ctx.guild
     success = d.try_store_daily_channel(guild.id, text_channel.id)
     if success:
@@ -409,7 +409,6 @@ async def setdaily(ctx, text_channel: discord.TextChannel):
     await ctx.send(txt)
 
 async def getdaily(ctx):
-    print('+ called getdaily(ctx)')
     guild = ctx.guild
     channel_id = d.get_daily_channel_id(guild.id)
     txt = ''
@@ -421,7 +420,6 @@ async def getdaily(ctx):
     await ctx.send(txt)
 
 async def listalldailies(ctx, valid = None):
-    print('+ called listalldailies(ctx, {})'.format(valid))
     channels = d.select_daily_channel(None, valid)
     txt = ''
     i = 0
@@ -440,7 +438,6 @@ async def listalldailies(ctx, valid = None):
             await ctx.send(msg)
         
 async def removedaily(ctx):
-    print('+ called listalldailies(ctx)')
     guild = ctx.guild
     txt = ''
     channel_id = d.get_daily_channel_id(guild.id)
