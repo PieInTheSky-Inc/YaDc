@@ -242,29 +242,29 @@ def db_try_update_dropship_text(text_parts, utc_now):
         results = core.db_fetchall(query_select)
         if len(results) == 0:
             updated = True
-            success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
+            success = db_try_insert_dropship_text(text_parts_key, '', text_parts[text_parts_key], utc_now)
             if success == False:
                 print('[] Could not insert dropship text for part \'{}\' into db'.format(text_parts_key))
         else:
-            db_value = results[0]
+            db_value = results[0][2]
             if db_value != text_parts[text_parts_key]:
                 updated = True
-                success = db_try_update_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
+                success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
                 if success == False:
                     print('[] Could not update dropship text for part \'{}\''.format(text_parts_key))
     return updated
 
                 
-def db_try_insert_dropship_text(partid, text, utc_now):
+def db_try_insert_dropship_text(partid, newvalue, utc_now):
     timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
-    query_insert = 'INSERT INTO dropship VALUES (\'{}\', \'{}\', TIMESTAMP \'{}\')'.format(partid, text, timestamp);
+    query_insert = 'INSERT INTO dropship VALUES (\'{}\', \'{}\', TIMESTAMP \'{}\')'.format(partid, newvalue, timestamp);
     result = core.db_try_execute(query_insert)
     return result
     
 
-def db_try_update_dropship_text(partid, text, utc_now):
+def db_try_update_dropship_text(partid, oldvalue, newvalue, utc_now):
     timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
-    query_update = 'UPDATE dropship SET text = \'{}\', modifydate = TIMESTAMP {} WHERE partid = \'{}\''.format(text, timestamp, partid)
+    query_update = 'UPDATE dropship SET oldvalue = \'{}\', newvalue = \'{}\', modifydate = TIMESTAMP {} WHERE partid = \'{}\''.format(oldvalue, newvalue, timestamp, partid)
     result = core.db_try_execute(query_update)
     return result
 
