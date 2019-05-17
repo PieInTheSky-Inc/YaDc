@@ -60,8 +60,6 @@ def get_utcnow():
 
 
 #---------- DB utilities ----------
-TEXT_COLUMN_TYPES = ['TEXT']
-
 def db_get_column_definition(column_name, column_type, is_primary=False, not_null=False):
     column_name_txt = column_name.upper()
     column_type_txt = column_type.upper()
@@ -75,10 +73,10 @@ def db_get_column_definition(column_name, column_type, is_primary=False, not_nul
     return result
 
 
-def db_get_where_string(column_name, column_type, column_value):
+def db_get_where_string(column_name, column_value, is_text_type=False):
     column_name = column_name.lower()
     column_type = column_type.upper()
-    if column_type in TEXT_COLUMN_TYPES:
+    if is_text_type:
         column_value = column_value.replace('\'', '\'\'') # escape single quotes
         column_value = '\'{}\''.format(column_value) # add single quotes around string
     return '{} = {}'.format(column_name, column_value)
