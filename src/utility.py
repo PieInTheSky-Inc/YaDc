@@ -77,8 +77,7 @@ def db_get_where_string(column_name, column_value, is_text_type=False):
     column_name = column_name.lower()
     column_type = column_type.upper()
     if is_text_type:
-        column_value = column_value.replace('\'', '\'\'') # escape single quotes
-        column_value = '\'{}\''.format(column_value) # add single quotes around string
+        column_value = db_convert_text(column_value)
     return '{} = {}'.format(column_name, column_value)
 
 
@@ -88,3 +87,18 @@ def db_convert_boolean(value):
     else:
         return 'FALSE'
     
+def db_convert_text(value):
+    if value:
+        result = str(value)
+        result = result.replace('\'', '\'\'')
+        result = '\'{}\''.format(result)
+        return result
+    else:
+        return ''
+    
+def db_convert_timestamp(datetime):
+    if datetime:
+        result = datetime.strf('%Y-%m-%d %H:%M:%S')
+        return result
+    else:
+        return None
