@@ -14,13 +14,15 @@ import utility as util
 import xml.etree.ElementTree
 
 
-DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILE = 'src/data/links.csv'
 PSS_ABOUT_FILE = 'src/data/about.txt'
 MAXIMUM_CHARACTERS = 1900
+
+DATABASE_URL = os.environ['DATABASE_URL']
 DB_CONN = None
+SETTINGS_TABLE_NAME = 'settings'
 
 
 # ----- Utilities --------------------------------
@@ -251,30 +253,43 @@ def read_links_file():
 def init_db():
     created_table_daily = try_create_table_daily()
     created_table_dropship = try_create_table_dropship_text()
-    success = created_table_daily and created_table_dropship
+    created_table_settings = try_create_table_settings()
+    success = created_table_daily and created_table_dropship and created_table_settings
     if success:
         print('[init_db] db initialization succeeded')
     else:
         print('[init_db] db initialization failed')
         
         
+def try_create_table_settings():
+    column_definitions = []
+    column_definitions.append(util.db_get_column_definition('settingname', 'text', is_primary=True, not_null=True))
+    column_definitions.append(util.db_get_column_definition('settingboolean', 'boolean'))
+    column_definitions.append(util.db_get_column_definition('settingdouble', 'real'))
+    column_definitions.append(util.db_get_column_definition('settingint', 'integer'))
+    column_definitions.append(util.db_get_column_definition('settingtext', 'text'))
+    column_definitions.append(util.db_get_column_definition('settingtimestamptz', 'timestamptz'))
+    success = db_try_create_table(SETTINGS_TABLE_NAME, column_definitions)
+    return success
+        
+        
 def try_create_table_daily():
     from pss_daily import DAILY_TABLE_NAME
-    column1 = util.db_get_column_definition('guildid', 'text', is_primary=True, not_null=True)
-    column2 = util.db_get_column_definition('channelid', 'text', not_null=True)
-    column3 = util.db_get_column_definition('canpost', 'boolean')
-    column_definitions = [column1, column2, column3]
+    column_definitions = []
+    column_definitions.append(util.db_get_column_definition('guildid', 'text', is_primary=True, not_null=True))
+    column_definitions.append(util.db_get_column_definition('channelid', 'text', not_null=True))
+    column_definitions.append(util.db_get_column_definition('canpost', 'boolean'))
     success = db_try_create_table(DAILY_TABLE_NAME, column_definitions)
     return success
         
         
 def try_create_table_dropship_text():
     from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
-    column1 = util.db_get_column_definition('partid', 'text', is_primary=True, not_null=True)
-    column2 = util.db_get_column_definition('oldvalue', 'text', not_null=True)
-    column3 = util.db_get_column_definition('newvalue', 'text', not_null=True)
-    column4 = util.db_get_column_definition('modifydate', 'timestamptz', not_null=True)
-    column_definitions = [column1, column2, column3, column4]
+    column_definitions = []
+    column_definitions.append(util.db_get_column_definition('partid', 'text', is_primary=True, not_null=True))
+    column_definitions.append(util.db_get_column_definition('oldvalue', 'text', not_null=True))
+    column_definitions.append(util.db_get_column_definition('newvalue', 'text', not_null=True))
+    column_definitions.append(util.db_get_column_definition('modifydate', 'timestamptz', not_null=True))
     success = db_try_create_table(DROPSHIP_TEXT_TABLE_NAME, column_definitions)
     return success
 
