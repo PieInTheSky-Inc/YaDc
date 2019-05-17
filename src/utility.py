@@ -74,6 +74,7 @@ def db_get_column_definition(column_name, column_type, is_primary=False, not_nul
 
 
 def db_get_where_string(column_name, column_value, is_text_type=False):
+    print('+ called db_get_where_string({}, {}, {})'.format(column_name, column_value, is_text_type))
     column_name = column_name.lower()
     column_type = column_type.upper()
     if is_text_type:
