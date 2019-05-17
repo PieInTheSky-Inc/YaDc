@@ -15,6 +15,7 @@ import pss_research as rs
 import utility as util
 import xml.etree.ElementTree
 
+AUTODAILY_CONFIG_TABLE_NAME = 'Autodailyconfig'
 
 base_url = 'http://{}/'.format(core.get_production_server())
 
