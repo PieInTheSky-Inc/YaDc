@@ -102,8 +102,12 @@ async def post_all_dailies(verbose=False):
                     await text_channel.send(txt)
                 except Exception as error:
                     print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+        core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
     elif verbose:
         print('dropship text hasn\'t changed.')
+        
+        
+def update_settings(setting
             
             
 def fix_daily_channels(verbose=False):
