@@ -57,3 +57,17 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
 
 def get_utcnow():
     return datetime.now(timezone.utc)
+
+
+#---------- DB utilities ----------
+def db_get_column_definition(column_name, column_type, is_primary=False, not_null=False):
+    column_name_txt = column_name.upper()
+    column_type_txt = column_type.upper()
+    is_primary_txt = ''
+    not_null_txt = ''
+    if is_primary:
+        is_primary_txt = ' PRIMARY KEY'
+    if not_null:
+        not_null_txt = ' NOT NULL'
+    result = '{} {}{}{}'.format(column_name_txt, column_type_txt, is_primary_txt, not_null_txt)
+    return result
