@@ -82,8 +82,6 @@ async def post_dailies_loop():
         utc_now = datetime.datetime.now(datetime.timezone.utc)
         if utc_now.second != 0:
             await asyncio.sleep(60 - utc_now.second)
-        elif utc_now.minute % 15 != 0:
-            await asyncio.sleep((60 * 15) - (60 * (utc_now.minute % 15)))
         else:
             await post_all_dailies()
 
