@@ -196,6 +196,7 @@ def get_and_update_auto_daily_text():
     updated = try_update_dropship_text_in_db(text_parts_api, utc_now)
     if updated:
         txt = ''
+        text_parts_keys = text_parts_api.keys()
         for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
             if text_part_expected in text_parts_keys and text_parts[text_part_expected] != None:
                 txt += '{}\n\n'.format(text_parts[text_part_expected]) 
