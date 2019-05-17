@@ -200,7 +200,7 @@ def get_and_update_auto_daily_text():
         for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
             if text_part_expected in text_parts_keys and text_parts_api[text_part_expected] != None:
                 txt += '{}\n\n'.format(text_parts_api[text_part_expected]) 
-        return txt
+        return txt, updated
     else:
         return None
 
@@ -236,19 +236,19 @@ def db_get_dropship_text_parts():
 
     
 def try_update_dropship_text_in_db(text_parts, utc_now):
-    updated = False
+    updated = []
     for text_parts_key in text_parts.keys():
         query_select = 'SELECT * FROM dropship WHERE partid = \'{}\''.format(text_parts_key)
         rows = core.db_fetchall(query_select)
         if rows:
             db_value = rows[0][2]
             if db_value != text_parts[text_parts_key]:
-                updated = True
+                updated.append(text_parts_key)
                 success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
                 if success == False:
                     print('[] Could not update dropship text for part \'{}\''.format(text_parts_key))
         else:
-            updated = True
+            updated.append(text_parts_key)
             success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
             if success == False:
                 print('[] Could not insert dropship text for part \'{}\' into db'.format(text_parts_key))
