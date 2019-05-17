@@ -190,7 +190,7 @@ def get_dropship_text():
     return txt
 
 
-def update_and_get_auto_daily_text():
+def get_and_update_auto_daily_text():
     utc_now = util.get_utcnow()
     text_parts_api = get_dropship_text_parts()
     text_parts_db = db_get_dropship_text_parts()
