@@ -89,7 +89,8 @@ async def post_dailies_loop():
 async def post_all_dailies(verbose=False):
     utc_now = datetime.datetime.now(datetime.timezone.utc)
     dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-    if dropship_txt and updated_parts_ids:
+    channel_count = len(d.get_all_daily_channel_ids())
+    if dropship_txt and updated_parts_ids and channel_count > 0:
         fix_daily_channels()
         channel_ids = d.get_valid_daily_channel_ids()
         txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
@@ -398,6 +399,7 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
                 
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
+    print('+ called setdaily(ctx, {})'.format(text_channel)
     guild = ctx.guild
     success = d.try_store_daily_channel(guild.id, text_channel.id)
     if success:
