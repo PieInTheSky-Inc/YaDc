@@ -193,7 +193,7 @@ def get_and_update_auto_daily_text():
     utc_now = util.get_utcnow()
     text_parts_api = get_dropship_text_parts()
     text_parts_db = db_get_dropship_text_parts()
-    updated = db_try_update_dropship_text(text_parts_api, utc_now)
+    updated = try_update_dropship_text_in_db(text_parts_api, utc_now)
     if updated:
         txt = ''
         for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
@@ -234,7 +234,7 @@ def db_get_dropship_text_parts():
     return result
 
     
-def db_try_update_dropship_text(text_parts, utc_now):
+def try_update_dropship_text_in_db(text_parts, utc_now):
     updated = False
     for text_parts_key in text_parts.keys():
         query_select = 'SELECT * FROM dropship WHERE partid = \'{}\''.format(text_parts_key)
