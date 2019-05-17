@@ -12,10 +12,13 @@ import datetime
 import pss_core as core
 import pss_prestige as p
 import pss_research as rs
+import utility as util
 import xml.etree.ElementTree
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
+
+DROPSHIP_TEXT_PART_KEYS = ['News', 'Crew', 'Merchant', 'Shop', 'Sale', 'Reward']
 
 
 # ----- Utilities --------------------------------
@@ -178,27 +181,91 @@ def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
 
 
 def get_dropship_text():
+    text_parts = get_dropship_text_parts()
+    text_parts_keys = text_parts.keys()
+    txt = ''
+    for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
+        if text_part_expected in text_parts_keys and text_parts[text_part_expected] != None:
+            txt += '{}\n\n'.format(text_parts[text_part_expected])             
+    return txt
+
+
+def update_and_get_auto_daily_text():
+    utc_now = util.get_utcnow()
+    text_parts_api = get_dropship_text_parts()
+    text_parts_db = db_get_dropship_text_parts()
+    updated = db_try_update_dropship_text(text_parts_api, utc_now)
+    if updated:
+        txt = ''
+        for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
+            if text_part_expected in text_parts_keys and text_parts[text_part_expected] != None:
+                txt += '{}\n\n'.format(text_parts[text_part_expected]) 
+        return txt
+    else:
+        return None
+
+
+def get_dropship_text_parts():
     id2item = request_id2item()
     ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
     rooms = rs.get_room_designs()
     id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
-
-    d = request_dropship()
-    catalog_txt = get_limited_catalog_txt(d, id2item, ctbl, id2roomname)
-    merchantship_txt = get_merchantship_txt(d, id2item)
-    sale_txt = get_sale_text(d, id2item, ctbl)
-
-    txt = get_dropshipcrew_txt(d, ctbl)
-    txt += '\n\n{}'.format(merchantship_txt)
-    if catalog_txt is not None:
-        txt += '\n\n{}'.format(catalog_txt)
-    if sale_txt is not None:
-        txt += '\n\n{}'.format(sale_txt)
-    txt += '\n\n{}'.format(get_dailyrewards_txt(d, id2item))
+    
+    result = {}
 
     if 'News' in d.keys():
-        txt = '{}\n\n'.format(d['News']) + txt
-    return txt
+        result['News'] = d['News']
+    result['Crew'] = get_dropshipcrew_txt(d, ctbl)
+    result['Merchant'] = get_merchantship_txt(d, id2item)
+    result['Shop'] = get_limited_catalog_txt(d, id2item, ctbl, id2roomname)
+    result['Sale'] = get_sale_text(d, id2item, ctbl)
+    result['Reward'] = get_dailyrewards_txt(d, id2item)
+    
+    return result
+
+
+def db_get_dropship_text_parts():
+    result = []
+    rows = db_select_any_from('dropship')
+    if len(rows) > 0:
+        temp = {}
+        for row in rows:
+            result[row[0]] = result[row[1]]
+    return result
+
+    
+def db_try_update_dropship_text(text_parts, utc_now):
+    updated = False
+    for text_parts_key in text_parts.keys():
+        query_select = 'SELECT * FROM dropship WHERE partid = \'{}\''.format(text_parts_key)
+        results = core.db_fetchall(query_select)
+        if len(results) == 0:
+            updated = True
+            success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
+            if success == False:
+                print('[] Could not insert dropship text for part \'{}\' into db'.format(text_parts_key))
+        elif:
+            db_value = results[0]
+            if db_value != text_parts[text_parts_key]:
+                updated = True
+                success = db_try_update_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
+                if success == False:
+                    print('[] Could not update dropship text for part \'{}\''.format(text_parts_key))
+    return updated
+
+                
+def db_try_insert_dropship_text(partid, text, utc_now):
+    timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    query_insert = 'INSERT INTO dropship VALUES (\'{}\', \'{}\', TIMESTAMP \'{}\')'.format(partid, text, timestamp);
+    result = core.db_try_execute(query_insert)
+    return result
+    
+
+def db_try_update_dropship_text(partid, text, utc_now):
+    timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    query_update = 'UPDATE dropship SET text = \'{}\', modifydate = TIMESTAMP {} WHERE partid = \'{}\''.format(text, timestamp, partid)
+    result = core.db_try_execute(query_update)
+    return result
 
 
 if __name__ == "__main__":
