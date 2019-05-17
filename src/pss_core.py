@@ -246,17 +246,39 @@ def read_links_file():
 #    return txt
 
 
-# ---------- DataBase ----------
+# ---------- DataBase initilization ----------
 def init_db():
-    created_table_daily = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
-    created_table_dropship = db_try_create_table('DROPSHIP_TEXT', ['PARTID PRIMARY KEY', 'OLDVALUE TEXT NOT NULL', 'NEWVALUE TEXT NOT NULL', 'MODIFYDATE TIMESTAMPTZ NOT NULL'])
+    created_table_daily = try_create_table_daily()
+    created_table_dropship = try_create_table_dropship_text()
     success = created_table_daily and created_table_dropship
     if success:
         print('[init_db] db initialization succeeded')
     else:
         print('[init_db] db initialization failed')
-
         
+        
+def try_create_table_daily():
+    table_name = 'daily'
+    column1 = util.db_get_column_definition('guildid', 'text', is_primary:True, not_null:True)
+    column2 = util.db_get_column_definition('channelid', 'text', not_null:True)
+    column3 = util.db_get_column_definition('canpost', 'boolean')
+    column_definitions = [column1, column2, column3]
+    success = db_try_create_table(table_name, column_definitions)
+    return success
+        
+        
+def try_create_table_dropship_text():
+    table_name = 'DROPSHIP_TEXT'
+    column1 = util.db_get_column_definition('partid', 'text', is_primary:True, not_null:True)
+    column2 = util.db_get_column_definition('oldvalue', 'text', not_null:True)
+    column3 = util.db_get_column_definition('newvalue', 'text', not_null:True)
+    column4 = util.db_get_column_definition('modifydate', 'timestamptz', not_null:True)
+    column_definitions = [column1, column2, column3, column4]
+    success = db_try_create_table(table_name, column_definitions)
+    return success
+
+
+# ---------- DataBase functionality ----------
 def db_close_cursor(cursor):
     if cursor != None:
         cursor.close()
