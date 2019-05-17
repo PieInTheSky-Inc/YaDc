@@ -84,12 +84,10 @@ def select_daily_channel(guild_id=None, can_post=None):
     where = []
     if guild_id:
         where_guild_id = util.db_get_where_string('guildid', guild_id, True)
-        print('[select_daily_channel] adding where: {}'.format(where_guild_id))
         where.append(where_guild_id)
     if can_post != None:
         can_post_converted = util.db_convert_boolean(can_post)
         where_can_post = util.db_get_where_string('guildid', can_post_converted)
-        print('[select_daily_channel] adding where: {}'.format(where_guild_id))
         where.append(where_can_post)
     result = core.db_select_any_from_where_and(DAILY_TABLE_NAME, where)
     return result
