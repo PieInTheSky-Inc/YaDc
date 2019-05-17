@@ -259,19 +259,19 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
         db_parts = []
     for text_parts_key in text_parts.keys():
         if text_parts_key in db_parts_keys:
-            print('[try_update_dropship_text_in_db] found api dropship text key in db: {text_parts_key}'.format())
+            print('[try_update_dropship_text_in_db] found api dropship text key in db: {}'.format(text_parts_key))
             if db_parts[text_parts_key] != text_parts[text_parts_key]:
                 success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
                 if success:
-                    print('[try_update_dropship_text_in_db] updated dropship text in db for key: {text_parts_key}'.format())
+                    print('[try_update_dropship_text_in_db] updated dropship text in db for key: {}'.format(text_parts_key))
                     updated.append(text_parts_key)
                 else:
                     print('[try_update_dropship_text_in_db] Could not update DROPSHIP_TEXT text for part \'{}\''.format(text_parts_key))
         else:
-            print('[try_update_dropship_text_in_db] could not find api dropship text key in db: {text_parts_key}'.format())
+            print('[try_update_dropship_text_in_db] could not find api dropship text key in db: {}'.format(text_parts_key))
             success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
             if success:
-                print('[try_update_dropship_text_in_db] inserted dropship text into db for key: {text_parts_key}'.format())
+                print('[try_update_dropship_text_in_db] inserted dropship text into db for key: {}'.format(text_parts_key))
                 updated.append(text_parts_key)
             else:
                 print('[try_update_dropship_text_in_db] Could not insert DROPSHIP_TEXT text for part \'{}\' into db'.format(text_parts_key))
