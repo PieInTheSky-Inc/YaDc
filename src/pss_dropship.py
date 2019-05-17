@@ -248,20 +248,26 @@ def db_get_dropship_text_parts():
 
     
 def try_update_dropship_text_in_db(text_parts, utc_now):
+    print('+ called try_update_dropship_text_in_db({}, {})'.format(text_parts, utc_now))
     updated = []
     db_parts = db_get_dropship_text_parts()
-    for text_parts_key in text_parts.keys():
-        db_value = db_get_dropship_text_part(text_parts_key)
-        if db_value and db_value != text_parts[text_parts_key]:
-            updated.append(text_parts_key)
-            success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
-            if success == False:
-                print('[try_update_dropship_text_in_db] Could not update DROPSHIP_TEXT text for part \'{}\''.format(text_parts_key))
-        else:
-            updated.append(text_parts_key)
-            success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
-            if success == False:
-                print('[try_update_dropship_text_in_db] Could not insert DROPSHIP_TEXT text for part \'{}\' into db'.format(text_parts_key))
+    db_parts_keys = db_parts.keys()
+    print('[try_update_dropship_text_in_db] retrieved dropship text parts from db: {}'.format(db_parts))
+    if db_parts:
+        for text_parts_key in text_parts.keys():
+            print('[try_update_dropship_text_in_db] text_parts_key: {}'.format(text_parts_key))
+            if text_parts_key in db_parts_keys:
+                print('[try_update_dropship_text_in_db] check if {} != {}: '.format(db_parts[text_parts_key], text_parts[text_parts_key]))
+                if db_parts[text_parts_key] != text_parts[text_parts_key]:
+                    updated.append(text_parts_key)
+                    success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
+                    if success == False:
+                        print('[try_update_dropship_text_in_db] Could not update DROPSHIP_TEXT text for part \'{}\''.format(text_parts_key))
+            else:
+                updated.append(text_parts_key)
+                success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
+                if success == False:
+                    print('[try_update_dropship_text_in_db] Could not insert DROPSHIP_TEXT text for part \'{}\' into db'.format(text_parts_key))
     return updated
 
                 
