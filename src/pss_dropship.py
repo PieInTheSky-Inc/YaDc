@@ -150,7 +150,6 @@ def get_shop_item_cost(d):
         d['LimitedCatalogMaxTotal'])
     return txt
 
-
 def get_dailyrewards_txt(d, id2item):
     items = d['DailyItemRewards'].split('|')
     txt = '**Daily Rewards**'
@@ -227,7 +226,7 @@ def get_dropship_text_parts():
 
 def db_get_dropship_text_parts():
     result = []
-    rows = db_select_any_from('dropship_text')
+    rows = core.db_select_any_from('dropship_text')
     if len(rows) > 0:
         temp = {}
         for row in rows:
