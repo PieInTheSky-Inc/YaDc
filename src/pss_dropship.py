@@ -211,6 +211,7 @@ def get_dropship_text_parts():
     rooms = rs.get_room_designs()
     id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
     
+    d = request_dropship()
     result = {}
 
     if 'News' in d.keys():
