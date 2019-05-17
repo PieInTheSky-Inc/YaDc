@@ -227,7 +227,7 @@ def get_dropship_text_parts():
 
 def db_get_dropship_text_parts():
     result = []
-    rows = db_select_any_from('dropship')
+    rows = db_select_any_from('dropship_text')
     if len(rows) > 0:
         temp = {}
         for row in rows:
