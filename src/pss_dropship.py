@@ -19,6 +19,7 @@ import xml.etree.ElementTree
 base_url = 'http://{}/'.format(core.get_production_server())
 
 DROPSHIP_TEXT_PART_KEYS = ['News', 'Crew', 'Merchant', 'Shop', 'Sale', 'Reward']
+DROPSHIP_TEXT_TABLE_NAME = 'Dropship_Text'
 
 
 # ----- Utilities --------------------------------
@@ -227,8 +228,8 @@ def get_dropship_text_parts():
 
 def db_get_dropship_text_part(part_id):
     result = ''
-    query_select = 'SELECT * FROM dropship_text WHERE partid = \'{}\''.format(part_id)
-    rows = core.db_fetchall(query_select)
+    where = [util.db_get_where_string('partid', part_id, True)]
+    rows = core.db_select_any_from_where_and(DROPSHIP_TEXT_TABLE_NAME, where)
     if len(rows) > 0:
         temp = {}
         for row in rows:
@@ -239,7 +240,7 @@ def db_get_dropship_text_part(part_id):
 
 def db_get_dropship_text_parts():
     result = {}
-    rows = core.db_select_any_from('dropship_text')
+    rows = core.db_select_any_from(DROPSHIP_TEXT_TABLE_NAME)
     if len(rows) > 0:
         temp = {}
         for row in rows:
@@ -248,16 +249,12 @@ def db_get_dropship_text_parts():
 
     
 def try_update_dropship_text_in_db(text_parts, utc_now):
-    print('+ called try_update_dropship_text_in_db({}, {})'.format(text_parts, utc_now))
     updated = []
     db_parts = db_get_dropship_text_parts()
     db_parts_keys = db_parts.keys()
-    print('[try_update_dropship_text_in_db] retrieved dropship text parts from db: {}'.format(db_parts))
     if db_parts:
         for text_parts_key in text_parts.keys():
-            print('[try_update_dropship_text_in_db] text_parts_key: {}'.format(text_parts_key))
             if text_parts_key in db_parts_keys:
-                print('[try_update_dropship_text_in_db] check if {} != {}: '.format(db_parts[text_parts_key], text_parts[text_parts_key]))
                 if db_parts[text_parts_key] != text_parts[text_parts_key]:
                     updated.append(text_parts_key)
                     success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
@@ -271,16 +268,17 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
     return updated
 
                 
-def db_try_insert_dropship_text(partid, newvalue, utc_now):
+def db_try_insert_dropship_text(part_id, new_value, utc_now):
     timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
-    query_insert = 'INSERT INTO dropship_text VALUES (\'{}\', \'\', \'{}\', TIMESTAMP \'{}\')'.format(partid, newvalue, timestamp);
+    query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', \'{}\', TIMESTAMPTZ \'{}\')'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
     result = core.db_try_execute(query_insert)
     return result
     
 
-def db_try_update_dropship_text(partid, oldvalue, newvalue, utc_now):
+def db_try_update_dropship_text(part_id, old_value, new_value, utc_now):
     timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
-    query_update = 'UPDATE dropship_text SET oldvalue = \'{}\', newvalue = \'{}\', modifydate = TIMESTAMP {} WHERE partid = \'{}\''.format(oldvalue, newvalue, timestamp, partid)
+    where_part_id = util.db_get_where_string('partid', part_id, True)
+    query_update = 'UPDATE {} SET oldvalue = \'{}\', newvalue = \'{}\', modifydate = TIMESTAMPTZ {} WHERE {}'.format(DROPSHIP_TEXT_TABLE_NAME, old_value, new_value, timestamp, where_part_id)
     result = core.db_try_execute(query_update)
     return result
 
