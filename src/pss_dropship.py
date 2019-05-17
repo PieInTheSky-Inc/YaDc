@@ -198,8 +198,8 @@ def get_and_update_auto_daily_text():
         txt = ''
         text_parts_keys = text_parts_api.keys()
         for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
-            if text_part_expected in text_parts_keys and text_parts[text_part_expected] != None:
-                txt += '{}\n\n'.format(text_parts[text_part_expected]) 
+            if text_part_expected in text_parts_keys and text_parts_api[text_part_expected] != None:
+                txt += '{}\n\n'.format(text_parts_api[text_part_expected]) 
         return txt
     else:
         return None
