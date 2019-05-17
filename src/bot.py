@@ -399,7 +399,7 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
                 
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
-    print('+ called setdaily(ctx, {})'.format(text_channel)
+    print('+ called setdaily(ctx, {})'.format(text_channel))
     guild = ctx.guild
     success = d.try_store_daily_channel(guild.id, text_channel.id)
     if success:
@@ -409,6 +409,7 @@ async def setdaily(ctx, text_channel: discord.TextChannel):
     await ctx.send(txt)
 
 async def getdaily(ctx):
+    print('+ called getdaily(ctx)')
     guild = ctx.guild
     channel_id = d.get_daily_channel_id(guild.id)
     txt = ''
@@ -420,6 +421,7 @@ async def getdaily(ctx):
     await ctx.send(txt)
 
 async def listalldailies(ctx, valid = None):
+    print('+ called listalldailies(ctx, {})'.format(valid))
     channels = d.select_daily_channel(None, valid)
     txt = ''
     i = 0
@@ -438,6 +440,7 @@ async def listalldailies(ctx, valid = None):
             await ctx.send(msg)
         
 async def removedaily(ctx):
+    print('+ called listalldailies(ctx)')
     guild = ctx.guild
     txt = ''
     channel_id = d.get_daily_channel_id(guild.id)
