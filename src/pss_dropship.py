@@ -238,12 +238,12 @@ def db_get_dropship_text_part(part_id):
 
 
 def db_get_dropship_text_parts():
-    result = []
+    result = {}
     rows = core.db_select_any_from('dropship_text')
     if len(rows) > 0:
         temp = {}
         for row in rows:
-            result[row[0]] = result[row[2]]
+            result[row[0]] = row[2]
     return result
 
     
