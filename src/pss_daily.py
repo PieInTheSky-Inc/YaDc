@@ -3,6 +3,10 @@
 
 import os
 import pss_core as core
+import utility as util
+
+DAILY_TABLE_NAME = 'Daily'
+
 
 def try_store_daily_channel(guild_id, text_channel_id):
     success = False
@@ -77,26 +81,20 @@ def insert_daily_channel(guild_id, channel_id):
     return success
 
 def select_daily_channel(guild_id = None, can_post = None):
-    query = 'SELECT * FROM daily'
+    where = []
     if guild_id:
-        query += ' WHERE guildid = \'{}\''.format(guild_id)
-        if can_post != None:
-            query += ' AND canpost = {}'.format(convert_can_post(can_post))
+        where.append(util.db_get_where_string('guildid', guild_id, True))
     if can_post != None:
-        query += ' WHERE canpost = {}'.format(convert_can_post(can_post))
-    result = core.db_fetchall(query)
+        can_post_converted = util.db_convert_boolean(can_post)
+        where.append(util.db_get_where_string('guildid', can_post_converted))
+    result = core.db_select_any_from_where_and(DAILY_TABLE_NAME, where)
     return result
     
 def update_daily_channel(guild_id, channel_id = None, can_post = True):
-    query = 'UPDATE daily SET '
+    query = 'UPDATE {} SET '.format(DAILY_TABLE_NAME)
     if channel_id != None:
-        query += 'channelid = \'{}\', '.format(channel_id)
-    query += 'canpost = {} WHERE guildid = \'{}\''.format(convert_can_post(can_post), guild_id)
+        query += util.db_get_where_string('channelid', channel_id, True)
+    can_post_converted = util.db_convert_boolean(can_post)
+    query += '{} WHERE {}.format(util.db_get_where_string('canpost', can_post), util.db_get_where_string('guildid', guild_id, True))
     success = core.db_try_execute(query)
     return success
-
-def convert_can_post(can_post):
-    if can_post:
-        return 'TRUE'
-    else:
-        return 'FALSE'
