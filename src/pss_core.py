@@ -259,23 +259,23 @@ def init_db():
         
         
 def try_create_table_daily():
-    table_name = 'daily'
+    from pss_daily import DAILY_TABLE_NAME
     column1 = util.db_get_column_definition('guildid', 'text', is_primary=True, not_null=True)
     column2 = util.db_get_column_definition('channelid', 'text', not_null=True)
     column3 = util.db_get_column_definition('canpost', 'boolean')
     column_definitions = [column1, column2, column3]
-    success = db_try_create_table(table_name, column_definitions)
+    success = db_try_create_table(DAILY_TABLE_NAME, column_definitions)
     return success
         
         
 def try_create_table_dropship_text():
-    table_name = 'DROPSHIP_TEXT'
+    from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
     column1 = util.db_get_column_definition('partid', 'text', is_primary=True, not_null=True)
     column2 = util.db_get_column_definition('oldvalue', 'text', not_null=True)
     column3 = util.db_get_column_definition('newvalue', 'text', not_null=True)
     column4 = util.db_get_column_definition('modifydate', 'timestamptz', not_null=True)
     column_definitions = [column1, column2, column3, column4]
-    success = db_try_create_table(table_name, column_definitions)
+    success = db_try_create_table(DROPSHIP_TEXT_TABLE_NAME, column_definitions)
     return success
 
 
