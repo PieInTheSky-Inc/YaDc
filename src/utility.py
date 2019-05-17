@@ -80,3 +80,11 @@ def db_get_where_string(column_name, column_value, is_text_type=False):
         column_value = column_value.replace('\'', '\'\'') # escape single quotes
         column_value = '\'{}\''.format(column_value) # add single quotes around string
     return '{} = {}'.format(column_name, column_value)
+
+
+def db_convert_boolean(value):
+    if value:
+        return 'TRUE'
+    else:
+        return 'FALSE'
+    
