@@ -467,11 +467,13 @@ def db_is_connected(connection):
 
 
 def db_select_any_from(table_name):
+    print('+ called db_select_any_from({})'.format(table_name))
     query = 'SELECT * FROM {}'.format(table_name)
     return db_fetchall(query)
 
 
 def db_select_any_from_where(table_name, where=None):
+    print('+ called db_select_any_from_where({}, {})'.format(table_name, where))
     if where:
         query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
         return db_fetchall(query)
@@ -480,6 +482,7 @@ def db_select_any_from_where(table_name, where=None):
 
 
 def db_select_any_from_where_and(table_name, where_collection):
+    print('+ called db_select_any_from_where_and({}, {})'.format(table_name, where_collection))
     if where_collection:
         where = ' AND '.join(where_collection)
         return db_select_any_from_where(table_name, where)
@@ -488,6 +491,7 @@ def db_select_any_from_where_and(table_name, where_collection):
 
 
 def db_select_any_from_where_or(table_name, where_collection):
+    print('+ called db_select_any_from_where_or({}, {})'.format(table_name, where_collection))
     if where_collection:
         where = ' OR '.join(where_collection)
         return db_select_any_from_where(table_name, where)
@@ -496,11 +500,13 @@ def db_select_any_from_where_or(table_name, where_collection):
 
 
 def db_select_first_from(table_name):
+    print('+ called db_select_first_from({})'.format(table_name))
     query = 'SELECT * FROM {}'.format(table_name)
     return db_fetchfirst(query)
 
 
 def db_select_first_from_where(table_name, where=None):
+    print('+ called db_select_first_from_where({}, {})'.format(table_name, where))
     if where:
         query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
         return db_fetchfirst(query)
@@ -509,6 +515,7 @@ def db_select_first_from_where(table_name, where=None):
 
 
 def db_select_first_from_where_and(table_name, where_collection):
+    print('+ called db_select_first_from_where_and({}, {})'.format(table_name, where_collection))
     if where_collection:
         where = ' AND '.join(where_collection)
         return db_select_first_from_where(table_name, where)
@@ -517,6 +524,7 @@ def db_select_first_from_where_and(table_name, where_collection):
 
 
 def db_select_first_from_where_or(table_name, where_collection):
+    print('+ called db_select_first_from_where_or({}, {})'.format(table_name, where_collection))
     if where_collection:
         where = ' OR '.join(where_collection)
         return db_select_first_from_where_or(table_name, where)
