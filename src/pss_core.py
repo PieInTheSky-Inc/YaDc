@@ -324,6 +324,11 @@ def db_is_connected(connection):
     if connection:
         return connection.closed == 0
     return False
+
+
+def db_select_any_from(table_name):
+    query = 'SELECT * FROM {}'.format(table_name)
+    return db_fetchall(query)
     
     
 def db_try_commit():
