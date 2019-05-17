@@ -68,6 +68,7 @@ async def on_ready():
         bot.user.name, bot.user.id, len(bot.guilds)))
     core.init_db()
     bot.loop.create_task(post_dailies_loop())
+    print('[on_ready] added task: post_dailies_loop()')
 
 
 @bot.event
@@ -87,26 +88,30 @@ async def post_dailies_loop():
 
 
 async def post_all_dailies(verbose=False):
+    print('+ called post_all_dailies({})'.format(verbose))
     utc_now = datetime.datetime.now(datetime.timezone.utc)
-    dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
     configured_channel_count = len(d.get_all_daily_channel_ids())
-    if dropship_txt and updated_parts_ids and configured_channel_count > 0:
-        fix_daily_channels()
-        valid_channel_ids = d.get_valid_daily_channel_ids()
-        print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
-        txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
-        txt += dropship_txt
-        for channel_id in valid_channel_ids:
-            text_channel = bot.get_channel(channel_id)
-            if text_channel != None:
-                guild = text_channel.guild
-                try:
-                    await text_channel.send(txt)
-                except Exception as error:
-                    print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
-        core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
-    elif verbose:
-        print('dropship text hasn\'t changed.')
+    print('[post_all_dailies] configured channel count: {}'.format(configured_channel_count))
+    if configured_channel_count > 0:
+        dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
+        print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
+        if dropship_txt and updated_parts_ids:
+            fix_daily_channels()
+            valid_channel_ids = d.get_valid_daily_channel_ids()
+            print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
+            txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
+            txt += dropship_txt
+            for channel_id in valid_channel_ids:
+                text_channel = bot.get_channel(channel_id)
+                if text_channel != None:
+                    guild = text_channel.guild
+                    try:
+                        await text_channel.send(txt)
+                    except Exception as error:
+                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+            core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
+        elif verbose:
+            print('dropship text hasn\'t changed.')
             
             
 def fix_daily_channels(verbose=False):
