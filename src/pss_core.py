@@ -4,6 +4,7 @@
 # ----- Packages ------------------------------------------------------
 import csv
 import datetime
+from enum import Enum
 import os
 import psycopg2
 from psycopg2 import errors as db_error
@@ -23,6 +24,7 @@ MAXIMUM_CHARACTERS = 1900
 DATABASE_URL = os.environ['DATABASE_URL']
 DB_CONN = None
 SETTINGS_TABLE_NAME = 'settings'
+SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 
 # ----- Utilities --------------------------------
@@ -249,6 +251,61 @@ def read_links_file():
 #    return txt
 
 
+class SettingType(Enum):
+    Boolean = 1
+    Float = 2
+    Integer = 3
+    Text = 4
+    Timestamp = 5
+
+
+def get_setting(setting_name, setting_type):
+    setting_name = util.db_convert_text(setting_name)
+    column_name = ''
+    where = util.db_get_where_string('settingname', setting_name, True)
+    column_number = int(setting_type) + 1
+        
+    result = db_select_first_from(SETTINGS_TABLE_NAME, where)
+    if result:
+        return result[column_number]
+    else:
+        return None
+    
+    
+def try_store_setting(setting_name, value, setting_type):
+    success = False
+    existing_setting_value = get_setting(setting_name)
+    setting_name = util.db_convert_text(setting_name)
+    column_name = ''
+    
+    if setting_type == SettingType.Boolean:
+        column_name = 'settingboolean'
+        value = util.db_convert_boolean(value)
+    elif is_float == SettingType.Float:
+        column_name = 'settingfloat'
+        value = value
+    elif is_int == SettingType.Integer:
+        column_name = 'settingint'
+        value = value
+    elif is_text == SettingType.Text:
+        column_name = 'settingtext'
+        value = util.db_convert_text(value)
+    elif is_timestamp_utc == SettingType.Timestamp:
+        column_name = 'settingtimestamptz'
+        value = util.db_convert_timestamp(value)
+    
+    utc_now = util.get_utcnow()
+    modify_date = util.db_convert_timestamp(utc_now)
+    values = ','.join([settings_name, modifydate, value])
+    if existing_setting_value == None:
+        query_insert = 'INSERT INTO {} (settingsname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
+        success = db_try_execute(query_insert)
+    else:
+        query_update = 'UPDATE {} SET modifydate = {}, {} = {} WHERE settingsname = {}'.format(SETTINGS_TABLE_NAME, modify_date, column_name, value, setting_name)
+        success = db_try_execute(query_update)
+    return success
+
+
 # ---------- DataBase initilization ----------
 def init_db():
     created_table_daily = try_create_table_daily()
@@ -264,8 +321,9 @@ def init_db():
 def try_create_table_settings():
     column_definitions = []
     column_definitions.append(util.db_get_column_definition('settingname', 'text', is_primary=True, not_null=True))
+    column_definitions.append(util.db_get_column_definition('modifydate', 'timestamptz', not_null=True))
     column_definitions.append(util.db_get_column_definition('settingboolean', 'boolean'))
-    column_definitions.append(util.db_get_column_definition('settingdouble', 'real'))
+    column_definitions.append(util.db_get_column_definition('settingfloat', 'double precision'))
     column_definitions.append(util.db_get_column_definition('settingint', 'integer'))
     column_definitions.append(util.db_get_column_definition('settingtext', 'text'))
     column_definitions.append(util.db_get_column_definition('settingtimestamptz', 'timestamptz'))
@@ -346,6 +404,32 @@ def db_fetchall(query):
     else:
         print('[db_fetchall] could not connect to db')
     return result
+
+
+def db_fetchfirst(query):
+    result = None
+    connected = db_connect()
+    if connected:
+        cursor = db_get_cursor()
+        if cursor != None:
+            try:
+                cursor.execute(query)
+                result = cursor.fetchall()
+            except (Exception, psycopg2.DatabaseError) as error:
+                error_name = error.__class__.__name__
+                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+            finally:
+                db_close_cursor(cursor)
+                db_disconnect()
+        else:
+            print('[db_fetchall] could not get cursor')
+            db_disconnect()
+    else:
+        print('[db_fetchall] could not connect to db')
+    if result and len(result) > 0:
+        return result[0]
+    else:
+        return None
         
         
 def db_get_cursor():
@@ -369,7 +453,7 @@ def db_select_any_from(table_name):
     return db_fetchall(query)
 
 
-def db_select_any_from_where(table_name, where):
+def db_select_any_from_where(table_name, where=None):
     if where:
         query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
         return db_fetchall(query)
@@ -382,7 +466,7 @@ def db_select_any_from_where_and(table_name, where_collection):
         where = ' AND '.join(where_collection)
         return db_select_any_from_where(table_name, where)
     else:
-        return db_select_any_from_where(table_name, where_collection)
+        return db_select_any_from_where(table_name)
 
 
 def db_select_any_from_where_or(table_name, where_collection):
@@ -390,7 +474,36 @@ def db_select_any_from_where_or(table_name, where_collection):
         where = ' OR '.join(where_collection)
         return db_select_any_from_where(table_name, where)
     else:
-        return db_select_any_from_where(table_name, where_collection)
+        return db_select_any_from_where(table_name)
+
+
+def db_select_first_from(table_name):
+    query = 'SELECT * FROM {}'.format(table_name)
+    return db_fetchfirst(query)
+
+
+def db_select_first_from_where(table_name, where=None):
+    if where:
+        query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
+        return db_fetchfirst(query)
+    else:
+        return db_select_first_from(table_name)
+
+
+def db_select_first_from_where_and(table_name, where_collection):
+    if where_collection:
+        where = ' AND '.join(where_collection)
+        return db_select_first_from_where(table_name, where)
+    else:
+        return db_select_first_from_where(table_name)
+
+
+def db_select_first_from_where_or(table_name, where_collection):
+    if where_collection:
+        where = ' OR '.join(where_collection)
+        return db_select_first_from_where_or(table_name, where)
+    else:
+        return db_select_first_from_where_or(table_name)
     
     
 def db_try_commit():
