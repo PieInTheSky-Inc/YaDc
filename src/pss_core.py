@@ -307,7 +307,13 @@ def try_store_setting(setting_name, value, setting_type):
 
 
 # ---------- DataBase initilization ----------
-def init_db():
+def init_db(from_scratch=False):
+    from pss_daily import DAILY_TABLE_NAME
+    from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
+    if fromScratch:
+        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
+        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
+        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
     created_table_daily = try_create_table_daily()
     created_table_dropship = try_create_table_dropship_text()
     created_table_settings = try_create_table_settings()
