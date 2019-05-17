@@ -311,9 +311,21 @@ def init_db(from_scratch=False):
     from pss_daily import DAILY_TABLE_NAME
     from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
     if from_scratch:
-        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
-        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
-        db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
+        deleted_table_daily = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
+        if deleted_table_daily:
+            print('[init_db] dropped table {}'.format(DAILY_TABLE_NAME))
+        else:
+            print('[init_db] Could not drop table {}'.format(DAILY_TABLE_NAME))
+        deleted_table_dropship = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
+        if deleted_table_dropship:
+            print('[init_db] dropped table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
+        else:
+            print('[init_db] Could not drop table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
+        deleted_table_settings = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
+        if deleted_table_settings:
+            print('[init_db] dropped table {}'.format(SETTINGS_TABLE_NAME))
+        else:
+            print('[init_db] Could not drop table {}'.format(SETTINGS_TABLE_NAME))
     created_table_daily = try_create_table_daily()
     created_table_dropship = try_create_table_dropship_text()
     created_table_settings = try_create_table_settings()
@@ -538,6 +550,7 @@ def db_try_create_table(table_name, columns):
         if cursor != None:
             try:
                 db_execute(query, cursor)
+                print('[db_try_create_table] created table: {}'.format(table_name))
                 success = True
             except db_error.DuplicateTable:
                 success = True
