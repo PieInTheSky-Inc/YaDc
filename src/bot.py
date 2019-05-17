@@ -105,9 +105,6 @@ async def post_all_dailies(verbose=False):
         core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
     elif verbose:
         print('dropship text hasn\'t changed.')
-        
-        
-def update_settings(setting
             
             
 def fix_daily_channels(verbose=False):
@@ -136,71 +133,6 @@ def fix_daily_channels(verbose=False):
         elif verbose:
             print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
         d.fix_daily_channel(guild_id, can_post)
-        
-        
-DROPSHIP_NEWS = None
-DROPSHIP_CATALOG = None
-DROPSHIP_MERCHANT = None
-DROPSHIP_SALE = None
-DROPSHIP_CREW = None
-DROPSHIP_DAILYREWARDS = None
-        
-        
-def has_dropship_changed():
-    global DROPSHIP_NEWS
-    global DROPSHIP_CATALOG
-    global DROPSHIP_MERCHANT
-    global DROPSHIP_SALE
-    global DROPSHIP_CREW
-    global DROPSHIP_DAILYREWARDS
-    
-    id2item = dropship.request_id2item()
-    ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
-    rooms = rs.get_room_designs()
-    id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
-    
-    result = []
-
-    dropship_raw = dropship.request_dropship()
-    news_txt = None
-    if 'News' in dropship_raw.keys():
-        news_txt = dropship_raw['News']
-    if news_txt != DROPSHIP_NEWS:
-        print('[has_dropship_changed] dropship news text has changed.')
-        DROPSHIP_NEWS = news_txt
-        result.append('News')
-        
-    crew_txt = dropship.get_dropshipcrew_txt(dropship_raw, ctbl)
-    if crew_txt != DROPSHIP_CREW:
-        print('[has_dropship_changed] dropship crew text has changed.')
-        DROPSHIP_CREW = crew_txt
-        result.append('Dropship Crew')
-        
-    merchantship_txt = dropship.get_merchantship_txt(dropship_raw, id2item)
-    if merchantship_txt != DROPSHIP_MERCHANT:
-        print('[has_dropship_changed] dropship merchantship text has changed.')
-        DROPSHIP_MERCHANT = merchantship_txt
-        result.append('Merchant Ship')
-        
-    catalog_txt = dropship.get_limited_catalog_txt(dropship_raw, id2item, ctbl, id2roomname)
-    if catalog_txt != DROPSHIP_CATALOG:
-        print('[has_dropship_changed] dropship catalog text has changed.')
-        DROPSHIP_CATALOG = catalog_txt
-        result.append('Shop')
-        
-    sale_txt = dropship.get_sale_text(dropship_raw, id2item, ctbl)
-    if sale_txt != DROPSHIP_SALE:
-        print('[has_dropship_changed] dropship sale text has changed.')
-        DROPSHIP_SALE = sale_txt
-        result.append('Sale')
-        
-    dailyrewards_txt = dropship.get_dailyrewards_txt(dropship_raw, id2item)
-    if dailyrewards_txt != DROPSHIP_DAILYREWARDS:
-        DROPSHIP_DAILYREWARDS = dailyrewards_txt
-        print('[has_dropship_changed] dropship daily rewards text has changed.')
-        result.append('Daily Rewards')
-    
-    return result
 
 
 # ----- General Bot Commands ----------------------------------------------------------
