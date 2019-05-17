@@ -95,6 +95,6 @@ def update_daily_channel(guild_id, channel_id = None, can_post = True):
     if channel_id != None:
         query += util.db_get_where_string('channelid', channel_id, True)
     can_post_converted = util.db_convert_boolean(can_post)
-    query += '{} WHERE {}.format(util.db_get_where_string('canpost', can_post), util.db_get_where_string('guildid', guild_id, True))
+    query += '{} WHERE {}'.format(util.db_get_where_string('canpost', can_post), util.db_get_where_string('guildid', guild_id, True))
     success = core.db_try_execute(query)
     return success
