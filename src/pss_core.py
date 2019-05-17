@@ -248,7 +248,9 @@ def read_links_file():
 
 # ---------- DataBase ----------
 def init_db():
-    success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
+    created_table_daily = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
+    created_table_dropship = db_try_create_table('DROPSHIP_TEXT', ['PARTID PRIMARY KEY', 'OLDVALUE TEXT NOT NULL', 'NEWVALUE TEXT NOT NULL', 'MODIFYDATE TIMESTAMPTZ NOT NULL'])
+    success = created_table_daily and created_table_dropship
     if success:
         print('[init_db] db initialization succeeded')
     else:
