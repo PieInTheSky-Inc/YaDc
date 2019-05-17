@@ -24,7 +24,7 @@ import pytz
 import re
 import sys
 import time
-import utility
+import utility as util
 import pss_tournament as tourney
 
 
@@ -90,13 +90,13 @@ async def post_dailies_loop():
 
 
 async def post_all_dailies(verbose=False):
-    dropship_changed = has_dropship_changed()
-    if len(dropship_changed) > 0:
-        utc_now = datetime.datetime.now(datetime.timezone.utc)
-        txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(dropship_changed))
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
+    dropship_txt = dropship.get_and_update_auto_daily_text()
+    if txt != None:
         fix_daily_channels()
         channel_ids = d.get_valid_daily_channel_ids()
-        txt += dropship.get_dropship_text()
+        txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(dropship_changed))
+        txt += dropship_txt
         for channel_id in channel_ids:
             text_channel = bot.get_channel(channel_id)
             if text_channel != None:
@@ -215,7 +215,7 @@ async def ping(ctx):
 async def shell(ctx, *, cmd):
     """Run a shell command"""
     async with ctx.typing():
-        txt = utility.shell_cmd(cmd)
+        txt = util.shell_cmd(cmd)
         await ctx.send(txt)
 
 
@@ -708,23 +708,23 @@ async def test(ctx, *, action):
     print('test command called')
     if action == 'utcnow':
         print('action == utcnow')
-        utcnow = utility.get_utcnow()
+        utcnow = util.get_utcnow()
         print('retrieved datetime utc now')
-        txt = utility.get_formatted_datetime(utcnow)
+        txt = util.get_formatted_datetime(utcnow)
         print('formatted datetime object')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
     if action == 'first':
         print('action == first')
-        first_of_next_month = utility.get_first_of_next_month()
+        first_of_next_month = util.get_first_of_next_month()
         print('retrieved first of next month')
-        txt = utility.get_formatted_datetime(first_of_next_month)
+        txt = util.get_formatted_datetime(first_of_next_month)
         print('formatted datetime object')
         await ctx.send(txt)
         print('sent formatted datetime to channel')
     if action == 'current':
         print('action == current')
-        utcnow = utility.get_utcnow()
+        utcnow = util.get_utcnow()
         print('retrieved current datetime')
         start_of_tourney = tourney.get_current_tourney_start()
         print('retrieved start date of this month\'s tourney')
@@ -734,7 +734,7 @@ async def test(ctx, *, action):
         print('sent formatted datetime to channel')
     if action == 'next':
         print('action == next')
-        utcnow = utility.get_utcnow()
+        utcnow = util.get_utcnow()
         print('retrieved current datetime')
         start_of_tourney = tourney.get_next_tourney_start()
         print('retrieved start date of next month\'s tourney')
