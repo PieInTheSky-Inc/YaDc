@@ -270,14 +270,14 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
 
                 
 def db_try_insert_dropship_text(part_id, new_value, utc_now):
-    timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = util.db_convert_timestamp(utc_now)
     query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', \'{}\', TIMESTAMPTZ \'{}\')'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
     result = core.db_try_execute(query_insert)
     return result
     
 
 def db_try_update_dropship_text(part_id, old_value, new_value, utc_now):
-    timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = util.db_convert_timestamp(utc_now)
     where_part_id = util.db_get_where_string('partid', part_id, True)
     query_update = 'UPDATE {} SET oldvalue = \'{}\', newvalue = \'{}\', modifydate = TIMESTAMPTZ {} WHERE {}'.format(DROPSHIP_TEXT_TABLE_NAME, old_value, new_value, timestamp, where_part_id)
     result = core.db_try_execute(query_update)
