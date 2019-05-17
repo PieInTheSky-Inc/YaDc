@@ -91,11 +91,11 @@ async def post_dailies_loop():
 
 async def post_all_dailies(verbose=False):
     utc_now = datetime.datetime.now(datetime.timezone.utc)
-    dropship_txt = dropship.get_and_update_auto_daily_text()
-    if dropship_txt != None:
+    dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
+    if dropship_txt and updated_parts_ids:
         fix_daily_channels()
         channel_ids = d.get_valid_daily_channel_ids()
-        txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(dropship_changed))
+        txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
         txt += dropship_txt
         for channel_id in channel_ids:
             text_channel = bot.get_channel(channel_id)
