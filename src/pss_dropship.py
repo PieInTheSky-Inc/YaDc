@@ -248,7 +248,7 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
                     print('[] Could not update dropship text for part \'{}\''.format(text_parts_key))
         else:
             updated = True
-            success = db_try_insert_dropship_text(text_parts_key, '', text_parts[text_parts_key], utc_now)
+            success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
             if success == False:
                 print('[] Could not insert dropship text for part \'{}\' into db'.format(text_parts_key))
     return updated
@@ -256,7 +256,7 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
                 
 def db_try_insert_dropship_text(partid, newvalue, utc_now):
     timestamp = utc_now.strftime('%Y-%m-%d %H:%M:%S')
-    query_insert = 'INSERT INTO dropship VALUES (\'{}\', \'{}\', TIMESTAMP \'{}\')'.format(partid, newvalue, timestamp);
+    query_insert = 'INSERT INTO dropship VALUES (\'{}\', \'\', \'{}\', TIMESTAMP \'{}\')'.format(partid, newvalue, timestamp);
     result = core.db_try_execute(query_insert)
     return result
     
