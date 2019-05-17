@@ -9,7 +9,6 @@ DAILY_TABLE_NAME = 'Daily'
 
 
 def try_store_daily_channel(guild_id, text_channel_id):
-    print('+ called try_store_daily_channel({}, {})'.format(guild_id, text_channel_id))
     success = False
     rows = select_daily_channel(guild_id, None)
     if len(rows) == 0:
@@ -27,7 +26,6 @@ def try_store_daily_channel(guild_id, text_channel_id):
 
         
 def get_daily_channel_id(guild_id):
-    print('+ called get_daily_channel_id({})'.format(guild_id))
     rows = select_daily_channel(guild_id, None)
     if len(rows) == 0:
         return -1
@@ -37,7 +35,6 @@ def get_daily_channel_id(guild_id):
     
     
 def get_all_daily_channel_ids():
-    print('+ get_all_daily_channel_ids()')
     rows = select_daily_channel(None, None)
     if len(rows) == 0:
         return []
@@ -47,7 +44,6 @@ def get_all_daily_channel_ids():
     
     
 def get_valid_daily_channel_ids():
-    print('+ called get_valid_daily_channel_ids()')
     rows = select_daily_channel(None, True)
     if len(rows) == 0:
         return []
@@ -57,7 +53,6 @@ def get_valid_daily_channel_ids():
 
     
 def try_remove_daily_channel(guild_id):
-    print('+ called try_remove_daily_channel({})'.format(guild_id))
     rows = select_daily_channel(guild_id)
     success = False
     if len(rows) == 0:
@@ -70,32 +65,32 @@ def try_remove_daily_channel(guild_id):
 
             
 def fix_daily_channel(guild_id, can_post):
-    print('+ called fix_daily_channel({}, {})'.format(guild_id, can_post))
     success = update_daily_channel(guild_id, None, convert_can_post(can_post))
     return success
 
     
 # ---------- Utilities ----------
 def delete_daily_channel(guild_id):
-    print('+ called delete_daily_channel({})'.format(guild_id))
     query = 'DELETE FROM daily WHERE guildid = \'{}\''.format(guild_id)
     success = core.db_try_execute(query)
     return success
     
 def insert_daily_channel(guild_id, channel_id):
-    print('+ called insert_daily_channel({}, {})'.format(guild_id, channel_id))
     query = 'INSERT INTO daily (guildid, channelid, canpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
     success = core.db_try_execute(query)
     return success
 
 def select_daily_channel(guild_id=None, can_post=None):
-    print('+ called select_daily_channel({}, {})'.format(guild_id, can_post))
     where = []
     if guild_id:
-        where.append(util.db_get_where_string('guildid', guild_id, True))
+        where_guild_id = util.db_get_where_string('guildid', guild_id, True)
+        print('[select_daily_channel] adding where: {}'.format(where_guild_id))
+        where.append(where_guild_id)
     if can_post != None:
         can_post_converted = util.db_convert_boolean(can_post)
-        where.append(util.db_get_where_string('guildid', can_post_converted))
+        where_can_post = util.db_get_where_string('guildid', can_post_converted)
+        print('[select_daily_channel] adding where: {}'.format(where_guild_id))
+        where.append(where_can_post)
     result = core.db_select_any_from_where_and(DAILY_TABLE_NAME, where)
     return result
     
