@@ -10,6 +10,7 @@ from psycopg2 import errors as db_error
 import re
 import urllib.parse
 import urllib.request
+import utility as util
 import xml.etree.ElementTree
 
 
