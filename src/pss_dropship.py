@@ -290,7 +290,9 @@ def db_try_update_dropship_text(part_id, old_value, new_value, utc_now):
     print('+ called db_try_update_dropship_text({}, {}, {})'.format(part_id, old_value, new_value, utc_now))
     timestamp = util.db_convert_timestamp(utc_now)
     where_part_id = util.db_get_where_string('partid', part_id, True)
-    query_update = 'UPDATE {} SET oldvalue = \'{}\', newvalue = \'{}\', modifydate = TIMESTAMPTZ {} WHERE {}'.format(DROPSHIP_TEXT_TABLE_NAME, old_value, new_value, timestamp, where_part_id)
+    set_old_value = util.db_get_where_string('oldvalue', old_value, True)
+    set_new_value = util.db_get_where_string('newvalue', new_value, True)
+    query_update = 'UPDATE {} SET {}, {}, modifydate = TIMESTAMPTZ {} WHERE {}'.format(DROPSHIP_TEXT_TABLE_NAME, set_old_value, set_new_value, timestamp, where_part_id)
     result = core.db_try_execute(query_update)
     return result
 
