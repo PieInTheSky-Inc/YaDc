@@ -282,7 +282,7 @@ def db_try_insert_dropship_text(part_id, new_value, utc_now):
     print('+ called db_try_insert_dropship_text({}, {}, {})'.format(part_id, new_value, utc_now))
     new_value = util.db_convert_text(new_value)
     timestamp = util.db_convert_timestamp(utc_now)
-    query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', \'{}\', TIMESTAMPTZ \'{}\');'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
+    query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', {}, TIMESTAMPTZ \'{}\');'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
     result = core.db_try_execute(query_insert)
     return result
     
