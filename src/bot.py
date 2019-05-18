@@ -96,7 +96,7 @@ async def post_all_dailies(verbose=False):
         last_posted_autodaily = core.get_setting('posted_autodaily', core.SettingType.Timestamp)
         print('[post_all_dailies] Retrieved setting \'posted_autodaily\' from db: {}'.format(last_posted_autodaily))
         post_autodaily = not last_posted_autodaily or (last_posted_autodaily.day != utc_now.day and last_posted_autodaily < utc_now)
-        print('[post_all_dailies] post_autodaily = {} or ({} and {}) = {}'.format(not last_posted_autodaily, last_posted_autodaily.day != utc_now.day, last_posted_autodaily < utc_now, post_autodaily))
+        print('[post_all_dailies] post_autodaily = {}'.format(post_autodaily))
         if post_autodaily:
             dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
             if dropship_txt and updated_parts_ids:
