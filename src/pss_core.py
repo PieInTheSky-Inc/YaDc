@@ -266,10 +266,21 @@ def get_setting(setting_name, setting_type):
     column_number = int(setting_type) + 1
         
     result = db_select_first_from(SETTINGS_TABLE_NAME, where)
-    if result:
-        return result[column_number]
-    else:
+    if result == None:
         return None
+    else:
+        result = result[column_number]
+        if setting_type == SettingType.Boolean:
+            result = util.db_convert_to_boolean(result)
+        elif is_float == SettingType.Float:
+            result = util.db_convert_to_float(result)
+        elif is_int == SettingType.Integer:
+            result = util.db_convert_to_int(result)
+        elif is_text == SettingType.Text:
+            result = result
+        elif is_timestamp_utc == SettingType.Timestamp:
+            result = util.db_convert_to_datetime(result)
+        return result
     
     
 def try_store_setting(setting_name, value, setting_type):
