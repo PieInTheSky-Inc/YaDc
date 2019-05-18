@@ -98,7 +98,7 @@ def db_convert_text(value):
     
 def db_convert_timestamp(datetime):
     if datetime:
-        result = datetime.strf('%Y-%m-%d %H:%M:%S')
+        result = datetime.strftime('%Y-%m-%d %H:%M:%S')
         return result
     else:
         return None
