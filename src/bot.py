@@ -97,6 +97,7 @@ async def post_all_dailies(verbose=False):
         print('[post_all_dailies] Retrieved setting \'posted_autodaily\' from db: {}'.format(last_posted_autodaily))
         post_autodaily = not last_posted_autodaily or (last_posted_autodaily.day != utc_now.day and last_posted_autodaily < utc_now)
         print('[post_all_dailies] post_autodaily = {}'.format(post_autodaily))
+        post_autodaily = True # Remove before going productive
         if post_autodaily:
             dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
             if dropship_txt and updated_parts_ids:
