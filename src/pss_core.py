@@ -257,6 +257,14 @@ class SettingType(Enum):
     Integer = 3
     Text = 4
     Timestamp = 5
+    
+    def __new__(cls, value, name):
+        member = object.__new__(cls)
+        member._value_ = value
+        return member
+
+    def __int__(self):
+        return self.value
 
 
 def get_setting(setting_name, setting_type):
