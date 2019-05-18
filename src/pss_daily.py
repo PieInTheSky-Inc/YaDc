@@ -65,7 +65,7 @@ def try_remove_daily_channel(guild_id):
 
             
 def fix_daily_channel(guild_id, can_post):
-    success = update_daily_channel(guild_id, None, convert_can_post(can_post))
+    success = update_daily_channel(guild_id, None, util.db_convert_boolean(can_post))
     return success
 
     
