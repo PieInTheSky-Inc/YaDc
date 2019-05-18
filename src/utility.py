@@ -106,6 +106,8 @@ def db_convert_timestamp(datetime):
         return None
 
 def db_convert_to_boolean(db_boolean):
+    if db_boolean == None:
+        return None
     db_upper = db_boolean.upper()
     if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
         return True
@@ -113,5 +115,7 @@ def db_convert_to_boolean(db_boolean):
         return False
     
 def db_convert_to_datetime(db_timestamp):
+    if db_timestamp == None:
+        return None
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
-    
+    return result
