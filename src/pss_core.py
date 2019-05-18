@@ -273,7 +273,7 @@ def get_setting(setting_name, setting_type):
     where = util.db_get_where_string('settingname', setting_name, True)
     column_number = int(setting_type) + 1
         
-    result = db_select_first_from(SETTINGS_TABLE_NAME, where)
+    result = db_select_first_from_where(SETTINGS_TABLE_NAME, where)
     if result == None:
         return None
     else:
