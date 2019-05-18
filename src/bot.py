@@ -88,30 +88,35 @@ async def post_dailies_loop():
 
 
 async def post_all_dailies(verbose=False):
-    print('+ called post_all_dailies({})'.format(verbose))
     utc_now = datetime.datetime.now(datetime.timezone.utc)
     configured_channel_count = len(d.get_all_daily_channel_ids())
-    print('[post_all_dailies] configured channel count: {}'.format(configured_channel_count))
     if configured_channel_count > 0:
-        dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-        if dropship_txt and updated_parts_ids:
-            print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
-            fix_daily_channels()
-            valid_channel_ids = d.get_valid_daily_channel_ids()
-            print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
-            txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
-            txt += dropship_txt
-            for channel_id in valid_channel_ids:
-                text_channel = bot.get_channel(channel_id)
-                if text_channel != None:
-                    guild = text_channel.guild
-                    try:
-                        await text_channel.send(txt)
-                    except Exception as error:
-                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
-            core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
-        elif verbose:
-            print('dropship text hasn\'t changed.')
+        print('[post_all_dailies] configured channel count: {}'.format(configured_channel_count))
+        print('[post_all_dailies] Try to retrieve setting \'posted_autodaily\' from db')
+        last_posted_autodaily = core.get_setting('posted_autodaily', SettingType.Timestamp)
+        print('[post_all_dailies] Retrieved setting \'posted_autodaily\' from db: {}'.format(last_posted_autodaily))
+        post_autodaily = not last_posted_autodaily or (last_posted_autodaily.day != utc_now.day and last_posted_autodaily < utc_now)
+        print('[post_all_dailies] post_autodaily = {} or ({} and {}) = {}'.format(not last_posted_autodaily, last_posted_autodaily.day != utc_now.day, last_posted_autodaily < utc_now, post_autodaily))
+        if post_autodaily:
+            dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
+            if dropship_txt and updated_parts_ids:
+                print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
+                fix_daily_channels()
+                valid_channel_ids = d.get_valid_daily_channel_ids()
+                print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
+                txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
+                txt += dropship_txt
+                for channel_id in valid_channel_ids:
+                    text_channel = bot.get_channel(channel_id)
+                    if text_channel != None:
+                        guild = text_channel.guild
+                        try:
+                            await text_channel.send(txt)
+                        except Exception as error:
+                            print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+                core.try_store_setting('posted_autodaily', utc_now, SettingType.Timestamp)
+            elif verbose:
+                print('dropship text hasn\'t changed.')
             
             
 def fix_daily_channels(verbose=False):
