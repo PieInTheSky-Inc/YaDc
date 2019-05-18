@@ -192,7 +192,6 @@ def get_dropship_text():
 
 
 def get_and_update_auto_daily_text():
-    print('+ called get_and_update_auto_daily_text()')
     utc_now = util.get_utcnow()
     text_parts_api = get_dropship_text_parts()
     updated = try_update_dropship_text_in_db(text_parts_api, utc_now)
@@ -250,28 +249,22 @@ def db_get_dropship_text_parts():
 
     
 def try_update_dropship_text_in_db(text_parts, utc_now):
-    print('+ called try_update_dropship_text_in_db({}, {})'.format(text_parts, utc_now))
     updated = []
     db_parts = db_get_dropship_text_parts()
     db_parts_keys = db_parts.keys()
-    print('[try_update_dropship_text_in_db] retrieved keys from db: {}'.format(db_parts_keys))
     if db_parts == None:
         db_parts = []
     for text_parts_key in text_parts.keys():
         if text_parts_key in db_parts_keys:
-            print('[try_update_dropship_text_in_db] found api dropship text key in db: {}'.format(text_parts_key))
             if db_parts[text_parts_key] != text_parts[text_parts_key]:
                 success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
                 if success:
-                    print('[try_update_dropship_text_in_db] updated dropship text in db for key: {}'.format(text_parts_key))
                     updated.append(text_parts_key)
                 else:
                     print('[try_update_dropship_text_in_db] Could not update DROPSHIP_TEXT text for part \'{}\''.format(text_parts_key))
         else:
-            print('[try_update_dropship_text_in_db] could not find api dropship text key in db: {}'.format(text_parts_key))
             success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
             if success:
-                print('[try_update_dropship_text_in_db] inserted dropship text into db for key: {}'.format(text_parts_key))
                 updated.append(text_parts_key)
             else:
                 print('[try_update_dropship_text_in_db] Could not insert DROPSHIP_TEXT text for part \'{}\' into db'.format(text_parts_key))
@@ -279,7 +272,6 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
 
                 
 def db_try_insert_dropship_text(part_id, new_value, utc_now):
-    print('+ called db_try_insert_dropship_text({}, {}, {})'.format(part_id, new_value, utc_now))
     new_value = util.db_convert_text(new_value)
     timestamp = util.db_convert_timestamp(utc_now)
     query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', {}, TIMESTAMPTZ \'{}\');'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
@@ -288,7 +280,6 @@ def db_try_insert_dropship_text(part_id, new_value, utc_now):
     
 
 def db_try_update_dropship_text(part_id, old_value, new_value, utc_now):
-    print('+ called db_try_update_dropship_text({}, {}, {})'.format(part_id, old_value, new_value, utc_now))
     timestamp = util.db_convert_timestamp(utc_now)
     where_part_id = util.db_get_where_string('partid', part_id, True)
     set_old_value = util.db_get_where_string('oldvalue', old_value, True)
