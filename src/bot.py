@@ -94,8 +94,8 @@ async def post_all_dailies(verbose=False):
     print('[post_all_dailies] configured channel count: {}'.format(configured_channel_count))
     if configured_channel_count > 0:
         dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-        print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
         if dropship_txt and updated_parts_ids:
+            print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
             fix_daily_channels()
             valid_channel_ids = d.get_valid_daily_channel_ids()
             print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
