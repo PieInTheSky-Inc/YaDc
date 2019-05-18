@@ -258,7 +258,7 @@ class SettingType(Enum):
     Text = 4
     Timestamp = 5
     
-    def __new__(cls, value, name):
+    def __new__(cls, value):
         member = object.__new__(cls)
         member._value_ = value
         return member
