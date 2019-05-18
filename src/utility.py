@@ -119,3 +119,15 @@ def db_convert_to_datetime(db_timestamp):
         return None
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
+
+def db_convert_to_int(db_int):
+    if db_int == None:
+        return None
+    result = int(db_int)
+    return result
+
+def db_convert_to_float(db_float):
+    if db_float == None:
+        return None
+    result = float(db_float)
+    return result
