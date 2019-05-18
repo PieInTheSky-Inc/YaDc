@@ -93,7 +93,7 @@ async def post_all_dailies(verbose=False):
     if configured_channel_count > 0:
         print('[post_all_dailies] configured channel count: {}'.format(configured_channel_count))
         print('[post_all_dailies] Try to retrieve setting \'posted_autodaily\' from db')
-        last_posted_autodaily = core.get_setting('posted_autodaily', SettingType.Timestamp)
+        last_posted_autodaily = core.get_setting('posted_autodaily', core.SettingType.Timestamp)
         print('[post_all_dailies] Retrieved setting \'posted_autodaily\' from db: {}'.format(last_posted_autodaily))
         post_autodaily = not last_posted_autodaily or (last_posted_autodaily.day != utc_now.day and last_posted_autodaily < utc_now)
         print('[post_all_dailies] post_autodaily = {} or ({} and {}) = {}'.format(not last_posted_autodaily, last_posted_autodaily.day != utc_now.day, last_posted_autodaily < utc_now, post_autodaily))
