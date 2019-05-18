@@ -36,7 +36,7 @@ def get_daily_channel_id(guild_id):
     
 def get_all_daily_channel_ids():
     rows = select_daily_channel(None, None)
-    if len(rows) == 0:
+    if not rows or len(rows) == 0:
         return []
     else:
         results = [int(t[1]) for t in rows]
@@ -45,7 +45,7 @@ def get_all_daily_channel_ids():
     
 def get_valid_daily_channel_ids():
     rows = select_daily_channel(None, True)
-    if len(rows) == 0:
+    if not rows or len(rows) == 0:
         return []
     else:
         results = [int(t[1]) for t in rows]
