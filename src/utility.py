@@ -60,6 +60,8 @@ def get_utcnow():
 
 
 #---------- DB utilities ----------
+DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
+
 def db_get_column_definition(column_name, column_type, is_primary=False, not_null=False):
     column_name_txt = column_name.upper()
     column_type_txt = column_type.upper()
@@ -98,7 +100,18 @@ def db_convert_text(value):
     
 def db_convert_timestamp(datetime):
     if datetime:
-        result = datetime.strftime('%Y-%m-%d %H:%M:%S')
+        result = datetime.strftime(DB_TIMESTAMP_FORMAT)
         return result
     else:
         return None
+
+def db_convert_to_boolean(db_boolean):
+    db_upper = db_boolean.upper()
+    if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
+        return True
+    else:
+        return False
+    
+def db_convert_to_datetime(db_timestamp):
+    result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
+    
