@@ -256,6 +256,7 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
         db_parts = []
     for text_parts_key in text_parts.keys():
         if text_parts_key in db_parts_keys:
+            db_value = db_parts[text_parts_key]
             if db_parts[text_parts_key] != text_parts[text_parts_key]:
                 success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
                 if success:
