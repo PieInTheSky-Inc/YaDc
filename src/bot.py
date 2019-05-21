@@ -103,7 +103,7 @@ async def post_all_dailies(verbose=False, post_anyway=False):
             txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
             for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - latest_message_id
                 text_channel = bot.get_channel(int(daily_channel[1]))
-                if text_channel != None:
+                if text_channel is not None:
                     guild = text_channel.guild
                     guild_member_bot = guild.get_member(bot.user.id)
                     old_msg = None
@@ -140,19 +140,19 @@ def fix_daily_channels(verbose=False):
         text_channel = bot.get_channel(channel_id)
         if verbose:
             print('[fix_daily_channels] processing guild_id \'{}\', channel_id \'{}\', text_channel \'{}\''.format(guild_id, channel_id, text_channel))
-        if text_channel != None:
+        if text_channel is not None:
             guild = text_channel.guild
             if verbose:
                 print('[fix_daily_channels] retrieved guild: {}'.format(guild))
-            if guild != None:
+            if guild is not None:
                 guild_member = guild.get_member(bot.user.id)
                 if verbose:
                     print('[fix_daily_channels] retrieved guild_member: {}'.format(guild_member))
-                if guild_member != None:
+                if guild_member is not None:
                     permissions = text_channel.permissions_for(guild_member)
                     if verbose:
                         print('[fix_daily_channels] retrieved permissions: \'{}\''.format(permissions))
-                    if permissions != None and permissions.send_messages == True:
+                    if permissions is not None and permissions.send_messages:
                         if verbose:
                             print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
                         can_post = True
@@ -396,7 +396,7 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
     author_is_owner = await bot.is_owner(ctx.author)
     txt = ''
     if action == 'set':
-        if text_channel == None:
+        if text_channel is None:
             await ctx.send('You need to specify a text channel!')
         else:
             await setdaily(ctx, text_channel)
