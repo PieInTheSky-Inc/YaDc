@@ -131,7 +131,7 @@ def db_convert_text(value):
     
 def db_convert_timestamp(datetime):
     if datetime:
-        result = datetime.strftime(DB_TIMESTAMP_FORMAT)
+        result = '\'{}\''.format(datetime.strftime(DB_TIMESTAMP_FORMAT))
         return result
     else:
         return None
