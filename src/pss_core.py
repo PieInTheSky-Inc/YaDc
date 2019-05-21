@@ -314,8 +314,8 @@ def try_store_setting(setting_name, value, setting_type):
         value = util.db_convert_timestamp(value)
     
     utc_now = util.get_utcnow()
-    values = ','.join([setting_name, util.db_modify_date, value])
     modify_date = util.db_convert_timestamp(utc_now)
+    values = ','.join([setting_name, modify_date, value])
     if existing_setting_value == None:
         query_insert = 'INSERT INTO {} (settingsname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
         success = db_try_execute(query_insert)
