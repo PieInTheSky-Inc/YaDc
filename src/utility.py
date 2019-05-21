@@ -60,11 +60,11 @@ def get_utcnow():
     return datetime.now(timezone.utc)
 
 
-async def get_latest_message(from_channel, by_user_id=None, with_content=None, after=None, before=None):
+async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
     if from_channel != None:
         messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
         for msg in reversed(messages):
-            process = not by_user_id or (by_user_id and msg.author.id == by_user_id)
+            process = not by_member_id or msg.author.id == by_member_id
             if process and msg.content == with_content:
                 return msg
     return None      
