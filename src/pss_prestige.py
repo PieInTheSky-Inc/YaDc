@@ -780,7 +780,7 @@ def stats2dict(raw_text):
 def get_stats(char_name, embed=False, raw=False):
     raw_text = load_char_sheet_raw()
     d = stats2dict(raw_text)
-    if raw == True:
+    if raw:
         txt = f'**{char_name}**'
         _, _, tbl_n2i, _ = get_char_sheet()
         char_name = parse_char_name(char_name, tbl_n2i)
