@@ -96,12 +96,12 @@ async def post_all_dailies(verbose=False, post_anyway=False):
         dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
         if post_anyway or (dropship_txt and updated_parts_ids):
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
-            fix_daily_channels()
+            fix_daily_channels(verbose)
             valid_channels = d.get_all_daily_channels()
             print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
             txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
             for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - last_posted_dated
-                text_channel = bot.get_channel(daily_channel[1])
+                text_channel = bot.get_channel(int(daily_channel[1]))
                 if text_channel != None:
                     guild = text_channel.guild
                     guild_member_bot = guild.get_member(bot.user.id)
@@ -119,18 +119,30 @@ async def post_all_dailies(verbose=False, post_anyway=False):
             
             
 def fix_daily_channels(verbose=False):
-    rows = d.select_daily_channel(None, None)
+    if verbose:
+        print('+ called fix_daily_channels({})'.format(verbose))
+    rows = d.get_all_daily_channels()
+    if verbose:
+        print('[fix_daily_channels] retrieved {} configured daily channels: {}'.format(len(rows), ', '.join(rows)))
     for row in rows:
         can_post = False
         guild_id = int(row[0])
         channel_id = int(row[1])
         text_channel = bot.get_channel(channel_id)
+        if verbose:
+            print('[fix_daily_channels] processing guild_id \'{}\', channel_id \'{}\', text_channel \'{}\''.format(guild_id, channel_id, text_channel))
         if text_channel != None:
-            guild = bot.get_guild(guild_id)
+            guild = text_channel.guild
+            if verbose:
+                print('[fix_daily_channels] retrieved guild: {}'.format(guild))
             if guild != None:
                 guild_member = guild.get_member(bot.user.id)
+                if verbose:
+                    print('[fix_daily_channels] retrieved guild_member: {}'.format(guild_member))
                 if guild_member != None:
                     permissions = text_channel.permissions_for(guild_member)
+                    if verbose:
+                        print('[fix_daily_channels] retrieved permissions: \'{}\''.format(permissions))
                     if permissions != None and permissions.send_messages == True:
                         if verbose:
                             print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
