@@ -117,11 +117,11 @@ async def post_all_dailies(verbose=False, post_anyway=False):
                             await old_msg.delete()
                         await text_channel.send(txt)
                         new_msg = await text_channel.send(dropship_txt)
-                        updated_daily_channel = d.update_daily_channel(guild_id, latest_message_id=new_msg.id)
+                        updated_daily_channel = d.update_daily_channel(guild.id, latest_message_id=new_msg.id)
                         if not updated_daily_channel:
-                            print('[post_all_dailies] could not updated latest message id for channel \'{}\' on guild \'{}\''.format(text_channel.name, guild.name))
+                            print('[post_all_dailies] could not update latest message id for channel \'{}\' on guild \'{}\': {}'.format(text_channel.name, guild.name, new_msg.id))
                     except Exception as error:
-                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\''.format(error.__class__.__name__, text_channel.name, guild.name))
             core.try_store_setting('posted_autodaily', utc_now, core.SettingType.Timestamp)
         elif verbose:
             print('dropship text hasn\'t changed.')
