@@ -13,12 +13,12 @@ def try_store_daily_channel(guild_id, text_channel_id):
     rows = select_daily_channel(guild_id, None)
     if len(rows) == 0:
         success = insert_daily_channel(guild_id, text_channel_id)
-        if success == False:
+        if not success:
             print('[try_store_daily_channel] failed to insert new data row: {} ({})'.format(guild_id, text_channel_id))
     else:
         if str(rows[0][1]) != str(text_channel_id):
             success = update_daily_channel(guild_id, text_channel_id, True)
-            if success == False:
+            if not success:
                 print('[try_store_daily_channel] failed to update data row: {} ({})'.format(guild_id, text_channel_id))
         else:
             success = True
@@ -75,7 +75,7 @@ def try_remove_daily_channel(guild_id):
         print('[try_remove_daily_channel] key not in db: {}'.format(guild_id))
     else:
         success = delete_daily_channel(guild_id)
-        if success == False:
+        if not success:
             print('[try_remove_daily_channel] failed to delete data row with key: {}'.format(guild_id))
     return success
 
@@ -101,7 +101,7 @@ def select_daily_channel(guild_id=None, can_post=None):
     if guild_id:
         where_guild_id = util.db_get_where_string('guildid', guild_id, True)
         where.append(where_guild_id)
-    if can_post != None:
+    if can_post is not None:
         can_post_converted = util.db_convert_boolean(can_post)
         where_can_post = util.db_get_where_string('canpost', can_post_converted)
         where.append(where_can_post)
