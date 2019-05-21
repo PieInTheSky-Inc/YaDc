@@ -181,8 +181,9 @@ def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
     return txt
 
 
-def get_dropship_text():
-    text_parts = get_dropship_text_parts()
+def get_dropship_text(text_parts=None):
+    if text_parts == None:
+        text_parts = get_dropship_text_parts()
     text_parts_keys = text_parts.keys()
     txt = ''
     for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
