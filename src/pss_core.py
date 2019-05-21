@@ -300,16 +300,16 @@ def try_store_setting(setting_name, value, setting_type):
     if setting_type == SettingType.Boolean:
         column_name = 'settingboolean'
         value = util.db_convert_boolean(value)
-    elif is_float == SettingType.Float:
+    elif setting_type == SettingType.Float:
         column_name = 'settingfloat'
         value = value
-    elif is_int == SettingType.Integer:
+    elif setting_type == SettingType.Integer:
         column_name = 'settingint'
         value = value
-    elif is_text == SettingType.Text:
+    elif setting_type == SettingType.Text:
         column_name = 'settingtext'
         value = util.db_convert_text(value)
-    elif is_timestamp_utc == SettingType.Timestamp:
+    elif setting_type == SettingType.Timestamp:
         column_name = 'settingtimestamptz'
         value = util.db_convert_timestamp(value)
     
