@@ -182,12 +182,12 @@ def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
 
 
 def get_dropship_text(text_parts=None):
-    if text_parts == None:
+    if text_parts is None:
         text_parts = get_dropship_text_parts()
     text_parts_keys = text_parts.keys()
     txt = ''
     for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
-        if text_part_expected in text_parts_keys and text_parts[text_part_expected] != None:
+        if text_part_expected in text_parts_keys and text_parts[text_part_expected] is not None:
             txt += '{}\n\n'.format(text_parts[text_part_expected])             
     return txt
 
@@ -200,7 +200,7 @@ def get_and_update_auto_daily_text():
         txt = ''
         text_parts_keys = text_parts_api.keys()
         for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
-            if text_part_expected in text_parts_keys and text_parts_api[text_part_expected] != None:
+            if text_part_expected in text_parts_keys and text_parts_api[text_part_expected] is not None:
                 txt += '{}\n\n'.format(text_parts_api[text_part_expected]) 
         return txt, updated
     else:
@@ -253,7 +253,7 @@ def try_update_dropship_text_in_db(text_parts, utc_now):
     updated = []
     db_parts = db_get_dropship_text_parts()
     db_parts_keys = db_parts.keys()
-    if db_parts == None:
+    if db_parts is None:
         db_parts = []
     for text_parts_key in text_parts.keys():
         if text_parts_key in db_parts_keys:
