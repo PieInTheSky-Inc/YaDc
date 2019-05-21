@@ -274,7 +274,7 @@ def get_setting(setting_name, setting_type):
     column_number = int(setting_type) + 1
         
     result = db_select_first_from_where(SETTINGS_TABLE_NAME, where)
-    if result == None:
+    if result is None:
         return None
     else:
         result = result[column_number]
@@ -316,7 +316,7 @@ def try_store_setting(setting_name, value, setting_type):
     utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
     values = ','.join([setting_name, modify_date, value])
-    if existing_setting_value == None:
+    if existing_setting_value is None:
         query_insert = 'INSERT INTO {} (settingname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
         success = db_try_execute(query_insert)
     else:
@@ -392,13 +392,13 @@ def try_create_table_dropship_text():
 
 # ---------- DataBase functionality ----------
 def db_close_cursor(cursor):
-    if cursor != None:
+    if cursor is not None:
         cursor.close()
       
 
 def db_connect():
     global DB_CONN
-    if db_is_connected(DB_CONN) == False:
+    if not db_is_connected(DB_CONN):
         try:
             DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='require')
             return True
@@ -426,7 +426,7 @@ def db_fetchall(query):
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
@@ -449,7 +449,7 @@ def db_fetchfirst(query):
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
@@ -568,7 +568,7 @@ def db_try_create_table(table_name, columns):
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 db_execute(query, cursor)
                 print('[db_try_create_table] created table: {}'.format(table_name))
@@ -594,7 +594,7 @@ def db_try_execute(query):
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 db_execute(query, cursor)
                 success = True
