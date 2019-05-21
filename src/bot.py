@@ -98,20 +98,28 @@ async def post_all_dailies(verbose=False, post_anyway=False):
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
             fix_daily_channels(verbose)
             valid_channels = d.get_all_daily_channels()
-            valid_channel_ids = [int(c[1] for c in valid_channels]
+            valid_channel_ids = [int(c[1]) for c in valid_channels]
             print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
             txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
-            for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - last_posted_dated
+            for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - latest_message_id
                 text_channel = bot.get_channel(int(daily_channel[1]))
                 if text_channel != None:
                     guild = text_channel.guild
                     guild_member_bot = guild.get_member(bot.user.id)
-                    old_msg = await get_latest_message(text_channel, by_member_id=guild_member_bot.id, with_content=old_dropship_txt, after=utc_today)
+                    old_msg = None
+                    if daily_channel[3]:
+                        try:
+                            old_msg = await text_channel.fetch_message(daily_channel[3])
+                        except Exception as error:
+                            print('[post_all_dailies] {} occurred while trying to retrieve the latest message in channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
                     try:
                         if old_msg:
                             await old_msg.delete()
                         await text_channel.send(txt)
-                        await text_channel.send(dropship_txt)    
+                        new_msg = await text_channel.send(dropship_txt)
+                        updated_daily_channel = d.update_daily_channel(guild_id, latest_message_id=new_msg.id)
+                        if not updated_daily_channel:
+                            print('[post_all_dailies] could not updated latest message id for channel \'{}\' on guild \'{}\''.format(text_channel.name, guild.name))
                     except Exception as error:
                         print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
             core.try_store_setting('posted_autodaily', utc_now, core.SettingType.Timestamp)
