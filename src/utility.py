@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta, timezone
 
+import discord
 import math
 import subprocess
 
@@ -57,6 +58,17 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
 
 def get_utcnow():
     return datetime.now(timezone.utc)
+
+
+async def get_latest_message(from_channel, by_user_id=None, with_content=None, after=None, before=None):
+    if from_channel != None:
+        messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
+        for msg in reversed(messages):
+            process = not by_user_id or (by_user_id and msg.author.id == by_user_id)
+            if process and msg.content == with_content:
+                return msg
+    return None      
+
 
 
 #---------- DB utilities ----------
