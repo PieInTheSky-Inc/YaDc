@@ -204,7 +204,7 @@ def get_and_update_auto_daily_text():
                 txt += '{}\n\n'.format(text_parts_api[text_part_expected]) 
         return txt, updated
     else:
-        return None, None
+        return '', []
 
 
 def get_dropship_text_parts():
