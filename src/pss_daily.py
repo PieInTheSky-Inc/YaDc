@@ -108,13 +108,13 @@ def select_daily_channel(guild_id=None, can_post=None):
     result = core.db_select_any_from_where_and(DAILY_TABLE_NAME, where)
     return result
     
-def update_daily_channel(guild_id, channel_id=None, can_post=True, last_message_id=None):
+def update_daily_channel(guild_id, channel_id=None, can_post=True, latest_message_id=None):
     can_post_converted = util.db_convert_boolean(can_post)
     set_strings = [util.db_get_where_string('canpost', can_post_converted)]
     if channel_id:
         set_strings.append(util.db_get_where_string('channelid', channel_id, True))
-    if last_message_id:
-        set_strings.append(util.db_get_where_string('lastmessageid', last_message_id, True))
+    if latest_message_id:
+        set_strings.append(util.db_get_where_string('lastmessageid', latest_message_id, True))
     set_string = ', '.join(set_strings)
     query = 'UPDATE {} SET {} WHERE {}'.format(DAILY_TABLE_NAME, set_string, util.db_get_where_string('guildid', guild_id, True))
     success = core.db_try_execute(query)
