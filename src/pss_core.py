@@ -374,7 +374,7 @@ def try_create_table_daily():
     column_definitions.append(util.db_get_column_definition('guildid', 'text', is_primary=True, not_null=True))
     column_definitions.append(util.db_get_column_definition('channelid', 'text', not_null=True))
     column_definitions.append(util.db_get_column_definition('canpost', 'boolean'))
-    column_definitions.append(util.db_get_column_definition('lastposteddate', 'timestamptz'))
+    column_definitions.append(util.db_get_column_definition('latestmessageid', 'text'))
     success = db_try_create_table(DAILY_TABLE_NAME, column_definitions)
     return success
         
