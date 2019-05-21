@@ -61,7 +61,7 @@ def get_utcnow():
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
-    if from_channel != None:
+    if from_channel is not None:
         messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
         for msg in reversed(messages):
             process = not by_member_id or msg.author.id == by_member_id
@@ -137,7 +137,7 @@ def db_convert_timestamp(datetime):
         return None
 
 def db_convert_to_boolean(db_boolean):
-    if db_boolean == None:
+    if db_boolean is None:
         return None
     db_upper = db_boolean.upper()
     if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
@@ -146,19 +146,19 @@ def db_convert_to_boolean(db_boolean):
         return False
     
 def db_convert_to_datetime(db_timestamp):
-    if db_timestamp == None:
+    if db_timestamp is None:
         return None
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
 
 def db_convert_to_int(db_int):
-    if db_int == None:
+    if db_int is None:
         return None
     result = int(db_int)
     return result
 
 def db_convert_to_float(db_float):
-    if db_float == None:
+    if db_float is None:
         return None
     result = float(db_float)
     return result
