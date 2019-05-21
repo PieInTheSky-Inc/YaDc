@@ -317,10 +317,10 @@ def try_store_setting(setting_name, value, setting_type):
     modify_date = util.db_convert_timestamp(utc_now)
     values = ','.join([setting_name, modify_date, value])
     if existing_setting_value == None:
-        query_insert = 'INSERT INTO {} (settingsname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
+        query_insert = 'INSERT INTO {} (settingname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
         success = db_try_execute(query_insert)
     else:
-        query_update = 'UPDATE {} SET modifydate = {}, {} = {} WHERE settingsname = {}'.format(SETTINGS_TABLE_NAME, modify_date, column_name, value, setting_name)
+        query_update = 'UPDATE {} SET modifydate = {}, {} = {} WHERE settingname = {}'.format(SETTINGS_TABLE_NAME, modify_date, column_name, value, setting_name)
         success = db_try_execute(query_update)
     return success
 
