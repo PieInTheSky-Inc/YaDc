@@ -98,7 +98,7 @@ async def post_all_dailies(verbose=False, post_anyway=False):
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
             fix_daily_channels(verbose)
             valid_channels = d.get_all_daily_channels()
-            valid_channel_ids = [c.id for c in valid_channels]
+            valid_channel_ids = [int(c[1] for c in valid_channels]
             print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
             txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
             for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - last_posted_dated
