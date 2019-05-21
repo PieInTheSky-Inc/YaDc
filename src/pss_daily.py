@@ -34,8 +34,16 @@ def get_daily_channel_id(guild_id):
         return int(result)
     
     
-def get_all_daily_channel_ids():
+def get_all_daily_channels():
     rows = select_daily_channel(None, None)
+    if rows:
+        return rows
+    else:
+        return []
+    
+    
+def get_all_daily_channel_ids():
+    rows = get_all_daily_channels()
     if not rows or len(rows) == 0:
         return []
     else:
@@ -43,8 +51,16 @@ def get_all_daily_channel_ids():
         return results
     
     
-def get_valid_daily_channel_ids():
+def get_valid_daily_channels():
     rows = select_daily_channel(None, True)
+    if rows:
+        return rows
+    else:
+        return []
+    
+    
+def get_valid_daily_channel_ids():
+    rows = get_valid_daily_channels()
     if not rows or len(rows) == 0:
         return []
     else:
@@ -93,10 +109,11 @@ def select_daily_channel(guild_id=None, can_post=None):
     return result
     
 def update_daily_channel(guild_id, channel_id=None, can_post=True):
-    query = 'UPDATE {} SET '.format(DAILY_TABLE_NAME)
-    if channel_id != None:
-        query += util.db_get_where_string('channelid', channel_id, True)
     can_post_converted = util.db_convert_boolean(can_post)
-    query += '{} WHERE {}'.format(util.db_get_where_string('canpost', can_post), util.db_get_where_string('guildid', guild_id, True))
+    set_strings = [util.db_get_where_string('canpost', can_post_converted)]
+    if channel_id != None:
+        set_strings.append(util.db_get_where_string('channelid', channel_id, True))
+    set_string = ', '.join(set_strings)
+    query = 'UPDATE {} SET {} WHERE {}'.format(DAILY_TABLE_NAME, set_string, util.db_get_where_string('guildid', guild_id, True))
     success = core.db_try_execute(query)
     return success
