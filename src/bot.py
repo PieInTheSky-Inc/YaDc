@@ -88,23 +88,29 @@ async def post_dailies_loop():
 
 
 async def post_all_dailies(verbose=False):
-    utc_now = datetime.datetime.now(datetime.timezone.utc)
-    configured_channel_count = len(d.get_all_daily_channel_ids())
+    utc_now = util.get_utcnow()
+    utc_today = datetime.datetime(utc_now.year, utc_now.month, utc_now.day)
+    configured_channel_count = len(d.get_all_daily_channels())
     if configured_channel_count > 0:
+        old_dropship_txt = dropship.get_dropship_text(dropship.db_get_dropship_text_parts)
         dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
         if dropship_txt and updated_parts_ids:
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
             fix_daily_channels()
-            valid_channel_ids = d.get_valid_daily_channel_ids()
+            valid_channels = d.get_all_daily_channels()
             print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
             txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
-            txt += dropship_txt
-            for channel_id in valid_channel_ids:
-                text_channel = bot.get_channel(channel_id)
+            for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - last_posted_dated
+                text_channel = bot.get_channel(daily_channel[1])
                 if text_channel != None:
                     guild = text_channel.guild
+                    guild_member_bot = guild.get_member(bot.user.id)
+                    old_msg = get_latest_message(text_channel, by_member_id=guild_member_bot.id, with_content=old_dropship_txt, after=utc_today)
                     try:
+                        if old_msg:
+                            await old_msg.delete()
                         await text_channel.send(txt)
+                        await text_channel.send(dropship_txt)    
                     except Exception as error:
                         print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
             core.try_store_setting('posted_autodaily', utc_now, core.SettingType.Timestamp)
