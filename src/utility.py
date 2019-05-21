@@ -75,6 +75,26 @@ def db_get_column_definition(column_name, column_type, is_primary=False, not_nul
     return result
 
 
+def db_get_where_and_string(where_strings):
+    if where_strings:
+        result = ''
+        for i in range(0, len(where_strings)):
+            if i > 0:
+                result += ' AND '
+            result += where_strings[i]
+        return result
+
+
+def db_get_where_or_string(where_strings):
+    if where_strings:
+        result = ''
+        for i in range(0, len(where_strings)):
+            if i > 0:
+                result += ' OR '
+            result += where_strings[i]
+        return result
+
+
 def db_get_where_string(column_name, column_value, is_text_type=False):
     column_name = column_name.lower()
     if is_text_type:
