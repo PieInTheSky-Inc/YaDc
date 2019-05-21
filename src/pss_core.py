@@ -293,7 +293,7 @@ def get_setting(setting_name, setting_type):
     
 def try_store_setting(setting_name, value, setting_type):
     success = False
-    existing_setting_value = get_setting(setting_name)
+    existing_setting_value = get_setting(setting_name, setting_type)
     setting_name = util.db_convert_text(setting_name)
     column_name = ''
     
