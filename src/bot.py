@@ -92,7 +92,7 @@ async def post_all_dailies(verbose=False):
     utc_today = datetime.datetime(utc_now.year, utc_now.month, utc_now.day)
     configured_channel_count = len(d.get_all_daily_channels())
     if configured_channel_count > 0:
-        old_dropship_txt = dropship.get_dropship_text(dropship.db_get_dropship_text_parts)
+        old_dropship_txt = dropship.get_dropship_text(dropship.db_get_dropship_text_parts())
         dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
         if dropship_txt and updated_parts_ids:
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
