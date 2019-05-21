@@ -106,7 +106,7 @@ async def post_all_dailies(verbose=False, post_anyway=False):
                 if text_channel != None:
                     guild = text_channel.guild
                     guild_member_bot = guild.get_member(bot.user.id)
-                    old_msg = get_latest_message(text_channel, by_member_id=guild_member_bot.id, with_content=old_dropship_txt, after=utc_today)
+                    old_msg = await get_latest_message(text_channel, by_member_id=guild_member_bot.id, with_content=old_dropship_txt, after=utc_today)
                     try:
                         if old_msg:
                             await old_msg.delete()
