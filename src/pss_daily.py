@@ -35,15 +35,10 @@ def get_daily_channel_id(guild_id):
     
     
 def get_all_daily_channels():
-    print('+ called get_all_daily_channels()')
     rows = select_daily_channel(None, None)
     if rows:
-        print('[get_all_daily_channels] retrieved {} daily channels: {}'.format(len(rows), rows))
-        print('- exiting get_all_daily_channels, returning: {}'.format(rows))
         return rows
     else:
-        print('[get_all_daily_channels] retrieved 0 daily channels.')
-        print('- exiting get_all_daily_channels, returning: {}'.format([]))
         return []
     
     
