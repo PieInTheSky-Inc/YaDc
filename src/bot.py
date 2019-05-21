@@ -84,17 +84,17 @@ async def post_dailies_loop():
         if utc_now.second != 0:
             await asyncio.sleep(60 - utc_now.second)
         else:
-            await post_all_dailies()
+            await post_all_dailies(verbose=False, post_anyway=False)
 
 
-async def post_all_dailies(verbose=False):
+async def post_all_dailies(verbose=False, post_anyway=False):
     utc_now = util.get_utcnow()
     utc_today = datetime.datetime(utc_now.year, utc_now.month, utc_now.day)
     configured_channel_count = len(d.get_all_daily_channels())
     if configured_channel_count > 0:
         old_dropship_txt = dropship.get_dropship_text(dropship.db_get_dropship_text_parts())
         dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-        if dropship_txt and updated_parts_ids:
+        if post_anyway or (dropship_txt and updated_parts_ids):
             print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
             fix_daily_channels()
             valid_channels = d.get_all_daily_channels()
@@ -405,7 +405,7 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
                 await text_channel.send(dropship.get_dropship_text())
     elif action == 'postall':
         if author_is_owner:
-            await post_all_dailies()
+            await post_all_dailies(verbose=True, post_anyway=True)
                 
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
