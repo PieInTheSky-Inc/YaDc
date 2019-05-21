@@ -35,10 +35,13 @@ def get_daily_channel_id(guild_id):
     
     
 def get_all_daily_channels():
+    print('+ called get_all_daily_channels()')
     rows = select_daily_channel(None, None)
     if rows:
+        print('[get_all_daily_channels] retrieved {} daily channels: {}'.format(len(rows), rows))
         return rows
     else:
+        print('[get_all_daily_channels] retrieved 0 daily channels.')
         return []
     
     
@@ -97,6 +100,7 @@ def insert_daily_channel(guild_id, channel_id):
     return success
 
 def select_daily_channel(guild_id=None, can_post=None):
+    print('+ called select_daily_channel({}, {})'.format(guild_id, can_post))
     where = []
     if guild_id:
         where_guild_id = util.db_get_where_string('guildid', guild_id, True)
@@ -105,6 +109,7 @@ def select_daily_channel(guild_id=None, can_post=None):
         can_post_converted = util.db_convert_boolean(can_post)
         where_can_post = util.db_get_where_string('guildid', can_post_converted)
         where.append(where_can_post)
+    print('[select_daily_channel] calling core.db_select_any_from_where_and({}, {})'.format(DAILY_TABLE_NAME, where))
     result = core.db_select_any_from_where_and(DAILY_TABLE_NAME, where)
     return result
     
