@@ -45,6 +45,8 @@ for folder in ['raw', 'data']:
     if not os.path.exists(folder):
         os.makedir(folder)
 
+ACTIVITY = discord.Activity(type=discord.ActivityType.watching, name='users typing /help for help')
+
 
 # ----- Bot Setup -------------------------------------------------------------
 logging.basicConfig(
@@ -55,7 +57,7 @@ logging.basicConfig(
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships',
-                   activity=discord.Activity(type=discord.ActivityType.unknown, name='type /help for help'))
+                   activity=ACTIVITY)
 
 setattr(bot, "logger", logging.getLogger("bot.py"))
 
