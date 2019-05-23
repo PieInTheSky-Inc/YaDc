@@ -293,6 +293,7 @@ def get_setting(setting_name, setting_type):
     
 def try_store_setting(setting_name, value, setting_type):
     success = False
+    error = None
     existing_setting_value = get_setting(setting_name, setting_type)
     setting_name = util.db_convert_text(setting_name)
     column_name = ''
@@ -318,10 +319,10 @@ def try_store_setting(setting_name, value, setting_type):
     values = ','.join([setting_name, modify_date, value])
     if existing_setting_value is None:
         query_insert = 'INSERT INTO {} (settingname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
-        success = db_try_execute(query_insert)
+        success, error = db_try_execute(query_insert)
     else:
         query_update = 'UPDATE {} SET modifydate = {}, {} = {} WHERE settingname = {}'.format(SETTINGS_TABLE_NAME, modify_date, column_name, value, setting_name)
-        success = db_try_execute(query_update)
+        success, error = db_try_execute(query_update)
     return success
 
 
@@ -329,18 +330,19 @@ def try_store_setting(setting_name, value, setting_type):
 def init_db(from_scratch=False):
     from pss_daily import DAILY_TABLE_NAME
     from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
+    error = None
     if from_scratch:
-        deleted_table_daily = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
+        deleted_table_daily, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
         if deleted_table_daily:
             print('[init_db] dropped table {}'.format(DAILY_TABLE_NAME))
         else:
             print('[init_db] Could not drop table {}'.format(DAILY_TABLE_NAME))
-        deleted_table_dropship = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
+        deleted_table_dropship, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
         if deleted_table_dropship:
             print('[init_db] dropped table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
         else:
             print('[init_db] Could not drop table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
-        deleted_table_settings = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
+        deleted_table_settings, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
         if deleted_table_settings:
             print('[init_db] dropped table {}'.format(SETTINGS_TABLE_NAME))
         else:
