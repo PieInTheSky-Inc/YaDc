@@ -591,22 +591,26 @@ def db_try_create_table(table_name, columns):
         
 def db_try_execute(query):
     success = False
+    error = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor is not None:
+        if cursor != None:
             try:
                 db_execute(query, cursor)
                 success = True
-            except (Exception, psycopg2.DatabaseError) as error:
-                error_name = error.__class__.__name__
-                print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
+            except (Exception, psycopg2.DatabaseError) as ex:
+                ex_name = ex.__class__.__name__
+                error = f'{ex_name} while performing a query: {ex}'
+                print(f'[db_try_execute] {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
         else:
-            print('[db_try_execute] could not get cursor')
+            error = 'could not get cursor'
+            print(f'[db_try_execute] {error}')
             db_disconnect()
     else:
-        print('[db_try_execute] could not connect to db')
-    return success
+        error = 'could not connect to db'
+        print(f'[db_try_execute] {error}')
+    return success, error
