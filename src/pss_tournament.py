@@ -19,13 +19,15 @@ a_week_prior = timedelta(-7)
 def format_tourney_start(start_date, utcnow):
     currently_running = is_tourney_running(start_date, utcnow)
     starts = get_start_string(currently_running)
-    formatted_date = utility.get_formatted_datetime(start_date)
+    formatted_date = utility.get_formatted_date(start_date)
     result = 'Tournament in {} {} on: {}\n'.format(start_date.strftime('%B'), starts, formatted_date)
     delta_start = start_date - utcnow
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
         delta_end = end_date - utcnow
-        result += '({}, running for another {})'.format(utility.get_formatted_timedelta(delta_start), utility.get_formatted_timedelta(delta_end, False))
+        delta_start_formatted = utility.get_formatted_timedelta(delta_start)
+        delta_end_formatted = utility.get_formatted_timedelta(delta_end, False)
+        result += '({}, running for another {})'.format(delta_start_formatted, delta_end_formatted)
     else:
         result += '({})'.format(utility.get_formatted_timedelta(delta_start))
     return result
