@@ -13,6 +13,11 @@ import holidays
 import logging
 import math
 import os
+import pytz
+import re
+import sys
+import time
+
 import pss_core as core
 import pss_daily as d
 import pss_dropship as dropship
@@ -20,12 +25,8 @@ import pss_fleets as flt
 import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
-import pytz
-import re
-import sys
-import time
-import utility as util
 import pss_tournament as tourney
+import utility as util
 
 
 # ----- Setup ---------------------------------------------------------
