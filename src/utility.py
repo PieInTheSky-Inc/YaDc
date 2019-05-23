@@ -30,6 +30,11 @@ def get_formatted_datetime(date_time):
     return result
 
 
+def get_formatted_date(date_time):
+    result = date_time.strftime('%Y-%m-%d (%Z)')
+    return result
+
+
 def get_formatted_timedelta(delta, include_relative_indicator=True):
     total_seconds = delta.total_seconds()
     is_past = total_seconds < 0
