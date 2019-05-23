@@ -62,7 +62,11 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
 
 
 def get_utcnow():
-    return datetime.now(timezone.utc)
+    print('+ called utility.get_utcnow()')
+    result = datetime.now(timezone.utc)
+    print('[] Retrieved current datetime (UTC): {}'.format(result))
+    print('+ exiting utility.get_utcnow() returning: '.format(re)
+    return result
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
