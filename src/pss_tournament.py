@@ -27,8 +27,7 @@ def format_tourney_start(start_date, utc_now):
     print('[format_tourney_start] retrieved delta_start_formatted: {}'.format(delta_start_formatted))
     delta_start_txt = '**{}** ({})'.format(delta_start_formatted, start_date_formatted)
     print('[format_tourney_start] retrieved delta_start_txt: {}'.format(delta_start_txt))
-    currently_running_txt = ''
-    delta_end_formatted = ''
+    delta_end_txt = ''
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
         print('[format_tourney_start] retrieved end_date: {}'.format(end_date))
