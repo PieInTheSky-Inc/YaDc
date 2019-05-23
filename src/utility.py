@@ -25,13 +25,25 @@ def get_first_of_next_month():
     return get_first_of_following_month(utcnow)
 
 
-def get_formatted_datetime(date_time):
-    result = date_time.strftime('%Y-%m-%d %H:%M:%S (%Z)')
+def get_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True):
+    result = date_time.strftime('%Y-%m-%d %H:%M:%S')
+    if include_tz:
+        tz = date_time.strftime('%Z')
+        if include_tz_brackets:
+            result += ' ({})'.format(tz)
+        else:
+            result += ' {}'.format(tz)
     return result
 
 
-def get_formatted_date(date_time):
-    result = date_time.strftime('%Y-%m-%d (%Z)')
+def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
+    result = date_time.strftime('%Y-%m-%d')
+    if include_tz:
+        tz = date_time.strftime('%Z')
+        if include_tz_brackets:
+            result += ' ({})'.format(tz)
+        else:
+            result += ' {}'.format(tz)
     return result
 
 
