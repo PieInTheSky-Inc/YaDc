@@ -25,7 +25,7 @@ def format_tourney_start(start_date, utc_now):
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
         end_date_formatted = util.get_formatted_date(end_date)
-        delta_end = end_date - utcnow
+        delta_end = end_date - utc_now
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
         delta_end_txt = ' and goes on for another **{}** (until {})'.format(delta_end_formatted, end_date_formatted)
     result = 'Tournament in {} {} {}{}'.format(tourney_month, starts, delta_start_txt, delta_end_txt)
@@ -33,20 +33,14 @@ def format_tourney_start(start_date, utc_now):
 
 
 def get_current_tourney_start():
-    print('+ called get_current_tourney_start()')
     first_of_next_month = util.get_first_of_next_month()
-    print('[get_current_tourney_start] retrieved first of next month: {}'.format(first_of_next_month))
     result = first_of_next_month + A_WEEK_PRIOR
-    print('+ exiting get_current_tourney_start with result: {}'.format(result))
     return result
 
 
 def get_next_tourney_start():
-    print('+ called get_current_tourney_start()')
     next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month())
-    print('[get_current_tourney_start] retrieved first of month after next: {}'.format(first_of_next_month))
     result = next_first_of_next_month + A_WEEK_PRIOR
-    print('+ exiting get_current_tourney_start with result: {}'.format(result))
     return result
 
 
@@ -57,5 +51,5 @@ def get_start_string(currently_running):
         return 'starts'
 
 
-def is_tourney_running(start_date, utcnow):
-    return start_date < utcnow
+def is_tourney_running(start_date, utc_now):
+    return start_date < utc_now
