@@ -425,6 +425,7 @@ def db_execute(query, cursor):
 
 def db_fetchall(query):
     result = None
+    error = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
@@ -432,22 +433,26 @@ def db_fetchall(query):
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
-            except (Exception, psycopg2.DatabaseError) as error:
-                error_name = error.__class__.__name__
-                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+            except (Exception, psycopg2.DatabaseError) as ex:
+                ex_name = error.__class__.__name__
+                error = f'{ex_name} while performing a query: {ex}'
+                print(f'[db_fetchall] {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
         else:
-            print('[db_fetchall] could not get cursor')
+            error = 'could not get cursor'
+            print(f'[db_fetchall] {error}')
             db_disconnect()
     else:
-        print('[db_fetchall] could not connect to db')
-    return result
+        error = 'could not connect to db'
+        print(f'[db_fetchall] {error}')
+    return result, error
 
 
 def db_fetchfirst(query):
     result = None
+    error = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
@@ -455,21 +460,24 @@ def db_fetchfirst(query):
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
-            except (Exception, psycopg2.DatabaseError) as error:
-                error_name = error.__class__.__name__
-                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+            except (Exception, psycopg2.DatabaseError) as ex:
+                ex_name = error.__class__.__name__
+                error = f'{ex_name} while performing a query: {ex}'
+                print(f'[db_fetchfirst] {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
         else:
-            print('[db_fetchall] could not get cursor')
+            error = 'could not get cursor'
+            print(f'[db_fetchfirst] {error}')
             db_disconnect()
     else:
-        print('[db_fetchall] could not connect to db')
+        error = 'could not connect to db'
+        print(f'[db_fetchfirst] {error}')
     if result and len(result) > 0:
-        return result[0]
+        return result[0], error
     else:
-        return None
+        return None, error
         
         
 def db_get_cursor():
@@ -490,13 +498,15 @@ def db_is_connected(connection):
 
 def db_select_any_from(table_name):
     query = 'SELECT * FROM {}'.format(table_name)
-    return db_fetchall(query)
+    result, error = db_fetchall(query)
+    return result
 
 
 def db_select_any_from_where(table_name, where=None):
     if where:
         query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
-        return db_fetchall(query)
+        result, error = db_fetchall(query)
+        return result
     else:
         return db_select_any_from(table_name)
 
@@ -520,13 +530,15 @@ def db_select_any_from_where_or(table_name, where_collection):
 def db_select_first_from(table_name):
     print('+ called db_select_first_from({})'.format(table_name))
     query = 'SELECT * FROM {}'.format(table_name)
-    return db_fetchfirst(query)
+    result, error = db_fetchfirst(query)
+    return result
 
 
 def db_select_first_from_where(table_name, where=None):
     if where:
         query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
-        return db_fetchfirst(query)
+        result, error = db_fetchfirst(query)
+        return result
     else:
         return db_select_first_from(table_name)
 
