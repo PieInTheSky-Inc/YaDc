@@ -88,12 +88,12 @@ def fix_daily_channel(guild_id, can_post):
 # ---------- Utilities ----------
 def delete_daily_channel(guild_id):
     query = 'DELETE FROM daily WHERE guildid = \'{}\''.format(guild_id)
-    success = core.db_try_execute(query)
+    success, error = core.db_try_execute(query)
     return success
     
 def insert_daily_channel(guild_id, channel_id):
     query = 'INSERT INTO daily (guildid, channelid, canpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
-    success = core.db_try_execute(query)
+    success, error = core.db_try_execute(query)
     return success
 
 def select_daily_channel(guild_id=None, can_post=None):
@@ -117,5 +117,5 @@ def update_daily_channel(guild_id, channel_id=None, can_post=True, latest_messag
         set_strings.append(util.db_get_where_string('latestmessageid', latest_message_id, True))
     set_string = ', '.join(set_strings)
     query = 'UPDATE {} SET {} WHERE {}'.format(DAILY_TABLE_NAME, set_string, util.db_get_where_string('guildid', guild_id, True))
-    success = core.db_try_execute(query)
+    success, error = core.db_try_execute(query)
     return success
