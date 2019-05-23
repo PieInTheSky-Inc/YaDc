@@ -573,7 +573,7 @@ async def parse(ctx, *, url):
             
 
 @bot.command(brief='Get tournament information', aliases=['tourney'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
 async def tournament(ctx, action=None):
     """Get information about the monthly tournament
     
