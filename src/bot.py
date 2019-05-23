@@ -54,7 +54,8 @@ logging.basicConfig(
     format = "{asctime} [{levelname:<8}] {name}: {message}")
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
-                   description='This is a Discord Bot for Pixel Starships')
+                   description='This is a Discord Bot for Pixel Starships'
+                   activity=discord.Activity(type=discord.ActivityType.unknown, name='type /help for help'))
 
 setattr(bot, "logger", logging.getLogger("bot.py"))
 
@@ -66,6 +67,7 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
+    game = discord.Game(name='for /help')
     core.init_db()
     bot.loop.create_task(post_dailies_loop())
     print('[on_ready] added task: post_dailies_loop()')
