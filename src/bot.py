@@ -20,6 +20,7 @@ import pss_market as mkt
 import pss_prestige as p
 import pss_research as rs
 #import pss_toolkit as toolkit
+import pss_tournament as tourney
 import pytz
 import re
 import sys
