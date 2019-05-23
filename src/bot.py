@@ -45,7 +45,7 @@ for folder in ['raw', 'data']:
     if not os.path.exists(folder):
         os.makedir(folder)
 
-ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='users typing /help for help')
+ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
 
 # ----- Bot Setup -------------------------------------------------------------
