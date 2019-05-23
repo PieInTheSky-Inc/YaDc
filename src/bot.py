@@ -584,18 +584,23 @@ async def tournament(ctx, action=None):
        Specify an action:
        current: get information about the current month's tournament
        next:    get information about the next month's tournament"""
+    print('+ called command tournament(ctx, {})'.format(action))
     take_action = False
-    utcnow = util.get_utcnow()
+    utc_now = util.get_utcnow()
+    print('[tournament] Retrieved current datetime: {}'.format(utc_now))
     
     if action is None or action == 'current':
         start_of_tourney = tourney.get_current_tourney_start()
+        print('[tournament] Retrieved current tourney start: {}'.format(start_of_tourney))
         take_action = True
     elif action == 'next':
         start_of_tourney = tourney.get_next_tourney_start()
+        print('[tournament] Retrieved current tourney start: {}'.format(start_of_tourney))
         take_action = True
         
     if take_action:
-        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
+        txt = tourney.format_tourney_start(start_of_tourney, utc_now)
+        print('[tournament] Retrieved output: {}'.format(txt))
         await ctx.send(txt)
 
 
