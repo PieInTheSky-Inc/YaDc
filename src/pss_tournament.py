@@ -8,6 +8,8 @@ import pss_core as core
 import utility as util
 
 
+A_WEEK_PRIOR = timedelta(-7)
+
 # ----- Tournament methods ---------------------------------------------------------
 def format_tourney_start(start_date, utc_now):
     currently_running = is_tourney_running(start_date, utc_now)
@@ -31,14 +33,20 @@ def format_tourney_start(start_date, utc_now):
 
 
 def get_current_tourney_start():
+    print('+ called get_current_tourney_start()')
     first_of_next_month = util.get_first_of_next_month()
-    result = first_of_next_month + a_week_prior
+    print('[get_current_tourney_start] retrieved first of next month: {}'.format(first_of_next_month))
+    result = first_of_next_month + A_WEEK_PRIOR
+    print('+ exiting get_current_tourney_start with result: {}'.format(result))
     return result
 
 
 def get_next_tourney_start():
+    print('+ called get_current_tourney_start()')
     next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month())
-    result = next_first_of_next_month + a_week_prior
+    print('[get_current_tourney_start] retrieved first of month after next: {}'.format(first_of_next_month))
+    result = next_first_of_next_month + A_WEEK_PRIOR
+    print('+ exiting get_current_tourney_start with result: {}'.format(result))
     return result
 
 
