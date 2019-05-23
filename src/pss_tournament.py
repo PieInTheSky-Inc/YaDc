@@ -2,20 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 # ----- Packages ------------------------------------------------------
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 from datetime import date, datetime, time, timedelta, timezone
 
 import pss_core as core
 import utility as util
 
 
-base_url = 'http://{}/'.format(core.get_production_server())
-a_week_prior = timedelta(-7)
-
-# ----- Utility methods ---------------------------------------------------------
+# ----- Tournament methods ---------------------------------------------------------
 def format_tourney_start(start_date, utc_now):
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
@@ -31,8 +24,8 @@ def format_tourney_start(start_date, utc_now):
         end_date_formatted = util.get_formatted_date(end_date)
         delta_end = end_date - utcnow
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
-        currently_running_txt = ' and goes on for another {} (until {})'.format(delta_end_formatted, end_date_formatted)
-    result = 'Tournament in {} {} {}{}'.format(tourney_month, starts, delta_start_formatted, currently_running_txt)
+        currently_running_txt = ' and goes on for another **{}** (until {})'.format(delta_end_formatted, end_date_formatted)
+    result = 'Tournament in {} {} **{}**{}'.format(tourney_month, starts, delta_start_formatted, currently_running_txt)
     return result
 
 
