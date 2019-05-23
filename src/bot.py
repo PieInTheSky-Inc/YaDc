@@ -122,7 +122,6 @@ async def post_all_dailies(verbose=False, post_anyway=False):
                             print('[post_all_dailies] could not update latest message id for channel \'{}\' on guild \'{}\': {}'.format(text_channel.name, guild.name, new_msg.id))
                     except Exception as error:
                         print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\''.format(error.__class__.__name__, text_channel.name, guild.name))
-            core.try_store_setting('posted_autodaily', utc_now, core.SettingType.Timestamp)
         elif verbose:
             print('dropship text hasn\'t changed.')
             
@@ -368,8 +367,8 @@ async def stars(ctx, *, division=None):
             await ctx.send(division_list)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='Show the dailies')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def daily(ctx):
     """Show the dailies"""
     async with ctx.typing():
@@ -498,8 +497,8 @@ async def level(ctx, level):
         await ctx.send(txt)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='(beta) Get room infos')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def roomsbeta(ctx, *, room_name=None):
     """(beta) Shows the information for specific room types. This command is currently under testing"""
     async with ctx.typing():
@@ -507,8 +506,8 @@ async def roomsbeta(ctx, *, room_name=None):
         await ctx.send(txt)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='(beta) Get missile info')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def missilebeta(ctx, *, missile_name=None):
     """(beta) Shows the information for specific missile types. This command is currently under testing"""
     async with ctx.typing():
@@ -570,6 +569,30 @@ async def parse(ctx, *, url):
         txt_list = core.parse_links3(url)
         for txt in txt_list:
             await ctx.send(txt)
+            
+            
+
+@bot.command(brief='Get tournament information', aliases=['tourney'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def tournament(ctx, action=None):
+    """Get information about the monthly tournament
+    
+       Specify an action:
+       current: get information about the current month's tournament
+       next:    get information about the next month's tournament"""
+    take_action = False
+    utcnow = util.get_utcnow()
+    
+    if action is None or action == 'current':
+        start_of_tourney = tourney.get_current_tourney_start()
+        take_action = True
+    elif action == 'next':
+        start_of_tourney = tourney.get_next_tourney_start()
+        take_action = True
+        
+    if take_action:
+        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
+        await ctx.send(txt)
 
 
 @bot.command(hidden=True,
