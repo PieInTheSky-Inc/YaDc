@@ -727,7 +727,7 @@ async def test(ctx, action, *, params):
         if not success:
             await ctx.send(error)
         else:
-            await ctx.send('The has been executed successfully.')
+            await ctx.send(f'The query \'{params}\' has been executed successfully.')
 
 
 # ----- Run the Bot -----------------------------------------------------------
