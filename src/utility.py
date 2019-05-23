@@ -62,10 +62,7 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
 
 
 def get_utcnow():
-    print('+ called utility.get_utcnow()')
     result = datetime.now(timezone.utc)
-    print('[] Retrieved current datetime (UTC): {}'.format(result))
-    print('+ exiting utility.get_utcnow() returning: '.format(re))
     return result
 
 
