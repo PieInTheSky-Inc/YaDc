@@ -702,43 +702,32 @@ async def testing(ctx, *, action=None):
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx, *, action):
-    print('+ called command test(ctx, {})'.format(action))
+async def test(ctx, action, *, params):
+    print(f'+ called command test(ctx, {action}) by {ctx.author.name}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
-        print('[cmd_test] retrieved datetime utc now')
         txt = util.get_formatted_datetime(utcnow)
-        print('[cmd_test] formatted datetime object')
         await ctx.send(txt)
-        print('[cmd_test] sent formatted datetime to channel')
-    if action == 'first':
-        first_of_next_month = util.get_first_of_next_month()
-        print('[cmd_test] retrieved first of next month')
-        txt = util.get_formatted_datetime(first_of_next_month)
-        print('[cmd_test] formatted datetime object')
-        await ctx.send(txt)
-        print('[cmd_test] sent formatted datetime to channel')
-    if action == 'current':
-        utcnow = util.get_utcnow()
-        print('[cmd_test] retrieved current datetime')
-        start_of_tourney = tourney.get_current_tourney_start()
-        print('[cmd_test] retrieved start date of this month\'s tourney')
-        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
-        print('[cmd_test] created output text')
-        await ctx.send(txt)
-        print('[cmd_test] sent formatted datetime to channel')
-    if action == 'next':
-        utcnow = util.get_utcnow()
-        print('[cmd_test] retrieved current datetime')
-        start_of_tourney = tourney.get_next_tourney_start()
-        print('[cmd_test] retrieved start date of next month\'s tourney')
-        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
-        print('[cmd_test] created output text')
-        await ctx.send(txt)
-        print('[cmd_test] sent formatted datetime to channel')
-    if action == 'init':
+    elif action == 'init':
         core.init_db(True)
         await ctx.send('Initialized the database from scratch')
+        await ctx.message.delete()
+    elif (action == 'select' or action == 'selectall') and params:
+        query = f'SELECT {params}'
+        result, error = core.db_fetchall(query)
+        if error:
+            await ctx.send(error)
+        elif result:
+            await ctx.send(result)
+        else:
+            await ctx.send('The query didn\'t return any results.')
+    elif action == 'query' and params:
+        query = f'{params}'
+        error = core.db_try_execute(query)
+        if error:
+            await ctx.send(error)
+        else:
+            await ctx.send('The has been executed successfully.')
 
 
 # ----- Run the Bot -----------------------------------------------------------
