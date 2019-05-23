@@ -20,7 +20,7 @@ def format_tourney_start(start_date, utcnow):
     currently_running = is_tourney_running(start_date, utcnow)
     starts = get_start_string(currently_running)
     formatted_date = utility.get_formatted_date(start_date)
-    result = 'Tournament in {} {} on: {}\n'.format(start_date.strftime('%B'), starts, formatted_date)
+    result = 'Tournament in {} {} on: {} '.format(start_date.strftime('%B'), starts, formatted_date)
     delta_start = start_date - utcnow
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
