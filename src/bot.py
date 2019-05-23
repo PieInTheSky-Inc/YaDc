@@ -524,6 +524,30 @@ async def parse(ctx, *, url):
         txt_list = core.parse_links3(url)
         for txt in txt_list:
             await ctx.send(txt)
+            
+            
+@bot.command(brief='Get tournament information', aliases=['tourney'])
+@commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
+async def tournament(ctx, action=None):
+    """Get information about the monthly tournament
+    
+       Specify an action (current is default):
+       current: get information about the current month's tournament
+       next:    get information about the next month's tournament"""
+    take_action = False
+    utcnow = util.get_utcnow()
+    
+    if action is None or action == 'current':
+        start_of_tourney = tourney.get_current_tourney_start()
+        take_action = True
+    elif action == 'next':
+        start_of_tourney = tourney.get_next_tourney_start()
+        take_action = True
+        
+    if take_action:
+        txt = tourney.format_tourney_start(start_of_tourney, utcnow)
+        await ctx.send(txt)
+
 
 
 @bot.command(hidden=True,
