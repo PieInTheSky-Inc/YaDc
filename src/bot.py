@@ -21,6 +21,7 @@ import pss_prestige as p
 import pss_research as rs
 #import pss_toolkit as toolkit
 import pss_tournament as tourney
+import pss_utility as util
 import pytz
 import re
 import sys
@@ -38,7 +39,6 @@ else:
 
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
-import utility
 
 for folder in ['raw', 'data']:
     if not os.path.exists(folder):
@@ -142,7 +142,7 @@ async def ping(ctx):
 async def shell(ctx, *, cmd):
     """Run a shell command"""
     async with ctx.typing():
-        txt = utility.shell_cmd(cmd)
+        txt = util.shell_cmd(cmd)
         await ctx.send(txt)
 
 
