@@ -701,7 +701,7 @@ async def testing(ctx, *, action=None):
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, action, *, params):
     print(f'+ called command test(ctx, {action}) by {ctx.author.name}')
     if action == 'utcnow':
