@@ -19,11 +19,9 @@ def format_tourney_start(start_date, utc_now):
     delta_start = start_date - utc_now
     delta_start_formatted = util.get_formatted_timedelta(delta_start)
     delta_start_txt = '**{}** ({})'.format(delta_start_formatted, start_date_formatted)
-    currently_running_txt = ''
-    delta_end_formatted = ''
-    result = 'Tournament in {} {} '.format(start_date.strftime('%B'), starts)
+    delta_end_txt = ''
     if currently_running:
-        end_date = utility.get_first_of_following_month(start_date)
+        end_date = util.get_first_of_following_month(start_date)
         end_date_formatted = util.get_formatted_date(end_date)
         delta_end = end_date - utc_now
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
