@@ -723,8 +723,8 @@ async def test(ctx, action, *, params):
             await ctx.send('The query didn\'t return any results.')
     elif action == 'query' and params:
         query = f'{params}'
-        error = core.db_try_execute(query)
-        if error:
+        success, error = core.db_try_execute(query)
+        if not success:
             await ctx.send(error)
         else:
             await ctx.send('The has been executed successfully.')
