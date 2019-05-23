@@ -538,7 +538,6 @@ async def tournament(ctx, action=None):
     print('+ called command tournament(ctx, {})'.format(action))
     take_action = False
     utc_now = util.get_utcnow()
-    print('[tournament] retrieved current datetime: {}'.format(utc_now))
     
     if action is None or action == 'current':
         start_of_tourney = tourney.get_current_tourney_start()
