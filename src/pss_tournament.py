@@ -9,38 +9,41 @@ from __future__ import unicode_literals
 from datetime import date, datetime, time, timedelta, timezone
 
 import pss_core as core
-import utility
+import utility as util
 
 
 base_url = 'http://{}/'.format(core.get_production_server())
 a_week_prior = timedelta(-7)
 
 # ----- Utility methods ---------------------------------------------------------
-def format_tourney_start(start_date, utcnow):
-    currently_running = is_tourney_running(start_date, utcnow)
+def format_tourney_start(start_date, utc_now):
+    currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
-    formatted_date = utility.get_formatted_date(start_date)
-    result = 'Tournament in {} {} on: {} '.format(start_date.strftime('%B'), starts, formatted_date)
-    delta_start = start_date - utcnow
+    start_date_formatted = util.get_formatted_date(start_date)
+    tourney_month = start_date.strftime('%B')
+    delta_start = start_date - utc_now
+    delta_start_formatted = '{} ({})'.format(util.get_formatted_timedelta(delta_start), start_date_formatted)
+    currently_running_txt = ''
+    delta_end_formatted = ''
+    result = 'Tournament in {} {} '.format(start_date.strftime('%B'), starts)
     if currently_running:
         end_date = utility.get_first_of_following_month(start_date)
+        end_date_formatted = util.get_formatted_date(end_date)
         delta_end = end_date - utcnow
-        delta_start_formatted = utility.get_formatted_timedelta(delta_start)
-        delta_end_formatted = utility.get_formatted_timedelta(delta_end, False)
-        result += '({}, running for another {})'.format(delta_start_formatted, delta_end_formatted)
-    else:
-        result += '({})'.format(utility.get_formatted_timedelta(delta_start))
+        delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
+        currently_running_txt = ' and goes on for another {} (until {})'.format(delta_end_formatted, end_date_formatted)
+    result = 'Tournament in {} {} {}{}'.format(tourney_month, starts, delta_start_formatted, currently_running_txt)
     return result
 
 
 def get_current_tourney_start():
-    first_of_next_month = utility.get_first_of_next_month()
+    first_of_next_month = util.get_first_of_next_month()
     result = first_of_next_month + a_week_prior
     return result
 
 
 def get_next_tourney_start():
-    next_first_of_next_month = utility.get_first_of_following_month(utility.get_first_of_next_month())
+    next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month())
     result = next_first_of_next_month + a_week_prior
     return result
 
