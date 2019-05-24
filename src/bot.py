@@ -737,10 +737,9 @@ async def test(ctx, action, *, params):
         titl = 'Title'
         desc = 'Description'
         embe = discord.embed(title=titl,
-                             type='rich',
                              description=desc,
-                             url=None,
                              colour=bot_colour)
+        embe.fields.addfield(name='Field title', value=txt)
         await ctx.send(embed=embe)
 
 
