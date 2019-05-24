@@ -650,6 +650,37 @@ async def testing(ctx, *, action=None):
         print(txt)
         bot.close()
         quit()
+        
+        
+@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def test(ctx, action, *, params):
+    print(f'+ called command test(ctx, {action}, {params}) by {ctx.author}')
+    if action == 'utcnow':
+        utcnow = util.get_utcnow()
+        txt = util.get_formatted_datetime(utcnow)
+        await ctx.send(txt)
+    elif action == 'init':
+        core.init_db(True)
+        await ctx.send('Initialized the database from scratch')
+        await ctx.message.delete()
+    elif (action == 'select' or action == 'selectall') and params:
+        query = f'SELECT {params}'
+        result, error = core.db_fetchall(query)
+        if error:
+            await ctx.send(error)
+        elif result:
+            await ctx.send(result)
+        else:
+            await ctx.send('The query didn\'t return any results.')
+    elif action == 'query' and params:
+        query = f'{params}'
+        success, error = core.db_try_execute(query)
+        if not success:
+            await ctx.send(error)
+        else:
+            await ctx.send(f'The query \'{params}\' has been executed successfully.')
 
 
 #@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
