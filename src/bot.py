@@ -728,6 +728,20 @@ async def test(ctx, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
+    elif action == 'embed':
+        bot_member = ctx.guild.get_member(bot.user.id)
+        bot_colour = bot_member.colour
+        txt = params
+        if txt is None:
+            txt = 'Text'
+        titl = 'Title'
+        desc = 'Description'
+        embe = discord.embed(title=titl,
+                             type='rich',
+                             description=desc,
+                             url=None,
+                             colour=bot_colour)
+        await ctx.send(embed=embe)
 
 
 # ----- Run the Bot -----------------------------------------------------------
