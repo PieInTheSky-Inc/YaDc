@@ -741,7 +741,7 @@ async def test(ctx, action, *, params=None):
         desc = 'Description'
         embe = discord.Embed(title=titl, description=desc, colour=bot_colour)
         print(f'[test] created embed: {embe}')
-        embe.fields.addfield(name='Field title', value=txt)
+        embe.add_field(name='Field title', value=txt)
         print(f'[test] added field to embed.')
         await ctx.send(embed=embe)
 
