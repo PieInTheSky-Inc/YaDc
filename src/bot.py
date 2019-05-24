@@ -702,7 +702,7 @@ async def testing(ctx, *, action=None):
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx, action, *, params):
+async def test(ctx, action, *, params=None):
     print(f'+ called command test(ctx, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
@@ -730,21 +730,19 @@ async def test(ctx, action, *, params):
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'embed':
         bot_member = ctx.guild.get_member(bot.user.id)
-        print(f'[test_embed] retrieved bot guild member: {bot_member}')
+        print(f'[test] retrieved bot guild member: {bot_member}')
         bot_colour = bot_member.colour
-        print(f'[test_embed] retrieved bot guild colour: {bot_colour}')
+        print(f'[test] retrieved bot guild colour: {bot_colour}')
         txt = params
         if txt is None:
             txt = 'Text'
-        print(f'[test_embed] retrieved text: {txt}')
+        print(f'[test] retrieved text: {txt}')
         titl = 'Title'
         desc = 'Description'
-        embe = discord.embed(title=titl,
-                             description=desc,
-                             colour=bot_colour)
-        print(f'[test_embed] created embed: {embe}')
+        embe = discord.Embed(title=titl, description=desc, colour=bot_colour)
+        print(f'[test] created embed: {embe}')
         embe.fields.addfield(name='Field title', value=txt)
-        print(f'[test_embed] added field to embed.')
+        print(f'[test] added field to embed.')
         await ctx.send(embed=embe)
 
 
