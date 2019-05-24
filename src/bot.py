@@ -703,7 +703,7 @@ async def testing(ctx, *, action=None):
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def test(ctx, action, *, params):
-    print(f'+ called command test(ctx, {action}) by {ctx.author}')
+    print(f'+ called command test(ctx, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
         txt = util.get_formatted_datetime(utcnow)
