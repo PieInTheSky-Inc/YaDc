@@ -45,10 +45,20 @@ def download_top_100_raw():
     return core.get_data_from_url(url)
 
 
+def download_tournament_participants_raw():
+    url = f'{base_url}AllianceService/ListAlliancesWithDivision'
+    return core.get_data_from_url(url)
+
+
 def download_top_100():
     raw_text = download_top_100_raw()
     df_alliances = alliancetxt_to_df(raw_text)
-    print('Number of fleets in top 100 downloaded: {}'.format(len(df_alliances)))
+    return df_alliances
+
+
+def download_tournament_participants():
+    raw_text = download_tournament_participants_raw()
+    df_alliances = alliancetxt_to_df(raw_text)
     return df_alliances
 
 
@@ -84,9 +94,9 @@ def fleet_df_to_scores(df, division_id):
 
 
 def get_division_stars(division):
-    if (division == None):
+    if division is None:
         return get_all_division_stars()
-    df_alliances = download_top_100()
+    df_alliances = download_tournament_participants()
     division_table = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
     division = division.upper()
     if division not in division_table.keys():
@@ -97,7 +107,7 @@ def get_division_stars(division):
 
 
 def get_all_division_stars():
-    df_alliances = download_top_100()
+    df_alliances = download_tournament_participants()
     division_list = ['A', 'B', 'C', 'D']
     txt = ''
     for i, division in enumerate(division_list):
