@@ -589,7 +589,19 @@ async def tournament(ctx):
         try:
             await ctx.invoke(command='tournament current')
         except Exception as error:
-            print(f'[tournament] {error.__class__.__name__} occurred: {error}')
+            print(f'[tournament] {error.__class__.__name__} occurred with string: {error}')
+        try:
+            await ctx.invoke(command='tournament current')
+        except Exception as error:
+            print(f'[tournament] {error.__class__.__name__} occurred with delegate: {error}')
+        try:
+            for cmd in bot.commands:
+                print(f'[tournament] current command: {cmd.name}')
+                if cmd.name == 'tournament current':
+                    print(f'[tournament] invoking command \'tournament current \'')
+                    await ctx.invoke(command=cmd)
+        except Exception as error:
+            print(f'[tournament] {error.__class__.__name__} occurred with commands set: {error}')
 
 
 @tournament.command(name='current')
