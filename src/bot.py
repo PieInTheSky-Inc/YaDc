@@ -589,9 +589,9 @@ async def tournament(ctx):
 async def tournament_current(ctx):
     """Get information about the current month's tournament"""
     print('+ called command tournament_current(ctx)')
+    utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_current_tourney_start()
     print(f'[tournament current] Retrieved current tourney start: {start_of_tourney}')
-    take_action = True
     txt = tourney.format_tourney_start(start_of_tourney, utc_now)
     print(f'[tournament current] Retrieved output: {txt}')
     await ctx.send(txt)
@@ -601,9 +601,9 @@ async def tournament_current(ctx):
 async def tournament_next(ctx):
     """Get information about the next month's tournament"""
     print('+ called command tournament_next(ctx)')
+    utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_next_tourney_start()
     print(f'[tournament next] Retrieved next tourney start: {start_of_tourney}')
-    take_action = True
     txt = tourney.format_tourney_start(start_of_tourney, utc_now)
     print(f'[tournament next] Retrieved output: {txt}')
     await ctx.send(txt)
