@@ -86,6 +86,8 @@ def get_file_from_sprite_id(sprite_id):
 
 def get_download_url_for_sprite_id(sprite_id):
     file = get_file_from_sprite_id(sprite_id)
+    if file is None:
+        return None
     file_name = file['AwsFilename']
     result = f'{ASSET_DOWNLOAD_URL}{file_name}'
     return result
