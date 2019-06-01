@@ -101,6 +101,10 @@ def get_bot_member_colour(bot, guild):
     return bot_colour
 
 
+def get_embed_field_def(title=None, text=None, inline=True):
+    return (title, text, inline)
+
+
 
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
