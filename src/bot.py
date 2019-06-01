@@ -33,7 +33,7 @@ import utility as util
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
-USER_PSS_TOOLKIT = None
+ASSET_DOWNLOAD_URL = 'http://datxcu1rnppcg.cloudfront.net/'
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
