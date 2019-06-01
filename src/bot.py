@@ -728,9 +728,7 @@ async def test(ctx, action, *, params=None):
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'embed':
-        bot_member = ctx.guild.get_member(bot.user.id)
-        print(f'[test] retrieved bot guild member: {bot_member}')
-        bot_colour = bot_member.colour
+        bot_colour = util.get_bot_member_color(bot, ctx.guild)
         print(f'[test] retrieved bot guild colour: {bot_colour}')
         txt = params
         if txt is None:
@@ -738,10 +736,9 @@ async def test(ctx, action, *, params=None):
         print(f'[test] retrieved text: {txt}')
         titl = 'Title'
         desc = 'Description'
-        embe = discord.Embed(title=titl, description=desc, colour=bot_colour)
+        fiel = [['Field title', txt]]
+        embe = util.create_embed(titl, desc, bot_colour, fiel)
         print(f'[test] created embed: {embe}')
-        embe.add_field(name='Field title', value=txt)
-        print(f'[test] added field to embed.')
         await ctx.send(embed=embe)
 
 
