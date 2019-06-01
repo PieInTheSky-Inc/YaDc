@@ -586,7 +586,10 @@ async def tournament(ctx):
     print(f'ctx.subcommand_passed: {ctx.subcommand_passed}')
     print(f'ctx.subcommand_passed is None: {ctx.subcommand_passed is None}')
     if ctx.invoked_subcommand is None:
-        await ctx.invoke(command='tournament current')
+        try:
+            await ctx.invoke(command='tournament current')
+        except Exception as error:
+            print(f'[tournament] {error.__class__.__name__} occurred: {error}')
 
 
 @tournament.command(name='current')
