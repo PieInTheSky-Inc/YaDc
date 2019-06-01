@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
+import ast
 import asyncio
 import datetime
 import discord
@@ -732,13 +733,17 @@ async def test(ctx, action, *, params=None):
     elif action == 'embed':
         bot_colour = util.get_bot_member_color(bot, ctx.guild)
         print(f'[test] retrieved bot guild colour: {bot_colour}')
+        titl = 'Title'
+        desc = 'Description'
+        fiel = []
         txt = params
         if txt is None:
             txt = 'Text'
-        print(f'[test] retrieved text: {txt}')
-        titl = 'Title'
-        desc = 'Description'
-        fiel = [['Field title', txt]]
+        elif txt.startswith('[') and txt.endswith(']'):
+            fiel = ast.literal_eval(txt)
+        else
+            fiel = [['Field Header'],txt]
+        print(f'[test] retrieved fields: {fiel}')
         embe = util.create_embed(titl, desc, bot_colour, fiel)
         print(f'[test] created embed: {embe}')
         await ctx.send(embed=embe)
