@@ -87,12 +87,20 @@ async def get_latest_message(from_channel, by_member_id=None, with_content=None,
     return None
 
 
-def create_embed(title, description=None, colour=None, fields=None):
+def create_embed(title, description=None, colour=None, field_defs=None):
     result = discord.Embed(title=title, description=description, colour=colour)
-    if fields is not None:
-        for t in fields:
+    if field_defs is not None:
+        for t in field_defs:
             result.add_field(name=t[0], value=t[1], inline=t[2])
     return result
+
+
+def create_embed_rich(title, description=None, colour=None,
+                      field_defs=None, thumbnail_url=None,
+                      image_url=None, author_def=None, footer_def=None,
+                      timestamp=None):
+    
+                      
         
         
 def get_bot_member_colour(bot, guild):
@@ -103,6 +111,24 @@ def get_bot_member_colour(bot, guild):
 
 def get_embed_field_def(title=None, text=None, inline=True):
     return (title, text, inline)
+
+
+def get_embed_author_def(name, url=None, icon_url=None):
+    if name is not None:
+        return (name, url, icon_url)
+    return None
+
+
+def get_embed_footer_def(text, icon_url=None):
+    if text is not None:
+        return (text, icon_url)
+    return None
+
+
+def get_embed_timestamp(date_time):
+    if date_time is not None:
+        return date_time.strf('%Y-%m-%dT%H:%M:%S.%fZ')
+    return None
 
 
 
