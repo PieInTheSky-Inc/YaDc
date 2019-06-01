@@ -91,7 +91,7 @@ def create_embed(title, description=None, colour=None, fields=None):
     result = discord.Embed(title=title, description=description, colour=colour)
     if fields is not None:
         for t in fields:
-            result.add_field(name=t[0], value=[1])
+            result.add_field(name=t[0], value=t[1])
     return result
         
         
