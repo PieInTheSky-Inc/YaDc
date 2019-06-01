@@ -97,12 +97,19 @@ def create_embed(title, description=None, colour=None, field_defs=None):
 
 def create_embed_rich(title, description=None, colour=None,
                       field_defs=None, thumbnail_url=None,
-                      image_url=None, author_def=None, footer_def=None,
-                      timestamp=None):
+                      image_url=None, author_def=None, footer_def=None):
+    result = create_embed(title, description, colour, field_defs)
+    if thumbnail_url is not None:
+        result.set_thumbnail(url=thumbnail_url)
+    if image_url is not None:
+        result.set_image(url=image_url)
+    if author_def is not None:
+        result.set_author(name=author_def[0], url=author_def[1], icon_url=author_def[2])
+    if footer_def is not None:
+        result.set_footer(text=footer_def[0], icon_url=footer_def[1])
+    return result
     
-                      
-        
-        
+    
 def get_bot_member_colour(bot, guild):
     bot_member = guild.get_member(bot.user.id)
     bot_colour = bot_member.colour
