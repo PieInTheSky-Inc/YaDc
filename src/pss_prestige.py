@@ -865,24 +865,26 @@ def embed_stats(d, char_input, colour):
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
     left_column = [
-      'Race: '.format(stats['RaceType']),
-      'Gender'.format(stats['GenderType']),
+      'Race: {}'.format(stats['RaceType']),
+      'Gender: {}'.format(stats['GenderType']),
       'HP: {}'.format(stats['FinalHp']),
       'Attack: {}'.format(stats['FinalAttack']),
       'Repair: {}'.format(stats['FinalRepair']),
       'Ability: {}'.format(stats['SpecialAbilityFinalArgument'])
     ]
+    left_column = '```{}```'.format('\n'.join(left_column))
     right_column = [
-      'Collection: '.format(coll_name),
-      'Ability'.format(ability),
+      'Collection: {}'.format(coll_name),
+      'Ability: {}'.format(ability),
       'Pilot: {}'.format(stats['FinalPilot']),
       'Science: {}'.format(stats['FinalScience']),
       'Engineer: {}'.format(stats['FinalEngine']),
       'Weapon: {}'.format(stats['FinalWeapon'])
     ]
+    right_column = '```{}```'.format('\n'.join(right_column))
     fields = []
-    fields.append(util.get_embed_field_def('_ _', '\n'.join(left_column), True))
-    fields.append(util.get_embed_field_def('_ _', '\n'.join(right_column), True))
+    fields.append(util.get_embed_field_def('_ _', left_column, True))
+    fields.append(util.get_embed_field_def('_ _', right_column, True))
     fields.append(util.get_embed_field_def('Walk/Run speed', '{}/{}'.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
     fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
