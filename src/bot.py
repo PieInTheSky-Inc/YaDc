@@ -576,48 +576,36 @@ async def parse(ctx, *, url):
             await ctx.send(txt)
             
             
-@bot.group(brief='Get tournament information', aliases=['tourney'])
+@bot.group(brief='Information on tournament time', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
 async def tournament(ctx):
-    """Get information about the monthly tournament"""
-    print('+ called command tournament(ctx)')
+    """Get information about the time of the tournament.
+       If this command is called without a sub command, it will display
+       information about the time of the current month's tournament."""
     if ctx.invoked_subcommand is None:
-        try:
-            print(f'[tournament] retrieving command \'tournament current\'')
-#            cmd = util.get_command(bot.commands, 'tournament current')
-            cmd = bot.get_command('tournament current')
-            print(f'[tournament] invoking command \'tournament current\'')
-            await ctx.invoke(cmd)
-        except Exception as error:
-            print(f'[tournament] {error.__class__.__name__} occurred with commands set: {error}')
+        cmd = bot.get_command('tournament current')
+        await ctx.invoke(cmd)
 
 
-@tournament.command(name='current')
+@tournament.command(brief='Information on this month\'s tournament time', name='current')
 async def tournament_current(ctx):
-    """Get information about the current month's tournament"""
-    print('+ called command tournament_current(ctx)')
+    """Get information about the time of the current month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_current_tourney_start()
-    print(f'[tournament current] Retrieved current tourney start: {start_of_tourney}')
     txt = tourney.format_tourney_start(start_of_tourney, utc_now)
-    print(f'[tournament current] Retrieved output: {txt}')
     await ctx.send(txt)
     
     
-@tournament.command(name='next')
+@tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def tournament_next(ctx):
-    """Get information about the next month's tournament"""
-    print('+ called command tournament_next(ctx)')
+    """Get information about the time of next month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_next_tourney_start()
-    print(f'[tournament next] Retrieved next tourney start: {start_of_tourney}')
     txt = tourney.format_tourney_start(start_of_tourney, utc_now)
-    print(f'[tournament next] Retrieved output: {txt}')
     await ctx.send(txt)
 
 
-@bot.command(hidden=True,
-    brief='These are testing commands, usually for debugging purposes')
+@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def testing(ctx, *, action=None):
