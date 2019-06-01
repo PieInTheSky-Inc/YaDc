@@ -583,10 +583,10 @@ async def tournament(ctx):
     print('+ called command tournament(ctx)')
     if ctx.invoked_subcommand is None:
         try:
-            print(f'[tournament] retrieving command \'tournament current \'')
+            print(f'[tournament] retrieving command \'tournament current\'')
             cmd = util.get_command(bot.commands, 'tournament current')
-            print(f'[tournament] invoking command \'tournament current \'')
-            await ctx.invoke(command=cmd)
+            print(f'[tournament] invoking command \'tournament current\'')
+            await ctx.invoke(cmd)
         except Exception as error:
             print(f'[tournament] {error.__class__.__name__} occurred with commands set: {error}')
 
