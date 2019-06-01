@@ -596,8 +596,8 @@ async def tournament_current(ctx):
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_current_tourney_start()
     embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    txt = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(txt)
+    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    await ctx.send(embed=embed)
     
     
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
@@ -606,8 +606,8 @@ async def tournament_next(ctx):
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_next_tourney_start()
     embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    txt = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(txt)
+    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    await ctx.send(embed=embed)
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
