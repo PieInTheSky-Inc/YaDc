@@ -91,7 +91,7 @@ def create_embed(title, description=None, colour=None, fields=None):
     result = discord.Embed(title=title, description=description, colour=colour)
     if fields is not None:
         for t in fields:
-            result.add_field(name=t[0], value=t[1])
+            result.add_field(name=t[0], value=t[1], inline=t[2])
     return result
         
         
@@ -99,6 +99,10 @@ def get_bot_member_color(bot, guild):
     bot_member = guild.get_member(bot.user.id)
     bot_colour = bot_member.colour
     return bot_colour
+
+
+def get_embed_field_def(title=None, text=None, inline=True):
+    return (title, text, inline)
 
 
 
