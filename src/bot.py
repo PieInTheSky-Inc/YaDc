@@ -576,33 +576,37 @@ async def parse(ctx, *, url):
             await ctx.send(txt)
             
             
-
-@bot.command(brief='Get tournament information', aliases=['tourney'])
+@bot.group(brief='Get tournament information', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
-async def tournament(ctx, action=None):
-    """Get information about the monthly tournament
+async def tournament(ctx):
+    """Get information about the monthly tournament"""
+    print('+ called command tournament(ctx)')
+    if ctx.invoked_subcommand is None:
+        await tournament_current(ctx)
+
+
+@tournament.command(name='current')
+async def tournament_current(ctx):
+    """Get information about the current month's tournament"""
+    print('+ called command tournament_current(ctx)')
+    start_of_tourney = tourney.get_current_tourney_start()
+    print(f'[tournament current] Retrieved current tourney start: {start_of_tourney}')
+    take_action = True
+    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
+    print(f'[tournament current] Retrieved output: {txt}')
+    await ctx.send(txt)
     
-       Specify an action:
-       current: get information about the current month's tournament
-       next:    get information about the next month's tournament"""
-    print('+ called command tournament(ctx, {})'.format(action))
-    take_action = False
-    utc_now = util.get_utcnow()
-    print('[tournament] Retrieved current datetime: {}'.format(utc_now))
     
-    if action is None or action == 'current':
-        start_of_tourney = tourney.get_current_tourney_start()
-        print('[tournament] Retrieved current tourney start: {}'.format(start_of_tourney))
-        take_action = True
-    elif action == 'next':
-        start_of_tourney = tourney.get_next_tourney_start()
-        print('[tournament] Retrieved current tourney start: {}'.format(start_of_tourney))
-        take_action = True
-        
-    if take_action:
-        txt = tourney.format_tourney_start(start_of_tourney, utc_now)
-        print('[tournament] Retrieved output: {}'.format(txt))
-        await ctx.send(txt)
+@tournament.command(name='next')
+async def tournament_next(ctx):
+    """Get information about the next month's tournament"""
+    print('+ called command tournament_next(ctx)')
+    start_of_tourney = tourney.get_next_tourney_start()
+    print(f'[tournament next] Retrieved next tourney start: {start_of_tourney}')
+    take_action = True
+    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
+    print(f'[tournament next] Retrieved output: {txt}')
+    await ctx.send(txt)
 
 
 @bot.command(hidden=True,
