@@ -22,6 +22,8 @@ import sys
 import urllib.request
 import xml.etree.ElementTree
 from io import StringIO
+
+import pss_assets as assets
 from pss_core import *
 
 
@@ -831,6 +833,50 @@ def print_stats(d, char_input):
     txt += 'training capacity = {}\n'.format(stats['TrainingCapacity'])
     txt += 'equipment = {}'.format(eqpt_mask)
     return txt
+
+
+def embed_stats(d, char_input, colour):
+    _, _, tbl_n2i, _ = get_char_sheet()
+    char_name = parse_char_name(char_input, tbl_n2i)
+    if char_name is None:
+        return None
+
+    stats = d[char_name]
+    ability = stats['SpecialAbilityType']
+    if ability in specials_lookup.keys():
+        ability = specials_lookup[ability]
+    eqpt_mask = convert_eqpt_mask(int(stats['EquipmentMask']))
+    eqpt_mask = [eqpt_slot.capitalize() for eqpt_slot in eqpt_mask]
+    collection_id = stats['CollectionDesignId']
+    if collection_id in collections.keys():
+        coll_name = collections[collection_id]['CollectionName']
+    else:
+        coll_name = '-'
+        
+    thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
+    fields = []
+    fields.append(util.get_embed_field_def('Race', stats['RaceType'], True))
+    fields.append(util.get_embed_field_def('Gender', stats['GenderType'], True))
+    fields.append(util.get_embed_field_def('Collection', coll_name, True))
+    fields.append(util.get_embed_field_def('Ability', ability, False))
+    fields.append(util.get_embed_field_def('HP', stats['FinalHp'], True))
+    fields.append(util.get_embed_field_def('Attack', stats['FinalAttack'], True))
+    fields.append(util.get_embed_field_def('Repair', stats['FinalRepair'], True))
+    fields.append(util.get_embed_field_def('Ability argument', stats['SpecialAbilityFinalArgument'], False))
+    fields.append(util.get_embed_field_def('Pilot', stats['FinalPilot'], True))
+    fields.append(util.get_embed_field_def('Science', stats['FinalShield'], True))
+    fields.append(util.get_embed_field_def('Engineer', stats['FinalEngine'], True))
+    fields.append(util.get_embed_field_def('Weapon', stats['FinalWeapon'], False))
+    fields.append(util.get_embed_field_def('Walk speed', stats['WalkingSpeed'], True))
+    fields.append(util.get_embed_field_def('Run speed', stats['RunSpeed'], True))
+    fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
+    fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
+    fields.append(util.get_embed_field_def('Equipment Slots', eqpt_mask, False))
+    result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
+    return result
+    
+  
+
 
 
 # def embed_stats(d, char):
