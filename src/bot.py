@@ -299,7 +299,8 @@ async def stats(ctx, *, name=''):
                     await ctx.send(result)
                     found_match = True
             else:
-                result = p.get_stats(name, embed=True, raw=False)
+                bot_colour = util.get_bot_member_colour(bot, ctx.guild)
+                result = p.get_stats(name, embed=True, bot_colour, raw=False)
                 if result is not None:
                     await ctx.send(embed=result)
                     found_match = True
