@@ -758,7 +758,7 @@ def convert_eqpt_mask(eqpt_mask):
     eqpt_list = []
     for k in equipment_lookup.keys():
         if (eqpt_mask & k) != 0:
-            eqpt_list.append([equipment_lookup[k]])
+            eqpt_list.append(equipment_lookup[k])
     if len(eqpt_list) == 0:
         return 'nil'
     else:
