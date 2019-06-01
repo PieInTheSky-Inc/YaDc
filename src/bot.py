@@ -581,25 +581,12 @@ async def parse(ctx, *, url):
 async def tournament(ctx):
     """Get information about the monthly tournament"""
     print('+ called command tournament(ctx)')
-    print(f'ctx.invoked_subcommand: {ctx.invoked_subcommand}')
-    print(f'ctx.invoked_subcommand is None: {ctx.invoked_subcommand is None}')
-    print(f'ctx.subcommand_passed: {ctx.subcommand_passed}')
-    print(f'ctx.subcommand_passed is None: {ctx.subcommand_passed is None}')
     if ctx.invoked_subcommand is None:
         try:
-            await ctx.invoke(command='tournament current')
-        except Exception as error:
-            print(f'[tournament] {error.__class__.__name__} occurred with string: {error}')
-        try:
-            await ctx.invoke(command='tournament current')
-        except Exception as error:
-            print(f'[tournament] {error.__class__.__name__} occurred with delegate: {error}')
-        try:
-            for cmd in bot.commands:
-                print(f'[tournament] current command: {cmd.name}')
-                if cmd.name == 'tournament current':
-                    print(f'[tournament] invoking command \'tournament current \'')
-                    await ctx.invoke(command=cmd)
+            print(f'[tournament] retrieving command \'tournament current \'')
+            cmd = util.get_command(bot.commands, 'tournament current')
+            print(f'[tournament] invoking command \'tournament current \'')
+            await ctx.invoke(command=cmd)
         except Exception as error:
             print(f'[tournament] {error.__class__.__name__} occurred with commands set: {error}')
 
