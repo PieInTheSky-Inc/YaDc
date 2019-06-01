@@ -93,6 +93,12 @@ def create_embed(title, description=None, colour=None, fields=None):
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
     return result
+        
+        
+def get_bot_member_colour(bot, guild):
+    bot_member = guild.get_member(bot.user.id)
+    bot_colour = bot_member.colour
+    return bot_colour
 
 
 
