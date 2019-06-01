@@ -760,9 +760,9 @@ def convert_eqpt_mask(eqpt_mask):
         if (eqpt_mask & k) != 0:
             eqpt_list.append(equipment_lookup[k])
     if len(eqpt_list) == 0:
-        return 'nil'
+        return None
     else:
-        return ', '.join(eqpt_list)
+        return eqpt_list
 
 
 # ----- Stats API -----------------------------------------------------
@@ -819,6 +819,7 @@ def print_stats(d, char_input):
     if special in specials_lookup.keys():
         special = specials_lookup[special]
     eqpt_mask = convert_eqpt_mask(int(stats['EquipmentMask']))
+    eqpt_mask = ', '.join(eqpt_mask)
     coll_id   = stats['CollectionDesignId']
     if coll_id in collections.keys():
         coll_name = collections[coll_id]['CollectionName']
@@ -863,24 +864,25 @@ def embed_stats(d, char_input, colour):
         coll_name = '-'
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
+    left_column = f'HP: {stats['FinalHp']}'
+    left_column += f'\nAttack: {stats['FinalAttack']}'
+    left_column += f'\nRepair: {stats['FinalRepair']}'
+    left_column += f'\nAbility: {stats['SpecialAbilityFinalArgument']}'
+    right_column = f'Pilot: {stats['FinalPilot']}'
+    right_column += f'\nScience: {stats['FinalScience']}'
+    right_column += f'\nEngineer: {stats['FinalEngine']}'
+    right_column += f'\nWeapon: {stats['FinalWeapon']}'
     fields = []
     fields.append(util.get_embed_field_def('Race', stats['RaceType'], True))
     fields.append(util.get_embed_field_def('Gender', stats['GenderType'], True))
     fields.append(util.get_embed_field_def('Collection', coll_name, True))
     fields.append(util.get_embed_field_def('Ability', ability, True))
-    fields.append(util.get_embed_field_def('HP', stats['FinalHp'], True))
-    fields.append(util.get_embed_field_def('Pilot', stats['FinalPilot'], True))
-    fields.append(util.get_embed_field_def('Attack', stats['FinalAttack'], True))
-    fields.append(util.get_embed_field_def('Science', stats['FinalScience'], True))
-    fields.append(util.get_embed_field_def('Repair', stats['FinalRepair'], True))
-    fields.append(util.get_embed_field_def('Engineer', stats['FinalEngine'], True))
-    fields.append(util.get_embed_field_def('Ability argument', stats['SpecialAbilityFinalArgument'], True))
-    fields.append(util.get_embed_field_def('Weapon', stats['FinalWeapon'], True))
-    fields.append(util.get_embed_field_def('Walk speed', stats['WalkingSpeed'], True))
-    fields.append(util.get_embed_field_def('Run speed', stats['RunSpeed'], True))
+    fields.append(util.get_embed_field_def(' ', left_column, True))
+    fields.append(util.get_embed_field_def(' ', right_column, True))
+    fields.append(util.get_embed_field_def('Walk/Run speed', f'{stats['WalkingSpeed']}/{stats['RunSpeed']}, True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
     fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
-    fields.append(util.get_embed_field_def('Equipment Slots', eqpt_mask, False))
+    fields.append(util.get_embed_field_def('Equipment Slots', '\n'.join(eqpt_mask), True))
     result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
     return result
     
