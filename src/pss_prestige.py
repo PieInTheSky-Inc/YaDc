@@ -864,25 +864,25 @@ def embed_stats(d, char_input, colour):
         coll_name = '-'
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
-    left_column = {
-      'Race': stats['RaceType'],
-      'Gender': stats['GenderType'],
-      'HP': stats['FinalHp'],
-      'Attack': stats['FinalAttack'],
-      'Repair': stats['FinalRepair'],
-      'Ability': stats['SpecialAbilityFinalArgument']
-    }
-    left_column_title_width = max([len(key) for key in left_column.keys()]) + 2
+    left_column = [
+      ('Race', stats['RaceType']),
+      ('Gender', stats['GenderType']),
+      ('HP', stats['FinalHp']),
+      ('Attack', stats['FinalAttack']),
+      ('Repair', stats['FinalRepair']),
+      ('Ability', stats['SpecialAbilityFinalArgument'])
+    ]
+    left_column_title_width = max([len(item[0]) for item in left_column.keys()]) + 2
     left_column = '```{}```'.format('\n'.join(left_column))
-    right_column = {
-      'Collection': coll_name,
-      'Ability': ability,
-      'Pilot': stats['FinalPilot'],
-      'Science': stats['FinalScience'],
-      'Engineer': stats['FinalEngine'],
-      'Weapon': stats['FinalWeapon']
-    }
-    right_column = max([len(key) for key in left_column.keys()] + 2
+    right_column = [
+      ('Collection', coll_name),
+      ('Ability', ability),
+      ('Pilot', stats['FinalPilot']),
+      ('Science', stats['FinalScience']),
+      ('Engineer', stats['FinalEngine']),
+      ('Weapon', stats['FinalWeapon'])
+    ]
+    right_column_title_width = max([len(item[0]) for item in left_column.keys()] + 2
     right_column = '```{}```'.format('\n'.join(right_column))
     fields = []
     fields.append(util.get_embed_field_def('_ _', left_column, True))
