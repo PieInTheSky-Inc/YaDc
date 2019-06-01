@@ -117,23 +117,25 @@ def get_bot_member_colour(bot, guild):
 
 
 def get_embed_field_def(title=None, text=None, inline=True):
-    return (title, text, inline)
+    if title and text:
+        return (title, text, inline)
+    return None
 
 
 def get_embed_author_def(name, url=None, icon_url=None):
-    if name is not None:
+    if name:
         return (name, url, icon_url)
     return None
 
 
 def get_embed_footer_def(text, icon_url=None):
-    if text is not None:
+    if text:
         return (text, icon_url)
     return None
 
 
 def get_embed_timestamp(date_time):
-    if date_time is not None:
+    if date_time:
         return date_time.strf('%Y-%m-%dT%H:%M:%S.%fZ')
     return None
 
