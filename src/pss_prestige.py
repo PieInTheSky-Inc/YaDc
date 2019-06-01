@@ -780,8 +780,11 @@ def stats2dict(raw_text):
 
 
 def get_stats(char_name, embed=False, colour=None, raw=False):
+    print(f'+ called get_stats({char_name}, {embed}, {colour}, {raw})')
     raw_text = load_char_sheet_raw()
+    print(f'[get_stats] retrieved char sheet')
     d = stats2dict(raw_text)
+    print(f'[get_stats] created dictionary from char sheet')
     if raw:
         txt = f'**{char_name}**'
         _, _, tbl_n2i, _ = get_char_sheet()
@@ -793,9 +796,16 @@ def get_stats(char_name, embed=False, colour=None, raw=False):
                 txt += f'\n▪️ {k}: {v}'''
         return txt
     if embed is True:
-        return embed_stats(d, char_name, colour)
+        print(f'[get_stats] retrieving embed')
+        result = embed_stats(d, char_name, colour)
+        print(f'- exiting get_stats({char_name}, {embed}, {colour}, {raw}) returning embed result: {embed}')
+        return result
     else:
-        return print_stats(d, char_name)
+        print(f'[get_stats] retrieving text')
+        result = print_stats(d, char_name)
+        print(f'- exiting get_stats({char_name}, {embed}, {colour}, {raw}) returning text result: {result}')
+        return result
+        
 
 
 def print_stats(d, char_input):
