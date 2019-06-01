@@ -748,7 +748,14 @@ async def test(ctx, action, *, params=None):
         elif txt.startswith('[') and txt.endswith(']'):
             fiel_values = ast.literal_eval(txt)
             for v in fiel_values:
-                fiel.append(util.get_embed_field_def('Field Header', v, False))
+                if (v.startswith('[') and v.endswith(']')) or (v.startswith('(') and v.endswith(')')):
+                    v_values = ast.literal_eval(v)
+                    if len(v_values) > 1:
+                        fiel.append(util.get_embed_field_def(v_values[0], v_values[1], False))
+                    else:
+                        fiel.append(util.get_embed_field_def('Field Header', v_values[0], False))
+                else:
+                    fiel.append(util.get_embed_field_def('Field Header', v, False))
         else:
             fiel = [['Field Header', txt, False]]
         print(f'[test] retrieved fields: {fiel}')
