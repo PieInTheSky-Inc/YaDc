@@ -779,7 +779,7 @@ def stats2dict(raw_text):
     return d
 
 
-def get_stats(char_name, embed=False, raw=False):
+def get_stats(char_name, embed=False, colour=None, raw=False):
     raw_text = load_char_sheet_raw()
     d = stats2dict(raw_text)
     if raw:
@@ -793,7 +793,7 @@ def get_stats(char_name, embed=False, raw=False):
                 txt += f'\n▪️ {k}: {v}'''
         return txt
     if embed is True:
-        return embed_stats(d, char_name)
+        return embed_stats(d, char_name, colour)
     else:
         return print_stats(d, char_name)
 
