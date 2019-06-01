@@ -286,14 +286,12 @@ async def list(ctx, *, action=''):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
-    print(f'+ called command stats(ctx, {name})')
     async with ctx.typing():
         if len(name) == 0:
             return
         # First try to find a character match
         # (skip this section if command was invoked with 'item'
         if ctx.invoked_with != 'item':
-            print(f'[stats] looking for character named: {name}')
             if name.startswith('--raw '):
                 name = re.sub('^--raw[ ]+', '', name)
                 result = p.get_stats(name, embed=False, raw=True)
@@ -301,19 +299,14 @@ async def stats(ctx, *, name=''):
                     await ctx.send(result)
                     found_match = True
             else:
-                print(f'[stats] starting to create embed for character info')
                 bot_colour = util.get_bot_member_colour(bot, ctx.guild)
-                print(f'[stats] retrieved bot colour: {bot_colour}')
                 result = p.get_stats(name, embed=True, colour=bot_colour, raw=False)
-                print(f'[stats] retrieved character info')
                 if result is not None:
-                    print(f'[stats] created embed for character info')
                     await ctx.send(embed=result)
                     found_match = True
 
         # Next try to find an item match
         if not found_match and ctx.invoked_with != 'char':
-            print(f'[stats] looking for item named: {name}')
             market_txt = mkt.get_item_stats(name)
             if market_txt is not None:
                 await ctx.send(market_txt)
