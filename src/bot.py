@@ -742,7 +742,7 @@ async def test(ctx, action, *, params=None):
         elif txt.startswith('[') and txt.endswith(']'):
             fiel = ast.literal_eval(txt)
         else:
-            fiel = [['Field Header'],txt]
+            fiel = [['Field Header',txt]]
         print(f'[test] retrieved fields: {fiel}')
         embe = util.create_embed(titl, desc, bot_colour, fiel)
         print(f'[test] created embed: {embe}')
