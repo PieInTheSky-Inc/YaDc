@@ -1,6 +1,7 @@
 
 
 import urllib.request
+import xml.etree.ElementTree
 
 import pss_core as core
 import utility as util
@@ -80,4 +81,11 @@ def get_file_from_sprite_id(sprite_id):
     sprite = get_sprite_from_id(sprite_id)
     file_id = sprite['ImageFileId']
     result = get_file_from_id(file_id)
+    return result
+
+
+def get_download_url_for_sprite_id(sprite_id):
+    file = get_file_from_sprite_id(sprite_id)
+    file_name = file['AwsFilename']
+    result = f'{ASSET_DOWNLOAD_URL}{file_name}'
     return result
