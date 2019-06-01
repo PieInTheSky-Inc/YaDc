@@ -595,7 +595,8 @@ async def tournament_current(ctx):
     """Get information about the time of the current month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_current_tourney_start()
-    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
+    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+    txt = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(txt)
     
     
@@ -604,7 +605,8 @@ async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_next_tourney_start()
-    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
+    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+    txt = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(txt)
 
 
@@ -731,7 +733,7 @@ async def test(ctx, action, *, params=None):
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'embed':
-        bot_colour = util.get_bot_member_color(bot, ctx.guild)
+        bot_colour = util.get_bot_member_colour(bot, ctx.guild)
         print(f'[test] retrieved bot guild colour: {bot_colour}')
         titl = 'Title'
         desc = 'Description'
