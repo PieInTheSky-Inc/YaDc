@@ -741,11 +741,11 @@ specials_lookup = {
 
 
 equipment_lookup = {
-    1: 'head',
-    2: 'body',
-    4: 'leg',
-    8: 'weapon',
-    16: 'accessory'}
+    1: 'Head',
+    2: 'Body',
+    4: 'Leg',
+    8: 'Weapon',
+    16: 'Accessory'}
 
 
 gas_cost_normal = [0, 0, 17, 33, 65, 130, 325, 650, 1300, 3200, 6500, 9700, 13000, 19500, 26000, 35700, 43800, 52000, 61700, 71500, 84500, 104000, 117000, 130000, 156000, 175000, 201000, 227000, 253000, 279000, 312000, 351000, 383000, 422000, 468000, 507000, 552000, 604000, 650000, 715000]
@@ -758,7 +758,7 @@ def convert_eqpt_mask(eqpt_mask):
     eqpt_list = []
     for k in equipment_lookup.keys():
         if (eqpt_mask & k) != 0:
-            eqpt_list = eqpt_list + [equipment_lookup[k]]
+            eqpt_list.append([equipment_lookup[k]])
     if len(eqpt_list) == 0:
         return 'nil'
     else:
@@ -846,7 +846,6 @@ def embed_stats(d, char_input, colour):
     if ability in specials_lookup.keys():
         ability = specials_lookup[ability]
     eqpt_mask = convert_eqpt_mask(int(stats['EquipmentMask']))
-    eqpt_mask = [eqpt_slot.capitalize() for eqpt_slot in eqpt_mask]
     collection_id = stats['CollectionDesignId']
     if collection_id in collections.keys():
         coll_name = collections[collection_id]['CollectionName']
@@ -858,15 +857,15 @@ def embed_stats(d, char_input, colour):
     fields.append(util.get_embed_field_def('Race', stats['RaceType'], True))
     fields.append(util.get_embed_field_def('Gender', stats['GenderType'], True))
     fields.append(util.get_embed_field_def('Collection', coll_name, True))
-    fields.append(util.get_embed_field_def('Ability', ability, False))
+    fields.append(util.get_embed_field_def('Ability', ability, True))
     fields.append(util.get_embed_field_def('HP', stats['FinalHp'], True))
     fields.append(util.get_embed_field_def('Attack', stats['FinalAttack'], True))
     fields.append(util.get_embed_field_def('Repair', stats['FinalRepair'], True))
-    fields.append(util.get_embed_field_def('Ability argument', stats['SpecialAbilityFinalArgument'], False))
+    fields.append(util.get_embed_field_def('Ability argument', stats['SpecialAbilityFinalArgument'], True))
     fields.append(util.get_embed_field_def('Pilot', stats['FinalPilot'], True))
     fields.append(util.get_embed_field_def('Science', stats['FinalScience'], True))
     fields.append(util.get_embed_field_def('Engineer', stats['FinalEngine'], True))
-    fields.append(util.get_embed_field_def('Weapon', stats['FinalWeapon'], False))
+    fields.append(util.get_embed_field_def('Weapon', stats['FinalWeapon'], True))
     fields.append(util.get_embed_field_def('Walk speed', stats['WalkingSpeed'], True))
     fields.append(util.get_embed_field_def('Run speed', stats['RunSpeed'], True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
