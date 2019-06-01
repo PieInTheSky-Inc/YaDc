@@ -742,7 +742,7 @@ async def test(ctx, action, *, params=None):
         elif txt.startswith('[') and txt.endswith(']'):
             fiel_values = ast.literal_eval(txt)
             for v in fiel_values:
-                fiel.append(['Field Header', v])
+                fiel.append(util.get_embed_field_def('Field Header', v, False))
         else:
             fiel = [['Field Header', txt]]
         print(f'[test] retrieved fields: {fiel}')
