@@ -295,11 +295,14 @@ async def stats(ctx, *, name=''):
             if name.startswith('--raw '):
                 name = re.sub('^--raw[ ]+', '', name)
                 result = p.get_stats(name, embed=False, raw=True)
+                if result is not None:
+                    await ctx.send(result)
+                    found_match = True
             else:
-                result = p.get_stats(name, embed=False, raw=False)
-            if result is not None:
-                await ctx.send(result)
-                found_match = True
+                result = p.get_stats(name, embed=True, raw=False)
+                if result is not None:
+                    await ctx.send(embed=result)
+                    found_match = True
 
         # Next try to find an item match
         if ctx.invoked_with != 'char':
