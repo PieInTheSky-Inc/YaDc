@@ -864,7 +864,7 @@ def embed_stats(d, char_input, colour):
     fields.append(util.get_embed_field_def('Repair', stats['FinalRepair'], True))
     fields.append(util.get_embed_field_def('Ability argument', stats['SpecialAbilityFinalArgument'], False))
     fields.append(util.get_embed_field_def('Pilot', stats['FinalPilot'], True))
-    fields.append(util.get_embed_field_def('Science', stats['FinalShield'], True))
+    fields.append(util.get_embed_field_def('Science', stats['FinalScience'], True))
     fields.append(util.get_embed_field_def('Engineer', stats['FinalEngine'], True))
     fields.append(util.get_embed_field_def('Weapon', stats['FinalWeapon'], False))
     fields.append(util.get_embed_field_def('Walk speed', stats['WalkingSpeed'], True))
