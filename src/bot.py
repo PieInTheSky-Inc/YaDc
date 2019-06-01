@@ -737,16 +737,14 @@ async def test(ctx, action, *, params=None):
         desc = 'Description'
         fiel = []
         txt = params
-        if params is None:
+        if txt is None:
             txt = 'Text'
+        elif txt.startswith('[') and txt.endswith(']'):
+            fiel_values = ast.literal_eval(txt)
+            for v in fiel_values:
+                fiel.append(util.get_embed_field_def('Field Header', v, False))
         else:
-            txt = str(params)
-            if txt.startswith('[') and txt.endswith(']'):
-                fiel_values = ast.literal_eval(txt)
-                for v in fiel_values:
-                    fiel.append(util.get_embed_field_def('Field Header', v, False))
-            else:
-                fiel = [['Field Header', txt]]
+            fiel = [['Field Header', txt, False]]
         print(f'[test] retrieved fields: {fiel}')
         embe = util.create_embed(titl, desc, bot_colour, fiel)
         print(f'[test] created embed: {embe}')
