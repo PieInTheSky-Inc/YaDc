@@ -864,21 +864,25 @@ def embed_stats(d, char_input, colour):
         coll_name = '-'
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
-    left_column = 'HP: {}'.format(stats['FinalHp'])
-    left_column += '\nAttack: {}'.format(stats['FinalAttack'])
-    left_column += '\nRepair: {}'.format(stats['FinalRepair'])
-    left_column += '\nAbility: {}'.format(stats['SpecialAbilityFinalArgument'])
-    right_column = 'Pilot: {}'.format(stats['FinalPilot'])
-    right_column += '\nScience: {}'.format(stats['FinalScience'])
-    right_column += '\nEngineer: {}'.format(stats['FinalEngine'])
-    right_column += '\nWeapon: {}'.format(stats['FinalWeapon'])
+    left_column = [
+      'Race: '.format(stats['RaceType']),
+      'Gender'.format(stats['GenderType']),
+      'HP: {}'.format(stats['FinalHp']),
+      'Attack: {}'.format(stats['FinalAttack']),
+      'Repair: {}'.format(stats['FinalRepair']),
+      'Ability: {}'.format(stats['SpecialAbilityFinalArgument'])
+    ]
+    right_column = [
+      'Collection: '.format(coll_name),
+      'Ability'.format(ability),
+      'Pilot: {}'.format(stats['FinalPilot']),
+      'Science: {}'.format(stats['FinalScience']),
+      'Engineer: {}'.format(stats['FinalEngine']),
+      'Weapon: {}'.format(stats['FinalWeapon'])
+    ]
     fields = []
-    fields.append(util.get_embed_field_def('Race', stats['RaceType'], True))
-    fields.append(util.get_embed_field_def('Gender', stats['GenderType'], True))
-    fields.append(util.get_embed_field_def('Collection', coll_name, True))
-    fields.append(util.get_embed_field_def('Ability', ability, True))
-    fields.append(util.get_embed_field_def('_ _', left_column, True))
-    fields.append(util.get_embed_field_def('_ _', right_column, True))
+    fields.append(util.get_embed_field_def('_ _', '\n'.join(left_column), True))
+    fields.append(util.get_embed_field_def('_ _', '\n'.join(right_column), True))
     fields.append(util.get_embed_field_def('Walk/Run speed', '{}/{}'.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
     fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
