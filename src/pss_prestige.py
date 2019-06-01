@@ -879,7 +879,7 @@ def embed_stats(d, char_input, colour):
     fields.append(util.get_embed_field_def('Ability', ability, True))
     fields.append(util.get_embed_field_def(' ', left_column, True))
     fields.append(util.get_embed_field_def(' ', right_column, True))
-    fields.append(util.get_embed_field_def('Walk/Run speed', f'{}/{}.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
+    fields.append(util.get_embed_field_def('Walk/Run speed', '{}/{}'.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
     fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
     fields.append(util.get_embed_field_def('Equipment Slots', '\n'.join(eqpt_mask), True))
