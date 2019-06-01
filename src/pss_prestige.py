@@ -864,14 +864,14 @@ def embed_stats(d, char_input, colour):
         coll_name = '-'
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
-    left_column = f'HP: {stats['FinalHp']}'
-    left_column += f'\nAttack: {stats['FinalAttack']}'
-    left_column += f'\nRepair: {stats['FinalRepair']}'
-    left_column += f'\nAbility: {stats['SpecialAbilityFinalArgument']}'
-    right_column = f'Pilot: {stats['FinalPilot']}'
-    right_column += f'\nScience: {stats['FinalScience']}'
-    right_column += f'\nEngineer: {stats['FinalEngine']}'
-    right_column += f'\nWeapon: {stats['FinalWeapon']}'
+    left_column = 'HP: {}'.format(stats['FinalHp'])
+    left_column += '\nAttack: {}'.format(stats['FinalAttack'])
+    left_column += '\nRepair: {}'.format(stats['FinalRepair'])
+    left_column += '\nAbility: {}'.format(stats['SpecialAbilityFinalArgument'])
+    right_column = 'Pilot: {}'.format(stats['FinalPilot'])
+    right_column += '\nScience: {}'.format(stats['FinalScience'])
+    right_column += '\nEngineer: {}'.format(stats['FinalEngine'])
+    right_column += '\nWeapon: {}'.format(stats['FinalWeapon'])
     fields = []
     fields.append(util.get_embed_field_def('Race', stats['RaceType'], True))
     fields.append(util.get_embed_field_def('Gender', stats['GenderType'], True))
