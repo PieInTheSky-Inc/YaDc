@@ -36,10 +36,12 @@ def embed_tourney_start(start_date, utc_now, colour=None):
     fields = []
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
+    start_date_formatted = util.get_formatted_date(start_date, True, False)
     tourney_month = start_date.strftime('%B')
     delta_start = start_date - utc_now
     delta_start_formatted = util.get_formatted_timedelta(delta_start)
-    fields.append(util.get_embed_field_def(starts.capitalize(), delta_start_formatted, True))
+    delta_start_txt = f'{delta_start_formatted} ({start_date_formatted})'
+    fields.append(util.get_embed_field_def(starts.capitalize(), delta_start_txt, True))
     if currently_running:
         end_date = util.get_first_of_following_month(start_date)
         delta_end = end_date - utc_now
