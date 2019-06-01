@@ -89,7 +89,7 @@ def get_download_url_for_sprite_id(sprite_id):
 # ---------- File handling ----------
 def request_new_files_sheet():
     print('+ called request_new_files_sheet()')
-    get_files_url = f'{base_url}/FileService/ListFiles3'
+    get_files_url = f'{base_url}/FileService/ListFiles3?deviceType=DeviceTypeIPhone'
     print(f'[request_new_files_sheet] retrieved url: {get_files_url}')
     data = urllib.request.urlopen(get_files_url).read()
     print(f'[request_new_files_sheet] retrieved raw data')
