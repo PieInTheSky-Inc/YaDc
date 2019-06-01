@@ -546,8 +546,9 @@ async def tournament_current(ctx):
     """Get information about the time of the current month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_current_tourney_start()
-    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
-    await ctx.send(txt)
+    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    await ctx.send(embed=embed)
     
     
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
@@ -555,8 +556,9 @@ async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
     utc_now = util.get_utcnow()
     start_of_tourney = tourney.get_next_tourney_start()
-    txt = tourney.format_tourney_start(start_of_tourney, utc_now)
-    await ctx.send(txt)
+    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    await ctx.send(embed=embed)
 
 
 @bot.command(hidden=True,
