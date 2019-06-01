@@ -87,6 +87,20 @@ async def get_latest_message(from_channel, by_member_id=None, with_content=None,
     return None
 
 
+def create_embed(title, description=None, colour=None, fields=None):
+    result = discord.Embed(title=title, description=description, colour=colour)
+    if fields is not None:
+        for t in fields:
+            result.add_field(name=t[0], value=[1])
+    return result
+        
+        
+def get_bot_member_color(bot, guild):
+    bot_member = ctx.guild.get_member(bot.user.id)
+    bot_colour = bot_member.colour
+    return bot_colour
+
+
 
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
