@@ -582,7 +582,9 @@ async def tournament(ctx):
     """Get information about the monthly tournament"""
     print('+ called command tournament(ctx)')
     print(f'ctx.invoked_subcommand: {ctx.invoked_subcommand}')
+    print(f'ctx.invoked_subcommand is None: {ctx.invoked_subcommand is None}')
     print(f'ctx.subcommand_passed: {ctx.subcommand_passed}')
+    print(f'ctx.subcommand_passed is None: {ctx.subcommand_passed is None}')
     if ctx.invoked_subcommand is None:
         await tournament_current(ctx)
 
