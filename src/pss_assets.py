@@ -35,7 +35,7 @@ def get_sprites_dict(raw_text):
     return result
 
 
-def request_sprites_dict()
+def request_sprites_dict():
     raw_text = request_sprites_sheet()
     result = get_sprites_dict(raw_text)
     return result
