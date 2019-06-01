@@ -84,7 +84,24 @@ async def get_latest_message(from_channel, by_member_id=None, with_content=None,
             process = not by_member_id or msg.author.id == by_member_id
             if process and msg.content == with_content:
                 return msg
-    return None      
+    return None
+
+
+def get_command(commands_set, command_name):
+    print(f'+ called get_command({commands_set}, {command_name}')
+    command_name_parts = command_name.split(' ')
+    print(f'[get_command] split command name into {len(command_name_parts)} segments')
+    for cmd in commands_set:
+        print(f'[get_command] checking command: {cmd.name}')
+        if cmd.name == command_name_parts[0]:
+            print(f'[get_command] found match')
+            if len(command_name_parts) > 1:
+                subcommand_name = ' '.join(command_name_parts[1:])
+                print(f'[get_command] looking for subcommand: {subcommand_name}')
+                return get_command(cmd.commands, subcommand_name)
+            else:
+                return cmd
+    return None # not found
 
 
 
