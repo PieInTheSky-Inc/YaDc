@@ -748,7 +748,7 @@ async def test(ctx, action, *, params=None):
         elif txt.startswith('[') and txt.endswith(']'):
             fiel_values = ast.literal_eval(txt)
             for v in fiel_values:
-                if isinstance(v, (list, tuple):
+                if isinstance(v, (list, tuple)):
                     if len(v) > 1:
                         fiel.append(util.get_embed_field_def(v[0], v[1], False))
                     else:
