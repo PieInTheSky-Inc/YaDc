@@ -581,6 +581,8 @@ async def parse(ctx, *, url):
 async def tournament(ctx):
     """Get information about the monthly tournament"""
     print('+ called command tournament(ctx)')
+    print(f'ctx.invoked_subcommand: {ctx.invoked_subcommand}')
+    print(f'ctx.subcommand_passed: {ctx.subcommand_passed}')
     if ctx.invoked_subcommand is None:
         await tournament_current(ctx)
 
