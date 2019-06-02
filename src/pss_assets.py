@@ -102,8 +102,8 @@ def request_files_dict():
     print('[request_files_dict] retrieved raw_text')
     result = core.convert_3_level_xml_to_dict(raw_text, 'Id', 'File')
     print(f'[request_files_dict] converted raw_text to dict with {len(result)} rows')
+    print(f'[request_files_dict] isinstance(result, dict): {isinstance(result, dict)}')
     if len(result) > 0:
-        print(f'[request_files_dict] first element of result: {result[0]}')
         print(f'[request_files_dict] saving result to file: {FILES_DICT_FILE_NAME}')
         core.save_json_to_file(result, FILES_DICT_FILE_NAME)
         print('[request_files_dict] stored file')
