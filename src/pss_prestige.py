@@ -889,7 +889,7 @@ def embed_stats(d, char_input, colour):
     fields = []
     fields.append(util.get_embed_field_def('_ _', f'```{left_column_formatted}```', True))
     fields.append(util.get_embed_field_def('_ _', f'```{right_column_formatted}```', True))
-    fields.append(util.get_embed_field_def('Equipment Slots', '\n'.join(eqpt_mask), False))
+    fields.append(util.get_embed_field_def('Equipment Slots', ', '.join(eqpt_mask), False))
     result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
     return result
     
