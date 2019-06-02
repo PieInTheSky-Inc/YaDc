@@ -130,8 +130,13 @@ def get_files_dict():
 def get_file_from_id(file_id):
     print(f'+ called get_file_from_id({file_id})')
     files = get_files_dict()
+    print(f'[get_file_from_id] isinstance(files, dict): {isinstance(files, dict)}')
     print(f'[get_file_from_id] retrieved files dict with {len(files)} rows')
     result = None
+    print(f'[get_file_from_id] checking if key is in dict: {file_id}')
     if file_id in files.keys():
         result = files[file_id]
+        print(f'[get_file_from_id] key found with value: {files[file_id]}')
+    else:
+        print(f'[get_file_from_id] could not find key: {file_id}')
     return result
