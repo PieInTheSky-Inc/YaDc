@@ -28,8 +28,7 @@ def request_sprites_dict():
     raw_text = request_sprites_sheet()
     result = core.convert_3_level_xml_to_dict(raw_text, 'SpriteId', 'Sprite')
     if len(result) > 0:
-        json_dict = json.dumps(result)
-        core.save_raw_text(SPRITES_DICT_FILE_NAME, json_dict)
+        core.save_json_to_file(result, SPRITES_DICT_FILE_NAME)
     return result
 
 
@@ -83,8 +82,7 @@ def request_files_dict():
     raw_text = request_files_sheet()
     result = core.convert_3_level_xml_to_dict(raw_text, 'Id', 'File')
     if len(result) > 0:
-        json_dict = json.dumps(result)
-        core.save_raw_text(FILES_DICT_FILE_NAME, json_dict)
+        core.save_json_to_file(result, FILES_DICT_FILE_NAME)
     return result
 
 
