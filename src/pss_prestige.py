@@ -886,9 +886,9 @@ def embed_stats(d, char_input, colour):
       ('Training capacity', stats['TrainingCapacity'])
     ]
     right_column_formatted = util.format_tuple_list(right_column)
+    stats_field_content = util.join_table_columns(left_column_formatted, right_column_formatted)
     fields = []
-    fields.append(util.get_embed_field_def('_ _', f'```{left_column_formatted}```', True))
-    fields.append(util.get_embed_field_def('_ _', f'```{right_column_formatted}```', True))
+    fields.append(util.get_embed_field_def('Stats', f'```{stats_field_content}```', False))
     fields.append(util.get_embed_field_def('Equipment Slots', ', '.join(eqpt_mask), False))
     result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
     return result
