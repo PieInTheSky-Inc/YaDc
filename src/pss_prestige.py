@@ -872,8 +872,7 @@ def embed_stats(d, char_input, colour):
       ('Repair', stats['FinalRepair']),
       ('Ability', stats['SpecialAbilityFinalArgument'])
     ]
-    left_column_title_width = max([len(item[0]) for item in left_column]) + 1
-    left_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(left_column_title_width), item[1]) for item in left_column]
+    left_column_formatted = util.format_tuple_list(left_column)
     right_column = [
       ('Collection', coll_name),
       ('Ability', ability),
@@ -882,11 +881,10 @@ def embed_stats(d, char_input, colour):
       ('Engineer', stats['FinalEngine']),
       ('Weapon', stats['FinalWeapon'])
     ]
-    right_column_title_width = max([len(item[0]) for item in left_column]) + 1
-    right_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(right_column_title_width), item[1]) for item in right_column]
+    right_column_formatted = util.format_tuple_list(right_column)
     fields = []
-    fields.append(util.get_embed_field_def('_ _', '\n'.join(left_column_output_rows), True))
-    fields.append(util.get_embed_field_def('_ _', '\n'.join(right_column_output_rows), True))
+    fields.append(util.get_embed_field_def('_ _', f'```{left_column_formatted}```', True))
+    fields.append(util.get_embed_field_def('_ _', f'```{right_column_formatted}```', True))
     fields.append(util.get_embed_field_def('Walk/Run speed', '{}/{}'.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
     fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
     fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
