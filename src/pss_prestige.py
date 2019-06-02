@@ -879,7 +879,7 @@ def embed_stats(d, char_input, colour):
       ('Attack', stats['FinalAttack']),
       ('Repair', stats['FinalRepair']),
       ('Ability', stats['SpecialAbilityFinalArgument']),
-      ('Walk speed', stats['FireResistance']),
+      ('Walk speed', stats['WalkSpeed']),
       ('Run speed', stats['RunSpeed'])
     ]
     stats_right = [
@@ -887,7 +887,7 @@ def embed_stats(d, char_input, colour):
       ('Science', stats['FinalScience']),
       ('Engine', stats['FinalEngine']),
       ('Weapon', stats['FinalWeapon']),
-      ('Fire resistance', stats['FinalRepair']),
+      ('Fire resistance', stats['FireResistance']),
       ('Training capacity', stats['TrainingCapacity'])
     ]
     stats_field_content = '\n'.join(util.join_format_tuple_list(stats_left, stats_right))
