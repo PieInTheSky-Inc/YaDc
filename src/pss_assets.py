@@ -63,26 +63,40 @@ def get_sprites_dict():
 
 
 def get_sprite_from_id(sprite_id):
+    print(f'+ called get_sprite_from_id({sprite_id})')
+    print('[get_sprite_from_id] attempting to retrieve sprites dict')
     sprites = get_sprites_dict()
+    print('[get_sprite_from_id] retrieved sprites dict')
     result = None
     if sprite_id in sprites.keys():
         result = sprites[sprite_id]
+        print(f'[get_sprite_from_id] found key ({sprite_id}) with value: {result}')
+    else:
+        print('[get_sprite_from_id] key ({sprite_id}) not found')
+    print(f'- exiting get_sprite_from_id with result: {result}')
     return result
 
 
 def get_file_from_sprite_id(sprite_id):
+    print(f'+ called get_file_from_sprite_id({sprite_id})')
     sprite = get_sprite_from_id(sprite_id)
+    print(f'[get_file_from_sprite_id] retrieved sprite by id: {sprite}')
     file_id = sprite['ImageFileId']
+    print(f'[get_file_from_sprite_id] retrieved file_id: {file_id}')
     result = get_file_from_id(file_id)
+    print(f'- exiting get_file_from_sprite_id with result: {result}')
     return result
 
 
 def get_download_url_for_sprite_id(sprite_id):
+    print(f'+ called get_download_url_for_sprite_id({sprite_id})')
     file = get_file_from_sprite_id(sprite_id)
-    if file is None:
-        return None
-    file_name = file['AwsFilename']
-    result = f'{ASSET_DOWNLOAD_BASE_URL}{file_name}'
+    print(f'[get_download_url_for_sprite_id] retrieved file: {file}')
+    if file is not None:
+        file_name = file['AwsFilename']
+        print(f'[get_download_url_for_sprite_id] retrieved AwsFilename: {file_name}')
+        result = f'{ASSET_DOWNLOAD_BASE_URL}{file_name}'
+    print(f'- exiting get_download_url_for_sprite_id with result: {result}')
     return result
 
 
