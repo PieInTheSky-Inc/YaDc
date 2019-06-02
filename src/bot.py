@@ -61,7 +61,7 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships',
                    activity=ACTIVITY)
 
-setattr(bot, "logger", logging.getLogger("bot.py"))
+setattr(bot, "logger", logging.getLogger(__name__))
 
 
 # ----- Bot Events ------------------------------------------------------------
@@ -82,8 +82,9 @@ async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     else:
-        print(f'An error ({err.__class__.__name__}) occurred: {err}')
-        print(err.__traceback__)
+        bot.logger.exception(err)
+#        print(f'An error ({err.__class__.__name__}) occurred: {err}')
+#        print(err.__traceback__)
 
 
 # ----- Tasks ----------------------------------------------------------
