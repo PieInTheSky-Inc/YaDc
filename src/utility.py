@@ -73,8 +73,11 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
     return result
 
 
-def get_utcnow():
-    return datetime.now(timezone.utc)
+def get_utcnow(naive=False):
+    if naive:
+        return datetime.utcnow()
+    else:
+        return datetime.now(timezone.utc)
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
