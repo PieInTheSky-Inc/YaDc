@@ -879,7 +879,7 @@ def embed_stats(d, char_input, colour):
       ('Attack', stats['FinalAttack']),
       ('Repair', stats['FinalRepair']),
       ('Ability', stats['SpecialAbilityFinalArgument']),
-      ('Walk speed', stats['WalkSpeed']),
+      ('Walk speed', stats['WalkingSpeed']),
       ('Run speed', stats['RunSpeed'])
     ]
     stats_right = [
