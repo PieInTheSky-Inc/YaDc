@@ -145,8 +145,10 @@ def get_embed_timestamp(date_time):
 
 def format_tuple_list(tuple_list, separator=':'):
     title_width = max([len(item[0]) for item in tuple_list]) + len(separator) + 1
-    output_rows = ['{}{}'.format(f'{item[0]}{separator}'.ljust(title_width), item[1]) for item in tuple_list]
-    result = '\n'.join(output_rows)
+    result = []
+    for item in tuple_list:
+        title_with_separator = f'{item[0]}{separator}'.ljust(title_width)
+        result.append(f'{title_with_separator}{item[1]}')
     return result
 
 
@@ -158,7 +160,7 @@ def join_table_columns(left_column_list, right_column_list, separator='   '):
     len_right = len(right_column_list)
     result = []
     for i in range(len_left):
-        row = left_column_list[0].ljust(left_column_width)
+        row = left_column_list[i].ljust(left_column_width)
         if i < len_right:
             row += f'{separator}{right_column_list[i]}'
         result.append(row)
