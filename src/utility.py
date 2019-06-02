@@ -155,7 +155,7 @@ def format_tuple_list(tuple_list, separator=':'):
 # always returns the whole left column while returning a maximum of len(left_column_list) items of the right column
 # returns a list
 def join_table_columns(left_column_list, right_column_list, separator='   '):
-    left_column_width = max([len(row) for row in left_column_list]) + len(separator)
+    left_column_width = max([len(row) for row in left_column_list])
     len_left = len(left_column_list)
     len_right = len(right_column_list)
     result = []
