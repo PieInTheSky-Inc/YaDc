@@ -764,6 +764,8 @@ async def test(ctx, action, *, params=None):
         embe = util.create_embed(titl, desc, bot_colour, fiel)
         print(f'[test] created embed: {embe}')
         await ctx.send(embed=embe)
+    elif action == 'error':
+        raise Exception('x should not exceed 5. The value of x was: {}'.format(6))
 
 
 # ----- Run the Bot -----------------------------------------------------------
