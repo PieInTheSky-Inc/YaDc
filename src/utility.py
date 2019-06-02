@@ -143,7 +143,7 @@ def get_embed_timestamp(date_time):
     return None
 
 
-def format_tuple_list(tuple_list, separator):
+def format_tuple_list(tuple_list, separator=':'):
     title_width = max([len(item[0]) for item in tuple_list]) + 2
     output_rows = ['{}{}'.format(f'{item[0]}{separator}'.ljust(title_width), item[1]) for item in tuple_list]
     result = '\n'.join(output_rows)
