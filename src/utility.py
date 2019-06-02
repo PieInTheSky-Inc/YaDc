@@ -149,6 +149,7 @@ def format_tuple_list(tuple_list, separator=':'):
     result = '\n'.join(output_rows)
     return result
 
+
 # always returns the whole left column while returning a maximum of len(left_column_list) items of the right column
 # returns a list
 def join_table_columns(left_column_list, right_column_list, separator='   '):
@@ -161,6 +162,13 @@ def join_table_columns(left_column_list, right_column_list, separator='   '):
         if i < len_right:
             row += f'{separator}{right_column_list[i]}'
         result.append(row)
+    return result
+
+
+def join_format_tuple_list(left_tuple_list, right_tuple_list, tuple_list_separator=':', column_separator='   '):
+    left_column = format_tuple_list(left_tuple_list, tuple_list_separator)
+    right_column = format_tuple_list(right_tuple_list, tuple_list_separator)
+    result = join_table_columns(left_column, right_column, column_separator)
     return result
 
 
