@@ -144,11 +144,24 @@ def get_embed_timestamp(date_time):
 
 
 def format_tuple_list(tuple_list, separator=':'):
-    title_width = max([len(item[0]) for item in tuple_list]) + 2
+    title_width = max([len(item[0]) for item in tuple_list]) + len(separator) + 1
     output_rows = ['{}{}'.format(f'{item[0]}{separator}'.ljust(title_width), item[1]) for item in tuple_list]
     result = '\n'.join(output_rows)
     return result
 
+# always returns the whole left column while returning a maximum of len(left_column_list) items of the right column
+# returns a list
+def join_table_columns(left_column_list, right_column_list, separator='   '):
+    left_column_width = max([len(row) for row in left_column_list]) + len(separator)
+    len_left = len(left_column_list)
+    len_right = len(right_column_list)
+    result = []
+    for i in range(len_left):
+        row = left_column_list[0].ljust(left_column_width)
+        if i < len_right:
+            row += f'{separator}{right_column_list[i]}'
+        result.append(row)
+    return result
 
 
 #---------- DB utilities ----------
