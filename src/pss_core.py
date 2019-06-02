@@ -82,7 +82,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
         return True
     file_stats = os.stat(filename)
     modify_date = file_stats.st_mtime
-    utc_now = util.get_utcnow()
+    utc_now = util.get_utcnow(True)
     time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
     if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
