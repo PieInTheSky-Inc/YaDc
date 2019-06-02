@@ -83,6 +83,7 @@ async def on_command_error(ctx, err):
         await ctx.send('Error: {}'.format(err))
     else:
         print(f'An error ({err.__class__.__name__}) occurred: {err}')
+        print(err.__traceback__)
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -747,12 +748,14 @@ async def test(ctx, action, *, params=None):
             txt = 'Text'
         elif txt.startswith('[') and txt.endswith(']'):
             fiel_values = ast.literal_eval(txt)
-            for v in fiel_values:
-                if isinstance(v, list) or isinstance(v, tuple):
-                    if len(v) > 1:
-                        fiel.append(util.get_embed_field_def(v[0], v[1], False))
+            for value in fiel_values:
+                if isinstance(value, list) or isinstance(value, tuple):
+                    if len(value) > 1:
+                        fiel.append(util.get_embed_field_def(value[0], value[1], False))
+                    elif len(value) == 1:
+                        fiel.append(util.get_embed_field_def('Field Header', value[0], False))
                     else:
-                        fiel.append(util.get_embed_field_def('Field Header', v[0], False))
+                        fiel.append(util.get_embed_field_def('Field Header', '-', False))
                 else:
                     fiel.append(util.get_embed_field_def('Field Header', v, False))
         else:
