@@ -870,7 +870,9 @@ def embed_stats(d, char_input, colour):
       ('HP', stats['FinalHp']),
       ('Attack', stats['FinalAttack']),
       ('Repair', stats['FinalRepair']),
-      ('Ability', stats['SpecialAbilityFinalArgument'])
+      ('Ability', stats['SpecialAbilityFinalArgument']),
+      ('Walk speed', stats['FireResistance']),
+      ('Fire resistance', stats['FinalRepair'])
     ]
     left_column_formatted = util.format_tuple_list(left_column)
     right_column = [
@@ -879,16 +881,15 @@ def embed_stats(d, char_input, colour):
       ('Pilot', stats['FinalPilot']),
       ('Science', stats['FinalScience']),
       ('Engineer', stats['FinalEngine']),
-      ('Weapon', stats['FinalWeapon'])
+      ('Weapon', stats['FinalWeapon']),
+      ('Run speed', stats['RunSpeed']),
+      ('Training capacity', stats['TrainingCapacity'])
     ]
     right_column_formatted = util.format_tuple_list(right_column)
     fields = []
     fields.append(util.get_embed_field_def('_ _', f'```{left_column_formatted}```', True))
     fields.append(util.get_embed_field_def('_ _', f'```{right_column_formatted}```', True))
-    fields.append(util.get_embed_field_def('Walk/Run speed', '{}/{}'.format(stats['WalkingSpeed'], stats['RunSpeed']), True))
-    fields.append(util.get_embed_field_def('Fire resistance', stats['FireResistance'], True))
-    fields.append(util.get_embed_field_def('Training capacity', stats['TrainingCapacity'], True))
-    fields.append(util.get_embed_field_def('Equipment Slots', '\n'.join(eqpt_mask), True))
+    fields.append(util.get_embed_field_def('Equipment Slots', '\n'.join(eqpt_mask), False))
     result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
     return result
     
