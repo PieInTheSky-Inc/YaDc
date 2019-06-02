@@ -23,7 +23,7 @@ MUTEX_SPRITE_SHEET = Lock()
 MUTEX_SPRITE_DICT = Lock()
 
 
-def request_sprites_sheet():
+def get_sprites_sheet():
     MUTEX_SPRITE_SHEET.aquire()
     result = core.load_data_from_url(SPRITES_SHEET_FILE_NAME, SPRITES_URL)
     MUTEX_SPRITE_SHEET.release()
@@ -31,7 +31,7 @@ def request_sprites_sheet():
 
 
 def request_sprites_dict():
-    raw_text = request_sprites_sheet()
+    raw_text = get_sprites_sheet()
     result = core.convert_3_level_xml_to_dict(raw_text, 'SpriteId', 'Sprite')
     if len(result) > 0:
         core.save_json_to_file(result, SPRITES_DICT_FILE_NAME)
@@ -89,7 +89,7 @@ MUTEX_FILES_SHEET = Lock()
 MUTEX_FILES_DICT = Lock()
 
 
-def request_files_sheet():
+def get_files_sheet():
     MUTEX_FILES_SHEET.aquire()
     result = core.load_data_from_url(FILES_SHEET_FILE_NAME, FILES_URL)
     MUTEX_FILES_SHEET.release()
@@ -97,7 +97,7 @@ def request_files_sheet():
 
 
 def request_files_dict():
-    raw_text = request_files_sheet()
+    raw_text = get_files_sheet()
     result = core.convert_3_level_xml_to_dict(raw_text, 'Id', 'File')
     if len(result) > 0:
         core.save_json_to_file(result, FILES_DICT_FILE_NAME)
