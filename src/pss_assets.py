@@ -7,10 +7,11 @@ import xml.etree.ElementTree
 import pss_core as core
 import utility as util
 
+
 BASE_URL = f'http://{core.get_production_server()}'
 ASSET_DOWNLOAD_BASE_URL = 'http://datxcu1rnppcg.cloudfront.net/'
 SPRITES_URL = f'{BASE_URL}/FileService/ListSprites2'
-FILES_URL = f'{base_url}/FileService/ListFiles3?deviceType=DeviceTypeIPhone'
+FILES_URL = f'{BASE_URL}/FileService/ListFiles3?deviceType=DeviceTypeIPhone'
 SPRITES_SHEET_FILE_NAME = 'sprites.xml'
 SPRITES_DICT_FILE_NAME = 'sprites.json'
 FILES_SHEET_FILE_NAME = 'files.xml'
