@@ -770,6 +770,44 @@ async def test(ctx, action, *, params=None):
         await ctx.send(embed=embe)
     elif action == 'error':
         raise Exception('x should not exceed 5. The value of x was: {}'.format(6))
+    elif action == 'char':
+        info_left = [
+          ('Race', 'White'),
+          ('Gender', 'Female')
+        ]
+        info_right = [
+          ('Collection', '-'),
+          ('Ability', 'Healing Rain'),
+        ]
+        info_field_content = util.join_format_tuple_list(info_left, info_right)
+
+        stats_left = [
+          ('HP', '10'),
+          ('Attack', '3.2'),
+          ('Repair', '3.1'),
+          ('Ability', '7'),
+        ]
+        stats_right = [
+          ('Pilot', '18'),
+          ('Science', '20'),
+          ('Engine', '20'),
+          ('Weapon', '20'),
+        ]
+        stats_field_content = util.join_format_tuple_list(stats_left, stats_right)
+
+        additional_left = [
+          ('Walk speed', '1'),
+          ('Fire resistance', '5')
+        ]
+        additional_right = [
+          ('Run speed', '2'),
+          ('Training capacity', '90')
+        ]
+        additional_field_content = util.join_format_tuple_list(additional_left, additional_right)
+        
+        await ctx.send('```{info_field_content```')
+        await ctx.send('```{stats_field_content```')
+        await ctx.send('```{additional_field_content```')
 
 
 # ----- Run the Bot -----------------------------------------------------------
