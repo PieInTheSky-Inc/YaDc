@@ -33,7 +33,6 @@ import utility as util
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
-ASSET_DOWNLOAD_URL = 'http://datxcu1rnppcg.cloudfront.net/'
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
@@ -55,7 +54,7 @@ logging.basicConfig(
     level=logging.INFO,
     style = '{',
     datefmt = "%Y%m%d %H:%M:%S",
-    format = "{asctime} [{levelname:<8}] {name}: {message}")
+    format = "{asctime} [{levelname:<8}] {name}: {message}\n{stack_info}")
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships',
