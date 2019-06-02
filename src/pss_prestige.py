@@ -873,7 +873,7 @@ def embed_stats(d, char_input, colour):
       ('Ability', stats['SpecialAbilityFinalArgument'])
     ]
     left_column_title_width = max([len(item[0]) for item in left_column]) + 1
-    right_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(left_column_title_width), item[1]) for item in left_column]
+    left_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(left_column_title_width), item[1]) for item in left_column]
     right_column = [
       ('Collection', coll_name),
       ('Ability', ability),
