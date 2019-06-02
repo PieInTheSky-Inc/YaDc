@@ -872,7 +872,7 @@ def embed_stats(d, char_input, colour):
       ('Repair', stats['FinalRepair']),
       ('Ability', stats['SpecialAbilityFinalArgument'])
     ]
-    left_column_title_width = max([len(item[0]) for item in left_column.keys()]) + 1
+    left_column_title_width = max([len(item[0]) for item in left_column]) + 1
     right_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(left_column_title_width), item[1]) for item in left_column]
     right_column = [
       ('Collection', coll_name),
@@ -882,7 +882,7 @@ def embed_stats(d, char_input, colour):
       ('Engineer', stats['FinalEngine']),
       ('Weapon', stats['FinalWeapon'])
     ]
-    right_column_title_width = max([len(item[0]) for item in left_column.keys()]) + 1
+    right_column_title_width = max([len(item[0]) for item in left_column]) + 1
     right_column_output_rows = ['{} {}'.format(f'{item[0]}:'.ljust(right_column_title_width), item[1]) for item in right_column]
     fields = []
     fields.append(util.get_embed_field_def('_ _', '\n'.join(left_column_output_rows), True))
