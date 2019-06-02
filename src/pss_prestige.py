@@ -872,7 +872,7 @@ def embed_stats(d, char_input, colour):
       ('Collection', coll_name),
       ('Ability', ability),
     ]
-    info_field_content = util.join_format_tuple_list(info_left, info_right)
+    info_field_content = '\n'.join(util.join_format_tuple_list(info_left, info_right))
     
     stats_left = [
       ('HP', stats['FinalHp']),
@@ -886,7 +886,7 @@ def embed_stats(d, char_input, colour):
       ('Engineer', stats['FinalEngine']),
       ('Weapon', stats['FinalWeapon']),
     ]
-    stats_field_content = util.join_format_tuple_list(stats_left, stats_right)
+    stats_field_content = '\n'.join(util.join_format_tuple_list(stats_left, stats_right))
     
     additional_left = [
       ('Walk speed', stats['FireResistance']),
@@ -896,7 +896,7 @@ def embed_stats(d, char_input, colour):
       ('Run speed', stats['RunSpeed']),
       ('Training capacity', stats['TrainingCapacity'])
     ]
-    additional_field_content = util.join_format_tuple_list(additional_left, additional_right)
+    additional_field_content = '\n'.join(util.join_format_tuple_list(additional_left, additional_right))
     
     fields = []
     fields.append(util.get_embed_field_def('General', f'```{info_field_content}```', False))
