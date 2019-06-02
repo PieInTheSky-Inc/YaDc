@@ -864,9 +864,17 @@ def embed_stats(d, char_input, colour):
         coll_name = '-'
         
     thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
-    left_column = [
+    info_left = [
       ('Race', stats['RaceType']),
-      ('Gender', stats['GenderType']),
+      ('Gender', stats['GenderType'])
+    ]
+    info_right = [
+      ('Collection', coll_name),
+      ('Ability', ability),
+    ]
+    info_field_content = util.join_format_tuple_list(info_left, info_right)
+    
+    stats_left = [
       ('HP', stats['FinalHp']),
       ('Attack', stats['FinalAttack']),
       ('Repair', stats['FinalRepair']),
@@ -874,10 +882,7 @@ def embed_stats(d, char_input, colour):
       ('Walk speed', stats['FireResistance']),
       ('Fire resistance', stats['FinalRepair'])
     ]
-    left_column_formatted = util.format_tuple_list(left_column)
-    right_column = [
-      ('Collection', coll_name),
-      ('Ability', ability),
+    stats_right = [
       ('Pilot', stats['FinalPilot']),
       ('Science', stats['FinalScience']),
       ('Engineer', stats['FinalEngine']),
@@ -885,9 +890,10 @@ def embed_stats(d, char_input, colour):
       ('Run speed', stats['RunSpeed']),
       ('Training capacity', stats['TrainingCapacity'])
     ]
-    right_column_formatted = util.format_tuple_list(right_column)
-    stats_field_content = util.join_table_columns(left_column_formatted, right_column_formatted)
+    stats_field_content = util.join_format_tuple_list(stats_left, stats_right)
+    
     fields = []
+    fields.append(util.get_embed_field_def('General', f'```{info_field_content}```', False))
     fields.append(util.get_embed_field_def('Stats', f'```{stats_field_content}```', False))
     fields.append(util.get_embed_field_def('Equipment Slots', ', '.join(eqpt_mask), False))
     result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
