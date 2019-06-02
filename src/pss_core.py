@@ -58,10 +58,10 @@ def read_raw_text(filename):
 def save_json_to_file(obj, filename):
     try:
         with open(filename, 'w') as f:
-            json.dumps(obj, f)
+            json.dump(obj, f)
     except:
         with open(filename, 'w', encoding='utf-8') as f:
-            json.dumps(obj, f)
+            json.dump(obj, f)
         
         
 def read_json_from_file(filename):
