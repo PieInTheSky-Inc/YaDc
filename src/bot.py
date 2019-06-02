@@ -292,6 +292,7 @@ async def stats(ctx, *, name=''):
             return
         # First try to find a character match
         # (skip this section if command was invoked with 'item'
+        found_match = False
         if ctx.invoked_with != 'item':
             if name.startswith('--raw '):
                 name = re.sub('^--raw[ ]+', '', name)
