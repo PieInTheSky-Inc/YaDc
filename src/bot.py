@@ -19,6 +19,7 @@ import re
 import sys
 import time
 
+import pss_assets as assets
 import pss_core as core
 import pss_daily as d
 import pss_dropship as dropship
@@ -73,6 +74,8 @@ async def on_ready():
     game = discord.Game(name='for /help')
     core.init_db()
     bot.loop.create_task(post_dailies_loop())
+    assets.get_sprites_dict() # build cache
+    assets.get_files_dict() # build cache
     print('[on_ready] added task: post_dailies_loop()')
 
 
