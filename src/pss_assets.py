@@ -24,7 +24,7 @@ MUTEX_SPRITE_DICT = Lock()
 
 
 def get_sprites_sheet():
-    MUTEX_SPRITE_SHEET.aquire()
+    MUTEX_SPRITE_SHEET.acquire()
     result = core.load_data_from_url(SPRITES_SHEET_FILE_NAME, SPRITES_URL)
     MUTEX_SPRITE_SHEET.release()
     return result
@@ -45,7 +45,7 @@ def read_sprites_dict():
 
 def get_sprites_dict():
     result = {}
-    MUTEX_SPRITE_DICT.aquire()
+    MUTEX_SPRITE_DICT.acquire()
     if core.is_old_file(SPRITES_DICT_FILE_NAME):
         print('[get_sprites_dict] Requesting new sprites dictionary')
         result = request_sprites_dict()
@@ -90,7 +90,7 @@ MUTEX_FILES_DICT = Lock()
 
 
 def get_files_sheet():
-    MUTEX_FILES_SHEET.aquire()
+    MUTEX_FILES_SHEET.acquire()
     result = core.load_data_from_url(FILES_SHEET_FILE_NAME, FILES_URL)
     MUTEX_FILES_SHEET.release()
     return result
@@ -111,7 +111,7 @@ def read_files_dict():
 
 def get_files_dict():
     result = {}
-    MUTEX_FILES_DICT.aquire()
+    MUTEX_FILES_DICT.acquire()
     if core.is_old_file(FILES_DICT_FILE_NAME):
         print('[get_files_dict] Requesting new files dictionary')
         result = request_files_dict()
