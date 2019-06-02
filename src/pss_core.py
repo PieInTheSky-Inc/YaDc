@@ -5,14 +5,16 @@
 import csv
 import datetime
 from enum import Enum
+import json
 import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
 import urllib.parse
 import urllib.request
-import utility as util
 import xml.etree.ElementTree
+
+import utility as util
 
 
 PSS_CHARS_FILE = 'pss-chars.txt'
@@ -40,18 +42,49 @@ def save_raw_text(raw_text, filename):
     except:
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(raw_text)
+        
+        
+def read_raw_text(filename):
+    try:
+        with open(filename, 'r') as f:
+            result = f.read()
+            return result
+    except:
+        with open(filename, 'r', encoding='utf-8') as f:
+            result = f.read()
+            return result
+        
+        
+def save_json_to_file(obj, filename):
+    try:
+        with open(filename, 'w') as f:
+            json.dumps(obj, f)
+    except:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dumps(obj, f)
+        
+        
+def read_json_from_file(filename):
+    result = None
+    try:
+        with open(filename, 'r') as f:
+            result = json.load(f)
+    except:
+        with open(filename, 'r', encoding='utf-8') as f:
+            result = json.load(f)
+    return result
 
 
 def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
     """Returns true if the file modification date > max_days / max_seconds ago
     or if the file does not exist"""
-    if os.path.isfile(filename) is not True:
+    if not os.path.isfile(filename):
         return True
-    st = os.stat(filename)
-    mtime = st.st_mtime
-    now = datetime.datetime.now()
-    time_diff = now - datetime.datetime.fromtimestamp(mtime)
-    if verbose is True:
+    file_stats = os.stat(filename)
+    modify_date = file_stats.st_mtime
+    utc_now = util.get_utcnow()
+    time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
+    if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
     return (time_diff.days > max_days) or time_diff.seconds > max_seconds
 
@@ -73,12 +106,25 @@ def load_data_from_url(filename, url, refresh='auto'):
 
 def xmltree_to_dict3(raw_text, key):
     root = xml.etree.ElementTree.fromstring(raw_text)
+    d = {}
     for c in root:
         for cc in c:
-            d = {}
             for ccc in cc:
                 d[ccc.attrib[key]] = ccc.attrib
     return d
+
+
+def convert_3_level_xml_to_dict(raw_text, key_name, tag):
+    root = xml.etree.ElementTree.fromstring(raw_text)
+    result = {}
+    for c in root:
+        for cc in c:
+            for ccc in cc:
+                if ccc.tag != tag:
+                    continue
+                key = ccc.attrib[key_name]
+                result[key] = ccc.attrib
+    return result
 
 
 def xmltree_to_dict2(raw_text, key=None):
@@ -91,6 +137,18 @@ def xmltree_to_dict2(raw_text, key=None):
             else:
                 d[cc.attrib[key]] = cc.attrib
     return d
+
+
+def convert_2_level_xml_to_dict(raw_text, key_name, tag):
+    root = xml.etree.ElementTree.fromstring(raw_text)
+    result = {}
+    for c in root:
+        for cc in c:
+            if cc.tag != tag:
+                continue
+            key = cc.attrib[key_name]
+            result[key] = cc.attrib
+    return result
 
 
 def create_reverse_lookup(d, new_key, new_value):
