@@ -53,7 +53,7 @@ ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
-    datefmt = "%Y%m%d %H:%M:%S",
+    datefmt = "%Y-%m-%dT%H:%M:%S",
     format = "{asctime} [{levelname:<8}] {name}: {message}\n{stack_info}")
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
