@@ -20,20 +20,34 @@ FILES_DICT_FILE_NAME = 'files.json'
 
 # ---------- Sprite handling ----------
 def request_sprites_sheet():
+    print('+ called request_sprites_sheet()')
+    print(f'[request_sprites_sheet] calling core.load_data_from_url({SPRITES_SHEET_FILE_NAME}, {SPRITES_URL})')
     result = core.load_data_from_url(SPRITES_SHEET_FILE_NAME, SPRITES_URL)
+    print(f'[request_sprites_sheet] retrieved {len(result)} bytes')
+    print('- exiting request_sprites_sheet()')
     return result
 
 
 def request_sprites_dict():
+    print('+ called request_sprites_dict()')
     raw_text = request_sprites_sheet()
+    print('[request_sprites_dict] retrieved raw_text')
     result = core.convert_3_level_xml_to_dict(raw_text, 'SpriteId', 'Sprite')
+    print(f'[request_sprites_dict] converted raw_text to dict with {len(result)} rows')
     if len(result) > 0:
+        print(f'[request_sprites_dict] saving result to file: {SPRITES_DICT_FILE_NAME}')
         core.save_json_to_file(result, SPRITES_DICT_FILE_NAME)
+        print('[request_sprites_dict] stored file')
+    print('- exiting request_sprites_dict()')
     return result
 
 
 def read_sprites_dict():
+    print('+ called read_sprites_dict()')
+    print(f'[read_sprites_dict] reading sprites dict from file: {SPRITES_DICT_FILE_NAME}')
     result = core.read_json_from_file(SPRITES_DICT_FILE_NAME)
+    print(f'[read_sprites_dict] retrieved {len(result)} rows from file: {SPRITES_DICT_FILE_NAME}')
+    print('- exiting read_sprites_dict()')
     return result
 
 
@@ -74,15 +88,25 @@ def get_download_url_for_sprite_id(sprite_id):
 
 # ---------- File handling ----------
 def request_files_sheet():
+    print('+ called request_files_sheet()')
+    print(f'[request_files_sheet] calling core.load_data_from_url({FILES_SHEET_FILE_NAME}, {FILES_URL})')
     result = core.load_data_from_url(FILES_SHEET_FILE_NAME, FILES_URL)
+    print(f'[request_files_sheet] retrieved {len(result)} bytes')
+    print('- exiting request_files_sheet()')
     return result
 
 
 def request_files_dict():
+    print('+ called request_files_dict()')
     raw_text = request_files_sheet()
+    print('[request_files_dict] retrieved raw_text')
     result = core.convert_3_level_xml_to_dict(raw_text, 'Id', 'File')
+    print(f'[request_files_dict] converted raw_text to dict with {len(result)} rows')
     if len(result) > 0:
+        print(f'[request_files_dict] saving result to file: {FILES_DICT_FILE_NAME}')
         core.save_json_to_file(result, FILES_DICT_FILE_NAME)
+        print('[request_files_dict] stored file')
+    print('- exiting request_files_dict()')
     return result
 
 
