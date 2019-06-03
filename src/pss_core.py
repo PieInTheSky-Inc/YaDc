@@ -42,8 +42,8 @@ def save_raw_text(raw_text, filename):
     except:
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(raw_text)
-        
-        
+
+
 def read_raw_text(filename):
     try:
         with open(filename, 'r') as f:
@@ -53,8 +53,8 @@ def read_raw_text(filename):
         with open(filename, 'r', encoding='utf-8') as f:
             result = f.read()
             return result
-        
-        
+
+
 def save_json_to_file(obj, filename):
     try:
         with open(filename, 'w') as f:
@@ -62,8 +62,8 @@ def save_json_to_file(obj, filename):
     except:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(obj, f)
-        
-        
+
+
 def read_json_from_file(filename):
     result = None
     try:
@@ -315,7 +315,7 @@ class SettingType(Enum):
     Integer = 3
     Text = 4
     Timestamp = 5
-    
+
     def __new__(cls, value):
         member = object.__new__(cls)
         member._value_ = value
@@ -330,7 +330,7 @@ def get_setting(setting_name, setting_type):
     column_name = ''
     where = util.db_get_where_string('settingname', setting_name, True)
     column_number = int(setting_type) + 1
-        
+
     result = db_select_first_from_where(SETTINGS_TABLE_NAME, where)
     if result is None:
         return None
@@ -338,24 +338,24 @@ def get_setting(setting_name, setting_type):
         result = result[column_number]
         if setting_type == SettingType.Boolean:
             result = util.db_convert_to_boolean(result)
-        elif is_float == SettingType.Float:
+        elif setting_type == SettingType.Float:
             result = util.db_convert_to_float(result)
-        elif is_int == SettingType.Integer:
+        elif setting_type == SettingType.Integer:
             result = util.db_convert_to_int(result)
-        elif is_text == SettingType.Text:
+        elif setting_type == SettingType.Text:
             result = result
-        elif is_timestamp_utc == SettingType.Timestamp:
+        elif setting_type == SettingType.Timestamp:
             result = util.db_convert_to_datetime(result)
         return result
-    
-    
+
+
 def try_store_setting(setting_name, value, setting_type):
     success = False
     error = None
     existing_setting_value = get_setting(setting_name, setting_type)
     setting_name = util.db_convert_text(setting_name)
     column_name = ''
-    
+
     if setting_type == SettingType.Boolean:
         column_name = 'settingboolean'
         value = util.db_convert_boolean(value)
@@ -371,7 +371,7 @@ def try_store_setting(setting_name, value, setting_type):
     elif setting_type == SettingType.Timestamp:
         column_name = 'settingtimestamptz'
         value = util.db_convert_timestamp(value)
-    
+
     utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
     values = ','.join([setting_name, modify_date, value])
@@ -413,8 +413,8 @@ def init_db(from_scratch=False):
         print('[init_db] db initialization succeeded')
     else:
         print('[init_db] db initialization failed')
-        
-        
+
+
 def try_create_table_settings():
     column_definitions = []
     column_definitions.append(util.db_get_column_definition('settingname', 'text', is_primary=True, not_null=True))
@@ -426,8 +426,8 @@ def try_create_table_settings():
     column_definitions.append(util.db_get_column_definition('settingtimestamptz', 'timestamptz'))
     success = db_try_create_table(SETTINGS_TABLE_NAME, column_definitions)
     return success
-        
-        
+
+
 def try_create_table_daily():
     from pss_daily import DAILY_TABLE_NAME
     column_definitions = []
@@ -437,8 +437,8 @@ def try_create_table_daily():
     column_definitions.append(util.db_get_column_definition('latestmessageid', 'text'))
     success = db_try_create_table(DAILY_TABLE_NAME, column_definitions)
     return success
-        
-        
+
+
 def try_create_table_dropship_text():
     from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
     column_definitions = []
@@ -454,7 +454,7 @@ def try_create_table_dropship_text():
 def db_close_cursor(cursor):
     if cursor is not None:
         cursor.close()
-      
+
 
 def db_connect():
     global DB_CONN
@@ -468,14 +468,14 @@ def db_connect():
             return False
     else:
         return True
-        
-        
+
+
 def db_disconnect():
     global DB_CONN
     if db_is_connected(DB_CONN):
         DB_CONN.close()
-        
-        
+
+
 def db_execute(query, cursor):
     cursor.execute(query)
     success = db_try_commit()
@@ -536,8 +536,8 @@ def db_fetchfirst(query):
         return result[0], error
     else:
         return None, error
-        
-        
+
+
 def db_get_cursor():
     global DB_CONN
     connected = db_connect()
@@ -546,8 +546,8 @@ def db_get_cursor():
     else:
         print('[db_get_cursor] db is not connected')
     return None
-    
-    
+
+
 def db_is_connected(connection):
     if connection:
         return connection.closed == 0
@@ -615,8 +615,8 @@ def db_select_first_from_where_or(table_name, where_collection):
         return db_select_first_from_where_or(table_name, where)
     else:
         return db_select_first_from_where_or(table_name)
-    
-    
+
+
 def db_try_commit():
     global DB_CONN
     connected = db_is_connected(DB_CONN)
@@ -631,8 +631,8 @@ def db_try_commit():
     else:
         print('[db_try_commit] db is not connected')
         return False
-                              
-                              
+
+
 def db_try_create_table(table_name, columns):
     column_list = ', '.join(columns)
     query = 'CREATE TABLE {} ({});'.format(table_name, column_list)
@@ -659,8 +659,8 @@ def db_try_create_table(table_name, columns):
     else:
         print('[db_try_create_table] could not connect to db')
     return success
-        
-        
+
+
 def db_try_execute(query):
     success = False
     error = None
