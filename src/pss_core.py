@@ -614,7 +614,7 @@ def db_select_first_from_where_or(table_name, where_collection):
         where = ' OR '.join(where_collection)
         return db_select_first_from_where_or(table_name, where)
     else:
-        return db_select_first_from_where_or(table_name)
+        return db_select_first_from_where(table_name)
 
 
 def db_try_commit():
