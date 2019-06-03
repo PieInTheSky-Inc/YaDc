@@ -645,8 +645,8 @@ def db_try_create_table(table_name, columns):
                 db_execute(query, cursor)
                 print('[db_try_create_table] created table: {}'.format(table_name))
                 success = True
-            except db_error.DuplicateTable:
-                success = True
+            except psycopg2.ProgrammingError as error:
+                success = error.pgcode == psycopg2.errorcodes.DUPLICATE_TABLE
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
                 print('[db_try_create_table] {} while performing a query: {}'.format(error_name, error))
