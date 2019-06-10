@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 
 
 import argparse
+import datetime
 import csv
 import numpy as np
 import os
@@ -24,7 +25,8 @@ import xml.etree.ElementTree
 from io import StringIO
 
 import pss_assets as assets
-from pss_core import *
+import pss_core as core
+import utility as util
 
 
 # Discord limits messages to 2000 characters
@@ -33,7 +35,7 @@ RAW_CHARFILE = "raw/pss-chars-raw.txt"
 RAW_COLLECTIONSFILE = 'raw/pss-collections-raw.txt'
 DB_FILE = "pss.db"
 
-base_url = 'http://{}/'.format(get_production_server())
+base_url = 'http://{}/'.format(core.get_production_server())
 next_target = {'Common': 'Elite',
                'Elite': 'Unique',
                'Unique': 'Epic',
@@ -110,11 +112,11 @@ def load_char_sheet(filename='pss-chars.txt'):
 
 def get_char_sheet(refresh='auto'):
     url = base_url + 'CharacterService/ListAllCharacterDesigns?languageKey=en'
-    raw_text = load_data_from_url(RAW_CHARFILE, url, refresh=refresh)
-    ctbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
-    tbl_i2n = create_reverse_lookup(ctbl, 'CharacterDesignId', 'CharacterDesignName')
-    tbl_n2i = create_reverse_lookup(ctbl, 'CharacterDesignName', 'CharacterDesignId')
-    rarity = create_reverse_lookup(ctbl, 'CharacterDesignName', 'Rarity')
+    raw_text = core.load_data_from_url(RAW_CHARFILE, url, refresh=refresh)
+    ctbl = core.xmltree_to_dict3(raw_text, 'CharacterDesignId')
+    tbl_i2n = core.create_reverse_lookup(ctbl, 'CharacterDesignId', 'CharacterDesignName')
+    tbl_n2i = core.create_reverse_lookup(ctbl, 'CharacterDesignName', 'CharacterDesignId')
+    rarity = core.create_reverse_lookup(ctbl, 'CharacterDesignName', 'Rarity')
     return ctbl, tbl_i2n, tbl_n2i, rarity
 
 
@@ -181,7 +183,7 @@ def get_prestige_data_from_url(char_id, action):
     else:
         print('action = "{}" is invalid'.format(action))
         return None
-    txt = get_data_from_url(url)
+    txt = core.get_data_from_url(url)
     # print(txt)
     return txt, url
 
@@ -398,25 +400,6 @@ def get_prestige(char_input, direction, raw=False):
     if raw is True:
         prestige_txt += debug_txt
     return prestige_txt, True
-
-
-def show_new_chars(action='prestige'):
-    tbl1, rtbl1 = load_char_sheet('pss-chars.txt')
-    _, tbl2, rtbl2, _ = get_char_sheet()
-    # ctbl, tbl_i2n, tbl_n2i, rarity = get_char_sheet()
-    old_ids = tbl1.keys()
-    new_ids = tbl2.keys()
-    new_chars = False
-    for ii in new_ids:
-        if ii not in old_ids:
-            if action == 'prestige':
-                content, ptbl = get_prestige_data(
-                    tbl2[ii], 'from', rtbl2)
-                print_prestige_formulas(ptbl, tbl2)
-            else:
-                print('{}'.format(tbl2[ii]))
-            new_chars = True
-    return new_chars
 
 
 # ----- Crew Database -------------------------------------------------
@@ -748,6 +731,17 @@ equipment_lookup = {
     16: 'Accessory'}
 
 
+rarity_lookup = {
+    'Common': '<:pss_crewtiernormal:585041736204681217>',
+    'Elite': 2*'<:pss_crewtiernormal:585041736204681217>',
+    'Unique': 3*'<:pss_crewtiernormal:585041736204681217>',
+    'Epic': 4*'<:pss_crewtiernormal:585041736204681217>',
+    'Hero': 5*'<:pss_crewtiernormal:585041736204681217>',
+    'Special': '<:pss_crewtierspecial:585041736355807233>',
+    'Legendary': '<:pss_crewtierlegendary:585041736414265344>'
+}
+
+
 gas_cost_normal = [0, 0, 17, 33, 65, 130, 325, 650, 1300, 3200, 6500, 9700, 13000, 19500, 26000, 35700, 43800, 52000, 61700, 71500, 84500, 104000, 117000, 130000, 156000, 175000, 201000, 227000, 253000, 279000, 312000, 351000, 383000, 422000, 468000, 507000, 552000, 604000, 650000, 715000]
 gas_cost_legendary = [0, 130000, 162500, 195000, 227500, 260000, 292500, 325000, 357500, 390000, 422500, 455000, 487500, 520000, 552500, 585000, 617500, 650000, 682500, 715000, 747500, 780000, 812500, 845000, 877500, 910000, 942000, 975000, 1007500, 1040000, 1072500, 1105000, 1137500, 1170000, 1202500, 1235000, 1267500, 1300000, 1332500, 1365000]
 xp_cost_normal = [0, 90, 270, 450, 630, 810, 1020, 1230, 1440, 1650, 1860, 2130, 2400, 2670, 2940, 3210, 3540, 3870, 4200, 4530, 4860, 5220, 5580, 5940, 6300, 6660, 7050, 7440, 7830, 8220, 8610, 9030, 9450, 9870, 10290, 10710, 11160, 11610, 12060, 12510]
@@ -805,7 +799,7 @@ def get_stats(char_name, embed=False, colour=None, raw=False):
         result = print_stats(d, char_name)
         print(f'- exiting get_stats({char_name}, {embed}, {colour}, {raw}) returning text result: {result}')
         return result
-        
+
 
 
 def print_stats(d, char_input):
@@ -853,6 +847,8 @@ def embed_stats(d, char_input, colour):
         return None
 
     stats = d[char_name]
+    rarity = stats['Rarity']
+    rarity_tier = rarity_lookup[rarity]
     ability = stats['SpecialAbilityType']
     if ability in specials_lookup.keys():
         ability = specials_lookup[ability]
@@ -862,44 +858,35 @@ def embed_stats(d, char_input, colour):
         coll_name = collections[collection_id]['CollectionName']
     else:
         coll_name = '-'
-        
-    thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'])
-    info_left = [
+
+    info = [
       ('Race', stats['RaceType']),
-      ('Gender', stats['GenderType'])
-    ]
-    info_right = [
+      ('Gender', stats['GenderType']),
       ('Collection', coll_name),
       ('Ability', ability),
-    ]
-    info_field_content = '\n'.join(util.join_format_tuple_list(info_left, info_right))
-    
-    stats_left = [
-      ('HP', stats['FinalHp']),
-      ('Attack', stats['FinalAttack']),
-      ('Repair', stats['FinalRepair']),
-      ('Ability', stats['SpecialAbilityFinalArgument']),
-      ('Walk speed', stats['WalkingSpeed']),
-      ('Run speed', stats['RunSpeed'])
-    ]
-    stats_right = [
-      ('Pilot', stats['FinalPilot']),
-      ('Science', stats['FinalScience']),
-      ('Engine', stats['FinalEngine']),
-      ('Weapon', stats['FinalWeapon']),
+      ('HP', '{} - {}'.format(stats['Hp'], stats['FinalHp'])),
+      ('Attack', '{} - {}'.format(stats['Attack'], stats['FinalAttack'])),
+      ('Repair', '{} - {}'.format(stats['Repair'], stats['FinalRepair'])),
+      ('Ability', '{} - {}'.format(stats['SpecialAbilityArgument'], stats['SpecialAbilityFinalArgument'])),
+      ('Pilot', '{} - {}'.format(stats['Pilot'], stats['FinalPilot'])),
+      ('Science', '{} - {}'.format(stats['Science'], stats['FinalScience'])),
+      ('Engine', '{} - {}'.format(stats['Engine'], stats['FinalEngine'])),
+      ('Weapon', '{} - {}'.format(stats['Weapon'], stats['FinalWeapon'])),
+      ('Walk/Run speed', '{} / {}'.format(stats['WalkingSpeed'], stats['RunSpeed'])),
       ('Fire resistance', stats['FireResistance']),
-      ('Training capacity', stats['TrainingCapacity'])
+      ('Training cap.', stats['TrainingCapacity']),
+      ('Equipment slots', ', '.join(eqpt_mask))
     ]
-    stats_field_content = '\n'.join(util.join_format_tuple_list(stats_left, stats_right))
-    
-    fields = []
-    fields.append(util.get_embed_field_def('General', f'```{info_field_content}```', False))
-    fields.append(util.get_embed_field_def('Stats', f'```{stats_field_content}```', False))
-    fields.append(util.get_embed_field_def('Equipment Slots', ', '.join(eqpt_mask), False))
-    result = util.create_embed_rich(char_name, stats['CharacterDesignDescription'], colour, fields, thumbnail_url)
+    info_formatted = '\n'.join(util.format_embed_rows(info))
+
+    title = f'**{char_name}** {rarity_tier} ({rarity})'
+    description = '{}\n\n{}'.format(stats['CharacterDesignDescription'], info_formatted)
+    thumbnail_url = assets.get_download_url_for_sprite_id(stats['ProfileSpriteId'], True)
+
+    result = util.create_embed_rich(title, description, colour, None, thumbnail_url)
     return result
-    
-  
+
+
 
 
 
@@ -937,16 +924,16 @@ def embed_stats(d, char_input, colour):
 # ----- Collections ---------------------------------------------------
 def get_collections():
     url = base_url + 'CollectionService/ListAllCollectionDesigns'
-    raw_text = load_data_from_url(RAW_COLLECTIONSFILE, url, refresh='auto')
-    collections = xmltree_to_dict3(raw_text, 'CollectionDesignId')
-    collection_names = create_reverse_lookup(collections, 'CollectionDesignId', 'CollectionName')
+    raw_text = core.load_data_from_url(RAW_COLLECTIONSFILE, url, refresh='auto')
+    collections = core.xmltree_to_dict3(raw_text, 'CollectionDesignId')
+    collection_names = core.create_reverse_lookup(collections, 'CollectionDesignId', 'CollectionName')
     return collections, collection_names
 
 
 def get_characters_in_collection(collection_id):
     url = base_url + 'CharacterService/ListAllCharacterDesigns?languageKey=en'
-    raw_text = load_data_from_url(RAW_CHARFILE, url, refresh='auto')
-    tbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
+    raw_text = core.load_data_from_url(RAW_CHARFILE, url, refresh='auto')
+    tbl = core.xmltree_to_dict3(raw_text, 'CharacterDesignId')
 
     chars_in_collection = []
     for k in tbl.keys():
@@ -959,12 +946,12 @@ def get_characters_in_collection(collection_id):
 
 def show_collection(search_str):
     url = base_url + 'CollectionService/ListAllCollectionDesigns'
-    raw_text = load_data_from_url(RAW_COLLECTIONSFILE, url, refresh='auto')
-    collections = xmltree_to_dict3(raw_text, 'CollectionDesignId')
-    collection_names = create_reverse_lookup(collections, 'CollectionDesignId', 'CollectionName') #id2names
-    collection_ids = create_reverse_lookup(collections, 'CollectionName', 'CollectionDesignId') #names2id
+    raw_text = core.load_data_from_url(RAW_COLLECTIONSFILE, url, refresh='auto')
+    collections = core.xmltree_to_dict3(raw_text, 'CollectionDesignId')
+    collection_names = core.create_reverse_lookup(collections, 'CollectionDesignId', 'CollectionName') #id2names
+    collection_ids = core.create_reverse_lookup(collections, 'CollectionName', 'CollectionDesignId') #names2id
 
-    real_name = get_real_name(search_str, list(collection_ids.keys()))
+    real_name = core.get_real_name(search_str, list(collection_ids.keys()))
     idx = collection_ids[real_name]
     chars_in_collection = get_characters_in_collection(idx)
 
@@ -1001,7 +988,7 @@ def get_char_list(action):
     elif action in ['characters', 'chars', 'crew']:
         names = list(char_df['CharacterDesignName'].values)
         print('List of characters: ' + ', '.join(names))
-        txt_list = list_to_text(names)
+        txt_list = core.list_to_text(names)
         return txt_list
 
 

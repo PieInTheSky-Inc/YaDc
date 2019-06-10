@@ -110,8 +110,8 @@ def xmltext_to_df(raw_text):
 
 def get_item_name_column_width(item_name_fixed, item_original, item_lookup, items_data):
     result = 0
-    
-    for i, item_name in enumerate(item_lookup):            
+
+    for i, item_name in enumerate(item_lookup):
         m = re.search(item_name_fixed, item_name)
         if m is not None:
             item_name = item_original[i]
@@ -124,12 +124,12 @@ def get_item_name_column_width(item_name_fixed, item_original, item_lookup, item
                 d['CraftDesignId']     != '0' or
                 d['CharacterDesignId'] != '0'):
                 continue
-             
+
             item_name_length = len(item_name)
-            
+
             if item_name_length > result:
                 result = item_name_length
-                
+
     return result
 
 
@@ -162,7 +162,7 @@ def filter_item_designs(search_str, rtbl, filter):
 
     txt = ''
     item_name_colum_width = get_item_name_column_width(item_fixed, item_original, item_lookup, rtbl)
-    
+
     for i, item_name in enumerate(item_lookup):
 
         m = re.search(item_fixed, item_name)
@@ -177,7 +177,7 @@ def filter_item_designs(search_str, rtbl, filter):
                 d['CraftDesignId']     != '0' or
                 d['CharacterDesignId'] != '0'):
                 continue
-                
+
             # Process
             item_fairprice = d['FairPrice']
             item_price = d['MarketPrice']

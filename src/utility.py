@@ -18,7 +18,7 @@ def get_first_of_following_month(utcnow):
         month = 1
     result = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
     return result
-    
+
 
 def get_first_of_next_month():
     utcnow = get_utcnow()
@@ -111,8 +111,8 @@ def create_embed_rich(title, description=None, colour=None,
     if footer_def is not None:
         result.set_footer(text=footer_def[0], icon_url=footer_def[1])
     return result
-    
-    
+
+
 def get_bot_member_colour(bot, guild):
     bot_member = guild.get_member(bot.user.id)
     bot_colour = bot_member.colour
@@ -174,6 +174,23 @@ def join_format_tuple_list(left_tuple_list, right_tuple_list, tuple_list_separat
     return result
 
 
+def format_embed_rows(column_list, separator='  '):
+    result = [f'**{row[0]}**{separator}{row[1]}' for row in column_list]
+    return result
+
+
+def is_older_than(timestamp, days=0, hours=0, minutes=0, seconds=0):
+    utc_now = get_utcnow()
+    if utc_now < timestamp:
+        return False
+
+    delta = utc_now - timestamp
+    delta_seconds = delta.total_seconds()
+    user_seconds = ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+    result = user_seconds < delta_seconds
+    return result
+
+
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -222,7 +239,7 @@ def db_convert_boolean(value):
         return 'TRUE'
     else:
         return 'FALSE'
-    
+
 def db_convert_text(value):
     if value:
         result = str(value)
@@ -231,7 +248,7 @@ def db_convert_text(value):
         return result
     else:
         return ''
-    
+
 def db_convert_timestamp(datetime):
     if datetime:
         result = 'TIMESTAMPTZ \'{}\''.format(datetime.strftime(DB_TIMESTAMP_FORMAT))
@@ -247,7 +264,7 @@ def db_convert_to_boolean(db_boolean):
         return True
     else:
         return False
-    
+
 def db_convert_to_datetime(db_timestamp):
     if db_timestamp is None:
         return None

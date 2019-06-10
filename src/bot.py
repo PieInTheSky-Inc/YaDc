@@ -17,7 +17,6 @@ import os
 import pytz
 import re
 import sys
-import time
 
 import pss_assets as assets
 import pss_core as core
@@ -34,6 +33,7 @@ import utility as util
 # ----- Setup ---------------------------------------------------------
 RATE = 3
 COOLDOWN = 30.0
+IS_BETA = '--beta' in sys.argv
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
@@ -67,16 +67,21 @@ setattr(bot, "logger", logging.getLogger(__name__))
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
 async def on_ready():
+    print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
     game = discord.Game(name='for /help')
     core.init_db()
-    bot.loop.create_task(post_dailies_loop())
+    if IS_BETA:
+        bot.loop.create_task(post_dailies_loop_beta())
+        print('[on_ready] added task: post_dailies_loop_beta()')
+    else:
+        bot.loop.create_task(post_dailies_loop())
+        print('[on_ready] added task: post_dailies_loop()')
     assets.get_sprites_dict() # build cache
     assets.get_files_dict() # build cache
-    print('[on_ready] added task: post_dailies_loop()')
 
 
 @bot.event
@@ -85,21 +90,45 @@ async def on_command_error(ctx, err):
         await ctx.send('Error: {}'.format(err))
     else:
         bot.logger.exception(err)
-#        print(f'An error ({err.__class__.__name__}) occurred: {err}')
-#        print(err.__traceback__)
 
 
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop():
     while True:
         utc_now = datetime.datetime.now(datetime.timezone.utc)
+        if utc_now.hour == 0:
+            await asyncio.sleep(59)
+        elif utc_now.hour == 1 and utc_now.minute == 0:
+            await post_all_dailies()
+            await asyncio.sleep(3600)
+        else:
+            await asyncio.sleep(3600)
+
+
+async def post_all_dailies():
+    fix_daily_channels()
+    channel_ids = d.get_valid_daily_channel_ids()
+    txt = dropship.get_dropship_text()
+    for channel_id in channel_ids:
+        text_channel = bot.get_channel(channel_id)
+        if text_channel != None:
+            guild = text_channel.guild
+            try:
+                await text_channel.send(txt)
+            except Exception as error:
+                print(f'[post_all_dailies] {error.__class__.__name__} occurred while trying to post to channel \'{text_channel.name}\' on server \'{guild.name}\': {error}')
+
+
+async def post_dailies_loop_beta():
+    while True:
+        utc_now = datetime.datetime.now(datetime.timezone.utc)
         if utc_now.second != 0:
             await asyncio.sleep(60 - utc_now.second)
         else:
-            await post_all_dailies(verbose=False, post_anyway=False)
+            await post_all_dailies_beta(verbose=False, post_anyway=False)
 
 
-async def post_all_dailies(verbose=False, post_anyway=False):
+async def post_all_dailies_beta(verbose=False, post_anyway=False):
     utc_now = util.get_utcnow()
     utc_today = datetime.datetime(utc_now.year, utc_now.month, utc_now.day)
     configured_channel_count = len(d.get_all_daily_channels())
@@ -123,7 +152,7 @@ async def post_all_dailies(verbose=False, post_anyway=False):
                         try:
                             old_msg = await text_channel.fetch_message(daily_channel[3])
                         except Exception as error:
-                            print('[post_all_dailies] {} occurred while trying to retrieve the latest message in channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+                            print('[post_all_dailies] {} occurred while trying to retrieve the latest message in channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
                     try:
                         if old_msg:
                             await old_msg.delete()
@@ -133,11 +162,11 @@ async def post_all_dailies(verbose=False, post_anyway=False):
                         if not updated_daily_channel:
                             print('[post_all_dailies] could not update latest message id for channel \'{}\' on guild \'{}\': {}'.format(text_channel.name, guild.name, new_msg.id))
                     except Exception as error:
-                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\''.format(error.__class__.__name__, text_channel.name, guild.name))
+                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
         elif verbose:
             print('dropship text hasn\'t changed.')
-            
-            
+
+
 def fix_daily_channels(verbose=False):
     if verbose:
         print('+ called fix_daily_channels({})'.format(verbose))
@@ -185,7 +214,7 @@ async def ping(ctx):
     async with ctx.typing():
         await ctx.send('Pong!')
 
-    
+
 @bot.command(hidden=True, brief='Run shell command')
 @commands.is_owner()
 async def shell(ctx, *, cmd):
@@ -204,7 +233,7 @@ async def prestige(ctx, *, name):
         prestige_txt, success = p.get_prestige(name, 'from')
         for txt in prestige_txt:
             await ctx.send(txt)
-        
+
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -401,11 +430,11 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
-    
+
     action = set:    Configure a channel on this server to have the daily announcement posted at.
     action = remove: Stop auto-posting the daily announcement to this Discord server.
     action = get:    See which channel has been configured on this server to receive the daily announcement.
-    
+
     In order to use this command, you need Administrator permissions for this server.
     """
     guild = ctx.guild
@@ -442,8 +471,8 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
                 await text_channel.send(dropship.get_dropship_text())
     elif action == 'postall':
         if author_is_owner:
-            await post_all_dailies(verbose=True, post_anyway=True)
-                
+            await post_all_dailies_beta(verbose=True, post_anyway=True)
+
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
     guild = ctx.guild
@@ -482,7 +511,7 @@ async def listalldailies(ctx, valid = None):
         txt_split = txt.split('\n\n')
         for msg in txt_split:
             await ctx.send(msg)
-        
+
 async def removedaily(ctx):
     guild = ctx.guild
     txt = ''
@@ -495,7 +524,7 @@ async def removedaily(ctx):
     else:
         txt += 'Auto-posting of the daily announcement is not configured for this server!'
     await ctx.send(txt)
-    
+
 
 @autodaily.error
 async def autodaily_error(ctx, error):
@@ -586,8 +615,8 @@ async def parse(ctx, *, url):
         txt_list = core.parse_links3(url)
         for txt in txt_list:
             await ctx.send(txt)
-            
-            
+
+
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
 async def tournament(ctx):
@@ -607,8 +636,8 @@ async def tournament_current(ctx):
     embed_colour = util.get_bot_member_colour(bot, ctx.guild)
     embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
-    
-    
+
+
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
@@ -710,7 +739,7 @@ async def testing(ctx, *, action=None):
         print(txt)
         bot.close()
         quit()
-    
+
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
@@ -761,7 +790,7 @@ async def test(ctx, action, *, params=None):
                     else:
                         fiel.append(util.get_embed_field_def('Field Header', '-', False))
                 else:
-                    fiel.append(util.get_embed_field_def('Field Header', v, False))
+                    fiel.append(util.get_embed_field_def('Field Header', value, False))
         else:
             fiel = [['Field Header', txt, False]]
         print(f'[test] retrieved fields: {fiel}')
@@ -804,7 +833,7 @@ async def test(ctx, action, *, params=None):
           ('Training capacity', '90')
         ]
         additional_field_content = util.join_format_tuple_list(additional_left, additional_right)
-        
+
         await ctx.send('```{info_field_content```')
         await ctx.send('```{stats_field_content```')
         await ctx.send('```{additional_field_content```')
