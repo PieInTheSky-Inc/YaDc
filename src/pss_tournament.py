@@ -49,7 +49,7 @@ def embed_tourney_start(start_date, utc_now, colour=None):
         end_date = util.get_first_of_following_month(start_date)
         delta_end = end_date - utc_now
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
-        fields.append(util.get_embed_field_def('Ends', delta_start_formatted, True))
+        fields.append(util.get_embed_field_def('Ends', delta_end_formatted, True))
     result = util.create_embed(f'{tourney_month} tournament', None, colour, fields)
     return result
 
