@@ -13,6 +13,7 @@ import holidays
 import logging
 import os
 import pss_core as core
+import pss_data as data
 import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
@@ -103,8 +104,8 @@ async def post_all_dailies():
                 await text_channel.send(txt)
             except Exception as error:
                 print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
-            
-            
+
+
 def fix_daily_channels():
     rows = d.select_daily_channel(None, None)
     for row in rows:
@@ -139,7 +140,7 @@ async def ping(ctx):
     async with ctx.typing():
         await ctx.send('Pong!')
 
-    
+
 @bot.command(hidden=True, brief='Run shell command')
 @commands.is_owner()
 async def shell(ctx, *, cmd):
@@ -158,7 +159,7 @@ async def prestige(ctx, *, name):
         prestige_txt, success = p.get_prestige(name, 'from')
         for txt in prestige_txt:
             await ctx.send(txt)
-        
+
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -346,11 +347,11 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
-    
+
     action = set:    Configure a channel on this server to have the daily announcement posted at.
     action = remove: Stop auto-posting the daily announcement to this Discord server.
     action = get:    See which channel has been configured on this server to receive the daily announcement.
-    
+
     In order to use this command, you need Administrator permissions for this server.
     """
     guild = ctx.guild
@@ -388,7 +389,7 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
     elif action == 'postall':
         if author_is_owner:
             await post_all_dailies()
-                
+
 
 async def setdaily(ctx, text_channel: discord.TextChannel):
     guild = ctx.guild
@@ -424,7 +425,7 @@ async def listalldailies(ctx, valid = None):
     txt_split = txt.split('\n\n')
     for msg in txt_split:
         await ctx.send(msg)
-        
+
 async def removedaily(ctx):
     guild = ctx.guild
     txt = ''
@@ -437,7 +438,7 @@ async def removedaily(ctx):
     else:
         txt += 'Auto-posting of the daily announcement is not configured for this server!'
     await ctx.send(txt)
-    
+
 
 @autodaily.error
 async def autodaily_error(ctx, error):
@@ -528,8 +529,8 @@ async def parse(ctx, *, url):
         txt_list = core.parse_links3(url)
         for txt in txt_list:
             await ctx.send(txt)
-            
-            
+
+
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
 async def tournament(ctx):
@@ -549,8 +550,8 @@ async def tournament_current(ctx):
     embed_colour = util.get_bot_member_colour(bot, ctx.guild)
     embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
-    
-    
+
+
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
@@ -653,8 +654,8 @@ async def testing(ctx, *, action=None):
         print(txt)
         bot.close()
         quit()
-        
-        
+
+
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -696,4 +697,5 @@ async def test(ctx, action, *, params):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
+    data.update_data()
     bot.run(token)
