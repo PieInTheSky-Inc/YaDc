@@ -176,7 +176,7 @@ def get_real_name(search_str, lst_original):
 
 # ----- Get Production Server -----
 def get_production_server():
-    url = 'http://api.pixelstarships.com/SettingService/GetLatestVersion2?languageKey=en'
+    url = 'http://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en'
     raw_text = get_data_from_url(url)
     d = xmltree_to_dict2(raw_text, key=None)
     return d['ProductionServer']
