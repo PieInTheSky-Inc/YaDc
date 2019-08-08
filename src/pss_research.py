@@ -23,7 +23,7 @@ import xml.etree.ElementTree
 from pss_core import *
 
 HOME = os.getenv('HOME')
-base_url = 'http://{}/'.format(get_production_server())
+base_url = 'https://{}/'.format(get_production_server())
 
 
 # ----- Utilities -----------------------------------------------------

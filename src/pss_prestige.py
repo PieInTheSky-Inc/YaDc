@@ -22,7 +22,9 @@ import sys
 import urllib.request
 import xml.etree.ElementTree
 from io import StringIO
+
 from pss_core import *
+import pss_data as data
 
 
 # Discord limits messages to 2000 characters
@@ -31,7 +33,7 @@ RAW_CHARFILE = "raw/pss-chars-raw.txt"
 RAW_COLLECTIONSFILE = 'raw/pss-collections-raw.txt'
 DB_FILE = "pss.db"
 
-base_url = 'http://{}/'.format(get_production_server())
+base_url = 'https://{}/'.format(get_production_server())
 next_target = {'Common': 'Elite',
                'Elite': 'Unique',
                'Unique': 'Epic',
@@ -48,7 +50,7 @@ for folder in reqd_folders:
 # ----- Character Sheet -----------------------------------------------
 def request_new_char_sheet():
     # Download Character Sheet from PSS Servers
-    url = base_url + 'CharacterService/ListAllCharacterDesigns?languageKey=en'
+    url = base_url + 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
     data = urllib.request.urlopen(url).read()
     return data.decode()
 
@@ -778,8 +780,7 @@ def stats2dict(raw_text):
 
 
 def get_stats(char_name, embed=False, raw=False):
-    raw_text = load_char_sheet_raw()
-    d = stats2dict(raw_text)
+    d = data.get_character_designs()
     if raw == True:
         txt = f'**{char_name}**'
         _, _, tbl_n2i, _ = get_char_sheet()

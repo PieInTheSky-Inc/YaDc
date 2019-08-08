@@ -182,6 +182,12 @@ def get_production_server():
     return d['ProductionServer']
 
 
+def get_base_url():
+    production_server = get_production_server()
+    result = f'https://{production_server}/'
+    return result
+
+
 # ----- Character Sheets -----
 def save_char_brief(d, filename=PSS_CHARS_FILE):
     with open(filename, 'w') as f:
@@ -254,11 +260,11 @@ def init_db():
     else:
         print('[init_db] db initialization failed')
 
-        
+
 def db_close_cursor(cursor):
     if cursor != None:
         cursor.close()
-      
+
 
 def db_connect():
     global DB_CONN
@@ -272,14 +278,14 @@ def db_connect():
             return False
     else:
         return True
-        
-        
+
+
 def db_disconnect():
     global DB_CONN
     if db_is_connected(DB_CONN):
         DB_CONN.close()
-        
-        
+
+
 def db_execute(query, cursor):
     cursor.execute(query)
     success = db_try_commit()
@@ -306,8 +312,8 @@ def db_fetchall(query):
     else:
         print('[db_fetchall] could not connect to db')
     return result
-        
-        
+
+
 def db_get_cursor():
     global DB_CONN
     if db_is_connected(DB_CONN) == False:
@@ -317,15 +323,15 @@ def db_get_cursor():
     else:
         print('[db_get_cursor] db is not connected')
     return None
-    
-    
+
+
 def db_is_connected(connection):
     if connection:
         if connection.closed == 0:
             return True
     return False
-    
-    
+
+
 def db_try_commit():
     global DB_CONN
     if db_is_connected(DB_CONN):
@@ -339,8 +345,8 @@ def db_try_commit():
     else:
         print('[db_try_commit] db is not connected')
         return False
-                              
-                              
+
+
 def db_try_create_table(table_name, columns):
     column_list = ', '.join(columns)
     query = 'CREATE TABLE {} ({});'.format(table_name, column_list)
@@ -366,8 +372,8 @@ def db_try_create_table(table_name, columns):
     else:
         print('[db_try_create_table] could not connect to db')
     return success
-        
-        
+
+
 def db_try_execute(query):
     success = False
     connected = db_connect()
