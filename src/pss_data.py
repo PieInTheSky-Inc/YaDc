@@ -92,7 +92,7 @@ def __write_character_designs(data):
     __CHARACTER_DESIGNS_WRITE_LOCK.acquire()
     __character_designs = data
     __character_designs_modify_date = utility.get_utcnow()
-    print(f'Stored {len(data)} character design entries on {__room_designs_modify_date}')
+    print(f'Stored {len(data)} character design entries on {__character_designs_modify_date}')
     __CHARACTER_DESIGNS_WRITE_LOCK.release()
 
 
