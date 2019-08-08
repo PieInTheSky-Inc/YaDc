@@ -129,7 +129,7 @@ __room_designs_reader_count = 0
 def update_room_designs_data(old_data, base_url):
     url = f'{base_url}RoomService/ListRoomDesigns2?languageKey=en'
     raw_data = core.get_data_from_url(url)
-    data = core.xmltree_to_dict3(raw_data, 'CharacterDesignId')
+    data = core.xmltree_to_dict3(raw_data, 'RoomDesignId')
     data_changed = data != old_data
     if data_changed:
         __request_write_room_designs()
