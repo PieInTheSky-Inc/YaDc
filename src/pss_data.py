@@ -189,6 +189,7 @@ def __write_room_designs(data):
     __ROOM_DESIGNS_WRITE_LOCK.acquire()
     __room_designs = data
     __room_designs_modify_date = utility.get_utcnow()
+    print(f'Retrieved and stored {len(data)} entries on {__room_designs_modify_date}')
     __ROOM_DESIGNS_WRITE_LOCK.release()
 
 
