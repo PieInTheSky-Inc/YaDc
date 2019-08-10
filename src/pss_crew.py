@@ -271,9 +271,9 @@ def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     header = f'**{char_name} can be prestiged into**'
     body_lines = []
 
-    for key in prestige_to_data.keys():
-        char_info_2 = char_data[prestige_to_data[key]['CharacterDesignId2']]
-        char_info_to = char_data[prestige_to_data[key]['ToCharacterDesignId']]
+    for key in prestige_from_data.keys():
+        char_info_2 = char_data[prestige_from_data[key]['CharacterDesignId2']]
+        char_info_to = char_data[prestige_from_data[key]['ToCharacterDesignId']]
         body_lines.append('+ {} = {}'.format(char_info_2['CharacterDesignName'], char_info_to['CharacterDesignName']))
 
     if body_lines:
@@ -288,10 +288,6 @@ def get_prestige_from_info_as_txt(char_name, prestige_from_data):
             body = 'noone'
 
     return f'{header}\n{body}'
-
-
-    lines = []
-    lines.append('**{} can be prestiged to'.format(prestige_from_data))
 
 
 def get_prestige_to_info_as_embed(char_name, prestige_to_data):
