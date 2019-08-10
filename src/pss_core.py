@@ -66,13 +66,18 @@ def load_data_from_url(filename, url, refresh='auto'):
     return raw_text
 
 
-def xmltree_to_dict3(raw_text, key):
+def xmltree_to_dict3(raw_text, key_name):
     root = xml.etree.ElementTree.fromstring(raw_text)
+    key = 0
     for c in root:
         for cc in c:
             d = {}
             for ccc in cc:
-                d[ccc.attrib[key]] = ccc.attrib
+                if key_name:
+                    d[ccc.attrib[key_name]] = ccc.attrib
+                else:
+                    d[key] = ccc.attrib
+                    key += 1
     return d
 
 

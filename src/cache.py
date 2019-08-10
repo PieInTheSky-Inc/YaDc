@@ -13,10 +13,11 @@ import utility as util
 class PssCache:
     __UPDATE_INTERVAL = datetime.timedelta(minutes=30)
 
-    def __init__(self, update_url, name, key_name):
+    def __init__(self, update_url, name, key_name=None):
+        self.__update_url = update_url
         self.name = name
         self.__obj_key_name = key_name
-        self.__update_url = update_url
+
         self.__data = None
         self.__modify_date = None
         self.__WRITE_LOCK = Lock()
@@ -58,6 +59,7 @@ class PssCache:
         self.__add_reader()
         result = self.__read_data()
         self.__remove_reader()
+        # TODO: copy result
         return result
 
 

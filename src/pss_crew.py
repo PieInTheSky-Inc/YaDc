@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from threading import Thread, Lock
+
 from cache import PssCache
 import pss_core as core
 import utility as util
 
 
-character_designs_cache = None
 collection_designs_cache = None
-prestige_from_cache_dict = {}
-prestige_to_cache_dict = {}
 
 SPECIAL_ABILITIES_LOOKUP = {
     'AddReload': 'Rush Command',
@@ -32,36 +31,42 @@ EQUIPMENT_MASK_LOOKUP = {
     16: 'accessory'}
 
 
-# ---------- Initialization ----------
+# ---------- Crew info ----------
+
+CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
 
 character_designs_cache = PssCache(
     f'{core.get_base_url()}CharacterService/ListAllCharacterDesigns2?languageKey=en',
     'CharacterDesigns',
-    'CharacterDesignId')
+    CHARACTER_DESIGN_KEY_NAME)
 
-collection_designs_cache = PssCache(
-    f'{core.get_base_url()}CollectionService/ListAllCollectionDesigns?languageKey=en',
-    'CollectionDesigns',
-    'CollectionDesignId')
-
-
-# ---------- Crew info ----------
 
 def get_char_info(char_name, as_embed=False):
-    char_data = character_designs_cache.get_data()
-    char_design_id = _get_char_design_id_from_name(char_data, char_name)
+    char_info = _get_char_info(char_name)
 
-    if char_design_id and char_design_id in char_data.keys():
-        char_info = char_data[char_design_id]
+    if char_info is None:
+        return f'Could not find a crew named **{char_name}**.'
+    else:
         if as_embed:
             return _get_char_info_as_embed(char_info)
         else:
             return _get_char_info_as_text(char_info)
+
+
+def _get_char_info(char_name):
+    char_design_data = character_designs_cache.get_data()
+    char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
+
+    if char_design_id and char_design_id in char_design_data.keys():
+        return char_design_data[char_design_id]
     else:
-        return f'Could not find a crew named **{char_name}**.'
+        return None
 
 
-def _get_char_design_id_from_name(char_data, char_name):
+
+def _get_char_design_id_from_name(char_name, char_data=None):
+    if char_data is None:
+        char_data = character_designs_cache.get_data()
     fixed_data = {fix_char_name(char_data[id]['CharacterDesignName']): id for id in char_data}
     fixed_char_name = fix_char_name(char_name)
 
@@ -134,6 +139,11 @@ def fix_char_name(char_name):
 
 # ---------- Collection Info ----------
 
+collection_designs_cache = PssCache(
+    f'{core.get_base_url()}CollectionService/ListAllCollectionDesigns?languageKey=en',
+    'CollectionDesigns',
+    'CollectionDesignId')
+
 COLLECTION_PERK_LOOKUP = {
     'BloodThirstSkill': 'Vampirism',
     'EmpSkill': 'EMP Discharge',
@@ -146,17 +156,25 @@ COLLECTION_PERK_LOOKUP = {
 
 
 def get_collection_info(collection_name, as_embed=False):
-    collection_data = collection_designs_cache.get_data()
-    collection_design_id = _get_collection_design_id_from_name(collection_data, collection_name)
+    collection_info = _get_collection_info(collection_name)
 
-    if collection_design_id and collection_design_id in collection_data.keys():
-        collection_info = collection_data[collection_design_id]
+    if collection_info is None:
+        return f'Could not find a collection named **{collection_name}**.'
+    else:
         if as_embed:
             return _get_collection_info_as_embed(collection_info)
         else:
             return _get_collection_info_as_text(collection_info)
+
+
+def _get_collection_info(collection_name):
+    collection_data = collection_designs_cache.get_data()
+    collection_design_id = _get_collection_design_id_from_name(collection_data, collection_name)
+
+    if collection_design_id and collection_design_id in collection_data.keys():
+        return collection_data[collection_design_id]
     else:
-        return f'Could not find a collection named **{collection_name}**.'
+        return None
 
 
 def _get_collection_design_id_from_name(collection_data, collection_name):
@@ -206,4 +224,109 @@ def _get_collection_crew(collection_info):
 
 def fix_collection_name(collection_name):
     result = collection_name.lower()
+    return result
+
+
+# ---------- Prestige Info ----------
+
+prestige_from_cache_dict = {}
+prestige_to_cache_dict = {}
+
+PRESTIGE_FROM_BASE_URL = f'{core.get_base_url}CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+PRESTIGE_TO_BASE_URL = f'{core.get_base_url}CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
+
+
+def get_prestige_from_info(char_name, as_embed=False):
+    prestige_data = _get_prestige_from_data(char_name)
+
+    if prestige_data is None:
+        return f'Could not find prestige paths requiring **{char_name}**'
+    else:
+        if as_embed:
+            return get_prestige_from_info_as_embed(prestige_data)
+        else:
+            return get_prestige_from_info_as_txt(prestige_data)
+
+
+def get_prestige_to_info(char_name, as_embed=False):
+    prestige_data = _get_prestige_to_data(char_name)
+
+    if prestige_data is None:
+        return f'Could not find prestige paths leading to **{char_name}**'
+    else:
+        if as_embed:
+            return get_prestige_to_info_as_embed(prestige_data)
+        else:
+            return get_prestige_to_info_as_txt(prestige_data)
+
+
+def get_prestige_from_info_as_embed(prestige_from_data):
+    return ''
+
+
+def get_prestige_from_info_as_txt(prestige_from_data):
+    # Format: '+ {id2} = {toid}
+
+
+    lines = []
+    lines.append('**{} can be prestiged to'.format(prestige_from_data))
+
+
+def get_prestige_to_info_as_embed(prestige_to_data):
+    return ''
+
+
+def get_prestige_to_info_as_txt(prestige_to_data):
+    # Format: '{id1} + {id2}
+    i = 0
+
+
+def _get_prestige_from_data(char_name):
+    char_info = _get_char_info(char_name)
+    if char_info is None:
+        return None
+
+    char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
+    if char_design_id in prestige_from_cache_dict.keys():
+        prestige_from_cache = prestige_from_cache_dict[char_info[CHARACTER_DESIGN_KEY_NAME]]
+    else:
+        prestige_from_cache = _create_and_add_prestige_from_cache(char_info[CHARACTER_DESIGN_KEY_NAME])
+    return prestige_from_cache.get_data()
+
+
+def _get_prestige_to_data(char_name):
+    char_info = _get_char_info(char_name)
+    if char_info is None:
+        return None
+
+    if char_design_id in prestige_to_cache_dict.keys():
+        prestige_to_cache = prestige_to_cache_dict[char_info[CHARACTER_DESIGN_KEY_NAME]]
+    else:
+        prestige_to_cache = _create_and_add_prestige_to_cache(char_info[CHARACTER_DESIGN_KEY_NAME])
+    return prestige_to_cache.get_data()
+
+
+def _create_and_add_prestige_from_cache(char_design_id):
+    cache = _create_prestige_from_cache(char_design_id)
+    prestige_from_cache_dict[char_design_id] = cache
+    return cache
+
+
+def _create_and_add_prestige_to_cache(char_design_id):
+    cache = _create_prestige_to_cache(char_design_id)
+    prestige_to_cache_dict[char_design_id] = cache
+    return cache
+
+
+def _create_prestige_from_cache(char_design_id):
+    url = f'{PRESTIGE_FROM_BASE_URL}{char_design_id}'
+    name = f'PrestigeFrom{char_design_id}'
+    result = PssCache(url, name, None)
+    return result
+
+
+def _create_prestige_to_cache(char_design_id):
+    url = f'{PRESTIGE_TO_BASE_URL}{char_design_id}'
+    name = f'PrestigeTo{char_design_id}'
+    result = PssCache(url, name, None)
     return result
