@@ -51,14 +51,14 @@ def get_char_info(char_name, as_embed=False):
     char_data = character_designs_cache.get_data()
     char_design_id = _get_char_design_id_from_name(char_data, char_name)
 
-    if char_design_id in char_data.keys():
+    if char_design_id and char_design_id in char_data.keys():
         char_info = char_data[char_design_id]
         if as_embed:
             return _get_char_info_as_embed(char_info)
         else:
             return _get_char_info_as_text(char_info)
     else:
-        return f'Could not find a crew named {char_name}'
+        return f'Could not find a crew named **{char_name}**.'
 
 
 def _get_char_design_id_from_name(char_data, char_name):
@@ -149,18 +149,18 @@ def get_collection_info(collection_name, as_embed=False):
     collection_data = collection_designs_cache.get_data()
     collection_design_id = _get_collection_design_id_from_name(collection_data, collection_name)
 
-    if collection_design_id in collection_data.keys():
+    if collection_design_id and collection_design_id in collection_data.keys():
         collection_info = collection_data[collection_design_id]
         if as_embed:
             return _get_collection_info_as_embed(collection_info)
         else:
             return _get_collection_info_as_text(collection_info)
     else:
-        return f'Could not find a collection named {collection_name}'
+        return f'Could not find a collection named **{collection_name}**.'
 
 
 def _get_collection_design_id_from_name(collection_data, collection_name):
-    fixed_data = {fix_char_name(collection_data[id]['CollectionDesignName']): id for id in collection_data}
+    fixed_data = {fix_char_name(collection_data[id]['CollectionName']): id for id in collection_data}
     fixed_collection_name = fix_collection_name(collection_name)
 
     if fixed_collection_name in fixed_data.keys():
@@ -195,10 +195,12 @@ def _get_collection_info_as_text(collection_info):
 
 
 def _get_collection_crew(collection_info):
+    #util.dbg_prnt(f'+ _get_collection_crew(collection_info[{collection_info['CollectionName']}])')
     collection_id = collection_info['CollectionDesignId']
     char_data = character_designs_cache.get_data()
-    char_infos = [char_data[char_id] for char_id in char_data.keys() if char_data[char_id]['CollectionId'] == collection_id]
+    char_infos = [char_data[char_id] for char_id in char_data.keys() if char_data[char_id]['CollectionDesignId'] == collection_id]
     result = [char_info['CharacterDesignName'] for char_info in char_infos]
+    result.sort()
     return result
 
 
