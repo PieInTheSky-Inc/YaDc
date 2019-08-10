@@ -25,6 +25,7 @@ from io import StringIO
 
 from pss_core import *
 import pss_data as data
+import utility as util
 
 
 # Discord limits messages to 2000 characters
@@ -108,10 +109,14 @@ def load_char_sheet(filename='pss-chars.txt'):
     return tbl, rtbl
 
 
-def get_char_sheet(refresh='auto'):
-    url = base_url + 'CharacterService/ListAllCharacterDesigns?languageKey=en'
-    raw_text = load_data_from_url(RAW_CHARFILE, url, refresh=refresh)
-    ctbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
+def get_char_sheet(data=None, refresh='auto'):
+    ctbl = None
+    if data is None:
+        url = base_url + 'CharacterService/ListAllCharacterDesigns?languageKey=en'
+        raw_text = load_data_from_url(RAW_CHARFILE, url, refresh=refresh)
+        ctbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
+    else:
+        ctbl = data
     tbl_i2n = create_reverse_lookup(ctbl, 'CharacterDesignId', 'CharacterDesignName')
     tbl_n2i = create_reverse_lookup(ctbl, 'CharacterDesignName', 'CharacterDesignId')
     rarity = create_reverse_lookup(ctbl, 'CharacterDesignName', 'Rarity')
@@ -780,7 +785,9 @@ def stats2dict(raw_text):
 
 
 def get_stats(char_name, embed=False, raw=False):
+    util.dbg_prnt(f'+ get_stats({char_name}, {embed}, {raw})')
     d = data.get_character_designs()
+    util.dbg_prnt(f'[get_stats] Retrieved {len(d)} entries')
     if raw == True:
         txt = f'**{char_name}**'
         _, _, tbl_n2i, _ = get_char_sheet()
@@ -791,15 +798,16 @@ def get_stats(char_name, embed=False, raw=False):
             for k, v in d[char_name].items():
                 txt += f'\n▪️ {k}: {v}'''
         return txt
-    if embed is True:
-        return embed_stats(d, char_name)
-    else:
-        return print_stats(d, char_name)
+
+    return print_stats(d, char_name)
 
 
 def print_stats(d, char_input):
-    _, _, tbl_n2i, _ = get_char_sheet()
+    util.dbg_prnt(f'+ print_stats(d, {char_imput})')
+    _, _, tbl_n2i, _ = get_char_sheet(data=d)
+    util.dbg_prnt(f'[print_stats] converted data to char sheet')
     char_name = parse_char_name(char_input, tbl_n2i)
+    util.dbg_prnt(f'[print_stats] retrieved char name: {char_name}')
     if char_name is None:
         return None
 

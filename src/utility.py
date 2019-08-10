@@ -18,7 +18,7 @@ def get_first_of_following_month(utcnow):
         month = 1
     result = datetime(year, month, 1, 0, 0, 0, 0, timezone.utc)
     return result
-    
+
 
 def get_first_of_next_month():
     utcnow = get_utcnow()
@@ -93,8 +93,8 @@ def create_embed(title, description=None, colour=None, fields=None):
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
     return result
-        
-        
+
+
 def get_bot_member_colour(bot, guild):
     bot_member = guild.get_member(bot.user.id)
     bot_colour = bot_member.colour
@@ -104,6 +104,10 @@ def get_bot_member_colour(bot, guild):
 def get_embed_field_def(title=None, text=None, inline=True):
     return (title, text, inline)
 
+
+
+def dbg_prnt(text):
+    print(f'[{get_utcnow()}]: {text}')
 
 
 #---------- DB utilities ----------
@@ -154,7 +158,7 @@ def db_convert_boolean(value):
         return 'TRUE'
     else:
         return 'FALSE'
-    
+
 def db_convert_text(value):
     if value:
         result = str(value)
@@ -163,7 +167,7 @@ def db_convert_text(value):
         return result
     else:
         return ''
-    
+
 def db_convert_timestamp(datetime):
     if datetime:
         result = 'TIMESTAMPTZ \'{}\''.format(datetime.strftime(DB_TIMESTAMP_FORMAT))
@@ -179,7 +183,7 @@ def db_convert_to_boolean(db_boolean):
         return True
     else:
         return False
-    
+
 def db_convert_to_datetime(db_timestamp):
     if db_timestamp is None:
         return None

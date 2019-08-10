@@ -13,6 +13,7 @@ import holidays
 import logging
 import os
 import pss_core as core
+import pss_crew as crew
 import pss_data as data
 import pss_daily as d
 import pss_dropship as dropship
@@ -30,8 +31,8 @@ import time
 
 
 # ----- Setup ---------------------------------------------------------
-RATE = 3
-COOLDOWN = 30.0
+RATE = 5
+COOLDOWN = 20.0
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
@@ -247,11 +248,7 @@ async def stats(ctx, *, name=''):
     # (skip this section if command was invoked with 'item'
     async with ctx.typing():
         if ctx.invoked_with != 'item':
-            if name.startswith('--raw '):
-                name = re.sub('^--raw[ ]+', '', name)
-                result = p.get_stats(name, embed=False, raw=True)
-            else:
-                result = p.get_stats(name, embed=False, raw=False)
+            result = crew.get_stats(name)
             if result is not None:
                 await ctx.send(result)
                 found_match = True
@@ -697,5 +694,4 @@ async def test(ctx, action, *, params):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
-    data.update_data()
     bot.run(token)
