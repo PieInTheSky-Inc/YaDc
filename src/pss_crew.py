@@ -243,9 +243,9 @@ def get_prestige_from_info(char_name, as_embed=False):
         return f'Could not find prestige paths requiring **{char_name}**'
     else:
         if as_embed:
-            return get_prestige_from_info_as_embed(prestige_data)
+            return get_prestige_from_info_as_embed(char_name, prestige_data)
         else:
-            return get_prestige_from_info_as_txt(prestige_data)
+            return get_prestige_from_info_as_txt(char_name, prestige_data)
 
 
 def get_prestige_to_info(char_name, as_embed=False):
@@ -255,30 +255,73 @@ def get_prestige_to_info(char_name, as_embed=False):
         return f'Could not find prestige paths leading to **{char_name}**'
     else:
         if as_embed:
-            return get_prestige_to_info_as_embed(prestige_data)
+            return get_prestige_to_info_as_embed(char_name, prestige_data)
         else:
-            return get_prestige_to_info_as_txt(prestige_data)
+            return get_prestige_to_info_as_txt(char_name, prestige_data)
 
 
-def get_prestige_from_info_as_embed(prestige_from_data):
+def get_prestige_from_info_as_embed(char_name, prestige_from_data):
     return ''
 
 
-def get_prestige_from_info_as_txt(prestige_from_data):
+def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     # Format: '+ {id2} = {toid}
+    char_data = character_designs_cache.get_data()
+
+    header = f'**{char_name} can be prestiged into**'
+    body_lines = []
+
+    for key in prestige_to_data.keys():
+        char_info_2 = char_data[prestige_to_data[key]['CharacterDesignId2']]
+        char_info_to = char_data[prestige_to_data[key]['ToCharacterDesignId']]
+        body_lines.append('+ {} = {}'.format(char_info_2['CharacterDesignName'], char_info_to['CharacterDesignName']))
+
+    if body_lines:
+        body = '\n'.join(body_lines)
+    else:
+        char_info_1 = _get_char_info(char_name)
+        if char_info_1['Rarity'] == 'Special':
+            body = 'Special crew cannot be prestiged.'
+        elif char_info_1['Rarity'] == 'Legendary':
+            body = 'Legendary crew cannot be prestiged any further.'
+        else:
+            body = 'noone'
+
+    return f'{header}\n{body}'
 
 
     lines = []
     lines.append('**{} can be prestiged to'.format(prestige_from_data))
 
 
-def get_prestige_to_info_as_embed(prestige_to_data):
+def get_prestige_to_info_as_embed(char_name, prestige_to_data):
     return ''
 
 
-def get_prestige_to_info_as_txt(prestige_to_data):
+def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     # Format: '{id1} + {id2}
-    i = 0
+    char_data = character_designs_cache.get_data()
+
+    header = f'**{char_name} can be prestiged from**'
+    body_lines = []
+
+    for key in prestige_to_data.keys():
+        char_info_1 = char_data[prestige_to_data[key]['CharacterDesignId1']]
+        char_info_2 = char_data[prestige_to_data[key]['CharacterDesignId2']]
+        body_lines.append('{} + {}'.format(char_info_1['CharacterDesignName'], char_info_2['CharacterDesignName']))
+
+    if body_lines:
+        body = '\n'.join(body_lines)
+    else:
+        char_info_to = _get_char_info(char_name)
+        if char_info_to['Rarity'] == 'Special':
+            body = 'One cannot prestige to **Special** crew.'
+        elif char_info_to['Rarity'] == 'Common':
+            body = 'One cannot prestige to **Common** crew.'
+        else:
+            body = 'noone'
+
+    return f'{header}\n{body}'
 
 
 def _get_prestige_from_data(char_name):
@@ -288,44 +331,45 @@ def _get_prestige_from_data(char_name):
 
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in prestige_from_cache_dict.keys():
-        prestige_from_cache = prestige_from_cache_dict[char_info[CHARACTER_DESIGN_KEY_NAME]]
+        prestige_from_cache = prestige_from_cache_dict[char_design_id]
     else:
-        prestige_from_cache = _create_and_add_prestige_from_cache(char_info[CHARACTER_DESIGN_KEY_NAME])
+        prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
     return prestige_from_cache.get_data()
 
 
-def _get_prestige_to_data(char_name):
+def _get_prestige_to_data(char_name) -> dict:
     char_info = _get_char_info(char_name)
     if char_info is None:
         return None
 
+    char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in prestige_to_cache_dict.keys():
-        prestige_to_cache = prestige_to_cache_dict[char_info[CHARACTER_DESIGN_KEY_NAME]]
+        prestige_to_cache = prestige_to_cache_dict[char_design_id]
     else:
-        prestige_to_cache = _create_and_add_prestige_to_cache(char_info[CHARACTER_DESIGN_KEY_NAME])
+        prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
     return prestige_to_cache.get_data()
 
 
-def _create_and_add_prestige_from_cache(char_design_id):
+def _create_and_add_prestige_from_cache(char_design_id) -> PssCache:
     cache = _create_prestige_from_cache(char_design_id)
     prestige_from_cache_dict[char_design_id] = cache
     return cache
 
 
-def _create_and_add_prestige_to_cache(char_design_id):
+def _create_and_add_prestige_to_cache(char_design_id) -> PssCache:
     cache = _create_prestige_to_cache(char_design_id)
     prestige_to_cache_dict[char_design_id] = cache
     return cache
 
 
-def _create_prestige_from_cache(char_design_id):
+def _create_prestige_from_cache(char_design_id) -> PssCache:
     url = f'{PRESTIGE_FROM_BASE_URL}{char_design_id}'
     name = f'PrestigeFrom{char_design_id}'
     result = PssCache(url, name, None)
     return result
 
 
-def _create_prestige_to_cache(char_design_id):
+def _create_prestige_to_cache(char_design_id) -> PssCache:
     url = f'{PRESTIGE_TO_BASE_URL}{char_design_id}'
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
