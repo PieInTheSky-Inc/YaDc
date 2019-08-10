@@ -248,7 +248,7 @@ async def stats(ctx, *, name=''):
     # (skip this section if command was invoked with 'item'
     async with ctx.typing():
         if ctx.invoked_with != 'item':
-            result = crew.get_stats(name)
+            result = crew.get_char_info(name)
             if result is not None:
                 await ctx.send(result)
                 found_match = True
@@ -306,14 +306,11 @@ async def research(ctx, *, research=''):
 
 @bot.command(brief='Get collections')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def collection(ctx, *, collection=None):
+async def collection(ctx, *, collection_name=None):
     """Get the details on a specific collection."""
     async with ctx.typing():
-        txt = p.show_collection(collection)
-        if txt is None:
-            await ctx.send("No entries found for '{}'".format(collection))
-        else:
-            await ctx.send(txt)
+        txt = crew.get_collection_info(collection_name, as_embed=False)
+        await ctx.send(txt)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')
