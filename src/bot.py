@@ -180,7 +180,6 @@ async def ingredients(ctx, *, name=None):
             content = '**Ingredients for {}**\n'.format(real_name) + content
             content = content + '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
             await ctx.send(content)
-            recipe_found = True
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice'])
