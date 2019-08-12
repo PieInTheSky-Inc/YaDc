@@ -137,6 +137,12 @@ def fix_char_name(char_name):
     return result
 
 
+def _get_char_list():
+    char_data = character_designs_cache.get_data()
+    result = [char_data[key]['CharacterDesignName'] for key in char_data.keys()]
+    return result
+
+
 # ---------- Collection Info ----------
 
 collection_designs_cache = PssCache(
@@ -232,8 +238,8 @@ def fix_collection_name(collection_name):
 prestige_from_cache_dict = {}
 prestige_to_cache_dict = {}
 
-PRESTIGE_FROM_BASE_URL = f'{core.get_base_url}CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
-PRESTIGE_TO_BASE_URL = f'{core.get_base_url}CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
+PRESTIGE_FROM_BASE_URL = f'{core.get_base_url()}CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+PRESTIGE_TO_BASE_URL = f'{core.get_base_url()}CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
 
 
 def get_prestige_from_info(char_name, as_embed=False):

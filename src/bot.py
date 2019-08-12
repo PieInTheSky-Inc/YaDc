@@ -12,6 +12,11 @@ import discord
 import holidays
 import logging
 import os
+import pytz
+import re
+import sys
+import time
+
 import pss_core as core
 import pss_crew as crew
 import pss_data as data
@@ -19,15 +24,10 @@ import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
 import pss_market as mkt
-import pss_prestige as p
 import pss_research as rs
 #import pss_toolkit as toolkit
 import pss_tournament as tourney
 import utility as util
-import pytz
-import re
-import sys
-import time
 
 
 # ----- Setup ---------------------------------------------------------
@@ -154,29 +154,20 @@ async def shell(ctx, *, cmd):
 # ----- PSS Bot Commands --------------------------------------------------------------
 @bot.command(brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def prestige(ctx, *, name):
+async def prestige(ctx, *, char_name):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
-        prestige_txt, success = p.get_prestige(name, 'from')
-        for txt in prestige_txt:
-            await ctx.send(txt)
+        prestige_txt = crew.get_prestige_from_info(char_name, as_embed=False)
+        await ctx.send(prestige_txt)
 
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def recipe(ctx, *, name=''):
+async def recipe(ctx, *, char_name=''):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
-        if name.startswith('--raw '):
-            name = re.sub('^--raw[ ]+', '', name)
-            prestige_txt, success = p.get_prestige(name, 'to', raw=True)
-        else:
-            prestige_txt, success = p.get_prestige(name, 'to', raw=False)
-        if success is True:
-            for txt in prestige_txt:
-                await ctx.send(txt)
-        else:
-            await ctx.send(f'Failed to find a recipe for crew "{name}" (note that item recipes now use the `/ingredients` command)')
+        prestige_txt = crew.get_prestige_to_info(char_name, as_embed=False)
+        await ctx.send(prestige_txt)
 
 
 @bot.command(brief='Get item ingredients')
@@ -209,33 +200,6 @@ async def price(ctx, *, item_name=None):
             await ctx.send(market_txt)
         else:
             await ctx.send("Could not find item name '{}'".format(item_name))
-
-
-@bot.command(name='list', brief='List items/characters')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def list(ctx, *, action=''):
-    """action=crew:  shows all characters
-    action=newcrew:  shows the newest 10 characters that have been added to the game
-    action=items:    shows all items
-    action=research: shows all research
-    action=rooms:    shows all rooms
-    action=missiles: shows all missiles"""
-
-    async with ctx.typing():
-        txt_list = []
-        if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
-            txt_list = p.get_char_list(action)
-        elif action == 'items':
-            txt_list = mkt.get_item_list()
-        elif action == 'research':
-            txt_list = rs.get_research_names()
-        elif action == 'rooms':
-            txt_list = rs.get_room_names()
-        elif action == 'missiles':
-            txt_list = rs.get_missile_names()
-
-        for txt in txt_list:
-            await ctx.send(txt)
 
 
 @bot.command(name='stats', aliases=['char', 'item'], brief='Get item/character stats')
@@ -619,10 +583,6 @@ async def testing(ctx, *, action=None):
     #     txt = 'format(dir({})))'.format(action)
     #     txt = 'print("{}".' + txt
     #     exec(txt)
-    elif action[:4] == 'sql ':
-        cmd = action[4:]
-        p.custom_sqlite_command(cmd)
-        await ctx.send('Executing SQL Command: "{}"'.format(cmd))
     elif action == 'ctx':
         txt = 'ctx methods: `{}`'.format(dir(ctx))
         await ctx.send(txt)

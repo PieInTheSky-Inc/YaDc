@@ -18,7 +18,6 @@ import numpy as np
 import os
 import pandas as pd
 import pss_core as core
-import pss_prestige as p
 import re
 import urllib.request
 import xml.etree.ElementTree

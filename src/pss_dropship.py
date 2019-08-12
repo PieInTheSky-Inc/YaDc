@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import pss_core as core
-import pss_prestige as p
+import pss_crew as crew
 import pss_research as rs
 import xml.etree.ElementTree
 
@@ -80,17 +80,23 @@ def get_item_text(item):
     return txt
 
 
-def get_character_text(char):
-    collection = char['CollectionDesignId']
-    if collection == '0':
-        collection = 'None'
-    if collection in p.collections.keys():
-        collection = p.collections[collection]['CollectionName']
-    ability = char['SpecialAbilityType']
-    if ability in p.specials_lookup.keys():
-        ability = p.specials_lookup[ability]
-    txt = "{} (Rarity - {}, Ability - {}, Collection - {})".format(
-        char['CharacterDesignName'], char['Rarity'], ability, collection)
+def get_character_text(char_info):
+    collection_id = char_info['CollectionDesignId']
+
+    collection_design_data = crew.collection_designs_cache.get_data()
+    if collection_id in collection_design_data.keys():
+        collection_name = collection_design_data[collection_id]['CollectionName']
+    else:
+        collection_name = 'None'
+
+    ability_name = char_info['SpecialAbilityType']
+    if ability_name in crew.SPECIAL_ABILITIES_LOOKUP.keys():
+        ability_display_name = crew.SPECIAL_ABILITIES_LOOKUP[ability_name]
+    txt = '{} (Rarity - {}, Ability - {}, Collection - {})'.format(
+        char_info['CharacterDesignName'],
+        char_info['Rarity'],
+        ability_display_name,
+        collection_name)
     return txt
 
 
@@ -180,7 +186,7 @@ def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
 
 def get_dropship_text():
     id2item = request_id2item()
-    ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
+    ctbl = crew.character_designs_cache.get_data()
     rooms = rs.get_room_designs()
     id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
 

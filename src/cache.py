@@ -27,6 +27,7 @@ class PssCache:
 
     def update_data(self, old_data=None):
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
+        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from: {self.__update_url}')
         raw_data = core.get_data_from_url(self.__update_url)
         data = core.xmltree_to_dict3(raw_data, self.__obj_key_name)
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} entries')
