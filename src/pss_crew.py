@@ -54,7 +54,7 @@ def get_char_info(char_name, as_embed=False):
 
 
 def _get_char_info(char_name):
-    char_design_data = character_designs_cache.get_data()
+    char_design_data = character_designs_cache.get_data_dict3()
     char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
 
     if char_design_id and char_design_id in char_design_data.keys():
@@ -66,7 +66,7 @@ def _get_char_info(char_name):
 
 def _get_char_design_id_from_name(char_name, char_data=None):
     if char_data is None:
-        char_data = character_designs_cache.get_data()
+        char_data = character_designs_cache.get_data_dict3()
     fixed_data = {fix_char_name(char_data[id]['CharacterDesignName']): id for id in char_data}
     fixed_char_name = fix_char_name(char_name)
 
@@ -94,7 +94,7 @@ def _get_char_info_as_text(char_info):
     collection_name = 'None'
     collection_id = char_info['CollectionDesignId']
     if collection_id:
-        collection_data = collection_designs_cache.get_data()
+        collection_data = collection_designs_cache.get_data_dict3()
         if collection_data and collection_id in collection_data.keys():
             collection_name = collection_data[collection_id]['CollectionName']
 
@@ -138,7 +138,7 @@ def fix_char_name(char_name):
 
 
 def _get_char_list():
-    char_data = character_designs_cache.get_data()
+    char_data = character_designs_cache.get_data_dict3()
     result = [char_data[key]['CharacterDesignName'] for key in char_data.keys()]
     return result
 
@@ -174,7 +174,7 @@ def get_collection_info(collection_name, as_embed=False):
 
 
 def _get_collection_info(collection_name):
-    collection_data = collection_designs_cache.get_data()
+    collection_data = collection_designs_cache.get_data_dict3()
     collection_design_id = _get_collection_design_id_from_name(collection_data, collection_name)
 
     if collection_design_id and collection_design_id in collection_data.keys():
@@ -221,7 +221,7 @@ def _get_collection_info_as_text(collection_info):
 def _get_collection_crew(collection_info):
     #util.dbg_prnt(f'+ _get_collection_crew(collection_info[{collection_info['CollectionName']}])')
     collection_id = collection_info['CollectionDesignId']
-    char_data = character_designs_cache.get_data()
+    char_data = character_designs_cache.get_data_dict3()
     char_infos = [char_data[char_id] for char_id in char_data.keys() if char_data[char_id]['CollectionDesignId'] == collection_id]
     result = [char_info['CharacterDesignName'] for char_info in char_infos]
     result.sort()
@@ -272,7 +272,7 @@ def get_prestige_from_info_as_embed(char_name, prestige_from_data):
 
 def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     # Format: '+ {id2} = {toid}
-    char_data = character_designs_cache.get_data()
+    char_data = character_designs_cache.get_data_dict3()
 
     header = f'**{char_name} can be prestiged into**'
     body_lines = []
@@ -302,7 +302,7 @@ def get_prestige_to_info_as_embed(char_name, prestige_to_data):
 
 def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     # Format: '{id1} + {id2}
-    char_data = character_designs_cache.get_data()
+    char_data = character_designs_cache.get_data_dict3()
 
     header = f'**{char_name} can be prestiged from**'
     body_lines = []
@@ -336,7 +336,7 @@ def _get_prestige_from_data(char_name):
         prestige_from_cache = prestige_from_cache_dict[char_design_id]
     else:
         prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
-    return prestige_from_cache.get_data()
+    return prestige_from_cache.get_data_dict3()
 
 
 def _get_prestige_to_data(char_name) -> dict:
@@ -349,7 +349,7 @@ def _get_prestige_to_data(char_name) -> dict:
         prestige_to_cache = prestige_to_cache_dict[char_design_id]
     else:
         prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
-    return prestige_to_cache.get_data()
+    return prestige_to_cache.get_data_dict3()
 
 
 def _create_and_add_prestige_from_cache(char_design_id) -> PssCache:

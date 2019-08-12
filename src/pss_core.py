@@ -193,48 +193,6 @@ def get_base_url():
     return result
 
 
-# ----- Character Sheets -----
-def save_char_brief(d, filename=PSS_CHARS_FILE):
-    with open(filename, 'w') as f:
-        for key in d.keys():
-            entry = d[key]
-            f.write('{},{},{}\n'.format(
-                key,
-                d[key]['CharacterDesignName'],
-                d[key]['Rarity']))
-
-
-def load_char_brief(filename=PSS_CHARS_FILE):
-    with open(filename, 'r') as csvfile:
-        readCSV = csv.reader(csvfile, delimiter=',')
-        tbl, rtbl, rarity = {}, {}, {}
-        for row in readCSV:
-            char_id, char_dn, rarity[char_dn] = row
-            tbl[char_id] = char_dn
-            rtbl[char_dn] = char_id
-    return tbl, rtbl, rarity
-
-
-def get_extra_tables(d):
-    rtbl, rarity = {}, {}
-    for key in d.keys():
-        name = d[key]['CharacterDesignName']
-        rtbl[name] = key
-        rarity[name] = d[key]['Rarity']
-    return rtbl, rarity
-
-
-def load_char_brief_cache(url, filename=PSS_CHARS_FILE, raw_file=PSS_CHARS_RAW_FILE):
-    if is_old_file(filename, max_seconds=3600):
-        raw_text = load_data_from_url(raw_file, url, refresh='auto')
-        tbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
-        rtbl, rarity = get_extra_tables(tbl)
-        save_char_sheet(tbl, filename)
-    else:
-        tbl, rtbl, rarity = load_char_brief(filename)
-    return tbl, rtbl, rarity
-
-
 # ----- Links -----
 def read_links_file():
     with open(PSS_LINKS_FILE) as f:
@@ -244,17 +202,6 @@ def read_links_file():
             title, url = row
             txt += '\n{}: <{}>'.format(title, url.strip())
     return txt
-
-
-# ----- About -----
-#def read_about_file():
-#    with open(PSS_ABOUT_FILE) as f:
-#        csv_file = csv.reader(f, delimiter=',')
-#        txt = '**About**'
-#        for row in csv_file:
-#            title, url = row
-#            txt += '\n{}: <{}>'.format(title, url.strip())
-#    return txt
 
 
 # ---------- DataBase ----------

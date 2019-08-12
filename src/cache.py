@@ -17,7 +17,6 @@ class PssCache:
         self.__update_url = update_url
         self.name = name
         self.__obj_key_name = key_name
-
         self.__data = None
         self.__modify_date = None
         self.__WRITE_LOCK = Lock()
@@ -28,9 +27,8 @@ class PssCache:
     def update_data(self, old_data=None):
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from: {self.__update_url}')
-        raw_data = core.get_data_from_url(self.__update_url)
-        data = core.xmltree_to_dict3(raw_data, self.__obj_key_name)
-        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} entries')
+        data = core.get_data_from_url(self.__update_url)
+        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
         if data_changed:
             self.__request_write()
@@ -62,6 +60,16 @@ class PssCache:
         self.__remove_reader()
         # TODO: copy result
         return result
+
+
+    def get_data_dict2(self):
+        data = self._get_data()
+        return core.xmltree_to_dict2(data, self.__obj_key_name)
+
+
+    def get_data_dict3(self):
+        data = self._get_data()
+        return core.xmltree_to_dict3(data, self.__obj_key_name)
 
 
     def __get_is_data_outdated(self):
