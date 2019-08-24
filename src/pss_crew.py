@@ -9,7 +9,7 @@ import pss_core as core
 import utility as util
 
 
-collection_designs_cache = None
+__collection_designs_cache = None
 
 SPECIAL_ABILITIES_LOOKUP = {
     'AddReload': 'Rush Command',
@@ -36,7 +36,7 @@ EQUIPMENT_MASK_LOOKUP = {
 
 CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
 
-character_designs_cache = PssCache(
+__character_designs_cache = PssCache(
     f'CharacterService/ListAllCharacterDesigns2?languageKey=en',
     'CharacterDesigns',
     CHARACTER_DESIGN_KEY_NAME)
@@ -55,7 +55,7 @@ def get_char_info(char_name, as_embed=False):
 
 
 def _get_char_info(char_name):
-    char_design_data = character_designs_cache.get_data_dict3()
+    char_design_data = __character_designs_cache.get_data_dict3()
     char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
 
     if char_design_id and char_design_id in char_design_data.keys():
@@ -67,7 +67,7 @@ def _get_char_info(char_name):
 
 def _get_char_design_id_from_name(char_name, char_data=None):
     if char_data is None:
-        char_data = character_designs_cache.get_data_dict3()
+        char_data = __character_designs_cache.get_data_dict3()
 
     results = core.get_ids_from_property_value(char_data, 'CharacterDesignName', char_name)
     if len(results) > 0:
@@ -90,7 +90,7 @@ def _get_char_info_as_text(char_info):
     collection_name = 'None'
     collection_id = char_info['CollectionDesignId']
     if collection_id:
-        collection_data = collection_designs_cache.get_data_dict3()
+        collection_data = __collection_designs_cache.get_data_dict3()
         if collection_data and collection_id in collection_data.keys():
             collection_name = collection_data[collection_id]['CollectionName']
 
@@ -129,14 +129,14 @@ def _convert_equipment_mask(eqpt_mask):
 
 
 def _get_char_list():
-    char_data = character_designs_cache.get_data_dict3()
+    char_data = __character_designs_cache.get_data_dict3()
     result = [char_data[key]['CharacterDesignName'] for key in char_data.keys()]
     return result
 
 
 # ---------- Collection Info ----------
 
-collection_designs_cache = PssCache(
+__collection_designs_cache = PssCache(
     f'CollectionService/ListAllCollectionDesigns?languageKey=en',
     'CollectionDesigns',
     'CollectionDesignId')
@@ -165,7 +165,7 @@ def get_collection_info(collection_name, as_embed=False):
 
 
 def _get_collection_info(collection_name):
-    collection_data = collection_designs_cache.get_data_dict3()
+    collection_data = __collection_designs_cache.get_data_dict3()
     collection_design_id = _get_collection_design_id_from_name(collection_name, collection_data)
 
     if collection_design_id and collection_design_id in collection_data.keys():
@@ -176,7 +176,7 @@ def _get_collection_info(collection_name):
 
 def _get_collection_design_id_from_name(collection_name, collection_data=None):
     if collection_data is None:
-        collection_data = collection_designs_cache.get_data_dict3()
+        collection_data = __collection_designs_cache.get_data_dict3()
 
     results = core.get_ids_from_property_value(collection_data, 'CollectionName', collection_name)
     if len(results) > 0:
@@ -209,7 +209,7 @@ def _get_collection_info_as_text(collection_info):
 def _get_collection_crew(collection_info):
     #util.dbg_prnt(f'+ _get_collection_crew(collection_info[{collection_info['CollectionName']}])')
     collection_id = collection_info['CollectionDesignId']
-    char_data = character_designs_cache.get_data_dict3()
+    char_data = __character_designs_cache.get_data_dict3()
     char_infos = [char_data[char_id] for char_id in char_data.keys() if char_data[char_id]['CollectionDesignId'] == collection_id]
     result = [char_info['CharacterDesignName'] for char_info in char_infos]
     result.sort()
@@ -223,11 +223,11 @@ def fix_collection_name(collection_name):
 
 # ---------- Prestige Info ----------
 
-prestige_from_cache_dict = {}
-prestige_to_cache_dict = {}
+__PRESTIGE_FROM_BASE_URL = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+__PRESTIGE_TO_BASE_URL = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
 
-PRESTIGE_FROM_BASE_URL = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
-PRESTIGE_TO_BASE_URL = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
+__prestige_from_cache_dict = {}
+__prestige_to_cache_dict = {}
 
 
 def get_prestige_from_info(char_name, as_embed=False):
@@ -260,7 +260,7 @@ def get_prestige_from_info_as_embed(char_name, prestige_from_data):
 
 def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     # Format: '+ {id2} = {toid}
-    char_data = character_designs_cache.get_data_dict3()
+    char_data = __character_designs_cache.get_data_dict3()
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1['CharacterDesignName']
 
@@ -291,7 +291,7 @@ def get_prestige_to_info_as_embed(char_name, prestige_to_data):
 
 def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     # Format: '{id1} + {id2}
-    char_data = character_designs_cache.get_data_dict3()
+    char_data = __character_designs_cache.get_data_dict3()
     char_info_to = _get_char_info(char_name)
     found_char_name = char_info_to['CharacterDesignName']
 
@@ -322,8 +322,8 @@ def _get_prestige_from_data(char_name):
         return None
 
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    if char_design_id in prestige_from_cache_dict.keys():
-        prestige_from_cache = prestige_from_cache_dict[char_design_id]
+    if char_design_id in __prestige_from_cache_dict.keys():
+        prestige_from_cache = __prestige_from_cache_dict[char_design_id]
     else:
         prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
     return prestige_from_cache.get_data_dict3()
@@ -335,8 +335,8 @@ def _get_prestige_to_data(char_name) -> dict:
         return None
 
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    if char_design_id in prestige_to_cache_dict.keys():
-        prestige_to_cache = prestige_to_cache_dict[char_design_id]
+    if char_design_id in __prestige_to_cache_dict.keys():
+        prestige_to_cache = __prestige_to_cache_dict[char_design_id]
     else:
         prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
     return prestige_to_cache.get_data_dict3()
@@ -344,25 +344,25 @@ def _get_prestige_to_data(char_name) -> dict:
 
 def _create_and_add_prestige_from_cache(char_design_id) -> PssCache:
     cache = _create_prestige_from_cache(char_design_id)
-    prestige_from_cache_dict[char_design_id] = cache
+    __prestige_from_cache_dict[char_design_id] = cache
     return cache
 
 
 def _create_and_add_prestige_to_cache(char_design_id) -> PssCache:
     cache = _create_prestige_to_cache(char_design_id)
-    prestige_to_cache_dict[char_design_id] = cache
+    __prestige_to_cache_dict[char_design_id] = cache
     return cache
 
 
 def _create_prestige_from_cache(char_design_id) -> PssCache:
-    url = f'{PRESTIGE_FROM_BASE_URL}{char_design_id}'
+    url = f'{__PRESTIGE_FROM_BASE_URL}{char_design_id}'
     name = f'PrestigeFrom{char_design_id}'
     result = PssCache(url, name, None)
     return result
 
 
 def _create_prestige_to_cache(char_design_id) -> PssCache:
-    url = f'{PRESTIGE_TO_BASE_URL}{char_design_id}'
+    url = f'{__PRESTIGE_TO_BASE_URL}{char_design_id}'
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
     return result

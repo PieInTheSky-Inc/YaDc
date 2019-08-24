@@ -83,7 +83,7 @@ def get_item_text(item):
 def get_character_text(char_info):
     collection_id = char_info['CollectionDesignId']
 
-    collection_design_data = crew.collection_designs_cache.get_data_dict3()
+    collection_design_data = crew.__collection_designs_cache.get_data_dict3()
     if collection_id in collection_design_data.keys():
         collection_name = collection_design_data[collection_id]['CollectionName']
     else:
@@ -186,7 +186,7 @@ def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
 
 def get_dropship_text():
     id2item = request_id2item()
-    ctbl = crew.character_designs_cache.get_data_dict3()
+    ctbl = crew.__character_designs_cache.get_data_dict3()
     rooms = rs.get_room_designs()
     id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
 
