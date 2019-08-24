@@ -91,7 +91,7 @@ def _get_item_info_as_text(item_infos):
         else:
             bonus_txt = f'{bonus_type} {bonus_value}'
 
-        lines.append(f'{item_name} ({rarity}): {bonus_txt}{slot_txt}')
+        lines.append(f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}')
 
     return '\n'.join(lines)
 
