@@ -22,6 +22,7 @@ import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
+import pss_item as item
 import pss_market as mkt
 import pss_research as rs
 #import pss_toolkit as toolkit
@@ -217,7 +218,7 @@ async def stats(ctx, *, name=''):
 
         # Next try to find an item match
         if ctx.invoked_with != 'char':
-            market_txt = mkt.get_item_stats(name)
+            market_txt = item.get_item_info(name)
             if market_txt is not None:
                 await ctx.send(market_txt)
                 found_match = True
