@@ -30,8 +30,9 @@ def get_data_from_url(url):
 
 def get_data_from_path(path):
     if path:
-        path = path.strip(['/'])
-    url = f'{get_base_url()}path'
+        path = path.strip('/')
+    base_url = get_base_url()
+    url = f'{base_url}{path}'
     return get_data_from_url(url)
 
 
@@ -161,7 +162,7 @@ def fix_property_value(property_value: str) -> str:
     return result
 
 
-def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate=None) -> list:
+def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate=None, return_on_first: bool = True) -> list:
     if not data or not property_name or not property_value:
         return []
     if not fix_data_delegate:
@@ -174,12 +175,8 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
         fixed_value = property_value
         fixed_data = data
 
-    if fixed_value in fixed_data.keys():
+    if return_on_first and fixed_value in fixed_data.keys():
         return [fixed_data[fixed_value]]
-
-    results = [fixed_data[name] for name in fixed_data if name.startswith(fixed_value)]
-    if len(results) > 0:
-        return results
 
     results = [fixed_data[name] for name in fixed_data if fixed_value in name]
     if len(results) > 0:

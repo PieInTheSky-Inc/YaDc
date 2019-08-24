@@ -20,7 +20,7 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
 __item_designs_cache = PssCache(
     ITEM_DESIGN_BASE_PATH,
-    'CharacterDesigns',
+    'ItemDesigns',
     ITEM_DESIGN_KEY_NAME)
 
 
@@ -43,11 +43,11 @@ def _get_item_infos(item_name):
     item_design_data = __item_designs_cache.get_data_dict3()
     item_design_ids = _get_item_design_ids_from_name(item_name, item_design_data)
 
-    result = None
+    result = []
 
     for item_design_id in item_design_ids:
-        if item_design_id and item_design_id in item_design_data.keys():
-            return item_design_data[item_design_id]
+        if item_design_id in item_design_data.keys():
+            result.append(item_design_data[item_design_id])
 
     return result
 
@@ -56,7 +56,7 @@ def _get_item_design_ids_from_name(item_name, item_data=None):
     if item_data is None:
         item_data = __item_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name)
+    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name, return_on_first=False)
     if len(results) > 0:
         return results
 
@@ -70,25 +70,28 @@ def _get_item_info_as_embed(item_info):
 def _get_item_info_as_text(item_infos):
     lines = ['**Item stats**']
 
+    dbg_i = 0
+
     for item_info in item_infos:
+        dbg_i += 1
         bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
         bonus_value = item_info['EnhancementValue']
-        equipment_slot = item_info['ItemSubType'].replace('Equipment', '')
+        equipment_slot = item_info['ItemSubType']
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
         rarity = item_info['Rarity']
 
-        if item_type == 'Equipment':
-            slot = f' ({equipment_slot})'
+        if item_type == 'Equipment' and 'Equipment' in equipment_slot:
+            slot_txt = ' ({})'.format(equipment_slot.replace('Equipment', ''))
         else:
-            slot = ''
+            slot_txt = ''
 
         if bonus_type == 'None':
-            bonus = bonus_type
+            bonus_txt = bonus_type
         else:
-            bonus = f'{bonus_type} {bonus_value}'
+            bonus_txt = f'{bonus_type} {bonus_value}'
 
-        lines.append(f'{item_name} ({rarity}): {bonus}{slot}')
+        lines.append(f'{item_name} ({rarity}): {bonus_txt}{slot_txt}')
 
     return '\n'.join(lines)
 

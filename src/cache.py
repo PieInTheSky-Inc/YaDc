@@ -26,7 +26,7 @@ class PssCache:
 
     def update_data(self, old_data=None) -> bool:
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
-        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from: {self.__update_path}')
+        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
         data = core.get_data_from_path(self.__update_path)
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
