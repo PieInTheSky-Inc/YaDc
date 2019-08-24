@@ -69,9 +69,9 @@ def load_data_from_url(filename, url, refresh='auto'):
 def xmltree_to_dict3(raw_text, key_name):
     root = xml.etree.ElementTree.fromstring(raw_text)
     key = 0
+    d = {}
     for c in root:
         for cc in c:
-            d = {}
             for ccc in cc:
                 if key_name:
                     d[ccc.attrib[key_name]] = ccc.attrib
@@ -81,15 +81,17 @@ def xmltree_to_dict3(raw_text, key_name):
     return d
 
 
-def xmltree_to_dict2(raw_text, key=None):
+def xmltree_to_dict2(raw_text, key_name):
     root = xml.etree.ElementTree.fromstring(raw_text)
+    key = 0
+    d = {}
     for c in root:
-        d = {}
         for cc in c:
-            if key is None:
-                d = cc.attrib
+            if key_name:
+                d[cc.attrib[key_name]] = cc.attrib
             else:
-                d[cc.attrib[key]] = cc.attrib
+                d[key] = cc.attrib
+                key += 1
     return d
 
 
@@ -140,6 +142,44 @@ def parse_unicode(text, action):
         return urllib.parse.unquote(text)
 
 
+rx_property_fix_replace = re.compile(r'[\-\_\.]', re.IGNORECASE)
+
+def fix_property_value(property_value: str) -> str:
+    result = property_value.lower()
+    result = rx_property_fix_replace.sub(' ', result)
+    while '  ' in result:
+        result = result.replace('  ', ' ')
+    result = result.strip()
+    return result
+
+
+def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate=None) -> list:
+    if not data or not property_name or not property_value:
+        return []
+    if not fix_data_delegate:
+        fix_data_delegate = fix_property_value
+
+    if fix_data_delegate:
+        fixed_value = fix_data_delegate(property_value)
+        fixed_data = {fix_data_delegate(data[id][property_name]): id for id in data}
+    else:
+        fixed_value = property_value
+        fixed_data = data
+
+    if fixed_value in fixed_data.keys():
+        return [fixed_data[fixed_value]]
+
+    results = [fixed_data[name] for name in fixed_data if name.startswith(fixed_value)]
+    if len(results) > 0:
+        return results
+
+    results = [fixed_data[name] for name in fixed_data if fixed_value in name]
+    if len(results) > 0:
+        return results
+
+    return []
+
+
 # ----- Display -----
 def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
     txt_list = []
@@ -183,8 +223,8 @@ def get_real_name(search_str, lst_original):
 def get_production_server():
     url = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
     raw_text = get_data_from_url(url)
-    d = xmltree_to_dict2(raw_text, key=None)
-    return d['ProductionServer']
+    d = xmltree_to_dict2(raw_text, key_name=None)
+    return d[0]['ProductionServer']
 
 
 def get_base_url():

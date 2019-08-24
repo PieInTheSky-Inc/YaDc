@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import re
 from threading import Thread, Lock
 
 from cache import PssCache
@@ -67,17 +68,12 @@ def _get_char_info(char_name):
 def _get_char_design_id_from_name(char_name, char_data=None):
     if char_data is None:
         char_data = character_designs_cache.get_data_dict3()
-    fixed_data = {fix_char_name(char_data[id]['CharacterDesignName']): id for id in char_data}
-    fixed_char_name = fix_char_name(char_name)
 
-    if fixed_char_name in fixed_data.keys():
-        return fixed_data[fixed_char_name]
-    results = [fixed_data[name] for name in fixed_data if fixed_data[name].startswith(fixed_char_name)]
-
-    if len(results) < 1:
-        return None
-    else:
+    results = core.get_ids_from_property_value(char_data, 'CharacterDesignName', char_name, fix_char_name)
+    if len(results) > 0:
         return results[0]
+
+    return None
 
 
 def _get_char_info_as_embed(char_info):
@@ -133,8 +129,7 @@ def _convert_equipment_mask(eqpt_mask):
 
 
 def fix_char_name(char_name):
-    result = char_name.lower()
-    return result
+    return core.fix_property_value(char_name)
 
 
 def _get_char_list():

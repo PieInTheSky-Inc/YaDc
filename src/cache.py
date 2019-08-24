@@ -11,12 +11,14 @@ import utility as util
 
 
 class PssCache:
-    __UPDATE_INTERVAL = datetime.timedelta(minutes=30)
 
-    def __init__(self, update_url, name, key_name=None):
+
+    def __init__(self, update_url, name, key_name=None, update_interval=30):
         self.__update_url = update_url
         self.name = name
         self.__obj_key_name = key_name
+        self.__UPDATE_INTERVAL = datetime.timedelta(minutes=update_interval)
+
         self.__data = None
         self.__modify_date = None
         self.__WRITE_LOCK = Lock()
@@ -43,7 +45,7 @@ class PssCache:
         return False
 
 
-    def get_data(self):
+    def get_raw_data(self):
         util.dbg_prnt(f'+ PssCache[{self.name}].get_data()')
         if self.__get_is_data_outdated():
             util.dbg_prnt(f'[PssCache[{self.name}].get_data] Data is outdated')
@@ -63,12 +65,12 @@ class PssCache:
 
 
     def get_data_dict2(self):
-        data = self._get_data()
+        data = self.get_raw_data()
         return core.xmltree_to_dict2(data, self.__obj_key_name)
 
 
     def get_data_dict3(self):
-        data = self._get_data()
+        data = self.get_raw_data()
         return core.xmltree_to_dict3(data, self.__obj_key_name)
 
 
@@ -77,7 +79,7 @@ class PssCache:
         self.__WRITE_LOCK.acquire()
         modify_date = self.__modify_date
         self.__WRITE_LOCK.release()
-        result = modify_date is None or utc_now - modify_date > PssCache.__UPDATE_INTERVAL
+        result = modify_date is None or utc_now - modify_date > self.__UPDATE_INTERVAL
         return result
 
 
