@@ -14,3 +14,17 @@ def search_alliances(alliance_name):
     data = core.xmltree_to_dict3(raw_data)
     result = [data[key] for key in data.keys()]
     return result
+
+
+
+
+# ---------- stars command methods ----------
+
+
+
+def get_top_100_raw():
+    return None
+
+
+def get_tournament_fleets_raw():
+    return None
