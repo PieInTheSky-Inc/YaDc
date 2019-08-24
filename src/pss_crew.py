@@ -8,8 +8,11 @@ import utility as util
 
 # ---------- Constants ----------
 
+CHARACTER_DESIGN_BASE_PATH = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
 CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
 CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CharacterDesignName'
+
+COLLECTION_DESIGN_BASE_PATH = 'CollectionService/ListAllCollectionDesigns?languageKey=en'
 COLLECTION_DESIGN_KEY_NAME = 'CollectionDesignId'
 COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CollectionName'
 
@@ -55,12 +58,12 @@ SPECIAL_ABILITIES_LOOKUP = {
 # ---------- Initilization ----------
 
 __character_designs_cache = PssCache(
-    f'CharacterService/ListAllCharacterDesigns2?languageKey=en',
+    CHARACTER_DESIGN_BASE_PATH,
     'CharacterDesigns',
     CHARACTER_DESIGN_KEY_NAME)
 
 __collection_designs_cache = PssCache(
-    f'CollectionService/ListAllCollectionDesigns?languageKey=en',
+    COLLECTION_DESIGN_BASE_PATH,
     'CollectionDesigns',
     COLLECTION_DESIGN_KEY_NAME)
 
