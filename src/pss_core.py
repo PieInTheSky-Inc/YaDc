@@ -28,6 +28,14 @@ def get_data_from_url(url):
     return data.decode('utf-8')
 
 
+def get_data_from_path(path):
+    if path:
+        path = path.strip(['/'])
+    url = f'{get_base_url()}path'
+    return get_data_from_url(url)
+
+
+
 def save_raw_text(raw_text, filename):
     try:
         with open(filename, 'w') as f:

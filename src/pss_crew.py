@@ -37,7 +37,7 @@ EQUIPMENT_MASK_LOOKUP = {
 CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
 
 character_designs_cache = PssCache(
-    f'{core.get_base_url()}CharacterService/ListAllCharacterDesigns2?languageKey=en',
+    f'CharacterService/ListAllCharacterDesigns2?languageKey=en',
     'CharacterDesigns',
     CHARACTER_DESIGN_KEY_NAME)
 
@@ -137,7 +137,7 @@ def _get_char_list():
 # ---------- Collection Info ----------
 
 collection_designs_cache = PssCache(
-    f'{core.get_base_url()}CollectionService/ListAllCollectionDesigns?languageKey=en',
+    f'CollectionService/ListAllCollectionDesigns?languageKey=en',
     'CollectionDesigns',
     'CollectionDesignId')
 
@@ -226,8 +226,8 @@ def fix_collection_name(collection_name):
 prestige_from_cache_dict = {}
 prestige_to_cache_dict = {}
 
-PRESTIGE_FROM_BASE_URL = f'{core.get_base_url()}CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
-PRESTIGE_TO_BASE_URL = f'{core.get_base_url()}CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
+PRESTIGE_FROM_BASE_URL = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+PRESTIGE_TO_BASE_URL = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
 
 
 def get_prestige_from_info(char_name, as_embed=False):

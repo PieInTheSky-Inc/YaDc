@@ -13,8 +13,8 @@ import utility as util
 class PssCache:
 
 
-    def __init__(self, update_url, name, key_name=None, update_interval=30):
-        self.__update_url = update_url
+    def __init__(self, update_path, name, key_name=None, update_interval=30):
+        self.__update_path = update_path
         self.name = name
         self.__obj_key_name = key_name
         self.__UPDATE_INTERVAL = datetime.timedelta(minutes=update_interval)
@@ -28,8 +28,8 @@ class PssCache:
 
     def update_data(self, old_data=None):
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
-        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from: {self.__update_url}')
-        data = core.get_data_from_url(self.__update_url)
+        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from: {self.__update_path}')
+        data = core.get_data_from_path(self.__update_path)
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
         if data_changed:
