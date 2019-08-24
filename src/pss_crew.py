@@ -45,12 +45,12 @@ def get_char_info(char_name, as_embed=False):
     char_info = _get_char_info(char_name)
 
     if char_info is None:
-        return f'Could not find a crew named **{char_name}**.'
+        return f'Could not find a crew named **{char_name}**.', False
     else:
         if as_embed:
-            return _get_char_info_as_embed(char_info)
+            return _get_char_info_as_embed(char_info), True
         else:
-            return _get_char_info_as_text(char_info)
+            return _get_char_info_as_text(char_info), True
 
 
 def _get_char_info(char_name):
@@ -138,12 +138,12 @@ def get_collection_info(collection_name, as_embed=False):
     collection_info = _get_collection_info(collection_name)
 
     if collection_info is None:
-        return f'Could not find a collection named **{collection_name}**.'
+        return f'Could not find a collection named **{collection_name}**.', False
     else:
         if as_embed:
-            return _get_collection_info_as_embed(collection_info)
+            return _get_collection_info_as_embed(collection_info), True
         else:
-            return _get_collection_info_as_text(collection_info)
+            return _get_collection_info_as_text(collection_info), True
 
 
 def _get_collection_info(collection_name):
@@ -209,24 +209,24 @@ def get_prestige_from_info(char_name, as_embed=False):
     prestige_data = _get_prestige_from_data(char_name)
 
     if prestige_data is None:
-        return f'Could not find prestige paths requiring **{char_name}**'
+        return f'Could not find prestige paths requiring **{char_name}**', False
     else:
         if as_embed:
-            return get_prestige_from_info_as_embed(char_name, prestige_data)
+            return get_prestige_from_info_as_embed(char_name, prestige_data), True
         else:
-            return get_prestige_from_info_as_txt(char_name, prestige_data)
+            return get_prestige_from_info_as_txt(char_name, prestige_data), True
 
 
 def get_prestige_to_info(char_name, as_embed=False):
     prestige_data = _get_prestige_to_data(char_name)
 
     if prestige_data is None:
-        return f'Could not find prestige paths leading to **{char_name}**'
+        return f'Could not find prestige paths leading to **{char_name}**', False
     else:
         if as_embed:
-            return get_prestige_to_info_as_embed(char_name, prestige_data)
+            return get_prestige_to_info_as_embed(char_name, prestige_data), True
         else:
-            return get_prestige_to_info_as_txt(char_name, prestige_data)
+            return get_prestige_to_info_as_txt(char_name, prestige_data), True
 
 
 def get_prestige_from_info_as_embed(char_name, prestige_from_data):

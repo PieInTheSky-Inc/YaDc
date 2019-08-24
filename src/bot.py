@@ -104,7 +104,7 @@ async def post_all_dailies():
             try:
                 await text_channel.send(txt)
             except Exception as error:
-                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name))
+                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
 
 
 def fix_daily_channels():
@@ -201,30 +201,43 @@ async def price(ctx, *, item_name=None):
             await ctx.send("Could not find item name '{}'".format(item_name))
 
 
-@bot.command(name='stats', aliases=['char', 'item'], brief='Get item/character stats')
+@bot.command(name='stats', brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
-    if len(name) == 0:
-        return
-    # First try to find a character match
-    # (skip this section if command was invoked with 'item'
-    async with ctx.typing():
-        if ctx.invoked_with != 'item':
-            result = crew.get_char_info(name)
-            if result is not None:
-                await ctx.send(result)
-                found_match = True
+    if name:
+        async with ctx.typing():
+            char_output, char_success = crew.get_char_info(name)
+            if char_success:
+                await ctx.send(char_output)
+            else:
+                item_output, item_success = item.get_item_info(name)
+                if item_success:
+                    await ctx.send(item_output)
+                else:
+                    await ctx.send(f'Could not find a character or an item named **{name}**')
 
-        # Next try to find an item match
-        if ctx.invoked_with != 'char':
-            market_txt = item.get_item_info(name)
-            if market_txt is not None:
-                await ctx.send(market_txt)
-                found_match = True
 
-        if found_match is False:
-            await ctx.send('Could not find entry for "{}"'.format(name))
+@bot.command(name='char', brief='Get char stats')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def char(ctx, *, char_name):
+    """Get the stats of a character/crew."""
+    if char_name:
+        async with ctx.typing():
+            output, _ = crew.get_char_info(char_name)
+            if output:
+                await ctx.send(output)
+
+
+@bot.command(name='item', brief='Get item stats')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_item(ctx, *, item_name):
+    """Get the stats of an item."""
+    if item_name:
+        async with ctx.typing():
+            output, _ = item.get_item_info(item_name)
+            if output:
+                await ctx.send(output)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -432,9 +445,9 @@ async def missilebeta(ctx, *, missile_name=None):
         await ctx.send(txt)
 
 
-@bot.command(brief='Get PSS stardate & Melbourne time')
+@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def time(ctx):
+async def cmd_time(ctx):
     """Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia."""
     async with ctx.typing():
         now = datetime.datetime.now()
@@ -640,7 +653,7 @@ async def test(ctx, action, *, params):
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        core.init_db(True)
+        core.init_db()
         await ctx.send('Initialized the database from scratch')
         await ctx.message.delete()
     elif (action == 'select' or action == 'selectall') and params:
