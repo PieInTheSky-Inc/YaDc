@@ -69,7 +69,7 @@ def _get_char_design_id_from_name(char_name, char_data=None):
     if char_data is None:
         char_data = character_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(char_data, 'CharacterDesignName', char_name, fix_char_name)
+    results = core.get_ids_from_property_value(char_data, 'CharacterDesignName', char_name)
     if len(results) > 0:
         return results[0]
 
@@ -128,10 +128,6 @@ def _convert_equipment_mask(eqpt_mask):
         return None
 
 
-def fix_char_name(char_name):
-    return core.fix_property_value(char_name)
-
-
 def _get_char_list():
     char_data = character_designs_cache.get_data_dict3()
     result = [char_data[key]['CharacterDesignName'] for key in char_data.keys()]
@@ -170,7 +166,7 @@ def get_collection_info(collection_name, as_embed=False):
 
 def _get_collection_info(collection_name):
     collection_data = collection_designs_cache.get_data_dict3()
-    collection_design_id = _get_collection_design_id_from_name(collection_data, collection_name)
+    collection_design_id = _get_collection_design_id_from_name(collection_name, collection_data)
 
     if collection_design_id and collection_design_id in collection_data.keys():
         return collection_data[collection_design_id]
@@ -178,18 +174,15 @@ def _get_collection_info(collection_name):
         return None
 
 
-def _get_collection_design_id_from_name(collection_data, collection_name):
-    fixed_data = {fix_char_name(collection_data[id]['CollectionName']): id for id in collection_data}
-    fixed_collection_name = fix_collection_name(collection_name)
+def _get_collection_design_id_from_name(collection_name, collection_data=None):
+    if collection_data is None:
+        collection_data = collection_designs_cache.get_data_dict3()
 
-    if fixed_collection_name in fixed_data.keys():
-        return fixed_data[fixed_collection_name]
-
-    results = [fixed_data[name] for name in fixed_data if fixed_data[name].startswith(fixed_collection_name)]
-    if len(results) < 1:
-        return None
-    else:
+    results = core.get_ids_from_property_value(collection_data, 'CollectionName', collection_name)
+    if len(results) > 0:
         return results[0]
+
+    return None
 
 
 def _get_collection_info_as_embed(collection_info):
