@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from threading import Thread, Lock
-
 from cache import PssCache
 import pss_core as core
 import utility as util
