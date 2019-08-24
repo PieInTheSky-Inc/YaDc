@@ -518,6 +518,27 @@ async def tournament_next(ctx):
     await ctx.send(embed=embed)
 
 
+@bot.command(brief='Updates all caches manually', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=1800, per=1, type=commands.BucketType.channel)
+async def updatecache(ctx):
+    """This command is to be used to update all caches manually."""
+    try:
+        crew.__character_designs_cache.update_data()
+        crew.__collection_designs_cache.update_data()
+        prestige_to_caches = crew.__prestige_to_cache_dict.values().copy()
+        for prestige_to_cache in prestige_to_caches:
+            prestige_to_cache.update()
+        prestige_from_caches = crew.__prestige_from_cache_dict.values().copy()
+        for prestige_from_cache in prestige_from_caches:
+            prestige_from_cache.update()
+        await ctx.send('Updated all caches successfully!')
+    except:
+        await ctx.send('An error ocurred while updating all caches! Please check the logs/output.')
+
+
+
+
 @bot.command(hidden=True,
     brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
