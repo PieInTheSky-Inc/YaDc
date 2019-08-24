@@ -31,7 +31,7 @@ import utility as util
 
 # ----- Setup ---------------------------------------------------------
 RATE = 5
-COOLDOWN = 20.0
+COOLDOWN = 15.0
 
 if "COMMAND_PREFIX" in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
