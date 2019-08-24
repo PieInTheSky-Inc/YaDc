@@ -268,8 +268,10 @@ def get_prestige_from_info_as_embed(char_name, prestige_from_data):
 def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     # Format: '+ {id2} = {toid}
     char_data = character_designs_cache.get_data_dict3()
+    char_info_1 = _get_char_info(char_name)
+    found_char_name = char_info_1['CharacterDesignName']
 
-    header = f'**{char_name} can be prestiged into**'
+    header = f'**{found_char_name} can be prestiged into**'
     body_lines = []
 
     for key in prestige_from_data.keys():
@@ -280,11 +282,10 @@ def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     if body_lines:
         body = '\n'.join(body_lines)
     else:
-        char_info_1 = _get_char_info(char_name)
         if char_info_1['Rarity'] == 'Special':
-            body = 'Special crew cannot be prestiged.'
+            body = 'One cannot prestige **Special** crew.'
         elif char_info_1['Rarity'] == 'Legendary':
-            body = 'Legendary crew cannot be prestiged any further.'
+            body = 'One cannot prestige **Legendary** crew.'
         else:
             body = 'noone'
 
@@ -298,8 +299,10 @@ def get_prestige_to_info_as_embed(char_name, prestige_to_data):
 def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     # Format: '{id1} + {id2}
     char_data = character_designs_cache.get_data_dict3()
+    char_info_to = _get_char_info(char_name)
+    found_char_name = char_info_to['CharacterDesignName']
 
-    header = f'**{char_name} can be prestiged from**'
+    header = f'**{found_char_name} can be prestiged from**'
     body_lines = []
 
     for key in prestige_to_data.keys():
@@ -310,7 +313,6 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     if body_lines:
         body = '\n'.join(body_lines)
     else:
-        char_info_to = _get_char_info(char_name)
         if char_info_to['Rarity'] == 'Special':
             body = 'One cannot prestige to **Special** crew.'
         elif char_info_to['Rarity'] == 'Common':
