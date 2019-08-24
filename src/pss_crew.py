@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import re
 from threading import Thread, Lock
 
 from cache import PssCache
