@@ -39,6 +39,8 @@ __prestige_to_cache_dict = {}
 
 
 
+
+
 # ---------- Crew info ----------
 
 def get_char_info(char_name, as_embed=False):
@@ -132,6 +134,9 @@ def _get_char_list():
     return result
 
 
+
+
+
 # ---------- Collection Info ----------
 
 def get_collection_info(collection_name, as_embed=False):
@@ -201,6 +206,9 @@ def _get_collection_crew(collection_info):
 def fix_collection_name(collection_name):
     result = collection_name.lower()
     return result
+
+
+
 
 
 # ---------- Prestige Info ----------
@@ -341,3 +349,12 @@ def _create_prestige_to_cache(char_design_id) -> PssCache:
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
     return result
+
+
+
+
+
+# ---------- Level Info ----------
+
+def get_level_costs(level: int) -> str:
+    pass
