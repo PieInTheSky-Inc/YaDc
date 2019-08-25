@@ -34,9 +34,9 @@ def get_item_info(item_name, as_embed=False):
         return f'Could not find an item named **{item_name}**.', False
     else:
         if as_embed:
-            return _get_item_info_as_embed(item_name, item_infos), True
+            return _get_item_info_as_embed(item_infos), True
         else:
-            return _get_item_info_as_text(item_name, item_infos), True
+            return _get_item_info_as_text(item_infos), True
 
 
 def _get_item_infos(item_name):
@@ -57,11 +57,11 @@ def _get_item_design_ids_from_name(item_name, item_data=None):
     return results
 
 
-def _get_item_info_as_embed(item_name, item_info):
+def _get_item_info_as_embed(item_info):
     return ''
 
 
-def _get_item_info_as_text(item_name, item_infos):
+def _get_item_info_as_text(item_infos):
     lines = ['**Item stats**']
 
     for item_info in item_infos:
@@ -96,3 +96,48 @@ def _fix_item_name(item_name):
     result = result.replace('bunny', 'rabbit')
     result = result.replace('golden', 'gold')
     return result
+
+
+
+
+
+# ---------- Price info ----------
+
+def get_item_price(item_name: str, as_embed: bool = False):
+    item_infos = _get_item_infos(item_name)
+
+    if not item_infos:
+        return f'Could not find an item named **{item_name}**.', False
+    else:
+        if as_embed:
+            return _get_item_price_as_embed(item_name, item_infos), True
+        else:
+            return _get_item_price_as_text(item_name, item_infos), True
+
+
+def _get_item_price_as_embed(item_name, item_infos):
+    return ''
+
+
+def _get_item_price_as_text(item_name, item_infos) -> str:
+    lines = []
+    lines.append(f'__**Item prices matching \'{item_name}\'**__')
+    lines.append('')
+    for item_info in item_infos:
+        flags = int(item_info['Flags'])
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        fair_price = item_info['FairPrice']
+        market_price = item_info['MarketPrice']
+        rarity = item_info['Rarity']
+
+        prices = f'{market_price} ({fair_price})'
+        if flags & 1 == 0:
+            prices = 'This item cannot be sold'
+
+        lines.append(f'{item_name} ({rarity}) - {prices}')
+
+    lines.append('')
+    lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+
+    return '\n'.join(lines)
+
