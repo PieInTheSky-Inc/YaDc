@@ -110,7 +110,7 @@ class PssCache:
         self.__WRITE_LOCK.acquire()
         self.__data = data
         self.__modify_date = util.get_utcnow()
-        util.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} entries on {self.__modify_date}')
+        util.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} bytes on {self.__modify_date}')
         self.__WRITE_LOCK.release()
 
 
