@@ -16,6 +16,7 @@ class PssCache:
         self.name: str = name
         self.__obj_key_name: str = key_name
         self.__UPDATE_INTERVAL: datetime.timedelta = datetime.timedelta(minutes=update_interval)
+        self.__UPDATE_INTERVAL_ORIG: int = update_interval
 
         self.__data: str = None
         self.__modify_date: datetime.datetime = None
@@ -72,6 +73,9 @@ class PssCache:
 
 
     def __get_is_data_outdated(self) -> bool:
+        if self.__UPDATE_INTERVAL_ORIG == 0:
+            return True
+
         utc_now = util.get_utcnow()
         self.__WRITE_LOCK.acquire()
         modify_date = self.__modify_date
