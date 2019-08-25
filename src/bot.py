@@ -154,7 +154,7 @@ async def shell(ctx, *, cmd):
 # ----- PSS Bot Commands --------------------------------------------------------------
 @bot.command(brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def prestige(ctx, *, char_name):
+async def prestige(ctx, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
         prestige_txt = crew.get_prestige_from_info(char_name, as_embed=False)
@@ -163,7 +163,7 @@ async def prestige(ctx, *, char_name):
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def recipe(ctx, *, char_name=''):
+async def recipe(ctx, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
         prestige_txt = crew.get_prestige_to_info(char_name, as_embed=False)
