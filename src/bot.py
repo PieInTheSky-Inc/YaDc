@@ -418,13 +418,17 @@ async def autodaily_error(ctx, error):
         await ctx.send('You need the permission `Administrator` in order to be able to use this command!')
 
 
-@bot.command(brief='Get crew levelling costs')
+@bot.command(brief='Get crew levelling costs', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def level(ctx, level):
+async def level(ctx, level=None):
     """Shows the cost for a crew to reach a certain level. Replace <level> with a value between 2 and 40"""
+    if level is None:
+        level = 0
+    else:
+        level = int(level)
     async with ctx.typing():
-        txt = p.get_level_cost(level)
-        await ctx.send(txt)
+        output = crew.get_level_costs(level)
+        await ctx.send(output)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
