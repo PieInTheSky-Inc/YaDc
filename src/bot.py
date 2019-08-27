@@ -25,9 +25,10 @@ import pss_fleets as flt
 import pss_item as item
 import pss_market as mkt
 import pss_research as rs
-#import pss_toolkit as toolkit
 import pss_tournament as tourney
+import pss_top
 import utility as util
+
 
 
 # ----- Setup ---------------------------------------------------------
@@ -201,7 +202,7 @@ async def stats(ctx, *, name=''):
             if char_success:
                 await ctx.send(char_output)
             else:
-                item_output, item_success = item.get_item_info(name)
+                item_output, item_success = item.get_item_details(name)
                 if item_success:
                     await ctx.send(item_output)
                 else:
@@ -225,7 +226,7 @@ async def cmd_item(ctx, *, item_name):
     """Get the stats of an item."""
     if item_name:
         async with ctx.typing():
-            output, _ = item.get_item_info(item_name)
+            output, _ = item.get_item_details(item_name)
             if output:
                 await ctx.send(output)
 
@@ -437,6 +438,29 @@ async def missilebeta(ctx, *, missile_name=None):
     async with ctx.typing():
         txt = rs.get_missile_description(missile_name)
         await ctx.send(txt)
+
+
+@bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def top(ctx, count: int = 100):
+    """Prints either top fleets or captains (fleets by default)."""
+    if ctx.invoked_subcommand is None:
+        cmd = bot.get_command(f'top fleets')
+        await ctx.invoke(cmd, count=count)
+
+
+@top.command(name='fleets', brief='Prints top fleets', aliases=['alliances'])
+async def top_fleets(ctx, count: int = 100):
+    """Prints top fleets."""
+    print('+ Invoked command \'top fleets\'')
+    async with ctx.typing():
+        output, success = pss_top.get_top_alliances(count)
+        if success and output:
+            for post in output:
+                if post:
+                    await ctx.send(post)
+        else:
+            await ctx.send(f'Could not get top {count} fleets.')
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')

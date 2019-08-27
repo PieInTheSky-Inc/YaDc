@@ -27,7 +27,7 @@ __item_designs_cache = PssCache(
 
 # ---------- Item info ----------
 
-def get_item_info(item_name, as_embed=False):
+def get_item_details(item_name, as_embed=False):
     item_infos = _get_item_infos(item_name)
 
     if not item_infos:
@@ -39,21 +39,21 @@ def get_item_info(item_name, as_embed=False):
             return _get_item_info_as_text(item_infos), True
 
 
-def _get_item_infos(item_name):
-    item_design_data = __item_designs_cache.get_data_dict3()
-    item_design_ids = _get_item_design_ids_from_name(item_name, item_design_data)
+def _get_item_infos(item_name, item_design_data=None, return_on_first=False):
+    if item_design_data is None:
+        item_design_data = __item_designs_cache.get_data_dict3()
+
+    item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data, return_on_first=return_on_first)
     result = [item_design_data[item_design_id] for item_design_id in item_design_ids if item_design_id in item_design_data.keys()]
 
     return result
 
 
-def _get_item_design_ids_from_name(item_name, item_data=None):
+def _get_item_design_ids_from_name(item_name, item_data=None, return_on_first=False):
     if item_data is None:
         item_data = __item_designs_cache.get_data_dict3()
 
-    # There's a bug somewhere here that prevents stuff from being printed
-
-    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name, return_on_first=False)
+    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name, return_on_first=return_on_first)
     return results
 
 
@@ -141,3 +141,62 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 
     return '\n'.join(lines)
 
+
+
+
+
+# ---------- Ingredients info ----------
+
+def get_ingredients_for_item(item_name: str, as_embed: bool = False):
+    item_design_data = __item_designs_cache.get_data_dict3()
+    item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
+
+    if not item_infos:
+        return f'Could not find an item named **{item_name}**.', False
+    else:
+        if as_embed:
+            return _get_item_ingredients_as_embed(item_infos[0], item_design_data=item_design_data), True
+        else:
+            return _get_item_ingredients_as_text(item_infos[0], item_design_data=item_design_data), True
+
+
+def _get_item_ingredients_as_embed(item_info, item_design_data):
+    return ''
+
+
+def _get_item_ingredients_as_text(item_info, item_design_data):
+    item_ingredients = item_info['Ingredients']
+    ingredients_list = _parse_ingredients(item_ingredients, item_design_data)
+
+    # Cycle through list and collect ingredient info for that level
+    # Then cycle through the next level (horizontal search)
+    # On each level of the list collect all information on the ingredients
+    # On levels > 0 multiply
+
+    for entry in ingredients_list:
+        pass
+
+
+def _parse_ingredients(ingredients_str: str, item_design_data: dict) -> list:
+    """returns [(item_id, item_amount, item_ingredients[])]"""
+    if not ingredients_str:
+        return None
+
+    # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
+    ingredients_tuples = dict([split_str.split('x') for split_str in ingredients_str.split('|')])
+    result = []
+    for item_id, item_amount in ingredients_tuples.keys():
+        item_info = item_design_data[item_id]
+        item_ingredients = _parse_ingredients(item_info['Ingredients'], item_design_data)
+        result.append((item_id, item_amount, item_ingredients))
+
+    return result
+
+
+def _flatten_ingredients_list(ingredients_list: list, multiplier: int = 1):
+    result = []
+    sub_list = []
+    for entry in ingredients_list:
+        pass
+        # add all entries of current level to result
+        # add all entries of sublevel to sub_list
