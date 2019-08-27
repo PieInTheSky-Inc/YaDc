@@ -11,9 +11,10 @@ def get_alliance_users(alliance_id):
 def search_alliances(alliance_name):
     path = f'AllianceService/SearchAlliances?name={alliance_name}&skip=0&take=100'
     raw_data = core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data)
+    data = core.xmltree_to_dict3(raw_data, 'AllianceId')
     result = [data[key] for key in data.keys()]
     return result
+
 
 
 
