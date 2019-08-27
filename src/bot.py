@@ -452,7 +452,6 @@ async def top(ctx, count: int = 100):
 @top.command(name='fleets', brief='Prints top fleets', aliases=['alliances'])
 async def top_fleets(ctx, count: int = 100):
     """Prints top fleets."""
-    print('+ Invoked command \'top fleets\'')
     async with ctx.typing():
         output, success = pss_top.get_top_alliances(count)
         if success and output:
