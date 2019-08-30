@@ -453,13 +453,26 @@ async def top(ctx, count: int = 100):
 async def top_fleets(ctx, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
-        output, success = pss_top.get_top_alliances(count)
+        output, success = pss_top.get_top_fleets(count)
         if success and output:
             for post in output:
                 if post:
                     await ctx.send(post)
         else:
             await ctx.send(f'Could not get top {count} fleets.')
+
+
+@top.command(name='captains', brief='Prints top captains', aliases=['players', 'users'])
+async def top_captains(ctx, count: int = 100):
+    """Prints top fleets."""
+    async with ctx.typing():
+        output, success = pss_top.get_top_captains(count)
+        if success and output:
+            for post in output:
+                if post:
+                    await ctx.send(post)
+        else:
+            await ctx.send(f'Could not get top {count} captains.')
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
