@@ -111,18 +111,34 @@ def dbg_prnt(text):
 
 
 def create_posts_from_lines(lines, char_limit) -> list:
+    dbg_prnt(f'+ create_posts_from_lines({len(lines)} lines, {char_limit})')
     result = []
     current_post = ''
+    
+    dbg_i = 0
     for line in lines:
+        dbg_prnt(f'[create_posts_from_lines] Processing line {dbg_i}')
         line_length = len(line)
+        dbg_prnt(f'[create_posts_from_lines] Line {dbg_i} length: {line_length}')
+        dbg_prnt(f'[create_posts_from_lines] Current post length: {len(current_post)}')
+        dbg_prnt(f'[create_posts_from_lines] New post length: {len(current_post) + line_length + 1)}')
         if len(current_post) + line_length + 1 > char_limit:
+            dbg_prnt(f'[create_posts_from_lines] Appending current post to result.')
             result.append(current_post)
+            dbg_prnt(f'[create_posts_from_lines] Clearing current post'.)
             current_post = ''
         if len(current_post) > 0:
+            dbg_prnt(f'[create_posts_from_lines] Current post is not empty, adding line break.')
             current_post += '\n'
             
         current_post += line
+        dbg_prnt(f'[create_posts_from_lines] Added line to current post: {line}')
+        dbg_i += 1
         
+    if current_post:
+        result.append(current_post)
+    
+    dbg_prnt(f'- create_posts_from_lines: {len(result)} lines')
     return result
 
 
