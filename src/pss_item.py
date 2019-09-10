@@ -148,19 +148,26 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 # ---------- Ingredients info ----------
 
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
+    util.dbg_prnt(f'+ get_ingredients_for_item({item_name}, {as_embed})')
     if not item_name:
+        util.dbg_prnt(f'[get_ingredients_for_item] parameter \'item_name\' is either empty or None.')
         return [f'You must specify an item name!'], False
         
     item_design_data = __item_designs_cache.get_data_dict3()
+    util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item_design_data')
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
+    util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item infos: {len(item_infos)} entries')
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_info = item_infos[0]
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item name: {item_name}')
         ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
+        util.dbg_prnt(f'[get_ingredients_for_item] Created ingredients tree')
         ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
+        util.dbg_prnt(f'[get_ingredients_for_item] Parsed ingredients tree to list of dicts')
         if as_embed:
             return _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_data), True
         else:
@@ -175,9 +182,9 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
     lines = [f'**Ingredients for {item_name}**']
     lines.append('')
     
-    for ingredients_dict, ingredients_amount in ingredients_dicts:
+    for ingredients_dict in ingredients_dicts:
         current_level_lines = []
-        for item_id in ingredients_dict.keys():
+        for item_id, ingredients_amount in ingredients_dict:
             item_info = item_design_data[item_id]
             item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
             item_price = item_info['Price']
