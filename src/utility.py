@@ -110,6 +110,22 @@ def dbg_prnt(text):
     print(f'[{get_utcnow()}]: {text}')
 
 
+def create_posts_from_lines(lines, char_limit) -> list:
+    result = []
+    current_post = ''
+    for line in lines:
+        line_length = len(line)
+        if len(current_post) + line_length + 1 > char_limit:
+            result.append(current_post)
+            current_post = ''
+        if len(current_post) > 0:
+            current_post += '\n'
+            
+        current_post += line
+        
+    return result
+
+
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
