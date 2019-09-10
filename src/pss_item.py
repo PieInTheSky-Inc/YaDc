@@ -148,26 +148,19 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 # ---------- Ingredients info ----------
 
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
-    util.dbg_prnt(f'+ get_ingredients_for_item({item_name}, {as_embed})')
     if not item_name:
-        util.dbg_prnt(f'[get_ingredients_for_item] parameter \'item_name\' is either empty or None.')
         return [f'You must specify an item name!'], False
         
     item_design_data = __item_designs_cache.get_data_dict3()
-    util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item_design_data')
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
-    util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item infos: {len(item_infos)} entries')
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_info = item_infos[0]
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        util.dbg_prnt(f'[get_ingredients_for_item] Retrieved item name: {item_name}')
         ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
-        util.dbg_prnt(f'[get_ingredients_for_item] Created ingredients tree')
         ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
-        util.dbg_prnt(f'[get_ingredients_for_item] Parsed ingredients tree to list of dicts')
         if as_embed:
             return _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_data), True
         else:
@@ -183,31 +176,19 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
     lines = [f'**Ingredients for {item_name}**']
     lines.append('')
     
-    dbg_i = 0
-    
     for ingredients_dict in ingredients_dicts:
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredients level {dbg_i}: {ingredients_dict}')
         current_level_lines = []
-        dbg_ii = 0
         for item_id, item_amount in ingredients_dict.items():
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}: Processing ingredient {dbg_ii}: ({item_id}: {item_amount})')
             item_info = item_design_data[item_id]
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item info for item id: {item_id}')
             item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item name: {item_name}')
             item_price = int(item_info['MarketPrice'])
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item price: {item_price}')
             price_sum = item_price * item_amount
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Calculated price_sum: {price_sum}')
             current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
-            dbg_ii += 1
         lines.extend(current_level_lines)
         lines.append('')
-        dbg_i += 1
     
     lines.append('Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons')
     
-    util.dbg_prnt(f'+ _get_item_ingredients_as_text: returning {len(lines)} lines')
     return lines
 
 
