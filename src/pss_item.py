@@ -154,9 +154,9 @@ def get_ingredients_for_item(item_name: str, as_embed: bool = False):
     if not item_infos:
         return f'Could not find an item named **{item_name}**.', False
     else:
-		item_info = item_infos[0]
-		ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
-		ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
+        item_info = item_infos[0]
+        ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
+        ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
         if as_embed:
             return _get_item_ingredients_as_embed(ingredients_dicts, item_design_data), True
         else:
@@ -167,21 +167,21 @@ def _get_item_ingredients_as_embed(ingredients_dicts, item_design_data):
     return ''
 
 
-def _get_item_ingredients_as_text(ingredients_dicts, item_design_data):	
-	lines = []
-	
-	for ingredients_dict, ingredients_amount in ingredients_dicts:
-		current_level_lines = []
-		for item_id in ingredients_dict.keys():
-			item_info = item_design_data[item_id]
-			item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-			item_price = item_info['Price']
-			combined_price = item_price * item_amount
-			current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {combined_price} bux')
-		lines.extend(current_level_lines)
-		lines.append('')
-	
-	return lines
+def _get_item_ingredients_as_text(ingredients_dicts, item_design_data):    
+    lines = []
+    
+    for ingredients_dict, ingredients_amount in ingredients_dicts:
+        current_level_lines = []
+        for item_id in ingredients_dict.keys():
+            item_info = item_design_data[item_id]
+            item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            item_price = item_info['Price']
+            combined_price = item_price * item_amount
+            current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {combined_price} bux')
+        lines.extend(current_level_lines)
+        lines.append('')
+    
+    return lines
 
     # Cycle through list and collect ingredient info for that level
     # Then cycle through the next level (horizontal search)
@@ -202,52 +202,51 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
     result = []
     for item_id, item_amount in ingredients_tuples.keys():
         item_info = item_design_data[item_id]
-		item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
-		# Filter out void particles and scrap
-		if 'void particle' not in item_name and ' fragment' not in item_name:
-			combined_amount = item_amount * parent_amount
-			item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
-			result.append((item_id, combined_amount, item_ingredients))
-	# Result looks like this:
-	#   (item 1, amount 1,
-	#    - (item 1.1, amount 1.1 * amount 1, )
-	#      ...
-	#    - (item 1.n, amount 1.n * amount 1, 
-	#       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )
-	#         ...
-	#       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )))
-	#	item 2
-	#	 - item 2.1
-	#	 - item 2.n
-	
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
+        # Filter out void particles and scrap
+        if 'void particle' not in item_name and ' fragment' not in item_name:
+            combined_amount = item_amount * parent_amount
+            item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
+            result.append((item_id, combined_amount, item_ingredients))
+    # Result looks like this:
+    #   (item 1, amount 1,
+    #    - (item 1.1, amount 1.1 * amount 1, )
+    #      ...
+    #    - (item 1.n, amount 1.n * amount 1, 
+    #       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )
+    #         ...
+    #       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )))
+    #    item 2
+    #     - item 2.1
+    #     - item 2.n
+    
     return result
 
 
 def _flatten_ingredients_tree(ingredients_tree: list) -> list: # list of dicts
     ingredients = {}
-	ingredients_without_subs = []
+    ingredients_without_subs = []
     sub_ingredients = []
-	
+    
     for item_id, item_amount, item_ingredients in ingredients_tree:
         # add all entries of current level to ingredients
-		if item_id in ingredients.keys():
-			ingredients[item_id] += item_amount
-		else:
-			ingredients[item_id] = item_amount
-		
-		if item_ingredients:
-			# add all entries of sublevel to sub_ingredients 
-			sub_ingredients.extend(item_ingredients)
-		else:
-			# add entries of current level without ingredients to ingredients_without_subs
-			ingredients_without_subs.append((item_id, item_amount, item_ingredients))
-	
-	result = [ingredients]
-	
-	if len(ingredients_without_subs) != len(ingredients_tree):
-		sub_ingredients.extend(ingredients_without_subs)
-		flattened_subs = _flatten_ingredients_tree(sub_ingredients)
-		result.extend(flattened_subs)
-	
-	return result
-	
+        if item_id in ingredients.keys():
+            ingredients[item_id] += item_amount
+        else:
+            ingredients[item_id] = item_amount
+        
+        if item_ingredients:
+            # add all entries of sublevel to sub_ingredients 
+            sub_ingredients.extend(item_ingredients)
+        else:
+            # add entries of current level without ingredients to ingredients_without_subs
+            ingredients_without_subs.append((item_id, item_amount, item_ingredients))
+    
+    result = [ingredients]
+    
+    if len(ingredients_without_subs) != len(ingredients_tree):
+        sub_ingredients.extend(ingredients_without_subs)
+        flattened_subs = _flatten_ingredients_tree(sub_ingredients)
+        result.extend(flattened_subs)
+    
+    return result
