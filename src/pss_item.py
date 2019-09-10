@@ -220,7 +220,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
 
     # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
     ingredients_tuples = dict([split_str.split('x') for split_str in ingredients_str.split('|')])
-    util.dbg_prnt(f'[_get_item_ingredients_as_text] Retrieved {len(ingredients_tuples)} ingredients tuples')
+    util.dbg_prnt(f'[_get_item_ingredients_as_text] Retrieved {len(ingredients_tuples)} ingredients tuples: {ingredients_tuples}')
     result = []
     
     dbg_i = 0
