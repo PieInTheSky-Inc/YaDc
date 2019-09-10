@@ -178,16 +178,16 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
     
     for ingredients_dict in ingredients_dicts:
         current_level_lines = []
-		current_level_costs = 0
+        current_level_costs = 0
         for item_id, item_amount in ingredients_dict.items():
             item_info = item_design_data[item_id]
             item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
             item_price = int(item_info['MarketPrice'])
             price_sum = item_price * item_amount
-			current_level_costs += price_sum
+            current_level_costs += price_sum
             current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
         lines.extend(current_level_lines)
-		lines.append(f'Crafting costs: {current_level_costs} bux')
+        lines.append(f'Crafting costs: {current_level_costs} bux')
         lines.append('')
     
     lines.append('Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons')
