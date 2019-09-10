@@ -179,17 +179,27 @@ def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_dat
 
 
 def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
+    util.dbg_prnt(f'+ _get_item_ingredients_as_text({item_name}, {len(ingredients_dicts)} dicts, item_design_data)')
     lines = [f'**Ingredients for {item_name}**']
     lines.append('')
     
+    dbg_i = 0
+    
     for ingredients_dict in ingredients_dicts:
+        util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredients level {dbg_i}')
         current_level_lines = []
+        dbg_ii = 0
         for item_id, ingredients_amount in ingredients_dict:
+            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}: Processing ingredient {dbg_ii}: ({item_id}: {item_amount})')
             item_info = item_design_data[item_id]
+            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item info for item id: {item_id}')
             item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item name: {item_name}')
             item_price = item_info['Price']
-            combined_price = item_price * item_amount
-            current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {combined_price} bux')
+            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item price: {item_price}')
+            price_sum = item_price * item_amount
+            util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Calculated price_sum: {price_sum}')
+            current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
         lines.extend(current_level_lines)
         lines.append('')
     
