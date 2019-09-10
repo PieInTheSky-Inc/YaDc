@@ -158,20 +158,22 @@ def get_ingredients_for_item(item_name: str, as_embed: bool = False):
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_info = item_infos[0]
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
         ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
         if as_embed:
-            return _get_item_ingredients_as_embed(ingredients_dicts, item_design_data), True
+            return _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_data), True
         else:
-            return _get_item_ingredients_as_text(ingredients_dicts, item_design_data), True
+            return _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data), True
 
 
-def _get_item_ingredients_as_embed(ingredients_dicts, item_design_data):
+def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_data):
     return ''
 
 
-def _get_item_ingredients_as_text(ingredients_dicts, item_design_data):    
-    lines = []
+def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
+    lines = [f'**Ingredients for {item_name}**']
+    lines.append('')
     
     for ingredients_dict, ingredients_amount in ingredients_dicts:
         current_level_lines = []
@@ -184,15 +186,9 @@ def _get_item_ingredients_as_text(ingredients_dicts, item_design_data):
         lines.extend(current_level_lines)
         lines.append('')
     
+    lines.append('Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons')
+    
     return lines
-
-    # Cycle through list and collect ingredient info for that level
-    # Then cycle through the next level (horizontal search)
-    # On each level of the list collect all information on the ingredients
-    # On levels > 0 multiply
-
-    for entry in ingredients_tree:
-        pass
 
 
 def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> list: # a nested list, basically a tree
