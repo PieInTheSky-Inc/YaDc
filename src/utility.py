@@ -121,7 +121,7 @@ def create_posts_from_lines(lines, char_limit) -> list:
         line_length = len(line)
         dbg_prnt(f'[create_posts_from_lines] Line {dbg_i} length: {line_length}')
         dbg_prnt(f'[create_posts_from_lines] Current post length: {len(current_post)}')
-        new_post_length = len(current_post) + line_length + 1
+        new_post_length = 1 + len(current_post) + line_length
         dbg_prnt(f'[create_posts_from_lines] New post length: {new_post_length}')
         if new_post_length > char_limit:
             dbg_prnt(f'[create_posts_from_lines] Appending current post to result.')
