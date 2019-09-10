@@ -121,8 +121,9 @@ def create_posts_from_lines(lines, char_limit) -> list:
         line_length = len(line)
         dbg_prnt(f'[create_posts_from_lines] Line {dbg_i} length: {line_length}')
         dbg_prnt(f'[create_posts_from_lines] Current post length: {len(current_post)}')
-        dbg_prnt(f'[create_posts_from_lines] New post length: {len(current_post) + line_length + 1)}')
-        if len(current_post) + line_length + 1 > char_limit:
+        new_post_length = len(current_post) + line_length + 1
+        dbg_prnt(f'[create_posts_from_lines] New post length: {new_post_length}')
+        if new_post_length > char_limit:
             dbg_prnt(f'[create_posts_from_lines] Appending current post to result.')
             result.append(current_post)
             dbg_prnt(f'[create_posts_from_lines] Clearing current post.')
