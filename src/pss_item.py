@@ -148,11 +148,14 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 # ---------- Ingredients info ----------
 
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
+    if not item_name:
+        return [f'You must specify an item name!'], False
+        
     item_design_data = __item_designs_cache.get_data_dict3()
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
 
     if not item_infos:
-        return f'Could not find an item named **{item_name}**.', False
+        return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_info = item_infos[0]
         ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], item_design_data)
