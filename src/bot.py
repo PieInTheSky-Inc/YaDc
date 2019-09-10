@@ -172,11 +172,11 @@ async def recipe(ctx, *, char_name=None):
 async def ingredients(ctx, *, name=None):
     """Get the ingredients for an item"""
     async with ctx.typing():
-        content, real_name = mkt.get_item_recipe(name, levels=5)
-        if real_name is not None:
-            content = '**Ingredients for {}**\n'.format(real_name) + content
-            content = content + '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
-            await ctx.send(content)
+        output, _ = item.get_ingredients_for_item(name)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice'])
