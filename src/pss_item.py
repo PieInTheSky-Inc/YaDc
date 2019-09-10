@@ -186,7 +186,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
     dbg_i = 0
     
     for ingredients_dict in ingredients_dicts:
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredients level {dbg_i}')
+        util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredients level {dbg_i}: {ingredients_dict}')
         current_level_lines = []
         dbg_ii = 0
         for item_id, ingredients_amount in ingredients_dict.items():
@@ -211,35 +211,24 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
 
 
 def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> list: # a nested list, basically a tree
-    util.dbg_prnt(f'+ _get_item_ingredients_as_text({ingredients_str}, item_design_data, {parent_amount})')
     """returns a tree structure: [(item_id, item_amount, item_ingredients[])]"""
     if not ingredients_str:
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Parameter \'{ingredients_str}\' is empty or None')
-        util.dbg_prnt(f'- _get_item_ingredients_as_text: []')
         return []
 
     # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
     ingredients_dict = dict([split_str.split('x') for split_str in ingredients_str.split('|')])
-    util.dbg_prnt(f'[_get_item_ingredients_as_text] Retrieved {len(ingredients_dict)} ingredients tuples: {ingredients_dict}')
     result = []
     
     dbg_i = 0
     for item_id, item_amount in ingredients_dict.items():
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredient tuple {dbg_i} ({item_id}, {item_amount})')
         item_info = item_design_data[item_id]
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Retrieved item info')
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Retrieved item name lower: {item_name}')
         item_amount = int(item_amount)
-        util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Fixed item_amount')
         # Filter out void particles and scrap
         if 'void particle' not in item_name and ' fragment' not in item_name:
             combined_amount = item_amount * parent_amount
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Calculated combined amount: {combined_amount}')
             item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Parsed ingredients')
             result.append((item_id, combined_amount, item_ingredients))
-            util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Appended information to result')
         dbg_i += 1
     # Result looks like this:
     #   (item 1, amount 1,
