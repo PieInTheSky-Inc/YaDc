@@ -195,7 +195,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item info for item id: {item_id}')
             item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item name: {item_name}')
-            item_price = item_info['MarketPrice']
+            item_price = int(item_info['MarketPrice'])
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item price: {item_price}')
             price_sum = item_price * item_amount
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Calculated price_sum: {price_sum}')
