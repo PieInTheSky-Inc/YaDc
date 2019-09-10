@@ -174,7 +174,6 @@ def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_dat
 def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
     util.dbg_prnt(f'+ _get_item_ingredients_as_text({item_name}, {len(ingredients_dicts)} dicts, item_design_data)')
     lines = [f'**Ingredients for {item_name}**']
-    lines.append('')
     
     for ingredients_dict in ingredients_dicts:
         current_level_lines = []
