@@ -207,6 +207,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
     
     lines.append('Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons')
     
+    util.dbg_prnt(f'+ _get_item_ingredients_as_text: returning {len(lines)} lines')
     return lines
 
 
