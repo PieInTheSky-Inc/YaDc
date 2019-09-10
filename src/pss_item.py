@@ -224,7 +224,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
     result = []
     
     dbg_i = 0
-    for item_id, item_amount in ingredients_tuples.keys():
+    for item_id, item_amount in ingredients_tuples:
         util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing item tuple {dbg_i} ({item_id}, {item_amount})')
         item_info = item_design_data[item_id]
         util.dbg_prnt(f'[_get_item_ingredients_as_text] Item tuple {dbg_i}: Retrieved item info')
