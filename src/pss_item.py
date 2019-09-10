@@ -189,7 +189,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
         util.dbg_prnt(f'[_get_item_ingredients_as_text] Processing ingredients level {dbg_i}: {ingredients_dict}')
         current_level_lines = []
         dbg_ii = 0
-        for item_id, ingredients_amount in ingredients_dict.items():
+        for item_id, item_amount in ingredients_dict.items():
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}: Processing ingredient {dbg_ii}: ({item_id}: {item_amount})')
             item_info = item_design_data[item_id]
             util.dbg_prnt(f'[_get_item_ingredients_as_text] Level {dbg_i}, ingredient {dbg_ii}: Retrieved item info for item id: {item_id}')
