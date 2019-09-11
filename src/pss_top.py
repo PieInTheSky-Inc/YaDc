@@ -28,8 +28,6 @@ def _get_top_fleets_as_embed(alliance_data: dict, take: int = 100):
 def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
     tourney_running = tourney.is_tourney_running()
 
-    posts = []
-
     headline = f'**Top {take} fleets**'
     lines = [headline]
     lines.append('')
@@ -49,17 +47,9 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
             stars_txt = ''
 
         line = f'**{position}.** {name} ({trophy_txt}{stars_txt})'
-
-        current_post_len += len(line) + 1
-        if current_post_len > core.MAXIMUM_CHARACTERS:
-            posts.append('\n'.join(lines))
-            lines = []
-            current_post_len = len(line)
-
         lines.append(line)
 
-    posts.append('\n'.join(lines))
-    return posts
+    return lines
 
 
 
@@ -83,8 +73,6 @@ def _get_top_captains_as_embed(captain_data: dict, take: int = 100):
 
 
 def _get_top_captains_as_text(captain_data: dict, take: int = 100):
-    posts = []
-
     headline = f'**Top {take} captains**'
     lines = [headline]
     lines.append('')
@@ -100,16 +88,9 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
         trophy_txt = f'{trophies} {emojis.trophy}'
 
         line = f'**{position}.** {name} ({fleet_name}): {trophy_txt}'
-
-        current_post_len += len(line) + 1
-        if current_post_len > core.MAXIMUM_CHARACTERS:
-            posts.append('\n'.join(lines))
-            lines = []
-            current_post_len = len(line)
-
         lines.append(line)
         if position == take:
             break
 
     posts.append('\n'.join(lines))
-    return posts
+    return lines
