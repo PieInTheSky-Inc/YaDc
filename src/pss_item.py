@@ -189,12 +189,12 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
         lines.append(f'Crafting costs: {current_level_costs} bux')
         lines.append('')
     
-    lines.append('Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons')
+    lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
     
     return lines
 
 
-def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> list: # a nested list, basically a tree
+def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> list:
     """returns a tree structure: [(item_id, item_amount, item_ingredients[])]"""
     if not ingredients_str:
         return []
@@ -213,39 +213,25 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
             combined_amount = item_amount * parent_amount
             item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
             result.append((item_id, combined_amount, item_ingredients))
-        dbg_i += 1
-    # Result looks like this:
-    #   (item 1, amount 1,
-    #    - (item 1.1, amount 1.1 * amount 1, )
-    #      ...
-    #    - (item 1.n, amount 1.n * amount 1, 
-    #       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )
-    #         ...
-    #       - (item 1.n.1, amount 1.n.1 * amount 1.n * amount 1, )))
-    #    item 2
-    #     - item 2.1
-    #     - item 2.n
     
     return result
 
 
-def _flatten_ingredients_tree(ingredients_tree: list) -> list: # list of dicts
+def _flatten_ingredients_tree(ingredients_tree: list) -> list:
+    """Returns a list of dicts"""
     ingredients = {}
     ingredients_without_subs = []
     sub_ingredients = []
     
     for item_id, item_amount, item_ingredients in ingredients_tree:
-        # add all entries of current level to ingredients
         if item_id in ingredients.keys():
             ingredients[item_id] += item_amount
         else:
             ingredients[item_id] = item_amount
         
         if item_ingredients:
-            # add all entries of sublevel to sub_ingredients 
             sub_ingredients.extend(item_ingredients)
         else:
-            # add entries of current level without ingredients to ingredients_without_subs
             ingredients_without_subs.append((item_id, item_amount, item_ingredients))
     
     result = [ingredients]
