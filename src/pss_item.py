@@ -121,7 +121,7 @@ def _get_item_price_as_embed(item_name, item_infos):
 
 def _get_item_price_as_text(item_name, item_infos) -> str:
     lines = []
-    lines.append(f'__**Item prices matching \'{item_name}\'**__')
+    lines.append(f'**Item prices matching \'{item_name}\'**')
     lines.append('')
     for item_info in item_infos:
         flags = int(item_info['Flags'])
@@ -174,22 +174,26 @@ def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_dat
 def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
     util.dbg_prnt(f'+ _get_item_ingredients_as_text({item_name}, {len(ingredients_dicts)} dicts, item_design_data)')
     lines = [f'**Ingredients for {item_name}**']
+    ingredients_dicts = [d for d in ingredients_dicts if d]
     
-    for ingredients_dict in ingredients_dicts:
-        current_level_lines = []
-        current_level_costs = 0
-        for item_id, item_amount in ingredients_dict.items():
-            item_info = item_design_data[item_id]
-            item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            item_price = int(item_info['MarketPrice'])
-            price_sum = item_price * item_amount
-            current_level_costs += price_sum
-            current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
-        lines.extend(current_level_lines)
-        lines.append(f'Crafting costs: {current_level_costs} bux')
-        lines.append('')
-    
-    lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+    if ingredients_dicts:
+        for ingredients_dict in ingredients_dicts:
+            current_level_lines = []
+            current_level_costs = 0
+            for item_id, item_amount in ingredients_dict.items():
+                item_info = item_design_data[item_id]
+                item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                item_price = int(item_info['MarketPrice'])
+                price_sum = item_price * item_amount
+                current_level_costs += price_sum
+                current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
+            lines.extend(current_level_lines)
+            lines.append(f'Crafting costs: {current_level_costs} bux')
+            lines.append('')
+        
+        lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+    else:
+        lines.append('This item can\'t be crafted')
     
     return lines
 
