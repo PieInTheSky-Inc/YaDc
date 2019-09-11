@@ -138,7 +138,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
     lines.append('')
     lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
-    return '\n'.join(lines)
+    return lines
 
 
 
