@@ -185,7 +185,10 @@ async def price(ctx, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
-        await ctx.send(output)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(name='stats', brief='Get item/character stats')
@@ -449,11 +452,11 @@ async def top(ctx, count: int = 100):
 async def top_fleets(ctx, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
-        output, success = pss_top.get_top_fleets(count)
-        if success and output:
-            for post in output:
-                if post:
-                    await ctx.send(post)
+        output, _ = pss_top.get_top_fleets(count)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
         else:
             await ctx.send(f'Could not get top {count} fleets.')
 
@@ -462,11 +465,11 @@ async def top_fleets(ctx, count: int = 100):
 async def top_captains(ctx, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
-        output, success = pss_top.get_top_captains(count)
-        if success and output:
-            for post in output:
-                if post:
-                    await ctx.send(post)
+        output, _ = pss_top.get_top_captains(count)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
         else:
             await ctx.send(f'Could not get top {count} captains.')
 
