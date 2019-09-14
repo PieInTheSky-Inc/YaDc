@@ -208,7 +208,7 @@ async def stats(ctx, *, name=''):
                     await ctx.send(f'Could not find a character or an item named **{name}**')
 
 
-@bot.command(name='char', brief='Get char stats')
+@bot.command(name='char', brief='Get character stats', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def char(ctx, *, char_name):
     """Get the stats of a character/crew."""
@@ -275,8 +275,11 @@ async def research(ctx, *, research=''):
 async def collection(ctx, *, collection_name=None):
     """Get the details on a specific collection."""
     async with ctx.typing():
-        txt = crew.get_collection_info(collection_name, as_embed=False)
-        await ctx.send(txt)
+        output, _ = crew.get_collection_info(collection_name)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')

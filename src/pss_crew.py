@@ -174,7 +174,7 @@ def _get_collection_design_id_from_name(collection_name, collection_data=None):
 
 def _get_collection_info_as_embed(collection_info):
     # Use collection_info['ColorString'] for embed color
-    return ''
+    return []
 
 
 def _get_collection_info_as_text(collection_info):
@@ -190,7 +190,7 @@ def _get_collection_info_as_text(collection_info):
     lines.append('{}: {} (Base), {} (Step)'.format(collection_perk, collection_info['BaseEnhancementValue'], collection_info['StepEnhancementValue']))
     lines.append('Characters: {}'.format(', '.join(collection_crew)))
 
-    return '\n'.join(lines)
+    return lines
 
 
 def _get_collection_crew(collection_info):
