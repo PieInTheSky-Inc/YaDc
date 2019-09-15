@@ -47,7 +47,7 @@ def get_char_info(char_name, as_embed=False):
     char_info = _get_char_info(char_name)
 
     if char_info is None:
-        return f'Could not find a crew named **{char_name}**.', False
+        return [f'Could not find a crew named **{char_name}**.'], False
     else:
         if as_embed:
             return _get_char_info_as_embed(char_info), True
@@ -113,7 +113,7 @@ def _get_char_info_as_text(char_info):
     lines.append('training capacity = {}'.format(char_info['TrainingCapacity']))
     lines.append('equipment = {}'.format(equipment_slots))
 
-    return '\n'.join(lines)
+    return lines
 
 
 def _convert_equipment_mask(eqpt_mask):
@@ -143,7 +143,7 @@ def get_collection_info(collection_name, as_embed=False):
     collection_info = _get_collection_info(collection_name)
 
     if collection_info is None:
-        return f'Could not find a collection named **{collection_name}**.', False
+        return [f'Could not find a collection named **{collection_name}**.'], False
     else:
         if as_embed:
             return _get_collection_info_as_embed(collection_info), True
@@ -217,7 +217,7 @@ def get_prestige_from_info(char_name, as_embed=False):
     prestige_data = _get_prestige_from_data(char_name)
 
     if prestige_data is None:
-        return f'Could not find prestige paths requiring **{char_name}**', False
+        return [f'Could not find prestige paths requiring **{char_name}**'], False
     else:
         if as_embed:
             return get_prestige_from_info_as_embed(char_name, prestige_data), True
@@ -229,7 +229,7 @@ def get_prestige_to_info(char_name, as_embed=False):
     prestige_data = _get_prestige_to_data(char_name)
 
     if prestige_data is None:
-        return f'Could not find prestige paths leading to **{char_name}**', False
+        return [f'Could not find prestige paths leading to **{char_name}**'], False
     else:
         if as_embed:
             return get_prestige_to_info_as_embed(char_name, prestige_data), True
@@ -247,25 +247,27 @@ def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    header = f'**{found_char_name} can be prestiged into**'
+    lines = [f'**{found_char_name} can be prestiged into**']
     body_lines = []
 
-    for key in prestige_from_data.keys():
+    for key in prestige_from_data.items():
         char_info_2 = char_data[prestige_from_data[key]['CharacterDesignId2']]
         char_info_to = char_data[prestige_from_data[key]['ToCharacterDesignId']]
         body_lines.append('+ {} = {}'.format(char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
 
     if body_lines:
-        body = '\n'.join(body_lines)
+        lines.append('')
+        lines.extend(body_lines)
     else:
         if char_info_1['Rarity'] == 'Special':
-            body = 'One cannot prestige **Special** crew.'
+            error = 'One cannot prestige **Special** crew.'
         elif char_info_1['Rarity'] == 'Legendary':
-            body = 'One cannot prestige **Legendary** crew.'
+            error = 'One cannot prestige **Legendary** crew.'
         else:
-            body = 'noone'
+            error = 'noone'
+        lines.append(error)
 
-    return f'{header}\n{body}'
+    return lines
 
 
 def get_prestige_to_info_as_embed(char_name, prestige_to_data):
@@ -278,7 +280,7 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     char_info_to = _get_char_info(char_name)
     found_char_name = char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    header = f'**{found_char_name} can be prestiged from**'
+    lines = [f'**{found_char_name} can be prestiged from**']
     body_lines = []
 
     for key in prestige_to_data.keys():
@@ -287,16 +289,18 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
         body_lines.append('{} + {}'.format(char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
 
     if body_lines:
-        body = '\n'.join(body_lines)
+        lines.append('')
+        lines.extend(body_lines)
     else:
         if char_info_to['Rarity'] == 'Special':
-            body = 'One cannot prestige to **Special** crew.'
+            error = 'One cannot prestige to **Special** crew.'
         elif char_info_to['Rarity'] == 'Common':
-            body = 'One cannot prestige to **Common** crew.'
+            error = 'One cannot prestige to **Common** crew.'
         else:
-            body = 'noone'
+            error = 'noone'
+        lines.append(error)
 
-    return f'{header}\n{body}'
+    return lines
 
 
 def _get_prestige_from_data(char_name):
@@ -358,7 +362,7 @@ def _create_prestige_to_cache(char_design_id) -> PssCache:
 
 def get_level_costs(level: int) -> str:
     if not level or level < 2 or level > 40:
-        return 'Invalid value. Enter a level between 2 and 40!'
+        return ['Invalid value. Enter a level between 2 and 40!']
 
     result = ['**Level costs** (non-legendary crew, max research)']
     result.append(_get_crew_cost_txt(level, GAS_COSTS_LOOKUP, XP_COSTS_LOOKUP))
@@ -366,7 +370,7 @@ def get_level_costs(level: int) -> str:
     result.append('**Level costs** (legendary crew, max research)')
     result.append(_get_crew_cost_txt(level, GAS_COSTS_LEGENDARY_LOOKUP, XP_COSTS_LEGENDARY_LOOKUP))
 
-    return '\n'.join(result)
+    return result
 
 
 def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list) -> str:
@@ -378,4 +382,4 @@ def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list
     result = [f'Getting from level {level - 1} to {level} requires {xp_cost:,} xp and {gas_cost:,} gas.']
     result.append(f'Getting from level 1 to {level} requires {xp_cost_from_1:,} xp and {gas_cost_from_1:,} gas.')
 
-    return '\n'.join(result)
+    return result

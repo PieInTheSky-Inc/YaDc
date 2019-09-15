@@ -155,8 +155,11 @@ async def shell(ctx, *, cmd):
 async def prestige(ctx, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
-        prestige_txt = crew.get_prestige_from_info(char_name, as_embed=False)
-        await ctx.send(prestige_txt)
+        output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(brief='Get character recipes')
@@ -164,7 +167,11 @@ async def prestige(ctx, *, char_name=None):
 async def recipe(ctx, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
-        prestige_txt = crew.get_prestige_to_info(char_name, as_embed=False)
+        output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
         await ctx.send(prestige_txt)
 
 
@@ -199,12 +206,16 @@ async def stats(ctx, *, name=''):
     if name:
         async with ctx.typing():
             char_output, char_success = crew.get_char_info(name)
-            if char_success:
-                await ctx.send(char_output)
+            if char_success and char_output:
+                posts = util.create_posts_from_lines(char_output, core.MAXIMUM_CHARACTERS)
+                for post in posts:
+                    await ctx.send(post)
             else:
-                item_output, item_success = item.get_item_details(name)
-                if item_success:
-                    await ctx.send(item_output)
+                item_output, _ = item.get_item_details(name)
+                if success and item_output:
+                    posts = util.create_posts_from_lines(item_output, core.MAXIMUM_CHARACTERS)
+                    for post in posts:
+                        await ctx.send(post)
                 else:
                     await ctx.send(f'Could not find a character or an item named **{name}**')
 
@@ -217,18 +228,21 @@ async def char(ctx, *, char_name):
         async with ctx.typing():
             output, _ = crew.get_char_info(char_name)
             if output:
-                await ctx.send(output)
+                posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+                for post in posts:
+                    await ctx.send(post)
 
 
 @bot.command(name='item', brief='Get item stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_item(ctx, *, item_name):
     """Get the stats of an item."""
-    if item_name:
-        async with ctx.typing():
-            output, _ = item.get_item_details(item_name)
-            if output:
-                await ctx.send(output)
+    async with ctx.typing():
+        output, _ = item.get_item_details(item_name)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -407,8 +421,11 @@ async def level(ctx, level=None):
     else:
         level = int(level)
     async with ctx.typing():
-        output = crew.get_level_costs(level)
-        await ctx.send(output)
+        output, _ = crew.get_level_costs(level)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)

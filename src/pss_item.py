@@ -31,7 +31,7 @@ def get_item_details(item_name, as_embed=False):
     item_infos = _get_item_infos(item_name)
 
     if not item_infos:
-        return f'Could not find an item named **{item_name}**.', False
+        return [f'Could not find an item named **{item_name}**.'], False
     else:
         if as_embed:
             return _get_item_info_as_embed(item_infos), True
@@ -84,7 +84,7 @@ def _get_item_info_as_text(item_infos):
 
         lines.append(f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}')
 
-    return '\n'.join(lines)
+    return lines
 
 
 def _fix_item_name(item_name):
