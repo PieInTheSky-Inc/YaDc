@@ -232,28 +232,14 @@ async def cmd_item(ctx, *, item_name):
 
 @bot.command(brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def best(ctx, slot=None, enhancement=None):
+async def best(ctx, slot=None, stat=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
     async with ctx.typing():
-        raw_text = mkt.load_item_design_raw()
-        item_lookup = mkt.parse_item_designs(raw_text)
-        df_items = mkt.rtbl2items(item_lookup)
-        df_filter = mkt.filter_item(
-            df_items, slot, enhancement,
-            cols=['ItemDesignName', 'EnhancementValue', 'MarketPrice'])
-
-        txt = mkt.itemfilter2txt(df_filter)
-        if txt is None:
-            await ctx.send('No entries found for {} slot, {} enhancement'.format(
-                slot, enhancement))
-
-            str_slots = ', '.join(df_items['ItemSubType'].value_counts().index)
-            str_enhancements = ', '.join(df_items['EnhancementType'].value_counts().index)
-            txt  = 'Slots: {}\n'.format(str_slots)
-            txt += 'Enhancements: {}'.format(str_enhancements)
-            await ctx.send(txt)
-        else:
-            await ctx.send(txt)
+        output, _ = item.get_best_items(slot, stat)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(brief='Get research data')

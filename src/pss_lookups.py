@@ -17,7 +17,24 @@ EQUIPMENT_MASK_LOOKUP = {
     2: 'body',
     4: 'leg',
     8: 'weapon',
-    16: 'accessory'}
+    16: 'accessory',
+    32: 'pet'}
+
+
+EQUIPMENT_SLOTS_LOOKUP = {
+    'head': 'EquipmentHead',
+    'hat': 'EquipmentHead',
+    'body': 'EquipmentBody',
+    'shirt': 'EquipmentBody',
+    'leg': 'EquipmentLeg',
+    'pant': 'EquipmentLeg',
+    'pants': 'EquipmentLeg',
+    'weapon': 'EquipmentWeapon',
+    'hand': 'EquipmentWeapon',
+    'accessory': 'EquipmentAccessory',
+    'shoulder': 'EquipmentAccessory',
+    'pet': 'EquipmentPet'
+}
 
 
 GAS_COSTS_LEGENDARY_LOOKUP = [
@@ -54,6 +71,30 @@ SPECIAL_ABILITIES_LOOKUP = {
     'HealSameRoomCharacters': 'Healing Rain',
     'HealSelfHp': 'First Aid',
     'SetFire': 'Arson'}
+
+
+STAT_TYPES_LOOKUP = {
+    'hp': 'HP',
+    'health': 'HP',
+    'attack': 'Attack',
+    'att': 'Attack',
+    'repair': 'Repair',
+    'rep': 'Repair',
+    'ability': 'Ability',
+    'abl': 'Ability',
+    'pilot': 'Pilot',
+    'plt': 'Pilot',
+    'science': 'Science',
+    'sci': 'Science',
+    'research': 'Research',
+    'res': 'Research',
+    'engine': 'Engine',
+    'eng': 'Engine',
+    'weapon': 'Weapon',
+    'wpn': 'Weapon',
+    'fire resistance': 'FireResistance',
+    'fire': 'FireResistance',
+}
 
 
 XP_COSTS_LEGENDARY_LOOKUP = [

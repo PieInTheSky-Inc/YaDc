@@ -5,6 +5,7 @@ import re
 
 from cache import PssCache
 import pss_core as core
+import pss_lookups as lookups
 
 
 # ---------- Constants ----------
@@ -149,7 +150,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
     if not item_name:
         return [f'You must specify an item name!'], False
-        
+
     item_design_data = __item_designs_cache.get_data_dict3()
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
 
@@ -173,7 +174,7 @@ def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_dat
 def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
     lines = [f'**Ingredients for {item_name}**']
     ingredients_dicts = [d for d in ingredients_dicts if d]
-    
+
     if ingredients_dicts:
         for ingredients_dict in ingredients_dicts:
             current_level_lines = []
@@ -188,11 +189,11 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
             lines.append('')
-        
+
         lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
     else:
         lines.append('This item can\'t be crafted')
-    
+
     return lines
 
 
@@ -204,8 +205,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
     # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
     ingredients_dict = dict([split_str.split('x') for split_str in ingredients_str.split('|')])
     result = []
-    
-    dbg_i = 0
+
     for item_id, item_amount in ingredients_dict.items():
         item_info = item_design_data[item_id]
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
@@ -215,7 +215,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
             combined_amount = item_amount * parent_amount
             item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
             result.append((item_id, combined_amount, item_ingredients))
-    
+
     return result
 
 
@@ -224,23 +224,117 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
     ingredients = {}
     ingredients_without_subs = []
     sub_ingredients = []
-    
+
     for item_id, item_amount, item_ingredients in ingredients_tree:
         if item_id in ingredients.keys():
             ingredients[item_id] += item_amount
         else:
             ingredients[item_id] = item_amount
-        
+
         if item_ingredients:
             sub_ingredients.extend(item_ingredients)
         else:
             ingredients_without_subs.append((item_id, item_amount, item_ingredients))
-    
+
     result = [ingredients]
-    
+
     if len(ingredients_without_subs) != len(ingredients_tree):
         sub_ingredients.extend(ingredients_without_subs)
         flattened_subs = _flatten_ingredients_tree(sub_ingredients)
         result.extend(flattened_subs)
-    
+
     return result
+
+
+
+
+
+# ---------- Best info -----------
+
+_SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
+_STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
+
+def get_best_items(slot: str, stat: str, as_embed: bool = False):
+    error = _get_best_items_error(slot, stat)
+    if error:
+        return error, False
+
+    item_design_data = __item_designs_cache.get_data_dict3()
+    slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot.lower()]
+    stat_filter = lookups.STAT_TYPES_LOOKUP[stat.lower()]
+    filters = {
+        'ItemType': 'Equipment',
+        'ItemSubType': slot_filter,
+        'EnhancementType': stat_filter
+    }
+    filtered_data = core.filter_data_dict(item_design_data, filters, ignore_case=True)
+
+    if not filtered_data:
+        return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
+    else:
+        match_design_data = filtered_data.values().copy().sort(_compare_best_items_data)
+
+        if as_embed:
+            return _get_best_items_as_embed(slot, stat, match_design_data), True
+        else:
+            return _get_best_items_as_text(slot, stat, match_design_data), True
+
+
+def _get_best_items_error(slot: str, stat: str):
+    if not slot:
+        return [f'You must specify an equipment slot!', _SLOTS_AVAILABLE], False
+    if not stat:
+        return [f'You must specify a stat!', _STATS_AVAILABLE], False
+    if slot.lower() not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys():
+        return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE], False
+    if stat.lower() not in lookups.STAT_TYPES_LOOKUP.keys():
+        return [f'The specified stat is not valid!', _STATS_AVAILABLE], False
+
+    return []
+
+
+def _compare_best_items_data(item_data_1: dict, item_data_2: dict) -> int:
+    if item_data_1 and not item_data_2:
+        return 1
+    elif not item_data_1 and item_data_2:
+        return -1
+    elif not item_data_1 and not item_data_2:
+        return 0
+
+    enhancement_value_1 = int(item_data_1['EnhancementValue'])
+    enhancement_value_2 = int(item_data_2['EnhancementValue'])
+
+    if enhancement_value_1 > enhancement_value_2:
+        return 1
+    elif enhancement_value_1 < enhancement_value_2:
+        return - 1
+
+    item_name_1 = str(item_data_1[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME])
+    item_name_2 = str(item_data_2[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME])
+
+    if item_name_1 > item_name_2:
+        return 1
+    elif item_name_1 < item_name_2:
+        return -1
+
+    return 0
+
+
+def _get_best_items_as_embed(slot: str, stat: str, item_designs: list):
+    return []
+
+
+def _get_best_items_as_text(slot: str, stat: str, item_designs: list):
+    lines = [f'**Best {stat} bonus for {slot} slot**']
+
+    for entry in item_designs:
+        name = entry[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        market_price = entry['MarketPrice']
+        rarity = entry['Rarity']
+        enhancement_value = entry['EnhancementValue']
+        lines.append(f'{name} ({rarity}):  +{enhancement_value} ({market_price} bux)')
+
+    lines.append('')
+    lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+
+    return lines

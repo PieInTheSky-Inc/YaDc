@@ -182,6 +182,68 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     return results
 
 
+def filter_data_list(data: list, by: dict, ignore_case: bool = False):
+    """Parameter 'data':
+       - A list of entity dicts
+       Parameter 'by':
+       - Keys are names of entity fields to filter by.
+       - Values are values that each respective field should have."""
+    result = data
+    if by:
+        for key, value in by.items():
+            result = _filter_data_list(result, key, value, ignore_case, alphanumerical)
+    return result
+
+
+def _filter_data_list(data: list, by_key, by_value, ignore_case: bool):
+    """Parameter 'data':
+       - A list of entity dicts """
+    if data:
+        result = []
+        for entry in data:
+            entry_value = entry[by_key]
+            value = by_value
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+                value = str(value).lower()
+            if entry_value == value:
+                result.append(entry)
+        return result
+    else:
+        return data
+
+
+def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values.
+       Parameter 'by':
+       - Keys are names of entity fields to filter by.
+       - Values are values that each respective field should have."""
+    result = data
+    if by:
+        for key, value in by.items():
+            result = _filter_data_list(result, key, value)
+    return result
+
+
+def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for key, entry in data.items():
+            entry_value = entry[by_key]
+            value = by_value
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+                value = str(value).lower()
+            if entry_value == value:
+                result[key] = entry
+        return result
+    else:
+        return data
+
+
 # ----- Display -----
 def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
     txt_list = []
