@@ -188,10 +188,11 @@ def filter_data_list(data: list, by: dict, ignore_case: bool = False):
        Parameter 'by':
        - Keys are names of entity fields to filter by.
        - Values are values that each respective field should have."""
+    data_len = len(data)
     result = data
     if by:
         for key, value in by.items():
-            result = _filter_data_list(result, key, value, ignore_case, alphanumerical)
+            result = _filter_data_list(result, key, value, ignore_case)
     return result
 
 
@@ -218,11 +219,12 @@ def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
        - A dict with entity ids as keys and entity info as values.
        Parameter 'by':
        - Keys are names of entity fields to filter by.
-       - Values are values that each respective field should have."""
+       - Values are values that each respective field should have. """
+    data_len = len(data)
     result = data
     if by:
         for key, value in by.items():
-            result = _filter_data_list(result, key, value)
+            result = _filter_data_dict(result, key, value, ignore_case)
     return result
 
 

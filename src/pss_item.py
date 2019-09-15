@@ -272,12 +272,14 @@ def get_best_items(slot: str, stat: str, as_embed: bool = False):
     if not filtered_data:
         return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
     else:
-        match_design_data = filtered_data.values().copy().sort(_compare_best_items_data)
+        match_design_data = sorted(filtered_data.values(), key=_get_key_for_best_items_sort)
+        slot_display = slot_filter.replace('Equipment', '')
+        stat_display = stat_filter
 
         if as_embed:
-            return _get_best_items_as_embed(slot, stat, match_design_data), True
+            return _get_best_items_as_embed(slot_display, stat_display, match_design_data), True
         else:
-            return _get_best_items_as_text(slot, stat, match_design_data), True
+            return _get_best_items_as_text(slot_display, stat_display, match_design_data), True
 
 
 def _get_best_items_error(slot: str, stat: str):
@@ -293,31 +295,12 @@ def _get_best_items_error(slot: str, stat: str):
     return []
 
 
-def _compare_best_items_data(item_data_1: dict, item_data_2: dict) -> int:
-    if item_data_1 and not item_data_2:
-        return 1
-    elif not item_data_1 and item_data_2:
-        return -1
-    elif not item_data_1 and not item_data_2:
-        return 0
-
-    enhancement_value_1 = int(item_data_1['EnhancementValue'])
-    enhancement_value_2 = int(item_data_2['EnhancementValue'])
-
-    if enhancement_value_1 > enhancement_value_2:
-        return 1
-    elif enhancement_value_1 < enhancement_value_2:
-        return - 1
-
-    item_name_1 = str(item_data_1[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME])
-    item_name_2 = str(item_data_2[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME])
-
-    if item_name_1 > item_name_2:
-        return 1
-    elif item_name_1 < item_name_2:
-        return -1
-
-    return 0
+def _get_key_for_best_items_sort(item_info: dict):
+    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
+        enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        result = f'{enhancement_value}{item_name}'
+        return result
 
 
 def _get_best_items_as_embed(slot: str, stat: str, item_designs: list):
@@ -331,8 +314,8 @@ def _get_best_items_as_text(slot: str, stat: str, item_designs: list):
         name = entry[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         market_price = entry['MarketPrice']
         rarity = entry['Rarity']
-        enhancement_value = entry['EnhancementValue']
-        lines.append(f'{name} ({rarity}):  +{enhancement_value} ({market_price} bux)')
+        enhancement_value = float(entry['EnhancementValue'])
+        lines.append(f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)')
 
     lines.append('')
     lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')

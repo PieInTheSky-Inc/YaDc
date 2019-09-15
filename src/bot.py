@@ -75,6 +75,8 @@ async def on_ready():
 async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
+    else:
+        print(err)
 
 
 # ----- Tasks ----------------------------------------------------------
