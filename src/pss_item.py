@@ -292,7 +292,10 @@ def get_best_items(slot: str, stat: str, as_embed: bool = False):
         if as_embed:
             return _get_best_items_as_embed(slot_display, stat_display, any_slot, match_design_data), True
         else:
-            return _get_best_items_as_text(slot_display, stat_display, any_slot, match_design_data), True
+            if any_slot:
+                return _get_best_items_as_text_all(slot_display, stat_display, match_design_data), True
+            else:
+                return _get_best_items_as_text(slot_display, stat_display, match_design_data), True
 
 
 def _get_best_items_error(slot: str, stat: str) -> list:
@@ -330,25 +333,39 @@ def _get_best_items_as_embed(slot: str, stat: str, any_slots: bool, item_designs
     return []
 
 
-def _get_best_items_as_text(slot: str, stat: str, any_slot: bool, item_designs: list) -> list:
-    if any_slot:
-        lines = [f'**Best {stat} bonus for any slot**']
-    else:
-        lines = [f'**Best {stat} bonus for {slot} slot**']
+def _get_best_items_as_text(slot: str, stat: str, item_designs: list) -> list:
+    lines = [f'**Best {stat} bonus for {slot} slot**']
 
     for entry in item_designs:
-        name = entry[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        market_price = entry['MarketPrice']
-        rarity = entry['Rarity']
-        enhancement_value = float(entry['EnhancementValue'])
-        if any_slot:
-            slot = entry['ItemSubType'].replace('Equipment', '')
-            line = f'{name} ({rarity}, {slot}): {enhancement_value:.1f} ({market_price} bux)'
-        else:
-            line = f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)'
-        lines.append(line)
+        lines.append(_get_best_item_line(entry))
 
     lines.append('')
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
+
+
+def _get_best_items_as_text_all(slot: str, stat: str, item_designs: list) -> list:
+    lines = [f'**Best {stat} bonus for...**']
+
+    groups = core.group_data_list(item_designs, 'ItemSubType')
+
+    for group_name, group in groups.items():
+        group_name = group_name.replace('Equipment', '')
+        lines.append(f'**...{group_name} slot**')
+        for entry in group:
+            lines.append(_get_best_item_line(entry))
+        lines.append('')
+
+    lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+
+    return lines
+
+
+def _get_best_item_line(item_info: dict):
+    name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    market_price = item_info['MarketPrice']
+    rarity = item_info['Rarity']
+    enhancement_value = float(item_info['EnhancementValue'])
+    result = f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)'
+    return result

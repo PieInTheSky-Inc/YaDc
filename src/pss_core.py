@@ -246,6 +246,43 @@ def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
         return data
 
 
+def group_data_list(data: list, by_key, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for entry in data:
+            entry_value = entry[by_key]
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+            if entry_value in result.keys():
+                result[entry_value].append(entry)
+            else:
+                result[entry_value] = [entry]
+        return result
+    else:
+        return data
+
+
+def group_data_dict(data: dict, by_key, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for key, entry in data.items():
+            entry_value = entry[by_key]
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+            if entry_value in result.keys():
+                result[entry_value][key] = entry
+            else:
+                new_group = {key: entry}
+                result[entry_value] = new_group
+        return result
+    else:
+        return data
+
+
 # ----- Display -----
 def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
     txt_list = []
