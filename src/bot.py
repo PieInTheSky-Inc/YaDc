@@ -23,7 +23,6 @@ import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
 import pss_item as item
-import pss_market as mkt
 import pss_research as rs
 import pss_tournament as tourney
 import pss_top
