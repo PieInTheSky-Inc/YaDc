@@ -86,8 +86,6 @@ STAT_TYPES_LOOKUP = {
     'plt': 'Pilot',
     'science': 'Science',
     'sci': 'Science',
-    'research': 'Research',
-    'res': 'Research',
     'engine': 'Engine',
     'eng': 'Engine',
     'weapon': 'Weapon',
