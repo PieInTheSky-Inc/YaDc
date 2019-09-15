@@ -265,16 +265,16 @@ def get_best_items(slot: str, stat: str, as_embed: bool = False):
     any_slot = slot == 'all' or slot == 'any'
 
     item_design_data = __item_designs_cache.get_data_dict3()
+    if any_slot:
+        slot_filter = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
+    else:
+        slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot]
     stat_filter = lookups.STAT_TYPES_LOOKUP[stat]
     filters = {
         'ItemType': 'Equipment',
+        'ItemSubType': slot_filter,
         'EnhancementType': stat_filter
     }
-    if any_slot:
-        slot_filter = 'any'
-    else:
-        slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot]
-        filters['ItemSubType'] = slot_filter
 
     filtered_data = core.filter_data_dict(item_design_data, filters, ignore_case=True)
 
@@ -283,17 +283,19 @@ def get_best_items(slot: str, stat: str, as_embed: bool = False):
     else:
         if any_slot:
             key_function = _get_key_for_best_items_sort_all
+            slot_display = None
         else:
             key_function = _get_key_for_best_items_sort
+            slot_display = slot_filter.replace('Equipment', '')
+
         match_design_data = sorted(filtered_data.values(), key=key_function)
-        slot_display = slot_filter.replace('Equipment', '')
         stat_display = stat_filter
 
         if as_embed:
             return _get_best_items_as_embed(slot_display, stat_display, any_slot, match_design_data), True
         else:
             if any_slot:
-                return _get_best_items_as_text_all(slot_display, stat_display, match_design_data), True
+                return _get_best_items_as_text_all(stat_display, match_design_data), True
             else:
                 return _get_best_items_as_text(slot_display, stat_display, match_design_data), True
 
@@ -345,7 +347,7 @@ def _get_best_items_as_text(slot: str, stat: str, item_designs: list) -> list:
     return lines
 
 
-def _get_best_items_as_text_all(slot: str, stat: str, item_designs: list) -> list:
+def _get_best_items_as_text_all(stat: str, item_designs: list) -> list:
     lines = [f'**Best {stat} bonus for...**']
 
     groups = core.group_data_list(item_designs, 'ItemSubType')
@@ -355,8 +357,8 @@ def _get_best_items_as_text_all(slot: str, stat: str, item_designs: list) -> lis
         lines.append(f'**...{group_name} slot**')
         for entry in group:
             lines.append(_get_best_item_line(entry))
-        lines.append('')
 
+    lines.append('')
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines

@@ -188,7 +188,6 @@ def filter_data_list(data: list, by: dict, ignore_case: bool = False):
        Parameter 'by':
        - Keys are names of entity fields to filter by.
        - Values are values that each respective field should have."""
-    data_len = len(data)
     result = data
     if by:
         for key, value in by.items():
@@ -207,8 +206,11 @@ def _filter_data_list(data: list, by_key, by_value, ignore_case: bool):
             if ignore_case:
                 entry_value = str(entry_value).lower()
                 value = str(value).lower()
-            if entry_value == value:
-                result.append(entry)
+            if isinstance(by_value, list):
+                if entry_value in value:
+                    result.append(entry)
+            elif entry_value == value:
+                    result.append(entry)
         return result
     else:
         return data
@@ -220,7 +222,6 @@ def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
        Parameter 'by':
        - Keys are names of entity fields to filter by.
        - Values are values that each respective field should have. """
-    data_len = len(data)
     result = data
     if by:
         for key, value in by.items():
@@ -239,8 +240,11 @@ def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
             if ignore_case:
                 entry_value = str(entry_value).lower()
                 value = str(value).lower()
-            if entry_value == value:
-                result[key] = entry
+            if isinstance(by_value, list):
+                if entry_value in value:
+                    result[key] = entry
+            elif entry_value == value:
+                    result[key] = entry
         return result
     else:
         return data
