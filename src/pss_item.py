@@ -251,7 +251,7 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
 
 # ---------- Best info -----------
 
-_SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
+_SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (for all slots), {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
 def get_best_items(slot: str, stat: str, as_embed: bool = False):
@@ -259,43 +259,57 @@ def get_best_items(slot: str, stat: str, as_embed: bool = False):
     if error:
         return error, False
 
+    slot = slot.lower()
+    stat = stat.lower()
+
+    any_slot = slot == 'all' or slot == 'any'
+
     item_design_data = __item_designs_cache.get_data_dict3()
-    slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot.lower()]
-    stat_filter = lookups.STAT_TYPES_LOOKUP[stat.lower()]
+    stat_filter = lookups.STAT_TYPES_LOOKUP[stat]
     filters = {
         'ItemType': 'Equipment',
-        'ItemSubType': slot_filter,
         'EnhancementType': stat_filter
     }
+    if any_slot:
+        slot_filter = 'any'
+    else:
+        slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot]
+        filters['ItemSubType'] = slot_filter
+
     filtered_data = core.filter_data_dict(item_design_data, filters, ignore_case=True)
 
     if not filtered_data:
         return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
     else:
-        match_design_data = sorted(filtered_data.values(), key=_get_key_for_best_items_sort)
+        if any_slot:
+            key_function = _get_key_for_best_items_sort_all
+        else:
+            key_function = _get_key_for_best_items_sort
+        match_design_data = sorted(filtered_data.values(), key=key_function)
         slot_display = slot_filter.replace('Equipment', '')
         stat_display = stat_filter
 
         if as_embed:
-            return _get_best_items_as_embed(slot_display, stat_display, match_design_data), True
+            return _get_best_items_as_embed(slot_display, stat_display, any_slot, match_design_data), True
         else:
-            return _get_best_items_as_text(slot_display, stat_display, match_design_data), True
+            return _get_best_items_as_text(slot_display, stat_display, any_slot, match_design_data), True
 
 
-def _get_best_items_error(slot: str, stat: str):
+def _get_best_items_error(slot: str, stat: str) -> list:
     if not slot:
-        return [f'You must specify an equipment slot!', _SLOTS_AVAILABLE], False
+        return [f'You must specify an equipment slot!', _SLOTS_AVAILABLE]
     if not stat:
-        return [f'You must specify a stat!', _STATS_AVAILABLE], False
-    if slot.lower() not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys():
-        return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE], False
+        return [f'You must specify a stat!', _STATS_AVAILABLE]
+    slot = slot.lower()
+    if slot not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys() and slot not in ['all', 'any']:
+        return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE]
     if stat.lower() not in lookups.STAT_TYPES_LOOKUP.keys():
-        return [f'The specified stat is not valid!', _STATS_AVAILABLE], False
+        return [f'The specified stat is not valid!', _STATS_AVAILABLE]
 
     return []
 
 
-def _get_key_for_best_items_sort(item_info: dict):
+def _get_key_for_best_items_sort(item_info: dict) -> str:
     if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
         enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -303,21 +317,38 @@ def _get_key_for_best_items_sort(item_info: dict):
         return result
 
 
-def _get_best_items_as_embed(slot: str, stat: str, item_designs: list):
+def _get_key_for_best_items_sort_all(item_info: dict) -> str:
+    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
+        slot = item_info['ItemSubType']
+        enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        result = f'{enhancement_value}{slot}{item_name}'
+        return result
+
+
+def _get_best_items_as_embed(slot: str, stat: str, any_slots: bool, item_designs: list):
     return []
 
 
-def _get_best_items_as_text(slot: str, stat: str, item_designs: list):
-    lines = [f'**Best {stat} bonus for {slot} slot**']
+def _get_best_items_as_text(slot: str, stat: str, any_slot: bool, item_designs: list) -> list:
+    if any_slot:
+        lines = [f'**Best {stat} bonus for any slot**']
+    else:
+        lines = [f'**Best {stat} bonus for {slot} slot**']
 
     for entry in item_designs:
         name = entry[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         market_price = entry['MarketPrice']
         rarity = entry['Rarity']
         enhancement_value = float(entry['EnhancementValue'])
-        lines.append(f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)')
+        if any_slot:
+            slot = entry['ItemSubType'].replace('Equipment', '')
+            line = f'{name} ({rarity}, {slot}): {enhancement_value:.1f} ({market_price} bux)'
+        else:
+            line = f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)'
+        lines.append(line)
 
     lines.append('')
-    lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+    lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
