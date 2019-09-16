@@ -27,19 +27,19 @@ __item_designs_cache = PssCache(
 
 # ---------- Item info ----------
 
-def get_item_details(item_name, as_embed=False):
+def get_item_details(item_name: str, as_embed=False):
     item_infos = _get_item_infos(item_name)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         if as_embed:
-            return _get_item_info_as_embed(item_infos), True
+            return _get_item_info_as_embed(item_name, item_infos), True
         else:
-            return _get_item_info_as_text(item_infos), True
+            return _get_item_info_as_text(item_name, item_infos), True
 
 
-def _get_item_infos(item_name, item_design_data=None, return_on_first=False):
+def _get_item_infos(item_name: str, item_design_data: dict = None, return_on_first: bool = False):
     if item_design_data is None:
         item_design_data = __item_designs_cache.get_data_dict3()
 
@@ -49,7 +49,7 @@ def _get_item_infos(item_name, item_design_data=None, return_on_first=False):
     return result
 
 
-def _get_item_design_ids_from_name(item_name, item_data=None, return_on_first=False):
+def _get_item_design_ids_from_name(item_name: str, item_data: dict = None, return_on_first: bool = False):
     if item_data is None:
         item_data = __item_designs_cache.get_data_dict3()
 
@@ -57,12 +57,12 @@ def _get_item_design_ids_from_name(item_name, item_data=None, return_on_first=Fa
     return results
 
 
-def _get_item_info_as_embed(item_info):
+def _get_item_info_as_embed(item_name: str, item_infos: dict):
     return ''
 
 
-def _get_item_info_as_text(item_infos):
-    lines = ['**Item stats**']
+def _get_item_info_as_text(item_name: str, item_infos: dict):
+    lines = [f'**Item stats for \'{item_name}\'**']
 
     for item_info in item_infos:
         bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
