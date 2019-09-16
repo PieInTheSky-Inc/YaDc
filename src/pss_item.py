@@ -122,7 +122,6 @@ def _get_item_price_as_embed(item_name, item_infos):
 def _get_item_price_as_text(item_name, item_infos) -> str:
     lines = []
     lines.append(f'**Item prices matching \'{item_name}\'**')
-    lines.append('')
     for item_info in item_infos:
         flags = int(item_info['Flags'])
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
