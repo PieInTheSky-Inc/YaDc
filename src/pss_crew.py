@@ -237,11 +237,11 @@ def get_prestige_to_info(char_name, as_embed=False):
             return get_prestige_to_info_as_txt(char_name, prestige_data), True
 
 
-def get_prestige_from_info_as_embed(char_name, prestige_from_data):
+def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
     return ''
 
 
-def get_prestige_from_info_as_txt(char_name, prestige_from_data):
+def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     # Format: '+ {id2} = {toid}
     char_data = __character_designs_cache.get_data_dict3()
     char_info_1 = _get_char_info(char_name)
@@ -250,13 +250,12 @@ def get_prestige_from_info_as_txt(char_name, prestige_from_data):
     lines = [f'**{found_char_name} can be prestiged into**']
     body_lines = []
 
-    for key in prestige_from_data.items():
-        char_info_2 = char_data[prestige_from_data[key]['CharacterDesignId2']]
-        char_info_to = char_data[prestige_from_data[key]['ToCharacterDesignId']]
+    for value in prestige_from_data.values():
+        char_info_2 = char_data[value['CharacterDesignId2']]
+        char_info_to = char_data[value['ToCharacterDesignId']]
         body_lines.append('+ {} = {}'.format(char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
 
     if body_lines:
-        lines.append('')
         lines.extend(body_lines)
     else:
         if char_info_1['Rarity'] == 'Special':
@@ -283,13 +282,12 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     lines = [f'**{found_char_name} can be prestiged from**']
     body_lines = []
 
-    for key in prestige_to_data.keys():
-        char_info_1 = char_data[prestige_to_data[key]['CharacterDesignId1']]
-        char_info_2 = char_data[prestige_to_data[key]['CharacterDesignId2']]
+    for value in prestige_to_data.values():
+        char_info_1 = char_data[value['CharacterDesignId1']]
+        char_info_2 = char_data[value['CharacterDesignId2']]
         body_lines.append('{} + {}'.format(char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
 
     if body_lines:
-        lines.append('')
         lines.extend(body_lines)
     else:
         if char_info_to['Rarity'] == 'Special':
