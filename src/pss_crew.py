@@ -358,20 +358,20 @@ def _create_prestige_to_cache(char_design_id) -> PssCache:
 
 # ---------- Level Info ----------
 
-def get_level_costs(level: int) -> str:
+def get_level_costs(level: int) -> list:
     if not level or level < 2 or level > 40:
         return ['Invalid value. Enter a level between 2 and 40!']
 
     result = ['**Level costs** (non-legendary crew, max research)']
-    result.append(_get_crew_cost_txt(level, GAS_COSTS_LOOKUP, XP_COSTS_LOOKUP))
+    result.extend(_get_crew_cost_txt(level, GAS_COSTS_LOOKUP, XP_COSTS_LOOKUP))
     result.append('')
     result.append('**Level costs** (legendary crew, max research)')
-    result.append(_get_crew_cost_txt(level, GAS_COSTS_LEGENDARY_LOOKUP, XP_COSTS_LEGENDARY_LOOKUP))
+    result.extend(_get_crew_cost_txt(level, GAS_COSTS_LEGENDARY_LOOKUP, XP_COSTS_LEGENDARY_LOOKUP))
 
-    return result
+    return result, True
 
 
-def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list) -> str:
+def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list) -> list:
     gas_cost = gas_costs_lookup[level - 1]
     xp_cost = xp_costs_lookup[level - 1]
     gas_cost_from_1 = sum(gas_costs_lookup[:level])
