@@ -30,10 +30,8 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 
     headline = f'**Top {take} fleets**'
     lines = [headline]
-    lines.append('')
 
     position = 0
-    current_post_len = len(headline) + 1
     for entry in alliance_data.values():
         position += 1
         name = entry['AllianceName']
@@ -75,10 +73,8 @@ def _get_top_captains_as_embed(captain_data: dict, take: int = 100):
 def _get_top_captains_as_text(captain_data: dict, take: int = 100):
     headline = f'**Top {take} captains**'
     lines = [headline]
-    lines.append('')
 
     position = 0
-    current_post_len = len(headline) + 1
     for entry in captain_data.values():
         position += 1
         name = entry['Name']
@@ -92,5 +88,4 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
         if position == take:
             break
 
-    posts.append('\n'.join(lines))
     return lines
