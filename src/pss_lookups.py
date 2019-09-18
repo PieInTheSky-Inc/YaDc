@@ -59,6 +59,12 @@ GAS_COSTS_LOOKUP = [
     507000, 552000, 604000, 650000, 715000]
 
 
+GRID_TYPE_MASK_LOOKUP = {
+    1: 'A',
+    2: 'B'
+}
+
+
 SALE_ITEM_MASK_LOOKUP = {
     1: 'Clip (500)',
     2: 'Roll (1200)',
