@@ -172,7 +172,6 @@ async def recipe(ctx, *, char_name=None):
             posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
             for post in posts:
                 await ctx.send(post)
-        await ctx.send(prestige_txt)
 
 
 @bot.command(brief='Get item ingredients')
@@ -211,8 +210,8 @@ async def stats(ctx, *, name=''):
                 for post in posts:
                     await ctx.send(post)
             else:
-                item_output, _ = item.get_item_details(name)
-                if success and item_output:
+                item_output, item_success = item.get_item_details(name)
+                if item_success and item_output:
                     posts = util.create_posts_from_lines(item_output, core.MAXIMUM_CHARACTERS)
                     for post in posts:
                         await ctx.send(post)
