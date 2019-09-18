@@ -41,9 +41,97 @@ __prestige_to_cache_dict = {}
 
 
 
+# ---------- Helper functions ----------
+
+def get_ability_name(char_id: str, char_designs_data: dict = None) -> str:
+    if char_id:
+        if not char_designs_data:
+            char_designs_data = __character_designs_cache.get_data_dict3()
+
+        char_info = char_designs_data[char_id]
+        special = char_info['SpecialAbilityType']
+        if special in SPECIAL_ABILITIES_LOOKUP.keys():
+            return SPECIAL_ABILITIES_LOOKUP[special]
+    return 'None'
+
+
+def get_collection_name(char_id: str, char_designs_data: dict = None, collection_designs_data: dict = None) -> str:
+    if char_id:
+        if not char_designs_data:
+            char_designs_data = __character_designs_cache.get_data_dict3()
+        if not collection_designs_data:
+            collection_designs_data = __collection_designs_cache.get_data_dict3()
+
+        char_info = char_designs_data[char_id]
+        collection_id = char_info[COLLECTION_DESIGN_KEY_NAME]
+        if collection_id and collection_id in collection_designs_data.keys():
+            return collection_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return 'None'
+
+
+def get_char_info_from_data_as_text(char_info: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
+    if not char_designs_data:
+        char_designs_data = __character_designs_cache.get_data_dict3()
+    if not collection_designs_data:
+        collection_designs_data = __collection_designs_cache.get_data_dict3()
+
+    char_id = char_info[CHARACTER_DESIGN_KEY_NAME]
+    char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    special = get_ability_name(char_id)
+    equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
+    collection_name = get_collection_name(char_id, char_designs_data, collection_designs_data)
+
+    result = ['**{}** ({})'.format(char_name, char_info['Rarity'])]
+    result.append(char_info['CharacterDesignDescription'])
+    result.append('Race: {}, Collection: {}, Gender: {}'.format(
+        char_info['RaceType'],
+        collection_name,
+        char_info['GenderType']))
+    result.append('ability = {} ({})'.format(char_info['SpecialAbilityFinalArgument'], special))
+    result.append('hp = {}'.format(char_info['FinalHp']))
+    result.append('attack = {}'.format(char_info['FinalAttack']))
+    result.append('repair = {}'.format(char_info['FinalRepair']))
+    result.append('pilot = {}'.format(char_info['FinalPilot']))
+    result.append('science = {}'.format(char_info['FinalScience']))
+    result.append('weapon = {}'.format(char_info['FinalWeapon']))
+    result.append('engine = {}'.format(char_info['FinalEngine']))
+    result.append('walk/run speed = {}/{}'.format(char_info['WalkingSpeed'], char_info['RunSpeed']))
+    result.append('fire resist = {}'.format(char_info['FireResistance']))
+    result.append('training capacity = {}'.format(char_info['TrainingCapacity']))
+    result.append('equipment = {}'.format(equipment_slots))
+
+    return result
+
+
+def get_char_info_short_from_id_as_text(char_design_id: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
+    if not char_designs_data:
+        char_designs_data = __character_designs_cache.get_data_dict3()
+    if not collection_designs_data:
+        collection_designs_data = __collection_designs_cache.get_data_dict3()
+
+    char_info = char_designs_data[char_design_id]
+    return get_char_info_short_from_data_as_text(char_info, char_designs_data, collection_designs_data)
+
+
+def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
+    if not char_designs_data:
+        char_designs_data = __character_designs_cache.get_data_dict3()
+    if not collection_designs_data:
+        collection_designs_data = __collection_designs_cache.get_data_dict3()
+
+    char_id = char_info[CHARACTER_DESIGN_KEY_NAME]
+    name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    rarity = char_info['Rarity']
+    collection = get_collection_name(char_id, char_designs_data, collection_designs_data)
+    ability = get_ability_name(char_id, char_designs_data)
+    result = [f'{name} (Rarity: {rarity}, Ability: {ability}, Collection: {collection})']
+    return result
+
+
+
 # ---------- Crew info ----------
 
-def get_char_info(char_name, as_embed=False):
+def get_char_details_from_name(char_name: str, as_embed:bool = False):
     char_info = _get_char_info(char_name)
 
     if char_info is None:
@@ -55,7 +143,8 @@ def get_char_info(char_name, as_embed=False):
             return _get_char_info_as_text(char_info), True
 
 
-def _get_char_info(char_name):
+
+def _get_char_info(char_name: str):
     char_design_data = __character_designs_cache.get_data_dict3()
     char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
 
@@ -65,7 +154,7 @@ def _get_char_info(char_name):
         return None
 
 
-def _get_char_design_id_from_name(char_name, char_data=None):
+def _get_char_design_id_from_name(char_name: str, char_data:dict = None):
     if char_data is None:
         char_data = __character_designs_cache.get_data_dict3()
 
@@ -76,47 +165,16 @@ def _get_char_design_id_from_name(char_name, char_data=None):
     return None
 
 
-def _get_char_info_as_embed(char_info):
+def _get_char_info_as_embed(char_info: dict):
     return ''
 
 
-def _get_char_info_as_text(char_info):
-    char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    special = char_info['SpecialAbilityType']
-    if special in SPECIAL_ABILITIES_LOOKUP.keys():
-        special = SPECIAL_ABILITIES_LOOKUP[special]
-        equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
-
-    collection_name = 'None'
-    collection_id = char_info[COLLECTION_DESIGN_KEY_NAME]
-    if collection_id:
-        collection_data = __collection_designs_cache.get_data_dict3()
-        if collection_data and collection_id in collection_data.keys():
-            collection_name = collection_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
-
-    lines = ['**{}** ({})'.format(char_name, char_info['Rarity'])]
-    lines.append(char_info['CharacterDesignDescription'])
-    lines.append('Race: {}, Collection: {}, Gender: {}'.format(
-        char_info['RaceType'],
-        collection_name,
-        char_info['GenderType']))
-    lines.append('ability = {} ({})'.format(char_info['SpecialAbilityFinalArgument'], special))
-    lines.append('hp = {}'.format(char_info['FinalHp']))
-    lines.append('attack = {}'.format(char_info['FinalAttack']))
-    lines.append('repair = {}'.format(char_info['FinalRepair']))
-    lines.append('pilot = {}'.format(char_info['FinalPilot']))
-    lines.append('science = {}'.format(char_info['FinalScience']))
-    lines.append('weapon = {}'.format(char_info['FinalWeapon']))
-    lines.append('engine = {}'.format(char_info['FinalEngine']))
-    lines.append('walk/run speed = {}/{}'.format(char_info['WalkingSpeed'], char_info['RunSpeed']))
-    lines.append('fire resist = {}'.format(char_info['FireResistance']))
-    lines.append('training capacity = {}'.format(char_info['TrainingCapacity']))
-    lines.append('equipment = {}'.format(equipment_slots))
-
+def _get_char_info_as_text(char_info: dict):
+    lines = get_char_info_from_data_as_text(char_info)
     return lines
 
 
-def _convert_equipment_mask(eqpt_mask):
+def _convert_equipment_mask(eqpt_mask: int) -> str:
     result = []
     for k in EQUIPMENT_MASK_LOOKUP.keys():
         if (eqpt_mask & k) != 0:
@@ -128,7 +186,7 @@ def _convert_equipment_mask(eqpt_mask):
         return None
 
 
-def _get_char_list():
+def _get_char_list() -> list:
     char_data = __character_designs_cache.get_data_dict3()
     result = [char_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in char_data.keys()]
     return result

@@ -73,7 +73,7 @@ def fleet_df_to_scores(df, division_id):
         txt = 'Score / Trophy columns are not found in the table\n'
         txt += 'Columns: {}'.format(df.columns)
         return txt
-    
+
     df = df[df.DivisionDesignId == division_id].sort_values(
         by=col, ascending=False)
 
@@ -85,7 +85,7 @@ def fleet_df_to_scores(df, division_id):
             row_txt = '**{:d}.** {}⭐ {} ({} 🏆)'.format(position, data[col], data['AllianceName'], data['Trophy'])
         elif col == 'Trophy':
             row_txt = '**{:d}.** {}🏆 {}'.format(position, data[col], data['AllianceName'])
-        
+
         if i == 0:
             txt += row_txt
         else:
@@ -116,13 +116,3 @@ def get_all_division_stars():
         division_list = fleet_df_to_scores(df_alliances, division_id)
         txt += '{}\n{}\n\n'.format(title, division_list)
     return txt.strip()
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--division', default='A')
-    parser.add_argument('--api', default=2)
-    args = parser.parse_args()
-    txt = get_division_stars(
-        division=args.division,
-        api=args.api)

@@ -21,6 +21,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
+import pss_ds as ds
 import pss_fleets as flt
 import pss_item as item
 import pss_research as rs
@@ -34,7 +35,7 @@ import utility as util
 RATE = 5
 COOLDOWN = 15.0
 
-if "COMMAND_PREFIX" in os.environ:
+if 'COMMAND_PREFIX' in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
 else:
     COMMAND_PREFIX='/'
@@ -49,14 +50,14 @@ ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
-    datefmt = "%Y%m%d %H:%M:%S",
-    format = "{asctime} [{levelname:<8}] {name}: {message}")
+    datefmt = '%Y%m%d %H:%M:%S',
+    format = '{asctime} [{levelname:<8}] {name}: {message}')
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships',
                    activity=ACTIVITY)
 
-setattr(bot, "logger", logging.getLogger("bot.py"))
+setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
 # ----- Bot Events ------------------------------------------------------------
@@ -128,7 +129,7 @@ def fix_daily_channels():
             else:
                 print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
         else:
-            print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
+            print('[fix_daily_channels] couldn\'t fetch channel with id: {}'.format(channel_id))
         d.fix_daily_channel(guild_id, can_post)
 
 
@@ -204,7 +205,7 @@ async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
     if name:
         async with ctx.typing():
-            char_output, char_success = crew.get_char_info(name)
+            char_output, char_success = crew.get_char_details_from_name(name)
             if char_success and char_output:
                 posts = util.create_posts_from_lines(char_output, core.MAXIMUM_CHARACTERS)
                 for post in posts:
@@ -225,7 +226,7 @@ async def char(ctx, *, char_name):
     """Get the stats of a character/crew."""
     if char_name:
         async with ctx.typing():
-            output, _ = crew.get_char_info(char_name)
+            output, _ = crew.get_char_details_from_name(char_name)
             if output:
                 posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
                 for post in posts:
@@ -265,7 +266,7 @@ async def research(ctx, *, research=''):
         df_selected = rs.filter_researchdf(df_research_designs, research)
         txt = rs.research_to_txt(df_selected)
         if txt is None:
-            await ctx.send("No entries found for '{}'".format(research))
+            await ctx.send('No entries found for \'{}\''.format(research))
         else:
             await ctx.send(txt)
 
@@ -298,9 +299,12 @@ async def stars(ctx, *, division=None):
 async def daily(ctx):
     """Show the dailies"""
     async with ctx.typing():
-        txt = dropship.get_dropship_text()
         await ctx.message.delete()
-        await ctx.send(txt)
+        output, _ = ds.get_dropship_text()
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
 
 
 @bot.command(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
@@ -319,7 +323,6 @@ async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
     """
     guild = ctx.guild
     author_is_owner = await bot.is_owner(ctx.author)
-    txt = ''
     if action == 'set':
         if text_channel == None:
             await ctx.send('You need to specify a text channel!')
@@ -427,24 +430,6 @@ async def level(ctx, level=None):
                 await ctx.send(post)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@bot.command(hidden=True, brief='(beta) Get room infos')
-async def roomsbeta(ctx, *, room_name=None):
-    """(beta) Shows the information for specific room types. This command is currently under testing"""
-    async with ctx.typing():
-        txt = rs.get_room_description(room_name)
-        await ctx.send(txt)
-
-
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@bot.command(hidden=True, brief='(beta) Get missile info')
-async def missilebeta(ctx, *, missile_name=None):
-    """(beta) Shows the information for specific missile types. This command is currently under testing"""
-    async with ctx.typing():
-        txt = rs.get_missile_description(missile_name)
-        await ctx.send(txt)
-
-
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def top(ctx, count: int = 100):
@@ -515,27 +500,6 @@ async def links(ctx):
         await ctx.send(txt)
 
 
-@bot.command(hidden=True, aliases=['unquote'], brief='Quote/unquote text')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def quote(ctx, *, txt=''):
-    """Quote or unquote text"""
-    async with ctx.typing():
-        txt = core.parse_unicode(txt, str(ctx.invoked_with))
-        await ctx.send(txt)
-
-
-@bot.command(hidden=True, brief='Parse URL')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def parse(ctx, *, url):
-    """Parses the data from a URL"""
-    async with ctx.typing():
-        txt_list = core.parse_links3(url)
-        for txt in txt_list:
-            await ctx.send(txt)
-
-
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
 async def tournament(ctx):
@@ -586,98 +550,6 @@ async def updatecache(ctx):
         await ctx.send('An error ocurred while updating all caches! Please check the logs/output.')
 
 
-
-
-@bot.command(hidden=True,
-    brief='These are testing commands, usually for debugging purposes')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def testing(ctx, *, action=None):
-    """These are testing commands, usually for debugging purposes"""
-    if action == 'restart':
-        await ctx.send('Bot will attempt a restart')
-    elif action == 'info':
-        guild = ctx.guild  # server = ctx.server
-        author = ctx.author
-        channel = ctx.channel
-        txt = 'Server (Guild): {} (id={})\n'.format(guild, guild.id)
-        txt += 'Author: {} (id={})\n'.format(author, author.id)
-        txt += 'Channel: {} (id={})\n'.format(channel, channel.id)
-        txt += 'Discord.py version: {}'.format(discord.__version__)
-        await ctx.send(txt)
-    elif action[:3] == 'say':
-        txt = action[3:]
-        await ctx.send(txt)
-    elif action == 'guilds':
-        guilds = bot.guilds
-        txt_list = []
-        txt = ''
-        for i, guild in enumerate(guilds):
-            owner = str(guild.owner)
-            txt1 = '{}. {}: {} ({}, owner - {})\n'.format(
-                i+1, guild.id, guild.name, guild.region, owner)
-            if len(txt + txt1) > 1900:
-                await ctx.send(txt + txt1)
-                txt = ''
-            else:
-                txt = txt + txt1
-        await ctx.send(txt)
-    elif action == 'invite':
-        txt = '{}'.format(bot.get_invite())
-        await ctx.send(txt)
-    elif action == 'invoked':
-        txt  = 'ctx.prefix = `{}`\n'.format(ctx.prefix)
-        txt += 'ctx.invoke = `{}`\n'.format(ctx.invoke)
-        txt += 'ctx.invoked_subcommand = `{}`\n'.format(ctx.invoked_subcommand)
-        txt += 'ctx.invoked_with = `{}`\n'.format(ctx.invoked_with)
-        txt += 'ctx.invoked_with methods: `{}`'.format(dir(ctx.invoked_with))
-        await ctx.send(txt)
-    elif action == 'actions':
-        txt = 'bot methods: `{}`'.format(dir(bot))
-        await ctx.send(txt)
-    elif action[:4] == 'doc ':
-        # /testing doc ctx.invoke
-        txt = '{}'.format(dir(action[4:]))
-        exec(txt)
-        await ctx.send(f'`{txt}`')
-    elif action[:5] == 'exec ':
-        # /testing exec print(dir(ctx.invoke))
-        # /testing exec print(ctx.invoke)
-        # /testing exec help(ctx.invoke)
-        # /testing exec print('{}{}'.format(ctx.prefix,ctx.command))
-        exec(action[5:])
-    # elif action in ['ctx', 'ctx.author', 'ctx.bot', 'ctx.channel',
-    #                 'ctx.guild', 'ctx.message']:
-    #     txt = 'format(dir({})))'.format(action)
-    #     txt = 'print("{}".' + txt
-    #     exec(txt)
-    elif action == 'ctx':
-        txt = 'ctx methods: `{}`'.format(dir(ctx))
-        await ctx.send(txt)
-    elif action == 'ctx.author':
-        txt = 'ctx.author methods: `{}`'.format(dir(ctx.author))
-        await ctx.send(txt)
-    elif action == 'ctx.bot':
-        txt = 'ctx.bot methods: `{}`'.format(dir(ctx.bot))
-        await ctx.send(txt)
-    elif action == 'ctx.channel':
-        txt = 'ctx.channel methods: `{}`'.format(dir(ctx.channel))
-        await ctx.send(txt)
-    elif action == 'ctx.guild':
-        txt = 'ctx.guild methods: `{}`'.format(dir(ctx.guild))
-        await ctx.send(txt)
-    elif action == 'ctx.message':
-        txt = 'ctx.message methods: `{}`'.format(dir(ctx.guild))
-        await ctx.send(txt)
-
-    await ctx.message.delete()  # await bot.delete_message(ctx.message)
-    if action == 'restart':
-        txt = 'Bot is now attempting to restart'
-        print(txt)
-        bot.close()
-        quit()
-
-
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -707,13 +579,6 @@ async def test(ctx, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
-
-
-#@bot.command(hidden=True, brief='Get fleet details', aliases=['fleet'])
-#@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-#async def alliance(ctx, *, fleet_name=None):
-#    """Gets a spreadsheet containing current data on the specified fleet"""
-#    await toolkit.get_fleet_spreadsheet(ctx, fleet_name)
 
 
 # ----- Run the Bot -----------------------------------------------------------

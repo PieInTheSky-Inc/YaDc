@@ -25,6 +25,62 @@ __item_designs_cache = PssCache(
 
 
 
+
+
+# ---------- Helper functions ----------
+
+def get_item_details_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
+    if not item_designs_data:
+        item_designs_data = __item_designs_cache.get_data_dict3()
+
+    item_info = item_designs_data[item_id]
+    return get_item_details_from_data_as_text(item_info)
+
+
+def get_item_details_from_data_as_text(item_info: dict) -> list:
+    bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+    bonus_value = item_info['EnhancementValue']
+    equipment_slot = item_info['ItemSubType']
+    item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
+    rarity = item_info['Rarity']
+
+    if item_type == 'Equipment' and 'Equipment' in equipment_slot:
+        slot_txt = ' ({})'.format(equipment_slot.replace('Equipment', ''))
+    else:
+        slot_txt = ''
+
+    if bonus_type == 'None':
+        bonus_txt = bonus_type
+    else:
+        bonus_txt = f'+{bonus_value} {bonus_type}'
+
+    return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
+
+
+def get_item_details_short_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
+    if not item_designs_data:
+        item_designs_data = __item_designs_cache.get_data_dict3()
+
+    item_info = item_designs_data[item_id]
+    return get_item_details_short_from_data_as_text(item_info)
+
+
+def get_item_details_short_from_data_as_text(item_info: dict) -> list:
+    name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    rarity = item_info['Rarity']
+    bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+    bonus_value = item_info['EnhancementValue']
+    if bonus_type == 'None':
+        bonus_txt = ''
+    else:
+        bonus_txt = f', +{bonus_value} {bonus_type}'
+    return [f'{name} ({rarity}{bonus_txt})']
+
+
+
+
+
 # ---------- Item info ----------
 
 def get_item_details(item_name: str, as_embed=False):
@@ -65,24 +121,7 @@ def _get_item_info_as_text(item_name: str, item_infos: dict):
     lines = [f'**Item stats for \'{item_name}\'**']
 
     for item_info in item_infos:
-        bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
-        bonus_value = item_info['EnhancementValue']
-        equipment_slot = item_info['ItemSubType']
-        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
-        rarity = item_info['Rarity']
-
-        if item_type == 'Equipment' and 'Equipment' in equipment_slot:
-            slot_txt = ' ({})'.format(equipment_slot.replace('Equipment', ''))
-        else:
-            slot_txt = ''
-
-        if bonus_type == 'None':
-            bonus_txt = bonus_type
-        else:
-            bonus_txt = f'{bonus_type} +{bonus_value}'
-
-        lines.append(f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}')
+        lines.extend(get_item_details_from_data_as_text(item_info))
 
     return lines
 

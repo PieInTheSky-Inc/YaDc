@@ -59,6 +59,14 @@ GAS_COSTS_LOOKUP = [
     507000, 552000, 604000, 650000, 715000]
 
 
+SALE_ITEM_MASK_LOOKUP = {
+    1: 'Clip (500)',
+    2: 'Roll (1200)',
+    4: 'Stash (2500)',
+    8: 'Case (6500)',
+    16: 'Vault (14000)'}
+
+
 SPECIAL_ABILITIES_LOOKUP = {
     'AddReload': 'Rush Command',
     'DamageToCurrentEnemy': 'Critical Strike',
