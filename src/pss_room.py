@@ -50,8 +50,10 @@ def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict
 
 
 def get_room_details_short_from_data_as_text(room_info: dict) -> list:
-
-    pass
+    room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    room_type = room_info['RoomType']
+    room_enhancement_type = room_info['EnhancementType']
+    return [f'{room_name} (Type: {room_type}, Enhanced by: {room_enhancement_type})']
 
 
 
