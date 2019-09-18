@@ -108,10 +108,9 @@ def get_research_names():
 
 # ----- Rooms ---------------------------------------------------------
 def get_room_designs():
-    raw_file = 'raw/room-designs-raw.txt'
-    url = base_url + 'RoomService/ListRoomDesigns2?languageKey=en'
-    raw_text = load_data_from_url(raw_file, url, refresh='auto')
-    return xmltree_to_dict3(raw_text, 'RoomName')
+    path = 'RoomService/ListRoomDesigns2?languageKey=en'
+    raw_data = get_data_from_path(path)
+    return xmltree_to_dict3(raw_data, 'RoomName')
 
 
 def get_room_names():
