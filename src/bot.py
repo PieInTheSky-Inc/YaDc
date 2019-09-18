@@ -21,7 +21,6 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
-import pss_ds as ds
 import pss_fleets as flt
 import pss_item as item
 import pss_research as rs
@@ -300,7 +299,7 @@ async def daily(ctx):
     """Show the dailies"""
     async with ctx.typing():
         await ctx.message.delete()
-        output, _ = ds.get_dropship_text()
+        output, _ = dropship.get_dropship_text()
         if output:
             posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
             for post in posts:
