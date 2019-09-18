@@ -152,7 +152,7 @@ def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
 
 def _get_sale_msg(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
-    result = ['**Shop**']
+    result = ['**Sale**']
 
     sale_item_mask = raw_data['SaleItemMask']
     sale_items = _convert_sale_item_mask(int(sale_item_mask))
