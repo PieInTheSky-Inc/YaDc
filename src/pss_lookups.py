@@ -75,6 +75,14 @@ GRID_TYPE_MASK_LOOKUP = {
 }
 
 
+REDUCE_TOKENS_LOOKUP = {
+    0: '',
+    1: 'k',
+    2: 'm',
+    3: 'g'
+}
+
+
 SALE_ITEM_MASK_LOOKUP = {
     1: ('Clip', 500),
     2: ('Roll', 1200),

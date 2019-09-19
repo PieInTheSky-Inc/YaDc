@@ -5,6 +5,9 @@ import pytz
 import subprocess
 
 
+import pss_lookups as lookups
+
+
 def shell_cmd(cmd):
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8')
@@ -149,6 +152,24 @@ def escape_escape_sequences(txt: str) -> str:
         txt = txt.replace('\\t', '\t')
 
     return txt
+
+
+def get_reduced_number(num: float) -> (float, str):
+    is_negative = num < 0
+    if is_negative:
+        num = abs(num)
+
+    counter = 0
+    while num > 1000:
+        counter += 1
+        num /= 1000
+
+    result = float(int(math.floor(num * 10))) / 10
+    return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
+
+
+
+
 
 
 #---------- DB utilities ----------

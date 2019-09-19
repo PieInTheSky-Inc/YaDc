@@ -24,6 +24,7 @@ import pss_dropship as dropship
 import pss_fleets as flt
 import pss_item as item
 import pss_research as rs
+import pss_rs
 import pss_tournament as tourney
 import pss_top
 import utility as util
@@ -261,16 +262,15 @@ async def best(ctx, slot=None, stat=None):
 
 @bot.command(brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def research(ctx, *, research=''):
+async def research(ctx, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
-        df_research_designs = rs.get_research_designs()
-        df_selected = rs.filter_researchdf(df_research_designs, research)
-        txt = rs.research_to_txt(df_selected)
-        if txt is None:
-            await ctx.send('No entries found for \'{}\''.format(research))
-        else:
-            await ctx.send(txt)
+        output, _ = pss_rs.get_research_details_from_name(name)
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                if post:
+                    await ctx.send(post)
 
 
 @bot.command(brief='Get collections')
