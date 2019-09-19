@@ -3,7 +3,7 @@
 
 from cache import PssCache
 import pss_core as core
-from pss_lookups import *
+import pss_lookups as lookups
 import utility as util
 
 
@@ -50,8 +50,8 @@ def get_ability_name(char_id: str, char_designs_data: dict = None) -> str:
 
         char_info = char_designs_data[char_id]
         special = char_info['SpecialAbilityType']
-        if special in SPECIAL_ABILITIES_LOOKUP.keys():
-            return SPECIAL_ABILITIES_LOOKUP[special]
+        if special in lookups.SPECIAL_ABILITIES_LOOKUP.keys():
+            return lookups.SPECIAL_ABILITIES_LOOKUP[special]
     return 'None'
 
 
@@ -124,7 +124,8 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
     rarity = char_info['Rarity']
     collection = get_collection_name(char_id, char_designs_data, collection_designs_data)
     ability = get_ability_name(char_id, char_designs_data)
-    result = [f'{name} (_{rarity}_, Ability: _{ability}_, Collection: _{collection}_)']
+    ability_stat = char_info['SpecialAbilityFinalArgument']
+    result = [f'{name} (_{rarity}_, Ability: _{ability} ({ability_stat})_, Collection: _{collection}_)']
     return result
 
 
@@ -176,9 +177,9 @@ def _get_char_info_as_text(char_info: dict):
 
 def _convert_equipment_mask(eqpt_mask: int) -> str:
     result = []
-    for k in EQUIPMENT_MASK_LOOKUP.keys():
+    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
         if (eqpt_mask & k) != 0:
-            result.append(EQUIPMENT_MASK_LOOKUP[k])
+            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
 
     if result:
         return ', '.join(result)
@@ -238,8 +239,8 @@ def _get_collection_info_as_embed(collection_info):
 def _get_collection_info_as_text(collection_info):
     collection_crew = _get_collection_crew(collection_info)
     collection_perk = collection_info['EnhancementType']
-    if collection_perk in COLLECTION_PERK_LOOKUP.keys():
-        collection_perk = COLLECTION_PERK_LOOKUP[collection_perk]
+    if collection_perk in lookups.COLLECTION_PERK_LOOKUP.keys():
+        collection_perk = lookups.COLLECTION_PERK_LOOKUP[collection_perk]
 
     lines = []
     lines.append('**{}**'.format(collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]))
@@ -421,10 +422,10 @@ def get_level_costs(level: int) -> list:
         return ['Invalid value. Enter a level between 2 and 40!']
 
     result = ['**Level costs** (non-legendary crew, max research)']
-    result.extend(_get_crew_cost_txt(level, GAS_COSTS_LOOKUP, XP_COSTS_LOOKUP))
+    result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP))
     result.append('')
     result.append('**Level costs** (legendary crew, max research)')
-    result.extend(_get_crew_cost_txt(level, GAS_COSTS_LEGENDARY_LOOKUP, XP_COSTS_LEGENDARY_LOOKUP))
+    result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP))
 
     return result, True
 
