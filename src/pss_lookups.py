@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import emojis
+
+
 COLLECTION_PERK_LOOKUP = {
     'BloodThirstSkill': 'Vampirism',
     'EmpSkill': 'EMP Discharge',
@@ -9,6 +12,13 @@ COLLECTION_PERK_LOOKUP = {
     'MedicalSkill': 'Combat Medic',
     'ResurrectSkill': 'Resurrection',
     'SharpShooterSkill': 'Sharpshooter'
+}
+
+
+CURRENCY_EMOJI_LOOKUP = {
+    'starbux': emojis.pss_bux,
+    'gas': emojis.pss_gas_big,
+    'min': emojis.pss_min_big
 }
 
 

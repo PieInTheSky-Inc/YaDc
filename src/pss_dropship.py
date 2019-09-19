@@ -109,8 +109,9 @@ def _get_merchantship_msg(raw_data: dict, item_designs_data: dict) -> list:
         for i, cargo_info in enumerate(cargo_items):
             item_id, amount = cargo_info.split('x')
             item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
-            currency, price = cargo_prices[i].split(':')
-            result.append(f'{amount} x {item_details}: {price} {currency}')
+            currency_type, price = cargo_prices[i].split(':')
+            currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+            result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
     else:
         result.append('-')
     return result
@@ -121,6 +122,7 @@ def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
 
     shop_type = raw_data['LimitedCatalogType']
     currency_type = raw_data['LimitedCatalogCurrencyType']
+    currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
     price = raw_data['LimitedCatalogCurrencyAmount']
     can_own_max = raw_data['LimitedCatalogMaxTotal']
 
@@ -139,7 +141,7 @@ def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
     if entity_details:
         result.extend(entity_details)
 
-    result.append(f'Cost: {price} {currency_type}')
+    result.append(f'Cost: {price} {currency_emoji}')
     result.append(f'Can own (max): {can_own_max}')
 
     return result
