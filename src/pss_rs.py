@@ -45,7 +45,7 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     description = research_info['ResearchDescription']
     cost, currency = _get_costs_from_research_info(research_info)
-    cost_reduced = util.get_reduced_number(cost)
+    cost_reduced, cost_multiplier = util.get_reduced_number(cost)
     if currency:
         currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency]
     else:
@@ -60,15 +60,15 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     else:
         required_research_name = None
 
-    result = [name]
+    result = [f'**{name}**']
     result.append(description)
-    result.append(f'Cost: {cost_reduced} {currency_emoji}')
+    result.append(f'Cost: {cost_reduced}{cost_multiplier} {currency_emoji}')
     result.append(f'Duration: {duration}')
     result.append(f'Required LAB lvl: {required_lab_level}')
     if required_research_name:
         result.append(f'Required Research: {required_research_name}')
 
-    return []
+    return result
 
 
 def _get_costs_from_research_info(research_info: dict) -> (int, str):
