@@ -66,11 +66,12 @@ GRID_TYPE_MASK_LOOKUP = {
 
 
 SALE_ITEM_MASK_LOOKUP = {
-    1: 'Clip (500)',
-    2: 'Roll (1200)',
-    4: 'Stash (2500)',
-    8: 'Case (6500)',
-    16: 'Vault (14000)'}
+    1: ('Clip', 500),
+    2: ('Roll', 1200),
+    4: ('Stash', 2500),
+    8: ('Case', 6500),
+    16: ('Vault', 14000)
+}
 
 
 SPECIAL_ABILITIES_LOOKUP = {

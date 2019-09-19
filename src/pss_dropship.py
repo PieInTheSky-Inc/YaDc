@@ -28,7 +28,8 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
     result = []
     for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
         if (sale_item_mask & flag) != 0:
-            result.append(lookups.SALE_ITEM_MASK_LOOKUP[flag])
+            item, value = lookups.SALE_ITEM_MASK_LOOKUP[flag]
+            result.append(f'**{item}** ({value})')
     if result:
         if len(result) > 1:
             return f'{", ".join(result[:-1])} or {result[-1]}'

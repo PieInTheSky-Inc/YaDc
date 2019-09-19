@@ -124,7 +124,7 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
     rarity = char_info['Rarity']
     collection = get_collection_name(char_id, char_designs_data, collection_designs_data)
     ability = get_ability_name(char_id, char_designs_data)
-    result = [f'{name} (Rarity: {rarity}, Ability: {ability}, Collection: {collection})']
+    result = [f'**{name}** (Rarity: {rarity}, Ability: {ability}, Collection: {collection})']
     return result
 
 
