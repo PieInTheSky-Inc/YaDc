@@ -30,7 +30,7 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
     for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
         if (sale_item_mask & flag) != 0:
             item, value = lookups.SALE_ITEM_MASK_LOOKUP[flag]
-            result.append(f'**{item}** ({value})')
+            result.append(f'_{item}_ ({value})')
     if result:
         if len(result) > 1:
             return f'{", ".join(result[:-1])} or {result[-1]}'
@@ -94,9 +94,9 @@ def _get_dropship_msg(raw_data: dict, char_designs_data: dict, collection_design
             common_crew_info.append(' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!')
 
         if common_crew_info:
-            result.append(f'{emojis.pss_min_big}: {"".join(common_crew_info)}')
+            result.append(f'{emojis.pss_min_big}  {"".join(common_crew_info)}')
         if hero_crew_info:
-            result.append(f'{emojis.pss_bux}: {hero_crew_info[0]}')
+            result.append(f'{emojis.pss_bux}  {hero_crew_info[0]}')
     else:
         result.append('-')
     return result
@@ -155,7 +155,7 @@ def _get_sale_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
     sale_item_mask = raw_data['SaleItemMask']
     sale_items = _convert_sale_item_mask(int(sale_item_mask))
     sale_quantity = raw_data['SaleQuantity']
-    result.append(f'Buy a {sale_items} of Starbux and get:')
+    result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 
     sale_type = raw_data['SaleType']
     entity_id = raw_data['SaleArgument']
