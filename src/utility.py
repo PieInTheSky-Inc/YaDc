@@ -160,7 +160,7 @@ def get_reduced_number(num: float) -> (float, str):
         num = abs(num)
 
     counter = 0
-    while num > 1000:
+    while num >= 1000:
         counter += 1
         num /= 1000
 
