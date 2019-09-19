@@ -44,12 +44,7 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
 
     name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     description = research_info['ResearchDescription']
-    cost, currency = _get_costs_from_research_info(research_info)
-    cost_reduced, cost_multiplier = util.get_reduced_number(cost)
-    if currency:
-        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency]
-    else:
-        currency_emoji = ''
+    costs = _get_costs_from_research_info(research_info)
     research_time_seconds = int(research_info['ResearchTime'])
     research_timedelta = timedelta(seconds=research_time_seconds)
     duration = util.get_formatted_timedelta(research_timedelta, include_relative_indicator=False)
@@ -62,7 +57,7 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
 
     result = [f'**{name}**']
     result.append(description)
-    result.append(f'Cost: {cost_reduced}{cost_multiplier} {currency_emoji}')
+    result.append(f'Cost: {costs}')
     result.append(f'Duration: {duration}')
     result.append(f'Required LAB lvl: {required_lab_level}')
     if required_research_name:
@@ -71,15 +66,45 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     return result
 
 
+def get_research_details_short_from_id_as_text(research_id: str, research_designs_data: dict = None) -> list:
+    if not research_designs_data:
+        research_designs_data = __research_designs_cache.get_data_dict3()
+
+    research_info = research_designs_data[research_id]
+    return get_research_details_short_from_data_as_text(research_info)
+
+
+def get_research_details_short_from_data_as_text(research_info: dict) -> list:
+    name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    costs = _get_costs_from_research_info(research_info)
+    research_time_seconds = int(research_info['ResearchTime'])
+    research_timedelta = timedelta(seconds=research_time_seconds)
+    duration = util.get_formatted_timedelta(research_timedelta, include_relative_indicator=False)
+    required_lab_level = research_info['RequiredLabLevel']
+    return [f'**{name}**: {costs} - {duration} - LAB lvl {required_lab_level}']
+
+
 def _get_costs_from_research_info(research_info: dict) -> (int, str):
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])
+
     if bux_cost:
-        return bux_cost, 'starbux'
+        cost = bux_cost
+        currency = 'starbux'
     elif gas_cost:
-        return gas_cost, 'gas'
+        cost = gas_cost
+        currency = 'gas'
     else:
-        return 0, ''
+        cost = 0
+        currency = ''
+
+    cost_reduced, cost_multiplier = util.get_reduced_number(cost)
+    if currency:
+        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency]
+    else:
+        currency_emoji = ''
+    return f'{cost_reduced}{cost_multiplier} {currency_emoji}'
+
 
 
 
@@ -125,10 +150,14 @@ def _get_research_info_as_embed(research_name: str, research_infos: dict, resear
 def _get_research_info_as_text(research_name: str, research_infos: dict, research_designs_data: dict):
     lines = [f'**Research stats for \'{research_name}\'**']
     research_infos = sorted(research_infos, key=_get_key_for_research_sort)
+    big_set = len(research_infos) > 3
 
-    for item_info in research_infos:
-        lines.extend(get_research_details_from_data_as_text(item_info, research_designs_data))
-        lines.append('')
+    for research_info in research_infos:
+        if big_set:
+            lines.extend(get_research_details_short_from_data_as_text(research_info))
+        else:
+            lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
+            lines.append('')
 
     return lines
 
