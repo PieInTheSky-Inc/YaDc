@@ -124,6 +124,7 @@ def _get_research_info_as_embed(research_name: str, research_infos: dict, resear
 
 def _get_research_info_as_text(research_name: str, research_infos: dict, research_designs_data: dict):
     lines = [f'**Research stats for \'{research_name}\'**']
+    research_infos = sorted(research_infos, key=_get_key_for_research_sort)
 
     for item_info in research_infos:
         lines.extend(get_research_details_from_data_as_text(item_info, research_designs_data))
@@ -132,3 +133,12 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
     return lines
 
 
+def _get_key_for_research_sort(research_info: dict) -> str:
+    name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    name_lower = name.lower()
+    if ' lv' in name_lower:
+        lvl = str(name_lower.split(' lv')[1]).zfill(3)
+        result = f'{name}{lvl}'
+    else:
+        result = name
+    return result
