@@ -23,11 +23,6 @@ import pss_room as room
 
 # ---------- Helper functions ----------
 
-def _get_daily_item_info(item_id: str, item_designs_data: dict) -> str:
-    result = ''
-
-    pass
-
 
 def _convert_sale_item_mask(sale_item_mask: int) -> str:
     result = []
@@ -128,21 +123,20 @@ def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
     price = raw_data['LimitedCatalogCurrencyAmount']
     can_own_max = raw_data['LimitedCatalogMaxTotal']
 
+    entity_id = raw_data['LimitedCatalogArgument']
+    entity_details = []
     if shop_type == 'Character':
-        char_id = raw_data['LimitedCatalogArgument']
-        char_details = crew.get_char_info_short_from_id_as_text(char_id, char_designs_data, collection_designs_data)
-        result.extend(char_details)
+        entity_details = crew.get_char_info_short_from_id_as_text(entity_id, char_designs_data, collection_designs_data)
     elif shop_type == 'Item':
-        item_id = raw_data['LimitedCatalogArgument']
-        item_details = item.get_item_details_short_from_id_as_text(item_id, item_designs_data)
-        result.extend(item_details)
+        entity_details = item.get_item_details_short_from_id_as_text(entity_id, item_designs_data)
     elif shop_type == 'Room':
-        room_id = raw_data['LimitedCatalogArgument']
-        room_details = room.get_room_details_short_from_id_as_text(room_id, room_designs_data)
-        result.extend(room_details)
+        entity_details = room.get_room_details_short_from_id_as_text(entity_id, room_designs_data)
     else:
         result.append('-')
         return result
+
+    if entity_details:
+        result.extend(entity_details)
 
     result.append(f'Cost: {price} {currency_type}')
     result.append(f'Can own (max): {can_own_max}')
