@@ -94,13 +94,16 @@ async def post_dailies_loop():
 async def post_all_dailies():
     fix_daily_channels()
     channel_ids = d.get_valid_daily_channel_ids()
-    txt = dropship.get_dropship_text()
+    output, _ = dropship.get_dropship_text()
     for channel_id in channel_ids:
         text_channel = bot.get_channel(channel_id)
         if text_channel != None:
             guild = text_channel.guild
             try:
-                await text_channel.send(txt)
+                if output:
+                    posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+                    for post in posts:
+                        await text_channel.send(post)
             except Exception as error:
                 print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
 
