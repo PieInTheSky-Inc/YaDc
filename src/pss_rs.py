@@ -55,7 +55,7 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     duration = util.get_formatted_timedelta(research_timedelta, include_relative_indicator=False)
     required_lab_level = research_info['RequiredLabLevel']
     required_research_design_id = research_info['RequiredResearchDesignId']
-    if required_research_design_id > 0:
+    if required_research_design_id != '0':
         required_research_name = research_designs_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     else:
         required_research_name = None
