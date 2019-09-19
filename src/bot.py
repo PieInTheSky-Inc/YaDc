@@ -23,8 +23,7 @@ import pss_daily as d
 import pss_dropship as dropship
 import pss_fleets as flt
 import pss_item as item
-import pss_research as rs
-import pss_rs
+import pss_rs as research
 import pss_tournament as tourney
 import pss_top
 import utility as util
@@ -260,12 +259,12 @@ async def best(ctx, slot=None, stat=None):
                 await ctx.send(post)
 
 
-@bot.command(brief='Get research data')
+@bot.command(name='research', brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def research(ctx, *, name: str = None):
+async def cmd_research(ctx, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
-        output, _ = pss_rs.get_research_details_from_name(name)
+        output, _ = research.get_research_details_from_name(name)
         if output:
             posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
             for post in posts:
