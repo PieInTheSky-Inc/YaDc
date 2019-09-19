@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import discord
+
 from cache import PssCache
 import emojis
 import pss_core as core
@@ -202,34 +204,46 @@ def get_news(as_embed: bool = False, language_key: str = 'en'):
             return _get_news_as_text(raw_data), True
 
 
-def _get_news_as_embed(news_infos: dict):
+def _get_news_as_embed(news_infos: dict) -> list:
+    result = []
+    for news_info in news_infos.values():
+        news_details = _get_news_details_as_embed(news_info)
+        if news_details:
+            result.append(news_details)
+
     return []
 
 
-def _get_news_as_text(news_infos: dict):
+def _get_news_as_text(news_infos: dict) -> list:
     result = []
     for news_info in news_infos.values():
-        result.extend(_get_news_details(news_info))
-        result.append('')
+        news_details = _get_news_details_as_text(news_info)
+        if news_details:
+            result.extend(news_details)
+            result.append('')
 
     return result
 
 
-def _get_news_details(news_info: dict) -> list:
+def _get_news_details_as_embed(news_info: dict) -> discord.Embed:
+    return ''
+
+
+def _get_news_details_as_text(news_info: dict) -> list:
     news_title = news_info['Title']
-    title = f'**{news_title}**'
+    title = f'__{news_title}__'
     description = util.escape_escape_sequences(news_info['Description'])
     while '\n\n' in description:
         description = description.replace('\n\n', '\n')
 
     news_modify_date = util.parse_pss_datetime(news_info['UpdateDate'])
     if news_modify_date:
-        modify_date = util.get_formatted_date(news_modify_date, include_tz=False, include_tz_brackets=False)
+        modify_date = util.get_formatted_date(news_modify_date)
         title = f'{title} ({modify_date})'
 
     link = news_info['Link'].strip()
 
-    result = [f'__{title}__', description]
+    result = [f'**{title}**', description]
     if link:
         result.append(f'<{link}>')
 
