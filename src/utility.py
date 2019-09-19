@@ -1,7 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
-
 import discord
 import math
+import pytz
 import subprocess
 
 
@@ -80,13 +80,13 @@ def get_utcnow():
 def parse_pss_datetime(pss_datetime: str) -> datetime:
     pss_format = '%Y-%m-%dT%H:%M:%S'
     detailed_pss_format = '%Y-%m-%dT%H:%M:%S.%f'
+    result = None
     try:
-        return datetime.strptime(pss_datetime, pss_format)
+        result = datetime.strptime(pss_datetime, pss_format)
     except ValueError:
-        try:
-            return datetime.strptime(pss_datetime, detailed_pss_format)
-        except ValueError:
-            return None
+        result = datetime.strptime(pss_datetime, detailed_pss_format)
+    result = pytz.utc.localize(result)
+    return result
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
