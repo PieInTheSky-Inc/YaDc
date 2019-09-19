@@ -322,92 +322,150 @@ async def news(ctx):
                 await ctx.send(post)
 
 
-@bot.command(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
+@bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
+async def autodaily(ctx):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
 
-    action = set:    Configure a channel on this server to have the daily announcement posted at.
-    action = remove: Stop auto-posting the daily announcement to this Discord server.
-    action = get:    See which channel has been configured on this server to receive the daily announcement.
-
     In order to use this command, you need Administrator permissions for this server.
     """
-    guild = ctx.guild
-    author_is_owner = await bot.is_owner(ctx.author)
-    if action == 'set':
-        if text_channel == None:
-            await ctx.send('You need to specify a text channel!')
+    pass
+
+
+@autodaily.command(name='fix', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_fix(ctx):
+    fix_daily_channels()
+    await ctx.send('Fixed daily channels')
+
+
+@autodaily.command(name='set', hidden=True, brief='Set an autodaily channel.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_set(ctx, text_channel: discord.TextChannel):
+    """Configure a channel on this server to have the daily announcement posted at."""
+    if text_channel:
+        guild = ctx.guild
+        success = d.try_store_daily_channel(guild.id, text_channel.id)
+        if success:
+            txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
         else:
-            await setdaily(ctx, text_channel)
-    elif action == 'remove':
-        await removedaily(ctx)
-    elif action == 'get':
-        await getdaily(ctx)
-    elif action == 'fix':
-        if author_is_owner:
-            fix_daily_channels()
-            await ctx.send('Fixed daily channels')
-    elif action == 'listall':
-        if author_is_owner:
-            await listalldailies(ctx, None)
-    elif action == 'listvalid':
-        if author_is_owner:
-            await listalldailies(ctx, True)
-    elif action == 'listinvalid':
-        if author_is_owner:
-            await listalldailies(ctx, False)
-    elif action == 'post':
-        if author_is_owner:
-            guild = ctx.guild
-            channel_id = d.get_daily_channel_id(guild.id)
-            if channel_id >= 0:
-                text_channel = bot.get_channel(channel_id)
-                await text_channel.send(dropship.get_dropship_text())
-    elif action == 'postall':
-        if author_is_owner:
-            await post_all_dailies()
+            txt = 'Could not set auto-posting of the daily announcement for this server :('
+        await ctx.send(txt)
 
 
-async def setdaily(ctx, text_channel: discord.TextChannel):
-    guild = ctx.guild
-    success = d.try_store_daily_channel(guild.id, text_channel.id)
-    if success:
-        txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
-    else:
-        txt = 'Could not set auto-posting of the daily announcement for this server :('
-    await ctx.send(txt)
-
-async def getdaily(ctx):
+@autodaily.command(name='get', hidden=True, brief='Get the autodaily channel.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_get(ctx):
+    """See which channel has been configured on this server to receive the daily announcement."""
     guild = ctx.guild
     channel_id = d.get_daily_channel_id(guild.id)
     txt = ''
     if channel_id >= 0:
         text_channel = bot.get_channel(channel_id)
-        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(text_channel.mention)
+        if text_channel:
+            channel_name = text_channel.mention
+        else:
+            channel_name = '_deleted channel_'
+        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(channel_name)
     else:
         txt += 'Auto-posting of the daily announcement is not configured for this server!'
     await ctx.send(txt)
 
-async def listalldailies(ctx, valid = None):
-    channels = d.select_daily_channel(None, valid)
+
+@autodaily.group(name='list', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list(ctx):
+    pass
+
+
+@autodaily_list.command(name='all', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_all(ctx):
+    channels = d.select_daily_channel(None, None)
     txt = ''
     i = 0
     for channel in channels:
         text_channel = bot.get_channel(int(channel[1]))
-        guild = text_channel.guild
-        txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
-        if i == 20:
-            txt += '\n'
-            i = 0
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
     txt_split = txt.split('\n\n')
-    for msg in txt_split:
-        await ctx.send(msg)
+    if txt_split:
+        for msg in txt_split:
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
 
-async def removedaily(ctx):
+
+@autodaily_list.command(name='invalid', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_invalid(ctx):
+    channels = d.select_daily_channel(None, False)
+    txt = ''
+    i = 0
+    for channel in channels:
+        text_channel = bot.get_channel(int(channel[1]))
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
+    txt_split = txt.split('\n\n')
+    if txt_split:
+        for msg in txt_split:
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+
+
+@autodaily_list.command(name='valid', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_valid(ctx):
+    channels = d.select_daily_channel(None, True)
+    txt = ''
+    i = 0
+    for channel in channels:
+        text_channel = bot.get_channel(int(channel[1]))
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
+    txt_split = txt.split('\n\n')
+    if txt_split:
+        for msg in txt_split:
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+
+
+@autodaily.command(name='remove', hidden=True, brief='Turn off autodaily feature for this server.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_remove(ctx):
+    """Stop auto-posting the daily announcement to this Discord server"""
     guild = ctx.guild
     txt = ''
     channel_id = d.get_daily_channel_id(guild.id)
@@ -419,6 +477,31 @@ async def removedaily(ctx):
     else:
         txt += 'Auto-posting of the daily announcement is not configured for this server!'
     await ctx.send(txt)
+
+
+@autodaily.command(name='post', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_post(ctx):
+    guild = ctx.guild
+    channel_id = d.get_daily_channel_id(guild.id)
+    if channel_id >= 0:
+        text_channel = bot.get_channel(channel_id)
+        output, _ = dropship.get_dropship_text()
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                if post:
+                    await text_channel.send(post)
+
+
+@autodaily.command(name='postall', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_postall(ctx):
+    await post_all_dailies()
 
 
 @autodaily.error
@@ -442,7 +525,8 @@ async def level(ctx, level=None):
         if output:
             posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
             for post in posts:
-                await ctx.send(post)
+                if post:
+                    await ctx.send(post)
 
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
