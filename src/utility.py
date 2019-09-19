@@ -168,20 +168,6 @@ def get_reduced_number(num: float) -> (float, str):
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
 
 
-def assert_valid_entity_name(name: str, min_length: int = 3, allowed_values: list = [], case_sensitive: bool = False) -> bool:
-    if not name:
-        return False
-
-    if not case_sensitive:
-        name = name.lower()
-        allowed_values = [value.lower() for value in allowed_values]
-
-    if len(name) < min_length and not name in allowed_values:
-        return False
-
-    return True
-
-
 
 
 

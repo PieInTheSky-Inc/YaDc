@@ -3,9 +3,11 @@
 
 import re
 
+import pss_assert as ass
 from cache import PssCache
 import pss_core as core
 import pss_lookups as lookups
+import utility as util
 
 
 # ---------- Constants ----------
@@ -13,6 +15,9 @@ import pss_lookups as lookups
 ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
+ALLOWED_ITEM_NAMES = [
+    'U'
+]
 
 
 
@@ -84,7 +89,11 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
 # ---------- Item info ----------
 
 def get_item_details(item_name: str, as_embed=False):
-    item_infos = _get_item_infos(item_name)
+    if not ass.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES):
+        return [f'The name **{item_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
+    return_on_first = ass.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -143,7 +152,11 @@ def _fix_item_name(item_name):
 # ---------- Price info ----------
 
 def get_item_price(item_name: str, as_embed: bool = False):
-    item_infos = _get_item_infos(item_name)
+    if not ass.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES):
+        return [f'The name **{item_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
+    return_on_first = ass.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
         return f'Could not find an item named **{item_name}**.', False
