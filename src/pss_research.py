@@ -113,8 +113,9 @@ def _get_costs_from_research_info(research_info: dict) -> (int, str):
 # ---------- Research info ----------
 
 def get_research_details_from_name(research_name: str, as_embed: bool = False):
-    if not util.assert_valid_entity_name(research_name):
-        return [f'The name **{research_name}** is not valid.', 'Please enter a name with a length of at least **3**.'], False
+    min_length = 3
+    if not util.assert_valid_entity_name(research_name, min_length=min_length):
+        return [f'The name **{research_name}** is not valid. Please enter a name with a length of at least **{min_length}**.'], False
 
     research_designs_data = __research_designs_cache.get_data_dict3()
     research_infos = _get_research_infos(research_name, research_designs_data=research_designs_data)
