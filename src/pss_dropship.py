@@ -8,6 +8,7 @@ import pss_crew as crew
 import pss_item as item
 import pss_lookups as lookups
 import pss_room as room
+import utility as util
 
 
 # ---------- Constants ----------
@@ -44,8 +45,8 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 
 # ---------- Dropship info ----------
 
-def get_dropship_text(as_embed: bool = False):
-    path = 'SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
+def get_dropship_text(as_embed: bool = False, language_key: str = 'en'):
+    path = f'SettingService/GetLatestVersion3?languageKey={language_key}&deviceType=DeviceTypeAndroid'
     raw_text = core.get_data_from_path(path)
     raw_data = core.xmltree_to_dict2(raw_text, None)[0]
 
@@ -174,5 +175,62 @@ def _get_sale_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
         entity_details = '\n'.join(debug_details)
 
     result.append(f'{sale_quantity} x {entity_details}')
+
+    return result
+
+
+
+
+
+# ---------- News info ----------
+
+def get_news(as_embed: bool = False, language_key: str = 'en'):
+    path = f'SettingService/ListAllNewsDesigns?languageKey={language_key}'
+
+    try:
+        raw_text = core.get_data_from_path(path)
+        raw_data = core.xmltree_to_dict3(raw_text, 'NewsDesignId')
+    except Exception as err:
+        raw_data = None
+
+    if not raw_data:
+        return [f'Could not get news: {err}'], False
+    else:
+        if as_embed:
+            return _get_news_as_embed(raw_data), True
+        else:
+            return _get_news_as_text(raw_data), True
+
+
+def _get_news_as_embed(news_infos: dict):
+    return []
+
+
+def _get_news_as_text(news_infos: dict):
+    result = []
+    for news_info in news_infos.values():
+        result.extend(_get_news_details(news_info))
+        result.append('')
+
+    return result
+
+
+def _get_news_details(news_info: dict) -> list:
+    news_title = news_info['Title']
+    title = f'**{news_title}**'
+    description = util.escape_escape_sequences(news_info['Description'])
+    while '\n\n' in description:
+        description = description.replace('\n\n', '\n')
+
+    news_modify_date = util.parse_pss_datetime(news_info['UpdateDate'])
+    if news_modify_date:
+        modify_date = util.get_formatted_date(news_modify_date, include_tz=False, include_tz_brackets=False)
+        title = f'{title} ({modify_date})'
+
+    link = news_info['Link'].strip()
+
+    result = [f'__{title}__', description]
+    if link:
+        result.append(f'<{link}>')
 
     return result

@@ -77,6 +77,18 @@ def get_utcnow():
     return datetime.now(timezone.utc)
 
 
+def parse_pss_datetime(pss_datetime: str) -> datetime:
+    pss_format = '%Y-%m-%dT%H:%M:%S'
+    detailed_pss_format = '%Y-%m-%dT%H:%M:%S.%f'
+    try:
+        return datetime.strptime(pss_datetime, pss_format)
+    except ValueError:
+        try:
+            return datetime.strptime(pss_datetime, detailed_pss_format)
+        except ValueError:
+            return None
+
+
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
     if from_channel is not None:
         messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
@@ -105,7 +117,6 @@ def get_embed_field_def(title=None, text=None, inline=True):
     return (title, text, inline)
 
 
-
 def dbg_prnt(text):
     print(f'[{get_utcnow()}]: {text}')
 
@@ -113,7 +124,7 @@ def dbg_prnt(text):
 def create_posts_from_lines(lines, char_limit) -> list:
     result = []
     current_post = ''
-    
+
     for line in lines:
         line_length = len(line)
         new_post_length = 1 + len(current_post) + line_length
@@ -122,13 +133,22 @@ def create_posts_from_lines(lines, char_limit) -> list:
             current_post = ''
         if len(current_post) > 0:
             current_post += '\n'
-            
+
         current_post += line
-        
+
     if current_post:
         result.append(current_post)
-    
+
     return result
+
+
+def escape_escape_sequences(txt: str) -> str:
+    if txt:
+        txt = txt.replace('\\n', '\n')
+        txt = txt.replace('\\r', '\r')
+        txt = txt.replace('\\t', '\t')
+
+    return txt
 
 
 #---------- DB utilities ----------

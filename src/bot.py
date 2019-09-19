@@ -309,6 +309,19 @@ async def daily(ctx):
                 await ctx.send(post)
 
 
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@bot.command(brief='Show the news')
+async def news(ctx):
+    """Show the news"""
+    async with ctx.typing():
+        await ctx.message.delete()
+        output, _ = dropship.get_news()
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                await ctx.send(post)
+
+
 @bot.command(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
