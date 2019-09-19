@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from cache import PssCache
+import pss_assert as ass
 import pss_core as core
 import pss_lookups as lookups
 import utility as util
@@ -133,6 +134,9 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
 # ---------- Crew info ----------
 
 def get_char_details_from_name(char_name: str, as_embed:bool = False):
+    if not ass.valid_entity_name(char_name):
+        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
     char_info = _get_char_info(char_name)
 
     if char_info is None:
@@ -199,6 +203,9 @@ def _get_char_list() -> list:
 # ---------- Collection Info ----------
 
 def get_collection_info(collection_name, as_embed=False):
+    if not ass.valid_entity_name(collection_name):
+        return [f'The name **{collection_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
     collection_info = _get_collection_info(collection_name)
 
     if collection_info is None:
@@ -273,6 +280,9 @@ def fix_collection_name(collection_name):
 # ---------- Prestige Info ----------
 
 def get_prestige_from_info(char_name, as_embed=False):
+    if not ass.valid_entity_name(char_name):
+        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
     prestige_data = _get_prestige_from_data(char_name)
 
     if prestige_data is None:
@@ -285,6 +295,9 @@ def get_prestige_from_info(char_name, as_embed=False):
 
 
 def get_prestige_to_info(char_name, as_embed=False):
+    if not ass.valid_entity_name(char_name):
+        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+
     prestige_data = _get_prestige_to_data(char_name)
 
     if prestige_data is None:
