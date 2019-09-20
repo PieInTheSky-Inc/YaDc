@@ -1,17 +1,23 @@
+import pss_exception
+
+
 MIN_ENTITY_NAME_LENGTH = 3
 
-def valid_entity_name(name: str, min_length: int = MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False) -> bool:
-    if not name:
-        return False
+def valid_entity_name(name: str, min_length: int = MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
+    valid_parameter_value(name, parameter_name='name', min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive)
 
-    if not case_sensitive:
-        name = name.lower()
-        allowed_values = [value.lower() for value in allowed_values]
 
-    if len(name) < min_length and not name in allowed_values:
-        return False
+def valid_parameter_value(value: str, parameter_name: str, min_length: int = None, allowed_values: list = [], case_sensitive: bool = False):
+    if not value:
+        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value='<empty>', min_length=min_length, valid_values=allowed_values)
 
-    return True
+    if allowed_values:
+        if not case_sensitive:
+            name = name.lower()
+            allowed_values = [value.lower() for value in allowed_values]
+
+        if len(name) < min_length and not name in allowed_values:
+            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=name, min_length=min_length, valid_values=allowed_values)
 
 
 def string_in_list(string, lst: list, case_sensitive: bool = True) -> bool:

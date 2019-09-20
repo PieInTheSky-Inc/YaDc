@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from cache import PssCache
-import pss_assert as ass
+import pss_assert
 import pss_core as core
 import pss_lookups as lookups
 import utility as util
@@ -70,6 +70,72 @@ def get_collection_name(char_id: str, char_designs_data: dict = None, collection
     return 'None'
 
 
+
+# ---------- Crew info ----------
+
+def get_char_details_from_name(char_name: str, as_embed: bool = False):
+    pss_assert.valid_entity_name(char_name)
+
+    char_info = _get_char_info(char_name)
+
+    if char_info is None:
+        return [f'Could not find a crew named **{char_name}**.'], False
+    else:
+        if as_embed:
+            return _get_char_info_as_embed(char_info), True
+        else:
+            return _get_char_info_as_text(char_info), True
+
+
+
+def _get_char_info(char_name: str):
+    char_design_data = __character_designs_cache.get_data_dict3()
+    char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
+
+    if char_design_id and char_design_id in char_design_data.keys():
+        return char_design_data[char_design_id]
+    else:
+        return None
+
+
+def _get_char_design_id_from_name(char_name: str, char_data:dict = None):
+    if char_data is None:
+        char_data = __character_designs_cache.get_data_dict3()
+
+    results = core.get_ids_from_property_value(char_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
+    if len(results) > 0:
+        return results[0]
+
+    return None
+
+
+def _get_char_info_as_embed(char_info: dict):
+    return ''
+
+
+def _get_char_info_as_text(char_info: dict):
+    lines = get_char_info_from_data_as_text(char_info)
+    return lines
+
+
+def _convert_equipment_mask(eqpt_mask: int) -> str:
+    result = []
+    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
+        if (eqpt_mask & k) != 0:
+            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
+
+    if result:
+        return ', '.join(result)
+    else:
+        return None
+
+
+def _get_char_list() -> list:
+    char_data = __character_designs_cache.get_data_dict3()
+    result = [char_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in char_data.keys()]
+    return result
+
+
 def get_char_info_from_data_as_text(char_info: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
     if not char_designs_data:
         char_designs_data = __character_designs_cache.get_data_dict3()
@@ -134,80 +200,12 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
 
 
 
-# ---------- Crew info ----------
-
-def get_char_details_from_name(char_name: str, as_embed:bool = False):
-    if not ass.valid_entity_name(char_name):
-        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
-
-    char_info = _get_char_info(char_name)
-
-    if char_info is None:
-        return [f'Could not find a crew named **{char_name}**.'], False
-    else:
-        if as_embed:
-            return _get_char_info_as_embed(char_info), True
-        else:
-            return _get_char_info_as_text(char_info), True
-
-
-
-def _get_char_info(char_name: str):
-    char_design_data = __character_designs_cache.get_data_dict3()
-    char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
-
-    if char_design_id and char_design_id in char_design_data.keys():
-        return char_design_data[char_design_id]
-    else:
-        return None
-
-
-def _get_char_design_id_from_name(char_name: str, char_data:dict = None):
-    if char_data is None:
-        char_data = __character_designs_cache.get_data_dict3()
-
-    results = core.get_ids_from_property_value(char_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
-    if len(results) > 0:
-        return results[0]
-
-    return None
-
-
-def _get_char_info_as_embed(char_info: dict):
-    return ''
-
-
-def _get_char_info_as_text(char_info: dict):
-    lines = get_char_info_from_data_as_text(char_info)
-    return lines
-
-
-def _convert_equipment_mask(eqpt_mask: int) -> str:
-    result = []
-    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
-        if (eqpt_mask & k) != 0:
-            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
-
-    if result:
-        return ', '.join(result)
-    else:
-        return None
-
-
-def _get_char_list() -> list:
-    char_data = __character_designs_cache.get_data_dict3()
-    result = [char_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in char_data.keys()]
-    return result
-
-
-
 
 
 # ---------- Collection Info ----------
 
 def get_collection_info(collection_name, as_embed=False):
-    if not ass.valid_entity_name(collection_name):
-        return [f'The name **{collection_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+    pss_assert.valid_entity_name(collection_name)
 
     collection_info = _get_collection_info(collection_name)
 
@@ -283,8 +281,7 @@ def fix_collection_name(collection_name):
 # ---------- Prestige Info ----------
 
 def get_prestige_from_info(char_name, as_embed=False):
-    if not ass.valid_entity_name(char_name):
-        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+    pss_assert.valid_entity_name(char_name)
 
     prestige_data = _get_prestige_from_data(char_name)
 
@@ -298,8 +295,7 @@ def get_prestige_from_info(char_name, as_embed=False):
 
 
 def get_prestige_to_info(char_name, as_embed=False):
-    if not ass.valid_entity_name(char_name):
-        return [f'The name **{char_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+    pss_assert.valid_entity_name(char_name)
 
     prestige_data = _get_prestige_to_data(char_name)
 

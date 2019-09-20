@@ -3,7 +3,7 @@
 
 import re
 
-import pss_assert as ass
+import pss_assert
 from cache import PssCache
 import pss_core as core
 import pss_lookups as lookups
@@ -89,10 +89,9 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
 # ---------- Item info ----------
 
 def get_item_details(item_name: str, as_embed=False):
-    if not ass.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES):
-        return [f'The name **{item_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
-    return_on_first = ass.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    return_on_first = util.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
     item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
@@ -152,10 +151,9 @@ def _fix_item_name(item_name):
 # ---------- Price info ----------
 
 def get_item_price(item_name: str, as_embed: bool = False):
-    if not ass.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES):
-        return [f'The name **{item_name}** is not valid. Please enter a name with a length of at least **{ass.MIN_ENTITY_NAME_LENGTH}**.'], False
+    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
-    return_on_first = ass.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    return_on_first = pss_assert.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
     item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
@@ -199,8 +197,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 # ---------- Ingredients info ----------
 
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
-    if not item_name:
-        return [f'You must specify an item name!'], False
+    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     item_design_data = __item_designs_cache.get_data_dict3()
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
@@ -306,6 +303,9 @@ _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (fo
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
 def get_best_items(slot: str, stat: str, as_embed: bool = False):
+    pss_assert.valid_parameter_value(slot, 'slot', min_length=None, allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
+    pss_assert.valid_parameter_value(stat, 'stat', min_length=None, allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
+
     error = _get_best_items_error(slot, stat)
     if error:
         return error, False

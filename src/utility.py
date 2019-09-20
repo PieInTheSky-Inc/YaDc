@@ -171,6 +171,16 @@ def get_reduced_number(num) -> (float, str):
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
 
 
+def is_str_in_list(value: str, lst: list, case_sensitive: bool = False) -> bool:
+    if value and lst:
+        if not case_sensitive:
+            string = value.lower()
+            lst = [item.lower() for item in lst]
+        return string in lst
+    return False
+
+
+
 
 
 

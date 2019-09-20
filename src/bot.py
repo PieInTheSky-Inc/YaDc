@@ -21,6 +21,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
+import pss_exception
 import pss_fleets as flt
 import pss_item as item
 import pss_research as research
@@ -74,6 +75,8 @@ async def on_ready():
 async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
+    elif isinstance(err, pss_exception.Error):
+        await ctx.send(f'\'{ctx.message}\': {err.msg}')
     else:
         logging.getLogger().error(err, exc_info=True)
 
