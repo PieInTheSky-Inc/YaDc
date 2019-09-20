@@ -12,11 +12,12 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = Non
         raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value='<empty>', min_length=min_length, valid_values=allowed_values)
 
     if allowed_values:
+        valids = list(allowed_values)
         if not case_sensitive:
             value = value.lower()
-            allowed_values = [value.lower() for value in allowed_values]
+            valids = [value.lower() for value in allowed_values]
 
-        if len(value) < min_length and not value in allowed_values:
+        if len(value) < min_length and not value in valids:
             raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
 
 
