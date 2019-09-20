@@ -13,11 +13,11 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = Non
 
     if allowed_values:
         if not case_sensitive:
-            name = name.lower()
+            value = value.lower()
             allowed_values = [value.lower() for value in allowed_values]
 
-        if len(name) < min_length and not name in allowed_values:
-            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=name, min_length=min_length, valid_values=allowed_values)
+        if len(value) < min_length and not value in allowed_values:
+            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
 
 
 def string_in_list(string, lst: list, case_sensitive: bool = True) -> bool:
