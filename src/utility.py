@@ -154,7 +154,8 @@ def escape_escape_sequences(txt: str) -> str:
     return txt
 
 
-def get_reduced_number(num: float) -> (float, str):
+def get_reduced_number(num) -> (float, str):
+    num = float(num)
     is_negative = num < 0
     if is_negative:
         num = abs(num)
@@ -164,6 +165,8 @@ def get_reduced_number(num: float) -> (float, str):
         counter += 1
         num /= 1000
 
+    if is_negative:
+        num *= -1
     result = float(int(math.floor(num * 10))) / 10
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
 
