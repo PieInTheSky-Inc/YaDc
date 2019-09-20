@@ -57,11 +57,12 @@ def get_dropship_text(as_embed: bool = False, language_key: str = 'en'):
     item_design_data = item.__item_designs_cache.get_data_dict3()
     room_design_data = room.__room_designs_cache.get_data_dict3()
 
-    daily_msg = _get_daily_msg(raw_data)
-    dropship_msg = _get_dropship_msg(raw_data, char_design_data, collection_design_data)
-    merchantship_msg = _get_merchantship_msg(raw_data, item_design_data)
-    shop_msg = _get_shop_msg(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
-    sale_msg = _get_sale_msg(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
+    daily_msg = _get_daily_news_from_data_as_text(raw_data)
+    dropship_msg = _get_dropship_msg_from_data_as_text(raw_data, char_design_data, collection_design_data)
+    merchantship_msg = _get_merchantship_msg_from_data_as_text(raw_data, item_design_data)
+    shop_msg = _get_shop_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
+    sale_msg = _get_sale_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
+    daily_reward_msg = _get_daily_reward_from_data_as_text(raw_data, item_design_data)
 
     lines = daily_msg
     lines.append('')
@@ -72,18 +73,20 @@ def get_dropship_text(as_embed: bool = False, language_key: str = 'en'):
     lines.extend(shop_msg)
     lines.append('')
     lines.extend(sale_msg)
+    lines.append('')
+    lines.extend(daily_reward_msg)
 
     return lines, True
 
 
-def _get_daily_msg(raw_data: dict) -> list:
+def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
     result = ['No news have been provided :(']
     if raw_data and 'News' in raw_data.keys():
         result = [raw_data['News']]
     return result
 
 
-def _get_dropship_msg(raw_data: dict, char_designs_data: dict, collection_designs_data: dict) -> list:
+def _get_dropship_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict) -> list:
     result = ['**Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
@@ -105,7 +108,7 @@ def _get_dropship_msg(raw_data: dict, char_designs_data: dict, collection_design
     return result
 
 
-def _get_merchantship_msg(raw_data: dict, item_designs_data: dict) -> list:
+def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
     result = ['**Merchant ship**']
     if raw_data:
         cargo_items = raw_data['CargoItems'].split('|')
@@ -121,7 +124,7 @@ def _get_merchantship_msg(raw_data: dict, item_designs_data: dict) -> list:
     return result
 
 
-def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+def _get_shop_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
     result = ['**Shop**']
 
     shop_type = raw_data['LimitedCatalogType']
@@ -151,7 +154,7 @@ def _get_shop_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
     return result
 
 
-def _get_sale_msg(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+def _get_sale_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = ['**Sale**']
 
@@ -177,6 +180,24 @@ def _get_sale_msg(raw_data: dict, char_designs_data: dict, collection_designs_da
         entity_details = '\n'.join(debug_details)
 
     result.append(f'{sale_quantity} x {entity_details}')
+
+    return result
+
+
+def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
+    result = ['**Daily rewards**']
+
+    reward_currency = raw_data['DailyRewardType'].lower()
+    reward_currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[reward_currency]
+    reward_amount = int(raw_data['DailyRewardArgument'])
+    reward_amount, reward_multiplier = util.get_reduced_number(reward_amount)
+    result.append(f'{reward_amount:.0f}{reward_multiplier} {reward_currency_emoji}')
+
+    item_rewards = raw_data['DailyItemRewards'].split('|')
+    for item_reward in item_rewards:
+        item_id, amount = item_reward.split('x')
+        item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+        result.append(f'{amount} x {item_details}')
 
     return result
 
