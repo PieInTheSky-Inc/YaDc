@@ -125,8 +125,11 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
     rarity = char_info['Rarity']
     collection = get_collection_name(char_id, char_designs_data, collection_designs_data)
     ability = get_ability_name(char_id, char_designs_data)
-    ability_stat = char_info['SpecialAbilityFinalArgument']
-    result = [f'{name} (_{rarity}_, Ability: _{ability} ({ability_stat})_, Collection: _{collection}_)']
+    ability_stat = int(char_info['SpecialAbilityFinalArgument'])
+    ability_txt = ability
+    if ability_stat:
+        ability_txt = f'{ability} ({ability_stat})'
+    result = [f'{name} (_{rarity}_ - Ability: _{ability_txt}_ - Collection: _{collection}_)']
     return result
 
 
