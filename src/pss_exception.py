@@ -1,18 +1,18 @@
+import discord.ext.commands as commands
 
+class Error(commands.CommandError):
+    """Base class for exceptions in this module.
 
-class Error(Exception):
-    """Base class for exceptions in this module."""
+    Attributes:
+        msg -- explanation of the error
+    """
     def __init__(self, value):
         super.__init__(value)
         self.msg = ''
 
 
 class InvalidParameter(Error):
-    """Exception raised for invalid parameters.
-
-    Attributes:
-        message -- explanation of the error
-    """
+    """Exception raised for invalid parameters."""
     def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: list = None):
         if parameter_name:
             self.__parameter_name = parameter_name
