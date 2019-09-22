@@ -303,8 +303,8 @@ _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (fo
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
 def get_best_items(slot: str, stat: str, as_embed: bool = False):
-    pss_assert.valid_parameter_value(slot, 'slot', min_length=None, allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
-    pss_assert.valid_parameter_value(stat, 'stat', min_length=None, allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
+    pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
+    pss_assert.valid_parameter_value(stat, 'stat', allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
 
     error = _get_best_items_error(slot, stat)
     if error:
