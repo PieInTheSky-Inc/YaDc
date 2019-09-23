@@ -11,7 +11,7 @@ import utility as util
 
 
 class PssCache:
-    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 30):
+    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 10):
         self.__update_path: str = update_path
         self.name: str = name
         self.__obj_key_name: str = key_name
