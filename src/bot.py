@@ -637,19 +637,20 @@ async def tournament_next(ctx):
 
 @bot.command(brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=0, per=1, type=commands.BucketType.channel)
+@commands.cooldown(rate=1, per=1, type=commands.BucketType.channel)
 async def updatecache(ctx):
     """This command is to be used to update all caches manually."""
-    crew.__character_designs_cache.update_data()
-    crew.__collection_designs_cache.update_data()
-    prestige_to_caches = crew.__prestige_to_cache_dict.values().copy()
-    for prestige_to_cache in prestige_to_caches:
-        prestige_to_cache.update()
-    prestige_from_caches = crew.__prestige_from_cache_dict.values().copy()
-    for prestige_from_cache in prestige_from_caches:
-        prestige_from_cache.update()
-    item.__item_designs_cache.update_data()
-    room.__room_designs_cache.update_data()
+    async with ctx.typing():
+        crew.__character_designs_cache.update_data()
+        crew.__collection_designs_cache.update_data()
+        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+        for prestige_to_cache in prestige_to_caches:
+            prestige_to_cache.update_data()
+        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+        for prestige_from_cache in prestige_from_caches:
+            prestige_from_cache.update_data()
+        item.__item_designs_cache.update_data()
+        room.__room_designs_cache.update_data()
     await ctx.send('Updated all caches successfully!')
 
 

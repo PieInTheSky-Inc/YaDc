@@ -64,12 +64,12 @@ class PssCache:
 
     def get_data_dict2(self) -> dict:
         data = self.get_raw_data()
-        return core.xmltree_to_dict2(data, self.__obj_key_name).copy()
+        return dict(core.xmltree_to_dict2(data, self.__obj_key_name))
 
 
     def get_data_dict3(self) -> dict:
         data = self.get_raw_data()
-        return core.xmltree_to_dict3(data, self.__obj_key_name).copy()
+        return dict(core.xmltree_to_dict3(data, self.__obj_key_name))
 
 
     def __get_is_data_outdated(self) -> bool:
