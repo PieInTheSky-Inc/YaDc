@@ -25,6 +25,7 @@ import pss_exception
 import pss_fleets as flt
 import pss_item as item
 import pss_research as research
+import pss_room as room
 import pss_tournament as tourney
 import pss_top
 import utility as util
@@ -76,9 +77,11 @@ async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     elif isinstance(err, pss_exception.Error):
+        logging.getLogger().error(err, exc_info=True)
         await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
     else:
         logging.getLogger().error(err, exc_info=True)
+        await ctx.send('Error: {}'.format(err))
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -634,21 +637,20 @@ async def tournament_next(ctx):
 
 @bot.command(brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=1800, per=1, type=commands.BucketType.channel)
+@commands.cooldown(rate=0, per=1, type=commands.BucketType.channel)
 async def updatecache(ctx):
     """This command is to be used to update all caches manually."""
-    try:
-        crew.__character_designs_cache.update_data()
-        crew.__collection_designs_cache.update_data()
-        prestige_to_caches = crew.__prestige_to_cache_dict.values().copy()
-        for prestige_to_cache in prestige_to_caches:
-            prestige_to_cache.update()
-        prestige_from_caches = crew.__prestige_from_cache_dict.values().copy()
-        for prestige_from_cache in prestige_from_caches:
-            prestige_from_cache.update()
-        await ctx.send('Updated all caches successfully!')
-    except:
-        await ctx.send('An error ocurred while updating all caches! Please check the logs/output.')
+    crew.__character_designs_cache.update_data()
+    crew.__collection_designs_cache.update_data()
+    prestige_to_caches = crew.__prestige_to_cache_dict.values().copy()
+    for prestige_to_cache in prestige_to_caches:
+        prestige_to_cache.update()
+    prestige_from_caches = crew.__prestige_from_cache_dict.values().copy()
+    for prestige_from_cache in prestige_from_caches:
+        prestige_from_cache.update()
+    item.__item_designs_cache.update_data()
+    room.__room_designs_cache.update_data()
+    await ctx.send('Updated all caches successfully!')
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
