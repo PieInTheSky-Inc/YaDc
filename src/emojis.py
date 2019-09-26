@@ -13,12 +13,17 @@ pss_star_big = '<:star_big:615878809220022301>'
 pss_star_small = '<:star_small:615878662398410762>'
 pss_trophy_big = '<:trophy_big:615878873157992459>'
 pss_trophy_small = '<:trophy_small:615878860394856450>'
+pss_dropship_blue = '<:dropship_blue:604249498851475467>'
+pss_dropship_green = '<:dropship_green:604247606771843093>'
+pss_shop = '<:shop:604252698107314177>'
+
 
 page_first = '⏮'
 page_previous = '◀️'
 page_stop = '⏹'
 page_next = '▶️'
 page_last = '⏭'
+
 
 option_1 = '1️⃣'
 option_2 = '2️⃣'
