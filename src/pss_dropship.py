@@ -164,18 +164,20 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, col
     result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 
     sale_type = raw_data['SaleType']
-    entity_id = raw_data['SaleArgument']
+    sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
-        entity_details = ''.join(crew.get_char_info_short_from_id_as_text(entity_id, char_designs_data, collection_designs_data))
+        entity_details = ''.join(crew.get_char_info_short_from_id_as_text(sale_argument, char_designs_data, collection_designs_data))
     elif sale_type == 'Item':
-        entity_details = ''.join(item.get_item_details_short_from_id_as_text(entity_id, item_designs_data))
+        entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, item_designs_data))
     elif sale_type == 'Room':
-        entity_details = ''.join(room.get_room_details_short_from_id_as_text(entity_id, room_designs_data))
+        entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, room_designs_data))
+    elif sale_type == 'Bonus':
+        entity_details = f'{sale_argument} % bonus starbux'
     else: # Print debugging info
         sale_title = raw_data['SaleTitle']
         debug_details = []
         debug_details.append(f'Sale Type: {sale_type}')
-        debug_details.append(f'Sale Argument: {entity_id}')
+        debug_details.append(f'Sale Argument: {sale_argument}')
         debug_details.append(f'Sale Title: {sale_title}')
         entity_details = '\n'.join(debug_details)
 
