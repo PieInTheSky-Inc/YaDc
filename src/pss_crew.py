@@ -148,24 +148,21 @@ def get_char_info_from_data_as_text(char_info: dict, char_designs_data: dict = N
     equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
     collection_name = get_collection_name(char_id, char_designs_data, collection_designs_data)
 
-    result = ['**{}** ({})'.format(char_name, char_info['Rarity'])]
+    result = [f'**{char_name}** ({char_info["Rarity"]})']
     result.append(char_info['CharacterDesignDescription'])
-    result.append('Race: {}, Collection: {}, Gender: {}'.format(
-        char_info['RaceType'],
-        collection_name,
-        char_info['GenderType']))
-    result.append('ability = {} ({})'.format(char_info['SpecialAbilityFinalArgument'], special))
-    result.append('hp = {}'.format(char_info['FinalHp']))
-    result.append('attack = {}'.format(char_info['FinalAttack']))
-    result.append('repair = {}'.format(char_info['FinalRepair']))
-    result.append('pilot = {}'.format(char_info['FinalPilot']))
-    result.append('science = {}'.format(char_info['FinalScience']))
-    result.append('weapon = {}'.format(char_info['FinalWeapon']))
-    result.append('engine = {}'.format(char_info['FinalEngine']))
-    result.append('walk/run speed = {}/{}'.format(char_info['WalkingSpeed'], char_info['RunSpeed']))
-    result.append('fire resist = {}'.format(char_info['FireResistance']))
-    result.append('training capacity = {}'.format(char_info['TrainingCapacity']))
-    result.append('equipment = {}'.format(equipment_slots))
+    result.append(f'Race: {char_info["RaceType"]}, Collection: {collection_name}, Gender: {char_info["GenderType"]}')
+    result.append(f'ability = {char_info["SpecialAbilityFinalArgument"]} ({special})')
+    result.append(f'hp = {char_info["FinalHp"]}')
+    result.append(f'attack = {char_info["FinalAttack"]}')
+    result.append(f'repair = {char_info["FinalRepair"]}')
+    result.append(f'pilot = {char_info["FinalPilot"]}')
+    result.append(f'science = {char_info["FinalScience"]}')
+    result.append(f'weapon = {char_info["FinalWeapon"]}')
+    result.append(f'engine = {char_info["FinalEngine"]}')
+    result.append(f'walk/run speed = {char_info["WalkingSpeed"]}/{char_info["RunSpeed"]}')
+    result.append(f'fire resist = {char_info["FireResistance"]}')
+    result.append(f'training capacity = {char_info["TrainingCapacity"]}')
+    result.append(f'equipment = {equipment_slots}')
 
     return result
 
@@ -251,11 +248,11 @@ def _get_collection_info_as_text(collection_info):
         collection_perk = lookups.COLLECTION_PERK_LOOKUP[collection_perk]
 
     lines = []
-    lines.append('**{}**'.format(collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]))
-    lines.append('{}'.format(collection_info['CollectionDescription']))
-    lines.append('Combo Min...Max: {}...{}'.format(collection_info['MinCombo'], collection_info['MaxCombo']))
-    lines.append('{}: {} (Base), {} (Step)'.format(collection_perk, collection_info['BaseEnhancementValue'], collection_info['StepEnhancementValue']))
-    lines.append('Characters: {}'.format(', '.join(collection_crew)))
+    lines.append(f'**{collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
+    lines.append(f'{collection_info["CollectionDescription"]}')
+    lines.append(f'Combo Min...Max: {collection_info["MinCombo"]}...{collection_info["MaxCombo"]}')
+    lines.append(f'{collection_perk}: {collection_info["BaseEnhancementValue"]} (Base), {collection_info["StepEnhancementValue"]} (Step)')
+    lines.append(f'Characters: {", ".join(collection_crew)}')
 
     return lines
 
@@ -324,7 +321,7 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     for value in prestige_from_data.values():
         char_info_2 = char_data[value['CharacterDesignId2']]
         char_info_to = char_data[value['ToCharacterDesignId']]
-        body_lines.append('+ {} = {}'.format(char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
+        body_lines.append(f'+ {char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} = {char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}')
 
     if body_lines:
         lines.extend(body_lines)
@@ -356,7 +353,7 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     for value in prestige_to_data.values():
         char_info_1 = char_data[value['CharacterDesignId1']]
         char_info_2 = char_data[value['CharacterDesignId2']]
-        body_lines.append('{} + {}'.format(char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
+        body_lines.append(f'{char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} + {char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}')
 
     if body_lines:
         lines.extend(body_lines)
@@ -435,7 +432,7 @@ def get_level_costs(level: int) -> list:
 
     result = ['**Level costs** (non-legendary crew, max research)']
     result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP))
-    result.append('')
+    result.append(core.EMPTY_LINE)
     result.append('**Level costs** (legendary crew, max research)')
     result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP))
 

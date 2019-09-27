@@ -162,7 +162,7 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
             lines.extend(get_research_details_short_from_data_as_text(research_info))
         else:
             lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
-            lines.append('')
+            lines.append(core.EMPTY_LINE)
 
     return lines
 

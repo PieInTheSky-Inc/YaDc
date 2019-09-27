@@ -185,7 +185,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 
         lines.append(f'{item_name} ({rarity}) - {prices}')
 
-    lines.append('')
+    lines.append(core.EMPTY_LINE)
     lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
@@ -236,7 +236,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
                 current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
-            lines.append('')
+            lines.append(core.EMPTY_LINE)
 
         lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
     else:
@@ -392,7 +392,7 @@ def _get_best_items_as_text(slot: str, stat: str, item_designs: list) -> list:
     for entry in item_designs:
         lines.append(_get_best_item_line(entry))
 
-    lines.append('')
+    lines.append(core.EMPTY_LINE)
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
@@ -409,7 +409,7 @@ def _get_best_items_as_text_all(stat: str, item_designs: list) -> list:
         for entry in group:
             lines.append(_get_best_item_line(entry))
 
-    lines.append('')
+    lines.append(core.EMPTY_LINE)
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines

@@ -21,6 +21,7 @@ PSS_LINKS_FILE = 'src/data/links.csv'
 PSS_ABOUT_FILE = 'src/data/about.txt'
 MAXIMUM_CHARACTERS = 1900
 DB_CONN = None
+EMPTY_LINE = '\u200b'
 
 
 # ----- Utilities --------------------------------
