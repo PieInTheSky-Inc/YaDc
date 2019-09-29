@@ -16,6 +16,7 @@ pss_trophy_small = '<:trophy_small:615878860394856450>'
 pss_dropship_blue = '<:dropship_blue:604249498851475467>'
 pss_dropship_green = '<:dropship_green:604247606771843093>'
 pss_shop = '<:shop:604252698107314177>'
+pss_sale = '<:sale:627071350971957265>'
 
 
 page_first = '⏮'
