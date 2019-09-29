@@ -80,13 +80,13 @@ GRID_TYPE_MASK_LOOKUP = {
 
 
 RARITY_ORDER_LOOKUP = {
-    'Common': 0,
-    'Elite': 1,
-    'Unique': 2,
-    'Epic': 3,
-    'Hero': 4,
-    'Special': 5,
-    'Legendary': 6
+    'Common': 70,
+    'Elite': 60,
+    'Unique': 50,
+    'Epic': 40,
+    'Hero': 30,
+    'Special': 20,
+    'Legendary': 10
 }
 
 
