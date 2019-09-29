@@ -34,13 +34,17 @@ EQUIPMENT_MASK_LOOKUP = {
 EQUIPMENT_SLOTS_LOOKUP = {
     'head': 'EquipmentHead',
     'hat': 'EquipmentHead',
+    'helm': 'EquipmentHead',
+    'helmet': 'EquipmentHead',
     'body': 'EquipmentBody',
     'shirt': 'EquipmentBody',
+    'armor': 'EquipmentBody',
     'leg': 'EquipmentLeg',
     'pant': 'EquipmentLeg',
     'pants': 'EquipmentLeg',
     'weapon': 'EquipmentWeapon',
     'hand': 'EquipmentWeapon',
+    'gun': 'EquipmentWeapon',
     'accessory': 'EquipmentAccessory',
     'shoulder': 'EquipmentAccessory',
     'pet': 'EquipmentPet'
