@@ -79,6 +79,17 @@ GRID_TYPE_MASK_LOOKUP = {
 }
 
 
+RARITY_ORDER_LOOKUP = {
+    'Common': 0,
+    'Elite': 1,
+    'Unique': 2,
+    'Epic': 3,
+    'Hero': 4,
+    'Special': 5,
+    'Legendary': 6
+}
+
+
 REDUCE_TOKENS_LOOKUP = {
     0: '',
     1: 'k',
