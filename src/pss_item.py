@@ -365,21 +365,25 @@ def _get_best_items_error(slot: str, stat: str) -> list:
     return []
 
 
-def _get_key_for_best_items_sort(item_info: dict) -> str:
+def __get_key_for_best_items_sort(item_info: dict, consider_slots: bool) -> str:
     if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
+        if consider_slots:
+            slot = item_info['ItemSubType']
+        else:
+            slot = ''
+        rarity_num = lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']]
         enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        result = f'{enhancement_value}{item_name}'
+        result = f'{enhancement_value}{slot}{rarity_num}{item_name}'
         return result
+
+
+def _get_key_for_best_items_sort(item_info: dict) -> str:
+    return __get_key_for_best_items_sort(item_info, True)
 
 
 def _get_key_for_best_items_sort_all(item_info: dict) -> str:
-    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
-        slot = item_info['ItemSubType']
-        enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
-        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        result = f'{enhancement_value}{slot}{item_name}'
-        return result
+    return __get_key_for_best_items_sort(item_info, False)
 
 
 def _get_best_items_as_embed(slot: str, stat: str, any_slots: bool, item_designs: list):
