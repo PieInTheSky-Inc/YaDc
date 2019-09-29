@@ -424,5 +424,5 @@ def _get_best_item_line(item_info: dict):
     market_price = item_info['MarketPrice']
     rarity = item_info['Rarity']
     enhancement_value = float(item_info['EnhancementValue'])
-    result = f'{name} ({rarity}): {enhancement_value:.1f} ({market_price} bux)'
+    result = f'{name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
     return result
