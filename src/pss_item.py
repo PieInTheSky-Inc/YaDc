@@ -157,7 +157,7 @@ def get_item_price(item_name: str, as_embed: bool = False):
     item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
-        return f'Could not find an item named **{item_name}**.', False
+        return [f'Could not find an item named **{item_name}**.'], False
     else:
         if as_embed:
             return _get_item_price_as_embed(item_name, item_infos), True
