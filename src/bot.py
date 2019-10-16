@@ -195,7 +195,7 @@ async def ingredients(ctx, *, name=None):
                 await ctx.send(post)
 
 
-@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice'])
+@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def price(ctx, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
