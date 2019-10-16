@@ -125,6 +125,7 @@ STAT_TYPES_LOOKUP = {
     'hp': 'HP',
     'health': 'HP',
     'attack': 'Attack',
+    'atk': 'Attack',
     'att': 'Attack',
     'damage': 'Attack',
     'dmg': 'Attack',
