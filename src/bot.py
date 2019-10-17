@@ -165,10 +165,8 @@ async def prestige(ctx, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
         output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get character recipes')
@@ -177,10 +175,8 @@ async def recipe(ctx, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
         output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item ingredients')
@@ -189,10 +185,8 @@ async def ingredients(ctx, *, name=None):
     """Get the ingredients for an item"""
     async with ctx.typing():
         output, _ = item.get_ingredients_for_item(name)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
@@ -201,44 +195,35 @@ async def price(ctx, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='stats', brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
-    if name:
-        async with ctx.typing():
-            char_output, char_success = crew.get_char_details_from_name(name)
-            if char_success and char_output:
-                posts = util.create_posts_from_lines(char_output, core.MAXIMUM_CHARACTERS)
-                for post in posts:
-                    await ctx.send(post)
+    async with ctx.typing():
+        char_output, char_success = crew.get_char_details_from_name(name)
+        if char_success and char_output:
+            await util.post_output(char_output)
+        else:
+            item_output, item_success = item.get_item_details(name)
+            if item_success and item_output:
+                await util.post_output(item_output)
             else:
-                item_output, item_success = item.get_item_details(name)
-                if item_success and item_output:
-                    posts = util.create_posts_from_lines(item_output, core.MAXIMUM_CHARACTERS)
-                    for post in posts:
-                        await ctx.send(post)
-                else:
-                    await ctx.send(f'Could not find a character or an item named **{name}**')
+                await ctx.send(f'Could not find a character or an item named **{name}**')
+
 
 
 @bot.command(name='char', brief='Get character stats', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def char(ctx, *, char_name):
     """Get the stats of a character/crew."""
-    if char_name:
-        async with ctx.typing():
-            output, _ = crew.get_char_details_from_name(char_name)
-            if output:
-                posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-                for post in posts:
-                    await ctx.send(post)
+    async with ctx.typing():
+        output, _ = crew.get_char_details_from_name(char_name)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='item', brief='Get item stats')
@@ -247,10 +232,8 @@ async def cmd_item(ctx, *, item_name):
     """Get the stats of an item."""
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -259,10 +242,8 @@ async def best(ctx, slot=None, stat=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='research', brief='Get research data')
@@ -271,11 +252,8 @@ async def cmd_research(ctx, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
         output, _ = research.get_research_details_from_name(name)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                if post:
-                    await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get collections')
@@ -296,9 +274,9 @@ async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     async with ctx.typing():
         txt = flt.get_division_stars(division)
-        txt_split = txt.split('\n\n')
-        for division_list in txt_split:
-            await ctx.send(division_list)
+    txt_split = txt.split('\n\n')
+    for division_list in txt_split:
+        await ctx.send(division_list)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -308,10 +286,8 @@ async def daily(ctx):
     async with ctx.typing():
         await ctx.message.delete()
         output, _ = dropship.get_dropship_text()
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -321,10 +297,8 @@ async def news(ctx):
     async with ctx.typing():
         await ctx.message.delete()
         output, _ = dropship.get_news()
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
@@ -527,11 +501,8 @@ async def level(ctx, level=None):
         level = int(level)
     async with ctx.typing():
         output, _ = crew.get_level_costs(level)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                if post:
-                    await ctx.send(post)
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -548,12 +519,10 @@ async def top_fleets(ctx, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
-        else:
-            await ctx.send(f'Could not get top {count} fleets.')
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+    else:
+        await ctx.send(f'Could not get top {count} fleets.')
 
 
 @top.command(name='captains', brief='Prints top captains', aliases=['players', 'users'])
@@ -561,12 +530,10 @@ async def top_captains(ctx, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
-        else:
-            await ctx.send(f'Could not get top {count} captains.')
+    if output:
+        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+    else:
+        await ctx.send(f'Could not get top {count} captains.')
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
@@ -618,20 +585,22 @@ async def tournament(ctx):
 @tournament.command(brief='Information on this month\'s tournament time', name='current')
 async def tournament_current(ctx):
     """Get information about the time of the current month's tournament."""
-    utc_now = util.get_utcnow()
-    start_of_tourney = tourney.get_current_tourney_start()
-    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_current_tourney_start()
+        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
 
 
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
-    utc_now = util.get_utcnow()
-    start_of_tourney = tourney.get_next_tourney_start()
-    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_next_tourney_start()
+        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
 
 

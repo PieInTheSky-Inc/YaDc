@@ -92,6 +92,14 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
+async def post_output(ctx, output: list, maximum_characters: int):
+    if output:
+        posts = create_posts_from_lines(output, maximum_characters)
+        for post in posts:
+            if post:
+                await ctx.send(post)
+
+
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
     if from_channel is not None:
         messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
