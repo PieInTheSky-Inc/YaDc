@@ -166,7 +166,7 @@ async def prestige(ctx, *, char_name=None):
     async with ctx.typing():
         output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get character recipes')
@@ -176,7 +176,7 @@ async def recipe(ctx, *, char_name=None):
     async with ctx.typing():
         output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item ingredients')
@@ -186,7 +186,7 @@ async def ingredients(ctx, *, name=None):
     async with ctx.typing():
         output, _ = item.get_ingredients_for_item(name)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
@@ -196,7 +196,7 @@ async def price(ctx, *, item_name=None):
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='stats', brief='Get item/character stats')
@@ -206,11 +206,11 @@ async def stats(ctx, *, name=''):
     async with ctx.typing():
         char_output, char_success = crew.get_char_details_from_name(name)
         if char_success and char_output:
-            await util.post_output(char_output)
+            await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
         else:
             item_output, item_success = item.get_item_details(name)
             if item_success and item_output:
-                await util.post_output(item_output)
+                await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
             else:
                 await ctx.send(f'Could not find a character or an item named **{name}**')
 
@@ -223,7 +223,7 @@ async def char(ctx, *, char_name):
     async with ctx.typing():
         output, _ = crew.get_char_details_from_name(char_name)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='item', brief='Get item stats')
@@ -233,7 +233,7 @@ async def cmd_item(ctx, *, item_name):
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -243,7 +243,7 @@ async def best(ctx, slot=None, stat=None):
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='research', brief='Get research data')
@@ -253,7 +253,7 @@ async def cmd_research(ctx, *, name: str = None):
     async with ctx.typing():
         output, _ = research.get_research_details_from_name(name)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get collections')
@@ -287,7 +287,7 @@ async def daily(ctx):
         await ctx.message.delete()
         output, _ = dropship.get_dropship_text()
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -298,7 +298,7 @@ async def news(ctx):
         await ctx.message.delete()
         output, _ = dropship.get_news()
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
@@ -502,7 +502,7 @@ async def level(ctx, level=None):
     async with ctx.typing():
         output, _ = crew.get_level_costs(level)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -520,7 +520,7 @@ async def top_fleets(ctx, count: int = 100):
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not get top {count} fleets.')
 
@@ -531,7 +531,7 @@ async def top_captains(ctx, count: int = 100):
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
     if output:
-        await util.post_output(output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not get top {count} captains.')
 
