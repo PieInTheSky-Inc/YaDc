@@ -57,6 +57,7 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
     room_description = room_info['RoomDescription']
     room_flags = int(room_info['Flags'])
     room_consumes_power = (room_flags & 1) > 0
@@ -71,7 +72,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     max_power_consumed = room_info['MaxSystemPower']
     min_ship_level = room_info['MinShipLevel']
 
-    result = [f'**{room_name}**']
+    result = [f'**{room_name} [{room_short_name}]**']
     result.append(room_description)
     result.append(f'Type: {room_type}')
     result.append(f'Size (WxH): {room_size}')
@@ -106,10 +107,11 @@ def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict
 
 def get_room_details_short_from_data_as_text(room_info: dict) -> list:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
     room_type = room_info['RoomType']
     room_enhancement_type = room_info['EnhancementType']
     min_ship_level = room_info['MinShipLevel']
-    return [f'{room_name} (Type: {room_type}, Enhanced by: {room_enhancement_type}, Min lvl: {min_ship_level})']
+    return [f'{room_name} [{room_short_name}] (Type: {room_type}, Enhanced by: {room_enhancement_type}, Min lvl: {min_ship_level})']
 
 
 def _convert_room_grid_type_flags(flags: int) -> str:
@@ -181,7 +183,7 @@ def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_
     if room_designs_data is None:
         room_designs_data = __room_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(room_designs_data, 'RoomShortName', room_short_name, return_on_first=return_on_first)
+    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name, return_on_first=return_on_first)
     return results
 
 
