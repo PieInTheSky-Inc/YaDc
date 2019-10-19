@@ -262,10 +262,10 @@ async def collection(ctx, *, collection_name=None):
     """Get the details on a specific collection."""
     async with ctx.typing():
         output, _ = crew.get_collection_info(collection_name)
-        if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
-            for post in posts:
-                await ctx.send(post)
+    if output:
+        posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+        for post in posts:
+            await ctx.send(post)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')
@@ -559,7 +559,7 @@ async def cmd_time(ctx):
         first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + relativedelta(months=1, days=0)
         td = first_day_of_next_month - now
         str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-        await ctx.send(str_time)
+    await ctx.send(str_time)
 
 
 @bot.command(brief='Show links')
@@ -568,7 +568,7 @@ async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
         txt = core.read_links_file()
-        await ctx.send(txt)
+    await ctx.send(txt)
 
 
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
