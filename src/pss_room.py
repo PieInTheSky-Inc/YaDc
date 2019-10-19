@@ -129,8 +129,10 @@ def _get_room_infos(room_name: str, room_designs_data: dict = None, return_on_fi
         room_designs_data = __room_designs_cache.get_data_dict3()
 
     room_design_ids = _get_room_design_ids_from_name(room_name, room_designs_data=room_designs_data, return_on_first=return_on_first)
-    result = [room_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in room_designs_data.keys()]
+    if not room_design_ids:
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, room_designs_data=room_designs_data, return_on_first=return_on_first)
 
+    result = [room_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in room_designs_data.keys()]
     return result
 
 
@@ -139,6 +141,14 @@ def _get_room_design_ids_from_name(room_name: str, room_designs_data: dict = Non
         room_designs_data = __room_designs_cache.get_data_dict3()
 
     results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name, return_on_first=return_on_first)
+    return results
+
+
+def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_data: dict = None, return_on_first: bool = False):
+    if room_designs_data is None:
+        room_designs_data = __room_designs_cache.get_data_dict3()
+
+    results = core.get_ids_from_property_value(room_designs_data, 'RoomShortName', room_short_name, return_on_first=return_on_first)
     return results
 
 
