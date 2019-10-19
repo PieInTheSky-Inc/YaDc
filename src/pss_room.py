@@ -56,7 +56,7 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
 
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
-    room_name, room_lvl = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME].split(' Lv')
+    room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     room_description = room_info['RoomDescription']
     room_flags = int(room_info['Flags'])
     room_consumes_power = (room_flags & 1) > 0
@@ -70,7 +70,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     room_enhancement_type = room_info['EnhancementType']
     max_power_consumed = room_info['MaxSystemPower']
 
-    result = [f'**{room_name}** (lvl {room_lvl})']
+    result = [f'**{room_name}**']
     result.append(room_description)
     result.append(f'Type: {room_type}')
     result.append(f'Size (WxH): {room_size}')
