@@ -3,8 +3,8 @@
 
 from datetime import timedelta
 
-import pss_assert
 from cache import PssCache
+import pss_assert
 import pss_core as core
 import pss_lookups as lookups
 import utility as util
@@ -109,6 +109,20 @@ def _get_costs_from_research_info(research_info: dict) -> (int, str):
     return f'{cost_reduced}{cost_multiplier} {currency_emoji}'
 
 
+def _get_parents(research_info: dict, research_designs_data: dict) -> list:
+    parent_research_design_id = research_info['RequiredResearchDesignId']
+    if parent_research_design_id == '0':
+        parent_research_design_id = None
+
+    if parent_research_design_id is not None:
+        parent_info = research_designs_data[parent_research_design_id]
+        result = _get_parents(parent_info, research_designs_data)
+        result.append(parent_info)
+        return result
+    else:
+        return []
+
+
 
 
 
@@ -154,7 +168,9 @@ def _get_research_info_as_embed(research_name: str, research_infos: dict, resear
 
 def _get_research_info_as_text(research_name: str, research_infos: dict, research_designs_data: dict):
     lines = [f'**Research stats for \'{research_name}\'**']
-    research_infos = sorted(research_infos, key=_get_key_for_research_sort)
+    research_infos = sorted(research_infos, key=lambda research_info: (
+        _get_key_for_research_sort(research_info, research_designs_data)
+    ))
     big_set = len(research_infos) > 3
 
     for research_info in research_infos:
@@ -167,12 +183,11 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
     return lines
 
 
-def _get_key_for_research_sort(research_info: dict) -> str:
-    name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    name_lower = name.lower()
-    if ' lv' in name_lower:
-        lvl = str(name_lower.split(' lv')[1]).zfill(3)
-        result = f'{name}{lvl}'
-    else:
-        result = name
+def _get_key_for_research_sort(research_info: dict, research_designs_data: dict) -> str:
+    result = ''
+    parent_infos = _get_parents(research_info, research_designs_data)
+    if parent_infos:
+        for parent_info in parent_infos:
+            result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
+    result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
     return result
