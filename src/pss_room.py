@@ -57,7 +57,7 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
+    room_short_name = get_room_short_name(room_info)
     room_description = room_info['RoomDescription']
     room_flags = int(room_info['Flags'])
     room_consumes_power = (room_flags & 1) > 0
@@ -72,7 +72,10 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     max_power_consumed = room_info['MaxSystemPower']
     min_ship_level = room_info['MinShipLevel']
 
-    result = [f'**{room_name} [{room_short_name}]**']
+    first_line = f'**{room_name}**'
+    if room_short_name:
+        first_line += f' **[{room_short_name}]**'
+    result = [first_line]
     result.append(room_description)
     result.append(f'Type: {room_type}')
     result.append(f'Size (WxH): {room_size}')
@@ -80,7 +83,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
         result.append(f'Max power consumed: {max_power_consumed}')
     if room_enhancement_type != 'None':
         result.append(f'Enhanced by: {room_enhancement_type} stat')
-    result.append(f'Available at ship lvl: {min_ship_level}')
+    result.append(f'Minimum ship lvl: {min_ship_level}')
     result.append(f'Allowed grid types: {_convert_room_grid_type_flags(room_grid_type_flags)}')
     return result
 
@@ -107,11 +110,22 @@ def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict
 
 def get_room_details_short_from_data_as_text(room_info: dict) -> list:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
+    room_short_name = get_room_short_name(room_info)
+    if room_short_name:
+        room_name += f' [{room_short_name}]'
     room_type = room_info['RoomType']
     room_enhancement_type = room_info['EnhancementType']
     min_ship_level = room_info['MinShipLevel']
-    return [f'{room_name} [{room_short_name}] (Type: {room_type}, Enhanced by: {room_enhancement_type}, Min lvl: {min_ship_level})']
+    return [f'{room_name} (Type: {room_type}, Enhanced by: {room_enhancement_type}, Min ship lvl: {min_ship_level})']
+
+
+def get_room_short_name(room_info: dict) -> str:
+    short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
+    if short_name:
+        result = short_name.split(':')[0]
+        return result
+    else:
+        return None
 
 
 def _convert_room_grid_type_flags(flags: int) -> str:
