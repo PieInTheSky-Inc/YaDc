@@ -199,7 +199,7 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
     room_infos_count = len(room_infos)
 
     if room_infos_count == 1:
-        lines.extend(get_room_details_long_from_data_as_text(room_infos_count[0]))
+        lines.extend(get_room_details_long_from_data_as_text(room_infos[0]))
     else:
         big_set = room_infos_count > 3
 
@@ -226,4 +226,4 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 
 if __name__ == '__main__':
     result = get_room_details_from_name('visiri')
-    result = get_room_details_from_name('VS')
+    result = get_room_details_from_name('VM')
