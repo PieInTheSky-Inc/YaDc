@@ -536,6 +536,15 @@ async def top_captains(ctx, count: int = 100):
         await ctx.send(f'Could not get top {count} captains.')
 
 
+@bot.command(brief='Get room infos')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_room(ctx, name: str = None):
+    async with ctx.typing():
+        output, _ = room.get_room_details_from_name(name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_time(ctx):
