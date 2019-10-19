@@ -25,15 +25,6 @@ __room_designs_cache = PssCache(
     'RoomDesigns',
     ROOM_DESIGN_KEY_NAME)
 
-__allowed_room_names = __get_allowed_room_short_names()
-
-
-
-
-
-
-# ---------- Helper functions ----------
-
 
 def __get_allowed_room_short_names():
     result = []
@@ -42,8 +33,18 @@ def __get_allowed_room_short_names():
         if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
             room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
             if room_short_name not in result:
-                room_short_name.append(result)
+                result.append(room_short_name)
     return result
+
+
+__allowed_room_names = sorted(__get_allowed_room_short_names())
+
+
+
+
+
+
+# ---------- Helper functions ----------
 
 
 def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
@@ -98,9 +99,9 @@ def get_room_details_short_from_data_as_text(room_info: dict) -> list:
 
 def _convert_room_grid_type_flags(flags: int) -> str:
     result = []
-    for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
+    for flag in lookups.GRID_TYPE_MASK_LOOKUP.keys():
         if (flags & flag) != 0:
-            result.append(lookups.SALE_ITEM_MASK_LOOKUP[flag])
+            result.append(lookups.GRID_TYPE_MASK_LOOKUP[flag])
     if result:
         return ', '.join(result)
     else:
