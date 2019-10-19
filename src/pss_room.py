@@ -12,6 +12,9 @@ import pss_lookups as lookups
 ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
 ROOM_DESIGN_KEY_NAME = 'RoomDesignId'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'RoomName'
+ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2 = 'RoomShortName'
+
+
 
 
 
@@ -22,11 +25,25 @@ __room_designs_cache = PssCache(
     'RoomDesigns',
     ROOM_DESIGN_KEY_NAME)
 
+__allowed_room_names = __get_allowed_room_short_names()
+
+
 
 
 
 
 # ---------- Helper functions ----------
+
+
+def __get_allowed_room_short_names():
+    result = []
+    room_designs_data = __room_designs_cache.get_data_dict3()
+    for room_design_data in room_designs_data.values():
+        if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
+            room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
+            if room_short_name not in result:
+                room_short_name.append(result)
+    return result
 
 
 def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
@@ -110,7 +127,7 @@ def _get_parents(room_info: dict, room_designs_data: dict) -> list:
 # ---------- Room info ----------
 
 def get_room_details_from_name(room_name: str, as_embed: bool = False):
-    pss_assert.valid_entity_name(room_name)
+    pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
     room_designs_data = __room_designs_cache.get_data_dict3()
     room_infos = _get_room_infos(room_name, room_designs_data=room_designs_data)
@@ -181,3 +198,8 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
             result += parent_info[ROOM_DESIGN_KEY_NAME].zfill(4)
     result += room_info[ROOM_DESIGN_KEY_NAME].zfill(4)
     return result
+
+
+if __name__ == '__main__':
+    result = get_room_details_from_name('visiri')
+    result = get_room_details_from_name('VS')
