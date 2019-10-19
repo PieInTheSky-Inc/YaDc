@@ -536,7 +536,7 @@ async def top_captains(ctx, count: int = 100):
         await ctx.send(f'Could not get top {count} captains.')
 
 
-@bot.command(brief='Get room infos')
+@bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_room(ctx, name: str = None):
     async with ctx.typing():
