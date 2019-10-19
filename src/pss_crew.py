@@ -98,11 +98,11 @@ def _get_char_info(char_name: str):
         return None
 
 
-def _get_char_design_id_from_name(char_name: str, char_data:dict = None):
+def _get_char_design_id_from_name(char_name: str, char_data: dict = None):
     if char_data is None:
         char_data = __character_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(char_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
+    results = core.get_ids_from_property_value(char_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name, )
     if len(results) > 0:
         return results[0]
 
