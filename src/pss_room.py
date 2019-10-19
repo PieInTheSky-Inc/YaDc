@@ -69,6 +69,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     room_grid_type_flags = int(room_info['SupportedGridTypes'])
     room_enhancement_type = room_info['EnhancementType']
     max_power_consumed = room_info['MaxSystemPower']
+    min_ship_level = room_info['MinShipLevel']
 
     result = [f'**{room_name}**']
     result.append(room_description)
@@ -78,8 +79,21 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
         result.append(f'Max power consumed: {max_power_consumed}')
     if room_enhancement_type != 'None':
         result.append(f'Enhanced by: {room_enhancement_type} stat')
+    result.append(f'Available at ship lvl: {min_ship_level}')
     result.append(f'Allowed grid types: {_convert_room_grid_type_flags(room_grid_type_flags)}')
     return result
+
+
+def get_room_details_long_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
+    if not room_designs_data:
+        room_designs_data = __room_designs_cache.get_data_dict3()
+
+    room_info = room_designs_data[room_id]
+    return get_room_details_long_from_data_as_text(room_info)
+
+
+def get_room_details_long_from_data_as_text(room_info: dict) -> list:
+    return get_room_details_from_data_as_text(room_info)
 
 
 def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
@@ -94,7 +108,8 @@ def get_room_details_short_from_data_as_text(room_info: dict) -> list:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     room_type = room_info['RoomType']
     room_enhancement_type = room_info['EnhancementType']
-    return [f'{room_name} (Type: {room_type}, Enhanced by: {room_enhancement_type})']
+    min_ship_level = room_info['MinShipLevel']
+    return [f'{room_name} (Type: {room_type}, Enhanced by: {room_enhancement_type}, Min lvl: {min_ship_level})']
 
 
 def _convert_room_grid_type_flags(flags: int) -> str:
@@ -180,15 +195,19 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
         _get_key_for_room_sort(room_info, room_designs_data)
     ))
     room_infos_count = len(room_infos)
-    big_set = room_infos_count > 3
 
-    for i, room_info in enumerate(room_infos):
-        if big_set:
-            lines.extend(get_room_details_short_from_data_as_text(room_info))
-        else:
-            lines.extend(get_room_details_from_data_as_text(room_info))
-            if i < room_infos_count - 1:
-                lines.append(core.EMPTY_LINE)
+    if room_infos_count == 1:
+        lines.extend(get_room_details_long_from_data_as_text(room_infos_count[0]))
+    else:
+        big_set = room_infos_count > 3
+
+        for i, room_info in enumerate(room_infos):
+            if big_set:
+                lines.extend(get_room_details_short_from_data_as_text(room_info))
+            else:
+                lines.extend(get_room_details_from_data_as_text(room_info))
+                if i < room_infos_count - 1:
+                    lines.append(core.EMPTY_LINE)
 
     return lines
 
