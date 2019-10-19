@@ -171,14 +171,17 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
     research_infos = sorted(research_infos, key=lambda research_info: (
         _get_key_for_research_sort(research_info, research_designs_data)
     ))
-    big_set = len(research_infos) > 3
 
-    for research_info in research_infos:
+    research_infos_count = len(research_infos)
+    big_set = research_infos_count > 3
+
+    for i, research_info in enumerate(research_infos):
         if big_set:
             lines.extend(get_research_details_short_from_data_as_text(research_info))
         else:
             lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
-            lines.append(core.EMPTY_LINE)
+            if i < research_infos_count - 1:
+                lines.append(core.EMPTY_LINE)
 
     return lines
 

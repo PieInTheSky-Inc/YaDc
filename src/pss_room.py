@@ -179,14 +179,16 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
     room_infos = sorted(room_infos, key=lambda room_info: (
         _get_key_for_room_sort(room_info, room_designs_data)
     ))
-    big_set = len(room_infos) > 3
+    room_infos_count = len(room_infos)
+    big_set = room_infos_count > 3
 
-    for room_info in room_infos:
+    for i, room_info in enumerate(room_infos):
         if big_set:
             lines.extend(get_room_details_short_from_data_as_text(room_info))
         else:
             lines.extend(get_room_details_from_data_as_text(room_info))
-            lines.append(core.EMPTY_LINE)
+            if i < room_infos_count - 1:
+                lines.append(core.EMPTY_LINE)
 
     return lines
 
