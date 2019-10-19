@@ -279,8 +279,8 @@ async def stars(ctx, *, division=None):
         await ctx.send(division_list)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(hidden=True, brief='Show the dailies')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def daily(ctx):
     """Show the dailies"""
     async with ctx.typing():
@@ -290,8 +290,8 @@ async def daily(ctx):
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @bot.command(brief='Show the news')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def news(ctx):
     """Show the news"""
     async with ctx.typing():
@@ -538,7 +538,7 @@ async def top_captains(ctx, count: int = 100):
 
 @bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_room(ctx, name: str = None):
+async def cmd_room(ctx, *, name: str = None):
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
     if output:
