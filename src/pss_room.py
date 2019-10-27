@@ -213,7 +213,7 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
     room_infos_count = len(room_infos)
 
     if room_infos_count == 1:
-        lines.extend(get_room_details_long_from_data_as_text(room_infos[0]))
+        lines.extend(__get_room_details_for_type(room_infos[0]))
     else:
         big_set = room_infos_count > 3
 
@@ -248,107 +248,118 @@ if __name__ == '__main__':
 
 # ---------- Room details ----------
 
-def __get_room_details_for_type_Android(room_info: dict) -> str:
+def __get_room_details_for_type(room_info: dict) -> list:
+    room_type = room_info['RoomType']
+    func_name = f'__get_room_details_for_type_{room_type}'
+    if func_name in globals().keys():
+        func_by_type = globals()[func_name]
+    else:
+        func_by_type = get_room_details_long_from_data_as_text
+    result = func_by_type(room_info)
+    return result
+
+
+def __get_room_details_for_type_Android(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_AntiCraft(room_info: dict) -> str:
+def __get_room_details_for_type_AntiCraft(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Bedroom(room_info: dict) -> str:
+def __get_room_details_for_type_Bedroom(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Bridge(room_info: dict) -> str:
+def __get_room_details_for_type_Bridge(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Cannon(room_info: dict) -> str:
+def __get_room_details_for_type_Cannon(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Carrier(room_info: dict) -> str:
+def __get_room_details_for_type_Carrier(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Command(room_info: dict) -> str:
+def __get_room_details_for_type_Command(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Corridor(room_info: dict) -> str:
+def __get_room_details_for_type_Corridor(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Council(room_info: dict) -> str:
+def __get_room_details_for_type_Council(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Engine(room_info: dict) -> str:
+def __get_room_details_for_type_Engine(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Gas(room_info: dict) -> str:
+def __get_room_details_for_type_Gas(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Laser(room_info: dict) -> str:
+def __get_room_details_for_type_Laser(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Lift(room_info: dict) -> str:
+def __get_room_details_for_type_Lift(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Medical(room_info: dict) -> str:
+def __get_room_details_for_type_Medical(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Mineral(room_info: dict) -> str:
+def __get_room_details_for_type_Mineral(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Missile(room_info: dict) -> str:
+def __get_room_details_for_type_Missile(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_None(room_info: dict) -> str:
+def __get_room_details_for_type_None(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Printer(room_info: dict) -> str:
+def __get_room_details_for_type_Printer(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Radar(room_info: dict) -> str:
+def __get_room_details_for_type_Radar(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Reactor(room_info: dict) -> str:
+def __get_room_details_for_type_Reactor(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Recycling(room_info: dict) -> str:
+def __get_room_details_for_type_Recycling(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Research(room_info: dict) -> str:
+def __get_room_details_for_type_Research(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Shield(room_info: dict) -> str:
+def __get_room_details_for_type_Shield(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_StationMissile(room_info: dict) -> str:
+def __get_room_details_for_type_StationMissile(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Stealth(room_info: dict) -> str:
+def __get_room_details_for_type_Stealth(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Storage(room_info: dict) -> str:
+def __get_room_details_for_type_Storage(room_info: dict) -> list:
     """Fields: Capacity, DefaultDefenceBonus, PriceString"""
     result = get_room_details_from_data_as_text(room_info)
     capacity = room_info['capacity']
@@ -358,21 +369,21 @@ def __get_room_details_for_type_Storage(room_info: dict) -> str:
     return result
 
 
-def __get_room_details_for_type_Supply(room_info: dict) -> str:
+def __get_room_details_for_type_Supply(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Teleport(room_info: dict) -> str:
+def __get_room_details_for_type_Teleport(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Training(room_info: dict) -> str:
+def __get_room_details_for_type_Training(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Trap(room_info: dict) -> str:
+def __get_room_details_for_type_Trap(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
 
 
-def __get_room_details_for_type_Wall(room_info: dict) -> str:
+def __get_room_details_for_type_Wall(room_info: dict) -> list:
 	return get_room_details_long_from_data_as_text(room_info)
