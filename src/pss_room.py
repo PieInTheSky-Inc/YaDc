@@ -362,7 +362,7 @@ def __get_room_details_for_type_Stealth(room_info: dict) -> list:
 def __get_room_details_for_type_Storage(room_info: dict) -> list:
     """Fields: Capacity, DefaultDefenceBonus, PriceString"""
     result = get_room_details_from_data_as_text(room_info)
-    capacity = room_info['capacity']
+    capacity = room_info['Capacity']
     innate_armor = room_info['DefaultDefenceBonus']
     price = room_info['PriceString']
     result.append(f'Capacity: {capacity}')
