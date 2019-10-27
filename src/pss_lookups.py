@@ -18,7 +18,8 @@ COLLECTION_PERK_LOOKUP = {
 CURRENCY_EMOJI_LOOKUP = {
     'starbux': emojis.pss_bux,
     'gas': emojis.pss_gas_big,
-    'mineral': emojis.pss_min_big
+    'mineral': emojis.pss_min_big,
+    'supply': emojis.pss_supply_big
 }
 
 

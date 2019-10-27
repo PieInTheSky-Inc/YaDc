@@ -241,3 +241,138 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 if __name__ == '__main__':
     result = get_room_details_from_name('visiri')
     result = get_room_details_from_name('VM')
+
+
+
+
+
+# ---------- Room details ----------
+
+def __get_room_details_for_type_Android(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_AntiCraft(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Bedroom(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Bridge(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Cannon(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Carrier(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Command(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Corridor(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Council(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Engine(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Gas(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Laser(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Lift(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Medical(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Mineral(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Missile(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_None(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Printer(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Radar(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Reactor(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Recycling(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Research(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Shield(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_StationMissile(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Stealth(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Storage(room_info: dict) -> str:
+    """Fields: Capacity, DefaultDefenceBonus, PriceString"""
+    result = get_room_details_from_data_as_text(room_info)
+    capacity = room_info['capacity']
+    innate_armor = room_info['DefaultDefenceBonus']
+    price = room_info['PriceString']
+    result.append(f'Capacity: {capacity}')
+    return result
+
+
+def __get_room_details_for_type_Supply(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Teleport(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Training(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Trap(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
+
+
+def __get_room_details_for_type_Wall(room_info: dict) -> str:
+	return get_room_details_long_from_data_as_text(room_info)
