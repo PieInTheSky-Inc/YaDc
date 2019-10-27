@@ -370,7 +370,7 @@ def db_connect():
     global DB_CONN
     if db_is_connected(DB_CONN) == False:
         try:
-            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='require')
+            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='prefer')
             return True
         except Exception as error:
             error_name = error.__class__.__name__
