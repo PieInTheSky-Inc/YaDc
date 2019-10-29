@@ -283,8 +283,11 @@ async def stars(ctx, *, division=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def daily(ctx):
     """Show the dailies"""
-    async with ctx.typing():
+    try:
         await ctx.message.delete()
+    except:
+        pass
+    async with ctx.typing():
         output, _ = dropship.get_dropship_text()
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
