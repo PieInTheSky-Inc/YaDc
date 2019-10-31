@@ -181,19 +181,19 @@ ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 #- Custom property function
 ROOM_EXTENDED_PROPERTIES = {
     'Name': (False, (ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ), _get_room_name),
-    'Description': (False, ['RoomType', 'Description'], _get_room_description),
+    'Description': (False, ['RoomType', 'RoomDescription'], _get_room_description),
     'Size (WxH)': (True, ['Columns', 'Rows'], _get_room_size),
     'Max power used': (True, ['MaxSystemPower'], None),
     'Power generated': (True, ['MaxPowerGenerated'], None),
     'Innate armor': (True, ['DefaultDefenceBonus'], _get_innate_armor),
     'Enhanced By': (True, ['EnhancementType'], None),
     'Min hull lvl': (True, ['MinShipLevel'], None),
-    'System dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Shield dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Crew dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Hull dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Direct System dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', True], _get_dmg_for_dmg_type),
-    'EMP duration': (True, ['EMPLength'], _get_emp_length),
+    'System dmg': (True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Shield dmg': (True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Crew dmg': (True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Hull dmg': (True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Direct System dmg': (True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type),
+    'EMP duration': (True, ['MissileDesign.EMPLength'], _get_emp_length),
     'Reload/Speed': (True, ['ReloadTime'], _get_reload_time),
     'Shots fired': (True, ['Volley', 'VolleyDelay'], _get_shots_fired),
     'Max storage': (True, ['Capacity'], util.get_reduced_number_compact),
@@ -271,7 +271,14 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
             display_property_name = ''
         params = []
         for parameter in parameters:
-            if parameter in room_info.keys():
+            if '.' in parameter:
+                split_parameter = parameter.split('.')
+                parameter_value = room_info
+                for split_parameter_name in split_parameter:
+                    if isinstance(parameter_value, dict) and split_parameter_name in parameter_value.keys():
+                        parameter_value = parameter_value[split_parameter_name]
+                params.append(parameter_value)
+            elif parameter in room_info.keys():
                 params.append(room_info[parameter])
             else:
                 params.append(parameter)
