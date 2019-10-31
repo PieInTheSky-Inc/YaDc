@@ -265,7 +265,7 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     result = []
-    for display_property_name, include_display_name, parameters, transform_function in ROOM_EXTENDED_PROPERTIES.items():
+    for display_property_name, (include_display_name, parameters, transform_function) in ROOM_EXTENDED_PROPERTIES.items():
         if include_display_name:
             display_property_name = f'{display_property_name}: '
         else:
