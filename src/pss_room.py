@@ -175,39 +175,6 @@ ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
 ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 
 
-# Format: PropertyName: (DisplayName, TransformFunction, Required)
-# Optional meaning, if the value is 0 or empty, don't print.
-ROOM_PROPERTY_PROPERTIES = {
-    #'Capacity': ('Storage', None, True),
-    #'CategoryType': ('Category', None, True),
-    #'CharacterDamage': ('Crew dmg', None, True),
-    #'Columns': ('Width', None, False),
-    #'ConstructionTime': ('Construction time', None, True),
-    #'DefaultDefenceBonus': ('Innate armor', None, True),
-    #'DirectSystemDamage': ('Direct system dmg', None, True),
-    #'EMPLength': ('EMP length', None, True),
-    #'EnhancementType': ('Enhanced by', None, True),
-    #'Flags': ('Additional info', _convert_room_flags, False),
-    #'HullDamage': ('Hull dmg', None, True),
-    #'Level': ('Level', None, False),
-    #'ManufactureCapacity': ('Max queue', None, True),
-    #'ManufactureRate': ('Construction rate', None, True),
-    #'ManufactureType': ('Construction type', None, True),
-    #'MaxPowerGenerated': ('Power produced', None, True),
-    #'MaxSystemPower': ('Max power used/HP', None, True),
-    #'MinShipLevel': ('Min ship level', None, True),
-    #'MissileDesignName': ('Projectile name', None, True),
-    #'PriceString': ('Construction cost', None, False),
-    #'ReloadTime': ('Reload time', None, True),
-    #'RequirementString': ('Requires', None, True),
-    #'RoomDescription': (None, None, False),
-    #'Rows': ('Height', None, False),
-    #'ShieldDamage': ('Shield dmg', None, True),
-    #'SupportedGridTypes': ('Allowed grid types', _convert_room_grid_type_flags, False),
-    #'SystemDamage': ('System dmg', None, True),
-    #'Volley': ('Shots fired', None, True),
-    #'VolleyDelay': ('Delay between shots', None, True)
-}
 ROOM_EXTENDED_PROPERTIES = {
     """Dict keys: Display names
        Dict values schema:
@@ -297,35 +264,26 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
 
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
-    room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    room_short_name = get_room_short_name(room_info)
-    room_description = room_info['RoomDescription']
-    room_flags = int(room_info['Flags'])
-    room_consumes_power = (room_flags & 1) > 0
-    #room_is_weapon = (room_flags & 2) > 0
-    #room_is_manufactoring = (room_flags & 4) > 0
-    room_type = room_info['RoomType']
-    room_rows = room_info['Rows']
-    room_columns = room_info['Columns']
-    room_size = f'{room_columns}x{room_rows}'
-    room_grid_types = _convert_room_grid_type_flags(room_info['SupportedGridTypes'])
-    room_enhancement_type = room_info['EnhancementType']
-    max_power_consumed = room_info['MaxSystemPower']
-    min_ship_level = room_info['MinShipLevel']
+    result = []
+    for display_property_name, include_display_name, parameters, transform_function in ROOM_EXTENDED_PROPERTIES.items():
+        if include_display_name:
+            display_property_name = f'{display_property_name}: '
+        else:
+            display_property_name = ''
+        params = []
+        for parameter in parameters:
+            if parameter in room_info.keys():
+                params.append(room_info[parameter])
+            else:
+                params.append(parameter)
 
-    first_line = f'**{room_name}**'
-    if room_short_name:
-        first_line += f' **[{room_short_name}]**'
-    result = [first_line]
-    result.append(room_description)
-    result.append(f'Type: {room_type}')
-    result.append(f'Size (WxH): {room_size}')
-    if room_consumes_power:
-        result.append(f'Max power consumed: {max_power_consumed}')
-    if room_enhancement_type != 'None':
-        result.append(f'Enhanced by: {room_enhancement_type} stat')
-    result.append(f'Minimum ship lvl: {min_ship_level}')
-    result.append(f'Allowed grid types: {room_grid_types}')
+        if transform_function:
+            value = transform_function(*params)
+        else:
+            value = ', '.join(params)
+
+        if value:
+            result.append(f'{display_property_name}{value}')
     return result
 
 
@@ -390,23 +348,6 @@ def _get_pretty_short_name(short_name: str) -> str:
     else:
         return None
 
-
-def _get_room_property_display(room_info: dict, property_name: str) -> str:
-    display_name, transform_function, required = ROOM_PROPERTY_PROPERTIES[property_name]
-    if transform_function:
-        value = transform_function(room_info[property_name])
-    else:
-        value = room_info[property_name]
-
-    if value or required:
-        if display_name:
-            result = f'{display_name}: {value}'
-        else:
-            result = value
-    else:
-        result = None
-
-    return result
 
 
 
