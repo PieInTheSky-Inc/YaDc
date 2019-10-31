@@ -174,13 +174,12 @@ ROOM_DESIGN_PURCHASE_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
 ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
 ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 
-
+#Dict keys: Display names
+#Dict values schema:
+#- Print display name
+#- Arguments to use / properties to print
+#- Custom property function
 ROOM_EXTENDED_PROPERTIES = {
-    """Dict keys: Display names
-       Dict values schema:
-       - Print display name
-       - Arguments to use / properties to print
-       - Custom property function"""
     'Name': (False, (ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ), _get_room_name),
     'Description': (False, ['RoomType', 'Description'], _get_room_description),
     'Size (WxH)': (True, ['Columns', 'Rows'], _get_room_size),
