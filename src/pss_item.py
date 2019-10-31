@@ -83,6 +83,11 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
     return [f'{name} ({rarity}{bonus_txt})']
 
 
+def get_item_info_from_id(item_id: str) -> dict:
+    item_data = __item_designs_cache.get_data_dict3()
+    return item_data[item_id]
+
+
 
 
 

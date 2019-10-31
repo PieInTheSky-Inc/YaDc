@@ -4,7 +4,162 @@
 from cache import PssCache
 import pss_assert
 import pss_core as core
+import pss_item as item
 import pss_lookups as lookups
+import utility as util
+
+
+# ---------- Transformation functions ----------
+
+def _convert_room_grid_type_flags(flags: str) -> str:
+    result = []
+    flags = int(flags)
+    for flag in lookups.GRID_TYPE_MASK_LOOKUP.keys():
+        if (flags & flag) != 0:
+            result.append(lookups.GRID_TYPE_MASK_LOOKUP[flag])
+    if result:
+        return ', '.join(result)
+    else:
+        return ''
+
+
+def _convert_room_flags(flags: str) -> str:
+    result = []
+    flags = int(flags)
+    if result:
+        return ', '.join(result)
+    else:
+        return ''
+
+
+def _get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: str, volley_delay: str, print_percent: bool) -> str:
+    """Returns base dps and dps per power"""
+    if dmg:
+        dmg = float(dmg)
+        reload_time = float(reload_time)
+        reload_seconds = util.convert_ticks_to_seconds(int(reload_time))
+        max_power = int(max_power)
+        volley = int(volley)
+        volley_duration_seconds = util.convert_ticks_to_seconds((volley - 1) * volley_delay)
+        reload_seconds += volley_duration_seconds
+        full_volley_dmg = dmg * volley
+        dps = full_volley_dmg / reload_seconds
+        dps_per_power = dps / max_power
+        if print_percent:
+            percent = '%'
+        else:
+            percent = ''
+        if volley > 1:
+            single_volley_dmg = f'per volley: {dmg:0.1f}, '
+        else:
+            single_volley_dmg = ''
+        result = f'{full_volley_dmg:0.1f}{percent} ({single_volley_dmg}dps: {dps:0.2f}{percent}, per power: {dps_per_power:0.2f}{percent})'
+        return result
+    else:
+        return ''
+
+
+def _get_innate_armor(default_defense_bonus: str) -> str:
+    if default_defense_bonus and default_defense_bonus != '0':
+        reduction = _calculate_innate_armor_percent(int(default_defense_bonus))
+        result = f'{default_defense_bonus} ({reduction:0.2f}%)'
+        return result
+    else:
+        return ''
+
+
+def _get_pretty_build_cost(price_string: str) -> str:
+    if price_string:
+        resource_type, amount = price_string.split(':')
+        cost, cost_multiplier = util.get_reduced_number(amount)
+        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[resource_type.lower()]
+        result = f'{cost}{cost_multiplier} {currency_emoji}'
+        return result
+    else:
+        return ''
+
+
+def _get_pretty_build_requirement(requirement_string: str) -> str:
+    if requirement_string:
+        requirement_string = requirement_string.lower()
+        required_type, required_id = requirement_string.split(':')
+
+        if 'x' in required_id:
+            required_id, required_amount = required_id.split('x')
+        else:
+            required_amount = '1'
+
+        if required_type == 'item':
+            item_info = item.get_item_info_from_id(required_id)
+            result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
+            return result
+        else:
+            return requirement_string
+    else:
+        return ''
+
+
+def _get_pretty_build_time(construction_time: str) -> str:
+    if construction_time and construction_time != '0':
+        construction_time = int(construction_time)
+        result = util.get_formatted_duration(construction_time, include_relative_indicator=False)
+        return result
+    else:
+        return ''
+
+
+def _get_emp_length(emp_length: str) -> str:
+    emp_length_seconds = util.convert_ticks_to_seconds(int(emp_length))
+    result = util.get_formatted_duration(emp_length_seconds, include_relative_indicator=False)
+    return result
+
+
+def _get_reload_time(room_reload_time: str, per_hour: bool = False) -> str:
+    if room_reload_time:
+        reload_ticks = int(room_reload_time)
+        reload_seconds = reload_ticks / 40
+        reload_speed = 60 / reload_seconds
+        if per_hour:
+            reload_speed *= 60
+            reload_speed = f'{reload_speed}/hour'
+        else:
+            reload_speed = f'{reload_speed}/min'
+        result = f'{reload_seconds}s ({reload_speed})'
+        return result
+    else:
+        return ''
+
+
+def _get_room_description(room_type: str, room_description: str) -> str:
+    result = ''
+    if room_type and room_type.lower() != 'none':
+        result += f'[{room_type}] '
+    result += room_description
+    return result
+
+
+def _get_room_name(room_name: str, room_short_name: str) -> str:
+    result = f'**{room_name}**'
+    if room_short_name:
+        room_short_name = _get_pretty_short_name(room_short_name)
+        result += f' **[{room_short_name}]**'
+    return result
+
+
+def _get_room_size(room_columns: str, room_rows: str) -> str:
+    result = f'{room_columns}x{room_rows}'
+    return result
+
+
+def _get_shots_fired(volley: str, volley_delay: str) -> str:
+    if volley and volley != '1':
+        volley = int(volley)
+        volley_delay = int(volley_delay)
+        volley_delay_seconds = util.convert_ticks_to_seconds(volley_delay)
+        result = f'{volley}, delay: {volley_delay_seconds}'
+        return result
+    else:
+        return ''
 
 
 # ---------- Constants ----------
@@ -13,6 +168,78 @@ ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
 ROOM_DESIGN_KEY_NAME = 'RoomDesignId'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2 = 'RoomShortName'
+
+
+ROOM_DESIGN_PURCHASE_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
+ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
+ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
+
+
+# Format: PropertyName: (DisplayName, TransformFunction, Required)
+# Optional meaning, if the value is 0 or empty, don't print.
+ROOM_PROPERTY_PROPERTIES = {
+    #'Capacity': ('Storage', None, True),
+    #'CategoryType': ('Category', None, True),
+    #'CharacterDamage': ('Crew dmg', None, True),
+    #'Columns': ('Width', None, False),
+    #'ConstructionTime': ('Construction time', None, True),
+    #'DefaultDefenceBonus': ('Innate armor', None, True),
+    #'DirectSystemDamage': ('Direct system dmg', None, True),
+    #'EMPLength': ('EMP length', None, True),
+    #'EnhancementType': ('Enhanced by', None, True),
+    #'Flags': ('Additional info', _convert_room_flags, False),
+    #'HullDamage': ('Hull dmg', None, True),
+    #'Level': ('Level', None, False),
+    #'ManufactureCapacity': ('Max queue', None, True),
+    #'ManufactureRate': ('Construction rate', None, True),
+    #'ManufactureType': ('Construction type', None, True),
+    #'MaxPowerGenerated': ('Power produced', None, True),
+    #'MaxSystemPower': ('Max power used/HP', None, True),
+    #'MinShipLevel': ('Min ship level', None, True),
+    #'MissileDesignName': ('Projectile name', None, True),
+    #'PriceString': ('Construction cost', None, False),
+    #'ReloadTime': ('Reload time', None, True),
+    #'RequirementString': ('Requires', None, True),
+    #'RoomDescription': (None, None, False),
+    #'Rows': ('Height', None, False),
+    #'ShieldDamage': ('Shield dmg', None, True),
+    #'SupportedGridTypes': ('Allowed grid types', _convert_room_grid_type_flags, False),
+    #'SystemDamage': ('System dmg', None, True),
+    #'Volley': ('Shots fired', None, True),
+    #'VolleyDelay': ('Delay between shots', None, True)
+}
+ROOM_EXTENDED_PROPERTIES = {
+    """Dict keys: Display names
+       Dict values schema:
+       - Print display name
+       - Arguments to use / properties to print
+       - Custom property function"""
+    'Name': (False, (ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ), _get_room_name),
+    'Description': (False, ['RoomType', 'Description'], _get_room_description),
+    'Size (WxH)': (True, ['Columns', 'Rows'], _get_room_size),
+    'Max power used': (True, ['MaxSystemPower'], None),
+    'Power generated': (True, ['MaxPowerGenerated'], None),
+    'Innate armor': (True, ['DefaultDefenceBonus'], _get_innate_armor),
+    'Enhanced By': (True, ['EnhancementType'], None),
+    'Min hull lvl': (True, ['MinShipLevel'], None),
+    'System dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Shield dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Crew dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Hull dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', False], _get_dmg_for_dmg_type),
+    'Direct System dmg': (True, ['SystemDamage', 'ReloadTime', 'MaxPower', 'Volley', 'VolleyDelay', True], _get_dmg_for_dmg_type),
+    'EMP duration': (True, ['EMPLength'], _get_emp_length),
+    'Reload/Speed': (True, ['ReloadTime'], _get_reload_time),
+    'Shots fired': (True, ['Volley', 'VolleyDelay'], _get_shots_fired),
+    'Max storage': (True, ['Capacity'], util.get_reduced_number_compact),
+    'Max construction queue': (True, ['ManufactureCapacity'], None),
+    'Construction type': (True, ['ManufactureType'], None),
+    'Construction rate': (True, ['ManufactureRate'], _get_reload_time),
+    'Build time': (True, ['ConstructionTime'], _get_pretty_build_time),
+    'Build cost': (True, ['PriceString'], _get_pretty_build_cost),
+    'Build requirement': (True, ['RequirementString'], _get_pretty_build_requirement),
+    'Allowed grid types': (True, ['SupportedGridTypes'], _convert_room_grid_type_flags),
+    'More info': (True, ['Flags'], _convert_room_flags)
+}
 
 
 
@@ -24,6 +251,13 @@ __room_designs_cache = PssCache(
     ROOM_DESIGN_BASE_PATH,
     'RoomDesigns',
     ROOM_DESIGN_KEY_NAME)
+
+
+__room_design_purchases_cache = PssCache(
+    ROOM_DESIGN_BASE_PATH,
+    'RoomDesignPurchases',
+    ROOM_DESIGN_KEY_NAME,
+    update_interval=60)
 
 
 def __get_allowed_room_short_names():
@@ -46,6 +280,13 @@ __allowed_room_names = sorted(__get_allowed_room_short_names())
 
 # ---------- Helper functions ----------
 
+def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
+    if default_defense_bonus:
+        result = 1.0 / (1.0 + (float(default_defense_bonus) / 100.0))
+        return result
+    else:
+        return .0
+
 
 def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
     if not room_designs_data:
@@ -67,7 +308,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     room_rows = room_info['Rows']
     room_columns = room_info['Columns']
     room_size = f'{room_columns}x{room_rows}'
-    room_grid_type_flags = int(room_info['SupportedGridTypes'])
+    room_grid_types = _convert_room_grid_type_flags(room_info['SupportedGridTypes'])
     room_enhancement_type = room_info['EnhancementType']
     max_power_consumed = room_info['MaxSystemPower']
     min_ship_level = room_info['MinShipLevel']
@@ -84,7 +325,7 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     if room_enhancement_type != 'None':
         result.append(f'Enhanced by: {room_enhancement_type} stat')
     result.append(f'Minimum ship lvl: {min_ship_level}')
-    result.append(f'Allowed grid types: {_convert_room_grid_type_flags(room_grid_type_flags)}')
+    result.append(f'Allowed grid types: {room_grid_types}')
     return result
 
 
@@ -128,17 +369,6 @@ def get_room_short_name(room_info: dict) -> str:
         return None
 
 
-def _convert_room_grid_type_flags(flags: int) -> str:
-    result = []
-    for flag in lookups.GRID_TYPE_MASK_LOOKUP.keys():
-        if (flags & flag) != 0:
-            result.append(lookups.GRID_TYPE_MASK_LOOKUP[flag])
-    if result:
-        return ', '.join(result)
-    else:
-        return ''
-
-
 def _get_parents(room_info: dict, room_designs_data: dict) -> list:
     parent_room_design_id = room_info['UpgradeFromRoomDesignId']
     if parent_room_design_id == '0':
@@ -152,6 +382,31 @@ def _get_parents(room_info: dict, room_designs_data: dict) -> list:
     else:
         return []
 
+
+def _get_pretty_short_name(short_name: str) -> str:
+    if short_name:
+        result = short_name.split(':')[0]
+        return result
+    else:
+        return None
+
+
+def _get_room_property_display(room_info: dict, property_name: str) -> str:
+    display_name, transform_function, required = ROOM_PROPERTY_PROPERTIES[property_name]
+    if transform_function:
+        value = transform_function(room_info[property_name])
+    else:
+        value = room_info[property_name]
+
+    if value or required:
+        if display_name:
+            result = f'{display_name}: {value}'
+        else:
+            result = value
+    else:
+        result = None
+
+    return result
 
 
 

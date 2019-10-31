@@ -8,6 +8,11 @@ import subprocess
 import pss_lookups as lookups
 
 
+def convert_ticks_to_seconds(ticks: int) -> float:
+    ticks = float(ticks)
+    return ticks / 40
+
+
 def shell_cmd(cmd):
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8')
@@ -50,8 +55,7 @@ def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
     return result
 
 
-def get_formatted_timedelta(delta, include_relative_indicator=True):
-    total_seconds = delta.total_seconds()
+def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True) -> str:
     is_past = total_seconds < 0
     if is_past:
         total_seconds = abs(total_seconds)
@@ -74,6 +78,12 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
         else:
             result = 'in {}'.format(result)
     return result
+
+
+
+def get_formatted_timedelta(delta, include_relative_indicator=True):
+    total_seconds = delta.total_seconds()
+    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator)
 
 
 def get_utcnow():
@@ -177,6 +187,12 @@ def get_reduced_number(num) -> (float, str):
         num *= -1
     result = float(int(math.floor(num * 10))) / 10
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
+
+
+def get_reduced_number_compact(num) -> str:
+    reduced_num, multiplier = get_reduced_number(num)
+    result = f'{reduced_num}{multiplier}'
+    return result
 
 
 def is_str_in_list(value: str, lst: list, case_sensitive: bool = False) -> bool:

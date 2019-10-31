@@ -23,6 +23,15 @@ CURRENCY_EMOJI_LOOKUP = {
 }
 
 
+DMG_TYPES = [
+    'SystemDamage',
+    'CharacterDamage',
+    'ShieldDamage',
+    'HullDamage',
+    'DirectSystemDamage'
+]
+
+
 EQUIPMENT_MASK_LOOKUP = {
     1: 'head',
     2: 'body',
