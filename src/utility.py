@@ -6,6 +6,7 @@ import subprocess
 
 
 import pss_lookups as lookups
+import settings
 
 
 def convert_ticks_to_seconds(ticks: int) -> float:
@@ -189,9 +190,9 @@ def get_reduced_number(num) -> (float, str):
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
 
 
-def get_reduced_number_compact(num) -> str:
+def get_reduced_number_compact(num, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
     reduced_num, multiplier = get_reduced_number(num)
-    result = f'{reduced_num}{multiplier}'
+    result = f'{format_up_to_decimals(reduced_num, max_decimal_count)}{multiplier}'
     return result
 
 
@@ -202,6 +203,12 @@ def is_str_in_list(value: str, lst: list, case_sensitive: bool = False) -> bool:
             lst = [item.lower() for item in lst]
         return string in lst
     return False
+
+
+def format_up_to_decimals(num: float, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
+    result = f'{num:0.{max_decimal_count}f}'
+    result = result.rstrip('0').rstrip('.')
+    return result
 
 
 
