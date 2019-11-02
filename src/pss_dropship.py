@@ -50,7 +50,7 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 def get_dropship_text(as_embed: bool = False, language_key: str = 'en'):
     path = f'SettingService/GetLatestVersion3?languageKey={language_key}&deviceType=DeviceTypeAndroid'
     raw_text = core.get_data_from_path(path)
-    raw_data = core.xmltree_to_dict2(raw_text, None)[0]
+    raw_data = core.xmltree_to_dict2(raw_text)[0]
 
     collection_design_data = crew.__collection_designs_cache.get_data_dict3()
     char_design_data = crew.__character_designs_cache.get_data_dict3()
@@ -214,7 +214,7 @@ def get_news(as_embed: bool = False, language_key: str = 'en'):
 
     try:
         raw_text = core.get_data_from_path(path)
-        raw_data = core.xmltree_to_dict3(raw_text, 'NewsDesignId')
+        raw_data = core.xmltree_to_dict3(raw_text)
     except Exception as err:
         raw_data = None
 

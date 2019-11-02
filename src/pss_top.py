@@ -14,7 +14,7 @@ import pss_tournament as tourney
 def get_top_fleets(take: int = 100, as_embed: bool = False):
     path = f'AllianceService/ListAlliancesByRanking?skip=0&take={take}'
     raw_data = core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data, 'AllianceId')
+    data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_fleets_as_embed(data, take), True
     else:
@@ -59,7 +59,7 @@ def get_top_captains(take: int = 100, as_embed: bool = False):
     access_token = os.getenv('GPAT')
     path = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
     raw_data = core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data, 'Id')
+    data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
     else:

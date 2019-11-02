@@ -13,6 +13,8 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
+import data
+
 
 DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
@@ -77,33 +79,104 @@ def load_data_from_url(filename, url, refresh='auto'):
     return raw_text
 
 
-def xmltree_to_dict3(raw_text, key_name):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    key = 0
-    d = {}
-    for c in root:
-        for cc in c:
-            for ccc in cc:
-                if key_name:
-                    d[ccc.attrib[key_name]] = ccc.attrib
-                else:
-                    d[key] = ccc.attrib
-                    key += 1
-    return d
+def xmltree_to_dict3(raw_text):
+    root = convert_raw_xml_to_dict(raw_text)
+    for c in root.values():
+        if isinstance(c, dict):
+            for cc in c.values():
+                if isinstance(cc, dict):
+                    #d = dict(list(cc.values()))
+                    for ccc in cc.values():
+                        if isinstance(ccc, dict):
+                            return ccc
+    return {}
 
 
-def xmltree_to_dict2(raw_text, key_name):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    key = 0
-    d = {}
-    for c in root:
-        for cc in c:
-            if key_name:
-                d[cc.attrib[key_name]] = cc.attrib
-            else:
-                d[key] = cc.attrib
-                key += 1
-    return d
+def xmltree_to_dict2(raw_text):
+    root = convert_raw_xml_to_dict(raw_text)
+    for c in root.values():
+        if isinstance(c, dict):
+            for cc in c.values():
+                if isinstance(cc, dict):
+                    return cc
+    return {}
+
+
+
+
+
+def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
+    root = xml.etree.ElementTree.fromstring(raw_xml)
+    # Create an empty dictionary
+    result = convert_xml_to_dict(root, include_root)
+    return result
+
+
+def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True) -> dict:
+    if root is None:
+        return None
+
+    result = {}
+    if root.attrib:
+        if include_root:
+            result[root.tag] = fix_attrib(root.attrib)
+        else:
+            result = fix_attrib(root.attrib)
+    elif include_root:
+        result[root.tag] = {}
+
+    # Retrieve all distinct names of sub tags
+    tag_count = get_child_tag_count(root)
+
+    for child in root:
+        tag = child.tag
+        key = None
+        if tag_count[tag] < 1:
+            continue
+        elif tag_count[tag] > 1:
+            id_attr_name = data.ID_NAMES_INFO[tag]
+            key = child.attrib[id_attr_name]
+
+        if not key:
+            key = tag
+
+        child_dict = convert_xml_to_dict(child, False)
+        if include_root:
+            result[root.tag][key] = child_dict
+        else:
+            result[key] = child_dict
+
+    return result
+
+
+def get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
+    if root is None:
+        return None
+
+    child_tags = list(set([child_node.tag for child_node in root]))
+    result = {}
+    for child_tag in child_tags:
+        result[child_tag] = sum(1 for child_node in root if child_node.tag == child_tag)
+
+    return result
+
+
+def fix_attrib(attrib: dict) -> dict:
+    if not attrib:
+        return None
+
+    result = {}
+
+    for (key, value) in attrib.items():
+        if key.endswith('Xml') and value:
+            raw_xml = value
+            #raw_xml = html.unescape(value)
+            fixed_value = convert_raw_xml_to_dict(raw_xml)
+            result[key[:-3]] = fixed_value
+
+        result[key] = value
+
+    return result
 
 
 def create_reverse_lookup(d, new_key, new_value):
@@ -331,8 +404,8 @@ def get_real_name(search_str, lst_original):
 def get_production_server():
     url = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
     raw_text = get_data_from_url(url)
-    d = xmltree_to_dict2(raw_text, key_name=None)
-    return d[0]['ProductionServer']
+    d = xmltree_to_dict3(raw_text)
+    return d['ProductionServer']
 
 
 def get_base_url():

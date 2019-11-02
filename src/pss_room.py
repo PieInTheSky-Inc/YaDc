@@ -78,7 +78,7 @@ def _get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: st
             single_volley_dmg = f'per volley: {dmg:0.1f}, '
         else:
             single_volley_dmg = ''
-        result = f'{full_volley_dmg:0.1f}{percent} ({single_volley_dmg:0.2f}dps: {dps:0.2f}{percent}, per power: {dps_per_power:0.2f}{percent})'
+        result = f'{full_volley_dmg:0.1f}{percent} ({single_volley_dmg}dps: {dps:0.2f}{percent}, per power: {dps_per_power:0.2f}{percent})'
         return result
     else:
         return ''
@@ -365,7 +365,7 @@ def _get_parameter_from_room_info(room_info: dict, parameter: object) -> object:
     if isinstance(parameter, str):
         while '.' in parameter:
             split_parameter = parameter.split('.')
-            property_name = parameter[0]
+            property_name = split_parameter[0]
             parameter = '.'.join(split_parameter[1:])
             if property_name not in room_info.keys():
                 continue

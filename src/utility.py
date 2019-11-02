@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta, timezone
 import discord
+import json
 import math
 import pytz
 import subprocess
@@ -9,9 +10,19 @@ import pss_lookups as lookups
 import settings
 
 
+def load_json_from_file(file_path: str) -> str:
+    result = None
+    with open(file_path) as fp:
+        result = json.load(fp)
+    return result
+
+
 def convert_ticks_to_seconds(ticks: int) -> float:
-    ticks = float(ticks)
-    return ticks / 40
+    if ticks:
+        ticks = float(ticks)
+        return ticks / 40.0
+    else:
+        return 0.0
 
 
 def shell_cmd(cmd):
