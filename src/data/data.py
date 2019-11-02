@@ -6,7 +6,11 @@ from typing import Dict, List, Tuple
 import utility
 
 
-PWD = f'{os.getcwd()}/src/data/'
+PWD = os.getcwd()
+if '/src' in PWD:
+    PWD = f'{PWD}/data/'
+else:
+    PWD = f'{PWD}/src/data/'
 
 ID_NAMES_FILEPATH = f'{PWD}id_names.json'
 

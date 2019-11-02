@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta, timezone
 import discord
+import requests
 import json
 import math
 import pytz
@@ -81,14 +82,25 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
     days = math.floor(days)
     weeks = math.floor(weeks)
     result = ''
-    if (weeks > 0):
-        result += '{:d}w '.format(weeks)
-    result += '{:d}d {:d}h {:d}m {:d}s'.format(days, hours, minutes, seconds)
+    print_weeks = weeks > 0
+    print_days = print_weeks or days > 0
+    print_hours = print_days or hours > 0
+    print_minutes = print_hours or minutes > 0
+    if print_weeks:
+        result += f'{weeks:d}w '
+    if print_days:
+        result += f'{days:d}d '
+    if print_hours:
+        result += f'{hours:d}h '
+    if print_minutes:
+        result += f'{minutes:d}m '
+    result += f'{seconds:d}s'
+
     if include_relative_indicator:
         if is_past:
-            result += ' ago'
+            result = f'{result} ago'
         else:
-            result = 'in {}'.format(result)
+            result = f'in {result}'
     return result
 
 
@@ -221,6 +233,18 @@ def format_up_to_decimals(num: float, max_decimal_count: int = settings.DEFAULT_
     result = result.rstrip('0').rstrip('.')
     return result
 
+
+def get_wikia_link(page_name: str) -> str:
+    result = f'https://pixelstarships.fandom.com/wiki/{page_name}'
+    return result
+
+
+def check_hyperlink(hyperlink: str) -> bool:
+    if hyperlink:
+        request = requests.get(hyperlink)
+        return request.status_code == 200
+    else:
+        return False
 
 
 

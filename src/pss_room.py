@@ -46,6 +46,15 @@ def _convert_room_flags(flags: str) -> str:
         return ''
 
 
+def _get_capacity_per_tick(capacity: str, room_type: str) -> str:
+    if capacity:
+        cap_per_tick = util.convert_ticks_to_seconds(int(capacity))
+        result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
+        return result
+    else:
+        return ''
+
+
 def _get_construction_type(construction_type: str) -> str:
     if construction_type:
         lower = construction_type.lower()
@@ -53,6 +62,23 @@ def _get_construction_type(construction_type: str) -> str:
             return lookups.CURRENCY_EMOJI_LOOKUP[lower]
         else:
             return construction_type
+    else:
+        return ''
+
+
+def _get_cooldown(cooldown: str) -> str:
+    if cooldown:
+        cooldown_seconds = util.convert_ticks_to_seconds(int(cooldown))
+        result = f'{util.format_up_to_decimals(cooldown_seconds, 3)}s'
+        return result
+    else:
+        return ''
+
+
+def _get_description(description: str) -> str:
+    if description:
+        result = f'_{_get_value(description)}_'
+        return result
     else:
         return ''
 
@@ -75,10 +101,13 @@ def _get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: st
         else:
             percent = ''
         if volley > 1:
-            single_volley_dmg = f'per volley: {dmg:0.1f}, '
+            single_volley_dmg = f'per shot: {util.format_up_to_decimals(dmg, 2)}, '
         else:
             single_volley_dmg = ''
-        result = f'{full_volley_dmg:0.1f}{percent} ({single_volley_dmg}dps: {dps:0.2f}{percent}, per power: {dps_per_power:0.2f}{percent})'
+        full_volley_dmg = util.format_up_to_decimals(full_volley_dmg, 2)
+        dps = util.format_up_to_decimals(dps, 3)
+        dps_per_power = util.format_up_to_decimals(dps_per_power, 3)
+        result = f'{full_volley_dmg}{percent} ({single_volley_dmg}dps: {dps}{percent}, per power: {dps_per_power}{percent})'
         return result
     else:
         return ''
@@ -153,8 +182,8 @@ def _get_manufacture_rate(manufacture_rate: str) -> str:
         return ''
 
 
-def _get_max_storage_and_type(capacity: str, manufacture_capacity: str, manufacture_rate: str, manufacture_type: str) -> str:
-    if capacity:
+def _get_max_storage_and_type(capacity: str, manufacture_capacity: str, manufacture_rate: str, manufacture_type: str, room_type: str) -> str:
+    if capacity and ((not manufacture_capacity or not manufacture_rate) or (room_type and room_type == 'Recycling')):
         value = _get_value(capacity)
     elif manufacture_capacity and manufacture_rate:
         value = _get_value(manufacture_capacity)
@@ -173,7 +202,7 @@ def _get_max_storage_and_type(capacity: str, manufacture_capacity: str, manufact
 
 
 def _get_queue_limit(capacity: str, manufacture_capacity: str, manufacture_rate: str) -> str:
-    if capacity and manufacture_capacity and not manufacture_rate:
+    if manufacture_capacity and not manufacture_rate:
         return _get_value(manufacture_capacity)
     else:
         return ''
@@ -210,8 +239,8 @@ def _get_shots_fired(volley: str, volley_delay: str) -> str:
     if volley and volley != '1':
         volley = int(volley)
         volley_delay = int(volley_delay)
-        volley_delay_seconds = util.convert_ticks_to_seconds(volley_delay)
-        result = f'{volley}, delay: {volley_delay_seconds}'
+        volley_delay_seconds = util.format_up_to_decimals(util.convert_ticks_to_seconds(volley_delay), 3)
+        result = f'{volley:d} (Delay: {volley_delay_seconds})'
         return result
     else:
         return ''
@@ -233,6 +262,19 @@ def _get_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECI
         return ''
 
 
+def _get_wikia_link(room_name: str) -> str:
+    if room_name:
+        room_name = room_name.split(' Lv')[0]
+        room_name = '_'.join([part.lower().capitalize() for part in room_name.split(' ')])
+        result = util.get_wikia_link(room_name)
+        if util.check_hyperlink(result):
+            return f'<{result}>'
+        else:
+            return ''
+    else:
+        return ''
+
+
 # ---------- Constants ----------
 
 ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
@@ -246,53 +288,105 @@ ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
 ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
 
-#Dict keys: Display names
-#Dict values schema:
-#- Print display name
-#- Arguments to use / properties to print
-#- Custom property function
+# RoomType: 'unit'
+CAPACITY_PER_TICK_UNITS = {
+    'Lift': ' pixel/s',
+    'Radar': 's',
+    'Stealth': 's'
+}
+#List items schema:
+# - Display name
+# - Print display name
+# - Arguments to use / properties to print
+# - Transformation function
+# - List of allowed room types (empty if allowed for all)
 ROOM_DETAILS_PROPERTIES = [
-    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name),
-    ('Description', False, ['RoomDescription'], _get_value),
-    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size),
-    ('Max power used', True, ['MaxSystemPower'], _get_value),
-    ('Power generated', True, ['MaxPowerGenerated'], _get_value),
-    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor),
-    ('Enhanced By', True, ['EnhancementType'], _get_value),
-    ('Min hull lvl', True, ['MinShipLevel'], _get_value),
-    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type),
-    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length),
-    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time),
-    ('Shots fired', True, ['Volley', 'VolleyDelay'], _get_shots_fired),
-    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType'], _get_max_storage_and_type),
-    ('Queue Limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit),
-    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate),
-    ('Build time', True, ['ConstructionTime'], _get_pretty_build_time),
-    ('Build cost', True, ['PriceString'], _get_pretty_build_cost),
-    ('Build requirement', True, ['RequirementString'], _get_pretty_build_requirement),
-    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids),
-    ('More info', True, ['Flags'], _convert_room_flags)
+    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name, []),
+    ('Description', False, ['RoomDescription'], _get_description, []),
+    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size, []),
+    ('Max power used', True, ['MaxSystemPower'], _get_value, []),
+    ('Power generated', True, ['MaxPowerGenerated'], _get_value, []),
+    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor, []),
+    ('Enhanced By', True, ['EnhancementType'], _get_value, []),
+    ('Min hull lvl', True, ['MinShipLevel'], _get_value, []),
+    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time, []),
+    ('Shots fired', True, ['MissileDesign.Volley', 'MissileDesign.VolleyDelay'], _get_shots_fired, []),
+    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type, []),
+    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length, []),
+    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType', 'RoomType'], _get_max_storage_and_type, []),
+    ('Cap per tick', True, ['Capacity', 'RoomType'], _get_capacity_per_tick, CAPACITY_PER_TICK_UNITS.keys()),
+    ('Cooldown', True, ['CooldownTime'], _get_cooldown, []),
+    ('Queue limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit, []),
+    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate, []),
+    ('Gas per crew', True, ['ManufactureRate'], _get_value, ['Recycling']),
+    ('Max crew blend', True, ['ManufactureCapacity'], _get_value, ['Recycling']),
+    ('Build time', True, ['ConstructionTime'], _get_pretty_build_time, []),
+    ('Build cost', True, ['PriceString'], _get_pretty_build_cost, []),
+    ('Build requirement', True, ['RequirementString'], _get_pretty_build_requirement, []),
+    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
+    ('More info', True, ['Flags'], _convert_room_flags, []),
+    ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
 ]
 ROOM_DETAILS_PROPERTY_OVERLOADS = {
     'AntiCraft': {
         'Max storage': ('', False)
     },
+    'Bedroom': {
+        'Max storage': ('Crew slots', None)
+    },
+    'Bridge': {
+        'Max storage': ('Escape Modifier', None)
+    },
     'Command': {
         'Max storage': ('Max AI lines', None)
     },
+    'Corridor': {
+        'Innate armor': ('', False),
+        'Max storage': ('', False)
+    },
     'Council': {
         'Max storage': ('Borrow limit', None),
-        'Queue Limit': ('Donation limit', None)
+        'Queue limit': ('Donation limit', None)
+    },
+    'Engine': {
+        'Max storage': ('Dodge Modifier', None)
     },
     'Lift': {
-        'Max storage': ('Speed', None)
+        'Cap per tick': ('Speed', None),
+        'Max storage': ('', False)
+    },
+    'Medical': {
+        'Max storage': ('Crew HP healed', None)
+    },
+    'Printer': {
+        'Queue limit': ('', False)
+    },
+    'Radar': {
+        'Cap per tick': ('Cloak reduction', None),
+        'Max storage': ('', False)
+    },
+    'Recycling': {
+        'Manufacture speed': ('', False)
+    },
+    'Shield': {
+        'Max storage': ('Shield points', None)
+    },
+    'Stealth': {
+        'Cap per tick': ('Cloak duration', None),
+        'Max storage': ('', False)
     },
     'Storage': {
         'Construction type': ('Storage type', None)
+    },
+    'Training': {
+        'Max storage': ('', False)
+    },
+    'Trap': {
+        'Max storage': ('Damage', None)
     },
     'Wall': {
         'Max storage': ('Armor value', None)
@@ -412,10 +506,12 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     result = []
-    for display_property_name, include_display_name, parameter_definitions, transform_function in ROOM_DETAILS_PROPERTIES:
-        line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
-        if line:
-            result.append(line)
+    room_type = room_info['RoomType']
+    for display_property_name, include_display_name, parameter_definitions, transform_function, allowed_room_types in ROOM_DETAILS_PROPERTIES:
+        if not allowed_room_types or room_type in allowed_room_types:
+            line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
+            if line:
+                result.append(line)
     return result
 
 
@@ -573,7 +669,7 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 
 if __name__ == '__main__':
     test_rooms = [
-        'aa 2'
+        'ion 3'
         #'mineral storage lv2', 'mineral storage lv12',
         #'mineral mining laser lv2', 'mineral mining laser lv12',
         #'Missile Launcher Lv2', 'Missile Launcher Lv12'
