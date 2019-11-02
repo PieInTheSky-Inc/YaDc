@@ -6,6 +6,7 @@ items-*.txt
 
 # files created at runtime
 *.json
+!src/data/id_names.json
 *.xml
 
 # Byte-compiled / optimized / DLL files
