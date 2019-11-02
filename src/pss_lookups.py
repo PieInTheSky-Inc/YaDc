@@ -20,6 +20,7 @@ CURRENCY_EMOJI_LOOKUP = {
     'gas': emojis.pss_gas_big,
     'mineral': emojis.pss_min_big,
     'supply': emojis.pss_supply_big,
+    'android': 'droids',
     'capacity': 'rounds',
     'equipment': 'items'
 }

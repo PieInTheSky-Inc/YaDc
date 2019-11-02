@@ -35,10 +35,13 @@ def _convert_room_grid_type_flags(flags: str) -> str:
 
 
 def _convert_room_flags(flags: str) -> str:
-    result = []
-    flags = int(flags)
-    if result:
-        return ', '.join(result)
+    if flags:
+        result = []
+        flags = int(flags)
+        if result:
+            return ', '.join(result)
+        else:
+            return ''
     else:
         return ''
 
@@ -93,9 +96,9 @@ def _get_innate_armor(default_defense_bonus: str) -> str:
 def _get_pretty_build_cost(price_string: str) -> str:
     if price_string:
         resource_type, amount = price_string.split(':')
-        cost, cost_multiplier = util.get_reduced_number(amount)
+        cost = util.get_reduced_number_compact(amount)
         currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[resource_type.lower()]
-        result = f'{cost}{cost_multiplier} {currency_emoji}'
+        result = f'{cost} {currency_emoji}'
         return result
     else:
         return ''
@@ -140,7 +143,7 @@ def _get_emp_length(emp_length: str) -> str:
 
 
 def _get_manufacture_rate(manufacture_rate: str) -> str:
-    if manufacture_rate and manufacture_rate != '0':
+    if manufacture_rate:
         manufacture_rate = float(manufacture_rate)
         manufacture_speed = 1.0 / manufacture_rate
         manufacture_rate_per_hour = manufacture_rate * 3600
@@ -150,17 +153,34 @@ def _get_manufacture_rate(manufacture_rate: str) -> str:
         return ''
 
 
-def _get_max_storage_and_type(capacity: str, manufacture_type: str) -> str:
-    if capacity and capacity != '0':
-        manufacture_type = _get_construction_type(manufacture_type)
-        capacity = _get_value(capacity)
-        return f'{capacity} {manufacture_type}'
+def _get_max_storage_and_type(capacity: str, manufacture_capacity: str, manufacture_rate: str, manufacture_type: str) -> str:
+    if capacity:
+        value = _get_value(capacity)
+    elif manufacture_capacity and manufacture_rate:
+        value = _get_value(manufacture_capacity)
+    else:
+        value = ''
+
+    if value:
+        print_type = (capacity and not manufacture_rate) or (manufacture_capacity and manufacture_rate)
+        if print_type:
+            manufacture_type = _get_construction_type(manufacture_type)
+            return f'{value} {manufacture_type}'
+        else:
+            return value
+    else:
+        return ''
+
+
+def _get_queue_limit(capacity: str, manufacture_capacity: str, manufacture_rate: str) -> str:
+    if capacity and manufacture_capacity and not manufacture_rate:
+        return _get_value(manufacture_capacity)
     else:
         return ''
 
 
 def _get_reload_time(room_reload_time: str) -> str:
-    if room_reload_time and room_reload_time != '0':
+    if room_reload_time:
         reload_ticks = float(room_reload_time)
         reload_seconds = reload_ticks / 40.0
         reload_speed = 60.0 / reload_seconds
@@ -170,20 +190,15 @@ def _get_reload_time(room_reload_time: str) -> str:
         return ''
 
 
-def _get_room_description(room_type: str, room_description: str) -> str:
+def _get_room_name(room_name: str, room_short_name: str, room_type: str) -> str:
     result = ''
-    if room_type and room_type.lower() != 'none':
-        result += f'[{room_type}] '
-    result += room_description
-    return result
-
-
-def _get_room_name(room_name: str, room_short_name: str) -> str:
-    result = f'**{room_name}**'
     if room_short_name:
         room_short_name = _get_pretty_short_name(room_short_name)
-        result += f' **[{room_short_name}]**'
-    return result
+        result += f'[{room_short_name}] '
+    result += room_name
+    if room_type:
+        result += f' ({room_type})'
+    return f'**{result}**'
 
 
 def _get_room_size(room_columns: str, room_rows: str) -> str:
@@ -236,39 +251,51 @@ ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
 #- Print display name
 #- Arguments to use / properties to print
 #- Custom property function
-ROOM_DETAILS_PROPERTIES = {
-    'Name': (False, (ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ), _get_room_name),
-    'Description': (False, [ROOM_DESIGN_TYPE_PROPERTY_NAME, 'RoomDescription'], _get_room_description),
-    'Size (WxH)': (True, ['Columns', 'Rows'], _get_room_size),
-    'Max power used': (True, ['MaxSystemPower'], _get_value),
-    'Power generated': (True, ['MaxPowerGenerated'], _get_value),
-    'Innate armor': (True, ['DefaultDefenceBonus'], _get_innate_armor),
-    'Enhanced By': (True, ['EnhancementType'], _get_value),
-    'Min hull lvl': (True, ['MinShipLevel'], _get_value),
-    'System dmg': (True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Shield dmg': (True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Crew dmg': (True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Hull dmg': (True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
-    'Direct System dmg': (True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type),
-    'EMP duration': (True, ['MissileDesign.EMPLength'], _get_emp_length),
-    'Reload (Speed)': (True, ['ReloadTime'], _get_reload_time),
-    'Shots fired': (True, ['Volley', 'VolleyDelay'], _get_shots_fired),
-    'Max storage': (True, ['Capacity', 'ManufactureType'], _get_value),
-    'Manufacture speed': (True, ['ManufactureRate'], _get_manufacture_rate),
-    'Queue Limit': (True, ['ManufactureCapacity'], _get_value),
-    'Manufacture type': (True, ['ManufactureType'], _get_construction_type),
-    'Build time': (True, ['ConstructionTime'], _get_pretty_build_time),
-    'Build cost': (True, ['PriceString'], _get_pretty_build_cost),
-    'Build requirement': (True, ['RequirementString'], _get_pretty_build_requirement),
-    'Grid types': (True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids),
-    'More info': (True, ['Flags'], _convert_room_flags)
-}
-ROOM_DETAILS_PROPERTY_ALTERNATIVES = {
+ROOM_DETAILS_PROPERTIES = [
+    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name),
+    ('Description', False, ['RoomDescription'], _get_value),
+    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size),
+    ('Max power used', True, ['MaxSystemPower'], _get_value),
+    ('Power generated', True, ['MaxPowerGenerated'], _get_value),
+    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor),
+    ('Enhanced By', True, ['EnhancementType'], _get_value),
+    ('Min hull lvl', True, ['MinShipLevel'], _get_value),
+    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type),
+    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type),
+    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length),
+    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time),
+    ('Shots fired', True, ['Volley', 'VolleyDelay'], _get_shots_fired),
+    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType'], _get_max_storage_and_type),
+    ('Queue Limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit),
+    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate),
+    ('Build time', True, ['ConstructionTime'], _get_pretty_build_time),
+    ('Build cost', True, ['PriceString'], _get_pretty_build_cost),
+    ('Build requirement', True, ['RequirementString'], _get_pretty_build_requirement),
+    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids),
+    ('More info', True, ['Flags'], _convert_room_flags)
+]
+ROOM_DETAILS_PROPERTY_OVERLOADS = {
+    'AntiCraft': {
+        'Max storage': ('', False)
+    },
+    'Command': {
+        'Max storage': ('Max AI lines', None)
+    },
+    'Council': {
+        'Max storage': ('Borrow limit', None),
+        'Queue Limit': ('Donation limit', None)
+    },
+    'Lift': {
+        'Max storage': ('Speed', None)
+    },
     'Storage': {
-        'Construction type': 'Storage type'
+        'Construction type': ('Storage type', None)
     },
     'Wall': {
-        'Max storage': 'Armor value'
+        'Max storage': ('Armor value', None)
     }
 }
 
@@ -327,11 +354,11 @@ def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = Non
     return get_room_details_from_data_as_text(room_info)
 
 
-def _get_alternative_display_name(room_type: str, display_name: str) -> str:
-    if room_type in ROOM_DETAILS_PROPERTY_ALTERNATIVES.keys():
-        if display_name in ROOM_DETAILS_PROPERTY_ALTERNATIVES[room_type].keys():
-            return ROOM_DETAILS_PROPERTY_ALTERNATIVES[room_type][display_name]
-    return display_name
+def _get_overload_info(room_type: str, display_name: str) -> str:
+    if room_type in ROOM_DETAILS_PROPERTY_OVERLOADS.keys():
+        if display_name in ROOM_DETAILS_PROPERTY_OVERLOADS[room_type].keys():
+            return ROOM_DETAILS_PROPERTY_OVERLOADS[room_type][display_name]
+    return display_name, None
 
 
 def _get_parameter_from_room_info(room_info: dict, parameter: object) -> object:
@@ -345,7 +372,12 @@ def _get_parameter_from_room_info(room_info: dict, parameter: object) -> object:
             room_info = room_info[property_name]
 
         if parameter in room_info.keys():
-            return room_info[parameter]
+            result = room_info[parameter]
+            result_lower = result.lower()
+            if not result or result_lower == '0' or result_lower == 'none':
+                return ''
+            else:
+                return result
         else:
             return ''
     else:
@@ -365,19 +397,22 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
         value = ', '.join(params)
 
     if value:
-        display_property_name = _get_alternative_display_name(room_type, display_property_name)
-        if include_display_name:
-            display_property_name = f'{display_property_name}: '
+        display_property_name, include_value = _get_overload_info(room_type, display_property_name)
+        if include_value is not False:
+            if include_display_name:
+                display_property_name = f'{display_property_name}: '
+            else:
+                display_property_name = ''
+            return f'{display_property_name}{value}'
         else:
-            display_property_name = ''
-        return f'{display_property_name}{value}'
+            return ''
     else:
         return ''
 
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     result = []
-    for display_property_name, (include_display_name, parameter_definitions, transform_function) in ROOM_DETAILS_PROPERTIES.items():
+    for display_property_name, include_display_name, parameter_definitions, transform_function in ROOM_DETAILS_PROPERTIES:
         line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
         if line:
             result.append(line)
@@ -538,7 +573,7 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 
 if __name__ == '__main__':
     test_rooms = [
-        'mst 2'
+        'aa 2'
         #'mineral storage lv2', 'mineral storage lv12',
         #'mineral mining laser lv2', 'mineral mining laser lv12',
         #'Missile Launcher Lv2', 'Missile Launcher Lv12'
