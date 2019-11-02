@@ -14,10 +14,14 @@ import utility as util
 
 # ---------- Transformation functions ----------
 
-def _get_is_allowed_in_extension_grids(flags: str) -> str:
-    is_allowed = lookups.GRID_TYPE_MASK_LOOKUP[2] in _convert_room_grid_type_flags(flags)
-    if is_allowed:
-        return 'Allowed in extension grids'
+def _convert_room_flags(flags: str) -> str:
+    if flags:
+        result = []
+        flags = int(flags)
+        if result:
+            return ', '.join(result)
+        else:
+            return ''
     else:
         return ''
 
@@ -34,14 +38,42 @@ def _convert_room_grid_type_flags(flags: str) -> str:
         return ''
 
 
-def _convert_room_flags(flags: str) -> str:
-    if flags:
-        result = []
-        flags = int(flags)
-        if result:
-            return ', '.join(result)
+def _get_build_cost(price_string: str) -> str:
+    if price_string:
+        resource_type, amount = price_string.split(':')
+        cost = util.get_reduced_number_compact(amount)
+        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[resource_type.lower()]
+        result = f'{cost} {currency_emoji}'
+        return result
+    else:
+        return ''
+
+
+def _get_build_requirement(requirement_string: str) -> str:
+    if requirement_string:
+        requirement_string = requirement_string.lower()
+        required_type, required_id = requirement_string.split(':')
+
+        if 'x' in required_id:
+            required_id, required_amount = required_id.split('x')
         else:
-            return ''
+            required_amount = '1'
+
+        if required_type == 'item':
+            item_info = item.get_item_info_from_id(required_id)
+            result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
+            return result
+        else:
+            return requirement_string
+    else:
+        return ''
+
+
+def _get_build_time(construction_time: str) -> str:
+    if construction_time and construction_time != '0':
+        construction_time = int(construction_time)
+        result = util.get_formatted_duration(construction_time, include_relative_indicator=False)
+        return result
     else:
         return ''
 
@@ -122,42 +154,10 @@ def _get_innate_armor(default_defense_bonus: str) -> str:
         return ''
 
 
-def _get_pretty_build_cost(price_string: str) -> str:
-    if price_string:
-        resource_type, amount = price_string.split(':')
-        cost = util.get_reduced_number_compact(amount)
-        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[resource_type.lower()]
-        result = f'{cost} {currency_emoji}'
-        return result
-    else:
-        return ''
-
-
-def _get_pretty_build_requirement(requirement_string: str) -> str:
-    if requirement_string:
-        requirement_string = requirement_string.lower()
-        required_type, required_id = requirement_string.split(':')
-
-        if 'x' in required_id:
-            required_id, required_amount = required_id.split('x')
-        else:
-            required_amount = '1'
-
-        if required_type == 'item':
-            item_info = item.get_item_info_from_id(required_id)
-            result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
-            return result
-        else:
-            return requirement_string
-    else:
-        return ''
-
-
-def _get_pretty_build_time(construction_time: str) -> str:
-    if construction_time and construction_time != '0':
-        construction_time = int(construction_time)
-        result = util.get_formatted_duration(construction_time, include_relative_indicator=False)
-        return result
+def _get_is_allowed_in_extension_grids(flags: str) -> str:
+    is_allowed = lookups.GRID_TYPE_MASK_LOOKUP[2] in _convert_room_grid_type_flags(flags)
+    if is_allowed:
+        return 'Allowed in extension grids'
     else:
         return ''
 
@@ -294,43 +294,10 @@ CAPACITY_PER_TICK_UNITS = {
     'Radar': 's',
     'Stealth': 's'
 }
-#List items schema:
-# - Display name
-# - Print display name
-# - Arguments to use / properties to print
-# - Transformation function
-# - List of allowed room types (empty if allowed for all)
-ROOM_DETAILS_PROPERTIES = [
-    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name, []),
-    ('Description', False, ['RoomDescription'], _get_description, []),
-    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size, []),
-    ('Max power used', True, ['MaxSystemPower'], _get_value, []),
-    ('Power generated', True, ['MaxPowerGenerated'], _get_value, []),
-    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor, []),
-    ('Enhanced By', True, ['EnhancementType'], _get_value, []),
-    ('Min hull lvl', True, ['MinShipLevel'], _get_value, []),
-    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time, []),
-    ('Shots fired', True, ['MissileDesign.Volley', 'MissileDesign.VolleyDelay'], _get_shots_fired, []),
-    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type, []),
-    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length, []),
-    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType', 'RoomType'], _get_max_storage_and_type, []),
-    ('Cap per tick', True, ['Capacity', 'RoomType'], _get_capacity_per_tick, CAPACITY_PER_TICK_UNITS.keys()),
-    ('Cooldown', True, ['CooldownTime'], _get_cooldown, []),
-    ('Queue limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit, []),
-    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate, []),
-    ('Gas per crew', True, ['ManufactureRate'], _get_value, ['Recycling']),
-    ('Max crew blend', True, ['ManufactureCapacity'], _get_value, ['Recycling']),
-    ('Build time', True, ['ConstructionTime'], _get_pretty_build_time, []),
-    ('Build cost', True, ['PriceString'], _get_pretty_build_cost, []),
-    ('Build requirement', True, ['RequirementString'], _get_pretty_build_requirement, []),
-    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
-    ('More info', True, ['Flags'], _convert_room_flags, []),
-    ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
-]
+
+# <RoomType>: { <Original display name>: (<New display name>, <Should display>)}
+# Defaults:
+# - Should display: True (if None)
 ROOM_DETAILS_PROPERTY_OVERLOADS = {
     'AntiCraft': {
         'Max storage': ('', False)
@@ -392,38 +359,6 @@ ROOM_DETAILS_PROPERTY_OVERLOADS = {
         'Max storage': ('Armor value', None)
     }
 }
-
-
-# TODO: Add dict 'display_name_alternatives': { <RoomType> : { <DisplayName> : <Alternative> } }
-
-
-# ---------- Initilization ----------
-
-__room_designs_cache = PssCache(
-    ROOM_DESIGN_BASE_PATH,
-    'RoomDesigns',
-    ROOM_DESIGN_KEY_NAME)
-
-
-__room_design_purchases_cache = PssCache(
-    ROOM_DESIGN_BASE_PATH,
-    'RoomDesignPurchases',
-    ROOM_DESIGN_KEY_NAME,
-    update_interval=60)
-
-
-def __get_allowed_room_short_names():
-    result = []
-    room_designs_data = __room_designs_cache.get_data_dict3()
-    for room_design_data in room_designs_data.values():
-        if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
-            room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
-            if room_short_name not in result:
-                result.append(room_short_name)
-    return result
-
-
-__allowed_room_names = sorted(__get_allowed_room_short_names())
 
 
 
@@ -506,8 +441,8 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
 
 def get_room_details_from_data_as_text(room_info: dict) -> list:
     result = []
-    room_type = room_info['RoomType']
-    for display_property_name, include_display_name, parameter_definitions, transform_function, allowed_room_types in ROOM_DETAILS_PROPERTIES:
+    room_type = room_info[ROOM_DESIGN_TYPE_PROPERTY_NAME]
+    for display_property_name, include_display_name, parameter_definitions, transform_function, allowed_room_types in __room_details_properties:
         if not allowed_room_types or room_type in allowed_room_types:
             line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
             if line:
@@ -660,6 +595,81 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
             result += parent_info[ROOM_DESIGN_KEY_NAME].zfill(4)
     result += room_info[ROOM_DESIGN_KEY_NAME].zfill(4)
     return result
+
+
+
+
+
+# ---------- Initilization ----------
+
+__room_designs_cache = PssCache(
+    ROOM_DESIGN_BASE_PATH,
+    'RoomDesigns',
+    ROOM_DESIGN_KEY_NAME)
+
+
+__room_design_purchases_cache = PssCache(
+    ROOM_DESIGN_BASE_PATH,
+    'RoomDesignPurchases',
+    ROOM_DESIGN_KEY_NAME,
+    update_interval=60)
+
+
+def __get_allowed_room_short_names():
+    result = []
+    room_designs_data = __room_designs_cache.get_data_dict3()
+    for room_design_data in room_designs_data.values():
+        if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
+            room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
+            if room_short_name not in result:
+                result.append(room_short_name)
+    return result
+
+
+__allowed_room_names = sorted(__get_allowed_room_short_names())
+#List items schema:
+# - Display name
+# - Print display name
+# - Arguments to use / properties to print
+# - Transformation function
+# - List of allowed room types (empty if allowed for all)
+__room_details_properties = [
+    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name, []),
+    ('Description', False, ['RoomDescription'], _get_description, []),
+    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size, []),
+    ('Max power used', True, ['MaxSystemPower'], _get_value, []),
+    ('Power generated', True, ['MaxPowerGenerated'], _get_value, []),
+    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor, []),
+    ('Enhanced By', True, ['EnhancementType'], _get_value, []),
+    ('Min hull lvl', True, ['MinShipLevel'], _get_value, []),
+    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time, []),
+    ('Shots fired', True, ['MissileDesign.Volley', 'MissileDesign.VolleyDelay'], _get_shots_fired, []),
+    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type, []),
+    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length, []),
+    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_max_storage_and_type, []),
+    ('Cap per tick', True, ['Capacity', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_capacity_per_tick, CAPACITY_PER_TICK_UNITS.keys()),
+    ('Cooldown', True, ['CooldownTime'], _get_cooldown, []),
+    ('Queue limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit, []),
+    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate, []),
+    ('Gas per crew', True, ['ManufactureRate'], _get_value, ['Recycling']),
+    ('Max crew blend', True, ['ManufactureCapacity'], _get_value, ['Recycling']),
+    ('Build time', True, ['ConstructionTime'], _get_build_time, []),
+    ('Build cost', True, ['PriceString'], _get_build_cost, []),
+    ('Build requirement', True, ['RequirementString'], _get_build_requirement, []),
+    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
+    ('More info', True, ['Flags'], _convert_room_flags, []),
+    ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
+]
+
+
+
+
+
+
 
 
 
