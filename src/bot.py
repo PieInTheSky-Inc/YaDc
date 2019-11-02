@@ -542,6 +542,17 @@ async def top_captains(ctx, count: int = 100):
 @bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_room(ctx, *, name: str = None):
+    """
+    Usage: /room [name]
+           /room [short name] [lvl]
+
+    Get detailed information on a room. If more than 2 results are found, details will be omitted.
+
+    Examples:
+    - /room mineral
+    - /room cloak generator lv2
+    - /room mst 3
+    """
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
     if output:
