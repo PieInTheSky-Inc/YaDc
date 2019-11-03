@@ -678,12 +678,7 @@ __room_details_properties = [
 # ---------- Testing ----------
 
 if __name__ == '__main__':
-    test_rooms = [
-        'ion 3'
-        #'mineral storage lv2', 'mineral storage lv12',
-        #'mineral mining laser lv2', 'mineral mining laser lv12',
-        #'Missile Launcher Lv2', 'Missile Launcher Lv12'
-    ]
+    test_rooms = []
     for room_name in test_rooms:
         os.system('clear')
         result = get_room_details_from_name(room_name, as_embed=False)
