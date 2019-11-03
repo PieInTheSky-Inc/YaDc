@@ -30,7 +30,7 @@
     "MissionDesign": "MissionDesignId",
     "MissionEvent": "MissionEventId",
     "NewsDesign": "NewsDesignId",
-    "Prestige": null,
+    "Prestige": "CharacterDesignId2",
     "PromotionDesign": "PromotionDesignId",
     "Quiz": "QuizId",
     "Research": "ResearchId",

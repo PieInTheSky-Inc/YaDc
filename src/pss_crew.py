@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import os
+
 from cache import PssCache
 import pss_assert
 import pss_core as core
@@ -449,3 +451,33 @@ def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list
     result.append(f'Getting from level 1 to {level} requires {xp_cost_from_1:,} xp and {gas_cost_from_1:,} gas.')
 
     return result
+
+
+
+
+
+
+
+
+
+
+
+# ---------- Testing ----------
+
+if __name__ == '__main__':
+    test_crew = ['Xin']
+    for crew_name in test_crew:
+        os.system('clear')
+        result = get_char_details_from_name(crew_name, as_embed=False)
+        for line in result[0]:
+            print(line)
+        print('')
+        result = get_prestige_from_info(crew_name, as_embed=False)
+        for line in result[0]:
+            print(line)
+        print('')
+        result = get_prestige_to_info(crew_name, as_embed=False)
+        for line in result[0]:
+            print(line)
+        print('')
+        result = ''
