@@ -247,6 +247,13 @@ def check_hyperlink(hyperlink: str) -> bool:
         return False
 
 
+async def try_delete_original_message(ctx):
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+
 
 
 

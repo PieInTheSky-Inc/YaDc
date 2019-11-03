@@ -283,10 +283,7 @@ async def stars(ctx, *, division=None):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def daily(ctx):
     """Show the dailies"""
-    try:
-        await ctx.message.delete()
-    except:
-        pass
+    await util.try_delete_original_message(ctx)
     async with ctx.typing():
         output, _ = dropship.get_dropship_text()
     if output:
@@ -297,8 +294,8 @@ async def daily(ctx):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def news(ctx):
     """Show the news"""
+    await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        await ctx.message.delete()
         output, _ = dropship.get_news()
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
@@ -658,7 +655,7 @@ async def test(ctx, action, *, params):
     elif action == 'init':
         core.init_db()
         await ctx.send('Initialized the database from scratch')
-        await ctx.message.delete()
+        await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
         result, error = core.db_fetchall(query)
