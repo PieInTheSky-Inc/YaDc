@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 import discord
 import requests
+import jellyfish
 import json
 import math
 import pytz
@@ -253,6 +254,15 @@ async def try_delete_original_message(ctx):
     except:
         pass
 
+
+def get_similarity(values_to_check: dict, against: str) -> dict:
+    result = {}
+    for key, value in values_to_check.items():
+        similarity = jellyfish.jaro_distance(value, against)
+        if value.startswith(against):
+            similarity += 1.0
+        result[key] = similarity
+    return result
 
 
 

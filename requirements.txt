@@ -1,5 +1,6 @@
 asyncio
 holidays
+jellyfish
 numpy
 pandas
 pip

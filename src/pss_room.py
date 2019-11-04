@@ -678,7 +678,7 @@ __room_details_properties = [
 # ---------- Testing ----------
 
 if __name__ == '__main__':
-    test_rooms = []
+    test_rooms = ['emp']
     for room_name in test_rooms:
         os.system('clear')
         result = get_room_details_from_name(room_name, as_embed=False)

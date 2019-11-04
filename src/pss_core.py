@@ -14,6 +14,7 @@ import urllib.request
 import xml.etree.ElementTree
 
 import data
+import utility as util
 
 
 DATABASE_URL = os.environ['DATABASE_URL']
@@ -242,17 +243,23 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
         print(f'- get_ids_from_property_value: invalid data or property info. Return empty list.')
         return []
 
-    fixed_value = fix_property_value(property_value)
-    fixed_data = {fix_property_value(data[row_id][property_name]): row_id for row_id in data}
+    if not fix_data_delegate:
+        fix_data_delegate = fix_property_value
 
-    if fix_data_delegate:
-        fixed_value = fix_data_delegate(property_value)
-        fixed_data = {fix_data_delegate(data[row_id][property_name]): row_id for row_id in data}
+    fixed_value = fix_data_delegate(property_value)
+    fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
 
-    if return_on_first and fixed_value in fixed_data.keys():
-        return [fixed_data[fixed_value]]
+    results = [entry_id for entry_id, entry_property in fixed_data.items() if entry_property.startswith(fixed_value)]
+    if not results:
+        results = [entry_id for entry_id, entry_property in fixed_data.items() if fixed_value in entry_property]
 
-    results = [fixed_data[description] for description in fixed_data.keys() if fixed_value in description]
+    if results and return_on_first:
+        similarity_data = {key: fix_data_delegate(value[property_name]) for key, value in data.items() if key in results}
+        similarity_map = util.get_similarity(similarity_data, fixed_value)
+        max_similarity = max(similarity_map.values())
+        best_hit = [key for key, value in similarity_map.items() if value == max_similarity]
+        return best_hit
+
     return results
 
 
