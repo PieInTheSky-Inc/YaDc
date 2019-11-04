@@ -249,16 +249,20 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     fixed_value = fix_data_delegate(property_value)
     fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
 
-    results = [entry_id for entry_id, entry_property in fixed_data.items() if entry_property.startswith(fixed_value)]
-    if not results:
-        results = [entry_id for entry_id, entry_property in fixed_data.items() if fixed_value in entry_property]
+    results = []
+    results.extend([entry_id for entry_id, entry_property in fixed_data.items() if entry_property.startswith(fixed_value)])
+    results.extend([entry_id for entry_id, entry_property in fixed_data.items() if fixed_value in entry_property])
+    results = list(set(results))
+
+    similarity_data = {key: fix_data_delegate(value[property_name]) for key, value in data.items() if key in results}
+    similarity_map = util.get_similarity(similarity_data, fixed_value)
+    similarities = sorted([(key, value) for key, value in similarity_map.items()], key=lambda x: x[1])
+    results = [entry_id for (entry_id, _) in similarities]
 
     if results and return_on_first:
-        similarity_data = {key: fix_data_delegate(value[property_name]) for key, value in data.items() if key in results}
-        similarity_map = util.get_similarity(similarity_data, fixed_value)
         max_similarity = max(similarity_map.values())
-        best_hit = [key for key, value in similarity_map.items() if value == max_similarity]
-        return best_hit
+        best_hits = [key for key, value in similarity_map.items() if value == max_similarity]
+        return best_hits
 
     return results
 
@@ -469,6 +473,7 @@ def db_disconnect():
 def db_execute(query, cursor):
     cursor.execute(query)
     success = db_try_commit()
+    return success
 
 
 def db_fetchall(query):
