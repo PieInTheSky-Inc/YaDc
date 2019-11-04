@@ -254,12 +254,9 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     results.extend([entry_id for entry_id, entry_property in fixed_data.items() if fixed_value in entry_property])
     results = list(set(results))
 
-    similarity_data = {key: fix_data_delegate(value[property_name]) for key, value in data.items() if key in results}
-    similarity_map = util.get_similarity(similarity_data, fixed_value)
-    similarities = sorted([(key, value) for key, value in similarity_map.items()], key=lambda x: x[1])
-    results = [entry_id for (entry_id, _) in similarities]
-
     if results and return_on_first:
+        similarity_data = {key: fix_data_delegate(value[property_name]) for key, value in data.items() if key in results}
+        similarity_map = util.get_similarity(similarity_data, fixed_value)
         max_similarity = max(similarity_map.values())
         best_hits = [key for key, value in similarity_map.items() if value == max_similarity]
         return best_hits
