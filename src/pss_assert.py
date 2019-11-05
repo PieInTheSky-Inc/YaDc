@@ -1,9 +1,9 @@
 import pss_exception
+import settings
 
 
-MIN_ENTITY_NAME_LENGTH = 2
 
-def valid_entity_name(name: str, min_length: int = MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
+def valid_entity_name(name: str, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
     valid_parameter_value(name, parameter_name='name', min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive)
 
 

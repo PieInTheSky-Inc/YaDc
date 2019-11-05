@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import os
 import re
 
 import pss_assert
 from cache import PssCache
 import pss_core as core
 import pss_lookups as lookups
+import settings
 import utility as util
 
 
@@ -19,9 +21,6 @@ import utility as util
 ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
-ALLOWED_ITEM_NAMES = [
-    'U'
-]
 
 
 
@@ -31,6 +30,48 @@ __item_designs_cache = PssCache(
     ITEM_DESIGN_BASE_PATH,
     'ItemDesigns',
     ITEM_DESIGN_KEY_NAME)
+
+
+NOT_ALLOWED_ITEM_NAMES = [
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+    'VI'
+]
+
+
+def __get_allowed_item_names():
+    result = []
+    item_designs_data = __item_designs_cache.get_data_dict3()
+    for item_design_data in item_designs_data.values():
+        if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
+            item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            if item_name:
+                item_name = core.fix_allowed_value_candidate(item_name)
+                if len(item_name) < settings.MIN_ENTITY_NAME_LENGTH:
+                    result.append(item_name)
+                else:
+                    item_name_parts = item_name.split(' ')
+                    for item_name_part in item_name_parts:
+                        part_length = len(item_name_part)
+                        length_matches = part_length > 1 and part_length < settings.MIN_ENTITY_NAME_LENGTH
+                        is_proper_name = item_name_part == item_name_part.upper()
+                        if length_matches and is_proper_name:
+                            try:
+                                i = int(item_name_part)
+                                continue
+                            except:
+                                if item_name_part not in NOT_ALLOWED_ITEM_NAMES:
+                                    result.append(item_name_part)
+    if result:
+        result = list(set(result))
+    return result
+
+
+__allowed_item_names = sorted(__get_allowed_item_names())
+
 
 
 
@@ -98,9 +139,9 @@ def get_item_info_from_id(item_id: str) -> dict:
 # ---------- Item info ----------
 
 def get_item_details(item_name: str, as_embed=False):
-    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
+    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    return_on_first = util.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    return_on_first = util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
     item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
@@ -145,7 +186,7 @@ def _get_item_info_as_text(item_name: str, item_infos: dict):
 
 def _fix_item_name(item_name):
     result = item_name.lower()
-    result = re.sub('[^a-z0-9]', '', result)
+    result = re.sub('[^a-z0-9 ]', '', result)
     result = re.sub("(darkmatterrifle|dmr)(mark|mk)?(ii|2)", "dmrmarkii", result)
     result = result.replace('anonmask', 'anonymousmask')
     result = result.replace('armour', 'armor')
@@ -160,9 +201,9 @@ def _fix_item_name(item_name):
 # ---------- Price info ----------
 
 def get_item_price(item_name: str, as_embed: bool = False):
-    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
+    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    return_on_first = pss_assert.string_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False)
+    return_on_first = pss_assert.string_in_list(item_name, __allowed_item_names, case_sensitive=False)
     item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
 
     if not item_infos:
@@ -206,7 +247,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 # ---------- Ingredients info ----------
 
 def get_ingredients_for_item(item_name: str, as_embed: bool = False):
-    pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
+    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_design_data = __item_designs_cache.get_data_dict3()
     item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
@@ -435,3 +476,22 @@ def _get_best_item_line(item_info: dict):
     enhancement_value = float(item_info['EnhancementValue'])
     result = f'{name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
     return result
+
+
+
+
+
+
+
+
+
+
+# --------- Testing ----------
+if __name__ == '__main__':
+    test_strings = ['u']
+    for item_name in test_strings:
+        os.system('clear')
+        result = get_item_details(item_name, as_embed=False)
+        for line in result[0]:
+            print(line)
+        result = ''

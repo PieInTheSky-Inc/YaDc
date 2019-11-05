@@ -485,6 +485,7 @@ async def autodaily_post(ctx):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_postall(ctx):
+    await util.try_delete_original_message(ctx)
     await post_all_dailies()
 
 
