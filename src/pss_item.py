@@ -10,6 +10,10 @@ import pss_lookups as lookups
 import utility as util
 
 
+# TODO: Create allowed values dictionary upon start.
+# Get all item designs, split each ones name on ' ' and add each combination of 2 characters found to ALLOWED_ITEM_NAMES
+
+
 # ---------- Constants ----------
 
 ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'

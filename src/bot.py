@@ -17,6 +17,7 @@ import re
 import sys
 import time
 
+import pss_lookups as lookups
 import pss_core as core
 import pss_crew as crew
 import pss_daily as d
@@ -205,14 +206,18 @@ async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
     async with ctx.typing():
         char_output, char_success = crew.get_char_details_from_name(name)
-        if char_success and char_output:
-            await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
-        else:
-            item_output, item_success = item.get_item_details(name)
-            if item_success and item_output:
-                await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
-            else:
-                await ctx.send(f'Could not find a character or an item named **{name}**')
+        item_output, item_success = item.get_item_details(name)
+
+    if char_success and char_output:
+        await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
+
+    if item_success and item_output:
+        if char_success:
+            await ctx.send(core.EMPTY_LINE)
+        await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
+
+    if not char_success and not item_success:
+        await ctx.send(f'Could not find a character or an item named **{name}**')
 
 
 
@@ -587,8 +592,17 @@ async def cmd_time(ctx):
 async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
-        txt = core.read_links_file()
-    await ctx.send(txt)
+        output = core.read_links_file()
+    await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
+@bot.command(brief='Display info on this bot')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def about(ctx):
+    """Displays information on this bot and its authors."""
+    async with ctx.typing():
+        result = core.read_about_file()
+    await ctx.send(result)
 
 
 @bot.group(brief='Information on tournament time', aliases=['tourney'])

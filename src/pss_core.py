@@ -4,6 +4,7 @@
 # ----- Packages ------------------------------------------------------
 import csv
 import datetime
+import json
 import os
 import psycopg2
 from psycopg2 import errors as db_error
@@ -20,8 +21,8 @@ import utility as util
 DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
-PSS_LINKS_FILE = 'src/data/links.csv'
-PSS_ABOUT_FILE = 'src/data/about.txt'
+PSS_LINKS_FILE = 'data/links.json'
+PSS_ABOUT_FILE = 'data/about.txt'
 MAXIMUM_CHARACTERS = 1900
 DB_CONN = None
 EMPTY_LINE = '\u200b'
@@ -424,12 +425,24 @@ def get_base_url():
 
 # ----- Links -----
 def read_links_file():
+    result = []
+    links = {}
     with open(PSS_LINKS_FILE) as f:
-        csv_file = csv.reader(f, delimiter=',')
-        txt = '**Links**'
-        for row in csv_file:
-            title, url = row
-            txt += '\n{}: <{}>'.format(title, url.strip())
+        links = json.load(f)
+    for category, hyperlinks in links.items():
+        result.append(EMPTY_LINE)
+        result.append(f'**{category}**')
+        for (description, hyperlink) in hyperlinks:
+            result.append(f'{description}: <{hyperlink}>')
+    if len(result) > 1:
+        result = result[1:]
+    return result
+
+
+def read_about_file():
+    txt = ''
+    with open(PSS_ABOUT_FILE) as f:
+        txt = f.read()
     return txt
 
 
