@@ -33,6 +33,7 @@ __item_designs_cache = PssCache(
 
 
 NOT_ALLOWED_ITEM_NAMES = [
+    'AI',
     'I',
     'II',
     'III',

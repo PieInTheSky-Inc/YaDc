@@ -17,7 +17,7 @@ import re
 import sys
 import time
 
-import pss_lookups as lookups
+import pss_exception
 import pss_core as core
 import pss_crew as crew
 import pss_daily as d
@@ -25,6 +25,7 @@ import pss_dropship as dropship
 import pss_exception
 import pss_fleets as flt
 import pss_item as item
+import pss_lookups as lookups
 import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
@@ -205,8 +206,16 @@ async def price(ctx, *, item_name=None):
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
     async with ctx.typing():
-        char_output, char_success = crew.get_char_details_from_name(name)
-        item_output, item_success = item.get_item_details(name)
+        try:
+            char_output, char_success = crew.get_char_details_from_name(name)
+        except pss_exception.InvalidParameter:
+            char_output = None
+            char_success = False
+        try:
+            item_output, item_success = item.get_item_details(name)
+        except pss_exception.InvalidParameter:
+            item_output = None
+            item_success = False
 
     if char_success and char_output:
         await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
