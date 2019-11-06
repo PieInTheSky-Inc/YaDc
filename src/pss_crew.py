@@ -7,6 +7,7 @@ from cache import PssCache
 import pss_assert
 import pss_core as core
 import pss_lookups as lookups
+import settings
 import utility as util
 
 
@@ -75,7 +76,7 @@ def get_collection_name(char_id: str, char_designs_data: dict = None, collection
 
 # ---------- Crew info ----------
 
-def get_char_details_from_name(char_name: str, as_embed: bool = False):
+def get_char_details_from_name(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
     char_info = _get_char_info(char_name)

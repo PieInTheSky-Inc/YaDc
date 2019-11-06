@@ -516,7 +516,7 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_details_from_name(room_name: str, as_embed: bool = False):
+def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
     room_designs_data = __room_designs_cache.get_data_dict3()

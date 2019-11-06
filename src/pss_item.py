@@ -201,7 +201,7 @@ def _fix_item_name(item_name):
 
 # ---------- Price info ----------
 
-def get_item_price(item_name: str, as_embed: bool = False):
+def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     return_on_first = pss_assert.string_in_list(item_name, __allowed_item_names, case_sensitive=False)
@@ -247,7 +247,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 
 # ---------- Ingredients info ----------
 
-def get_ingredients_for_item(item_name: str, as_embed: bool = False):
+def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_design_data = __item_designs_cache.get_data_dict3()
@@ -353,7 +353,7 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
 _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (for all slots), {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
-def get_best_items(slot: str, stat: str, as_embed: bool = False):
+def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
     pss_assert.valid_parameter_value(stat, 'stat', allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
 

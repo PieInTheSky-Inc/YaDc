@@ -7,6 +7,7 @@ from cache import PssCache
 import pss_assert
 import pss_core as core
 import pss_lookups as lookups
+import settings
 import utility as util
 
 
@@ -129,7 +130,7 @@ def _get_parents(research_info: dict, research_designs_data: dict) -> list:
 
 # ---------- Research info ----------
 
-def get_research_details_from_name(research_name: str, as_embed: bool = False):
+def get_research_details_from_name(research_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(research_name)
 
     research_designs_data = __research_designs_cache.get_data_dict3()

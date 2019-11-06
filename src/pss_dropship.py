@@ -10,6 +10,7 @@ import pss_crew as crew
 import pss_item as item
 import pss_lookups as lookups
 import pss_room as room
+import settings
 import utility as util
 
 
@@ -47,7 +48,7 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 
 # ---------- Dropship info ----------
 
-def get_dropship_text(as_embed: bool = False, language_key: str = 'en'):
+def get_dropship_text(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
     path = f'SettingService/GetLatestVersion3?languageKey={language_key}&deviceType=DeviceTypeAndroid'
     raw_text = core.get_data_from_path(path)
     raw_data = core.xmltree_to_dict3(raw_text)
@@ -211,7 +212,7 @@ def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict)
 
 # ---------- News info ----------
 
-def get_news(as_embed: bool = False, language_key: str = 'en'):
+def get_news(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
     path = f'SettingService/ListAllNewsDesigns?languageKey={language_key}'
 
     try:

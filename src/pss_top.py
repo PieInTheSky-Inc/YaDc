@@ -7,11 +7,12 @@ import os
 import emojis
 import pss_core as core
 import pss_tournament as tourney
+import settings
 
 
 # ---------- Top 100 Alliances ----------
 
-def get_top_fleets(take: int = 100, as_embed: bool = False):
+def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
     path = f'AllianceService/ListAlliancesByRanking?skip=0&take={take}'
     raw_data = core.get_data_from_path(path)
     data = core.xmltree_to_dict3(raw_data)
@@ -55,7 +56,7 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 
 # ---------- Top 100 Captains ----------
 
-def get_top_captains(take: int = 100, as_embed: bool = False):
+def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
     access_token = os.getenv('GPAT')
     path = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
     raw_data = core.get_data_from_path(path)
