@@ -21,8 +21,8 @@ import utility as util
 DATABASE_URL = os.environ['DATABASE_URL']
 PSS_CHARS_FILE = 'pss-chars.txt'
 PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
-PSS_LINKS_FILE = 'data/links.json'
-PSS_ABOUT_FILE = 'data/about.txt'
+PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
+PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 MAXIMUM_CHARACTERS = 1900
 DB_CONN = None
 EMPTY_LINE = '\u200b'
@@ -446,8 +446,13 @@ def get_base_url():
 def read_links_file():
     result = []
     links = {}
-    with open(PSS_LINKS_FILE) as f:
-        links = json.load(f)
+    for pss_links_file in PSS_LINKS_FILES:
+        try:
+            with open(pss_links_file) as f:
+                links = json.load(f)
+            break
+        except:
+            pass
     for category, hyperlinks in links.items():
         result.append(EMPTY_LINE)
         result.append(f'**{category}**')
@@ -460,8 +465,13 @@ def read_links_file():
 
 def read_about_file():
     txt = ''
-    with open(PSS_ABOUT_FILE) as f:
-        txt = f.read()
+    for pss_about_file in PSS_ABOUT_FILES:
+        try:
+            with open(pss_about_file) as f:
+                txt = f.read()
+            break
+        except:
+            pass
     return txt
 
 
