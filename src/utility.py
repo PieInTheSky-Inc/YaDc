@@ -269,7 +269,14 @@ async def try_delete_original_message(ctx):
         pass
 
 
-def get_similarity(values_to_check: dict, against: str) -> dict:
+def get_similarity(value_to_check: str, against: str) -> float:
+    result = jellyfish.jaro_distance(value_to_check, against)
+    if value_to_check.startswith(against):
+        result += 1.0
+    return result
+
+
+def get_similarity_map(values_to_check: dict, against: str) -> dict:
     result = {}
     for key, value in values_to_check.items():
         similarity = jellyfish.jaro_distance(value, against)

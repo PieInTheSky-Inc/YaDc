@@ -531,32 +531,34 @@ def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMB
             return _get_room_info_as_text(room_name, room_infos, room_designs_data), True
 
 
-def _get_room_infos(room_name: str, room_designs_data: dict = None, return_on_first: bool = False):
+def _get_room_infos(room_name: str, room_designs_data: dict = None):
     if room_designs_data is None:
         room_designs_data = __room_designs_cache.get_data_dict3()
 
-    room_design_ids = _get_room_design_ids_from_name(room_name, room_designs_data=room_designs_data, return_on_first=return_on_first)
+    room_design_ids = _get_room_design_ids_from_name(room_name, room_designs_data=room_designs_data)
     if not room_design_ids:
-        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, room_designs_data=room_designs_data, return_on_first=return_on_first)
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, room_designs_data=room_designs_data)
 
     result = [room_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in room_designs_data.keys()]
     return result
 
 
-def _get_room_design_ids_from_name(room_name: str, room_designs_data: dict = None, return_on_first: bool = False):
+def _get_room_design_ids_from_name(room_name: str, room_designs_data: dict = None):
     if room_designs_data is None:
         room_designs_data = __room_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name, return_on_first=return_on_first)
+    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
     return results
 
 
-def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_data: dict = None, return_on_first: bool = False):
+def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_data: dict = None):
     if room_designs_data is None:
         room_designs_data = __room_designs_cache.get_data_dict3()
 
-    return_on_first = return_on_first or any(char.isdigit() for char in room_short_name)
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name, return_on_first=return_on_first)
+    return_best_match = any(char.isdigit() for char in room_short_name)
+    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
+    if results and return_best_match:
+        results = [results[0]]
     return results
 
 
@@ -566,9 +568,6 @@ def _get_room_info_as_embed(room_name: str, room_infos: dict, room_designs_data:
 
 def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: dict):
     lines = [f'**Room stats for \'{room_name}\'**']
-    room_infos = sorted(room_infos, key=lambda room_info: (
-        _get_key_for_room_sort(room_info, room_designs_data)
-    ))
     room_infos_count = len(room_infos)
 
     if room_infos_count == 1:
@@ -678,7 +677,7 @@ __room_details_properties = [
 # ---------- Testing ----------
 
 if __name__ == '__main__':
-    test_rooms = ['emp']
+    test_rooms = ['ion']
     for room_name in test_rooms:
         os.system('clear')
         result = get_room_details_from_name(room_name, as_embed=False)

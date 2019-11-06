@@ -145,21 +145,21 @@ def get_research_details_from_name(research_name: str, as_embed: bool = settings
             return _get_research_info_as_text(research_name, research_infos, research_designs_data), True
 
 
-def _get_research_infos(research_name: str, research_designs_data: dict = None, return_on_first: bool = False):
+def _get_research_infos(research_name: str, research_designs_data: dict = None):
     if research_designs_data is None:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    research_design_ids = _get_research_design_ids_from_name(research_name, research_designs_data=research_designs_data, return_on_first=return_on_first)
+    research_design_ids = _get_research_design_ids_from_name(research_name, research_designs_data=research_designs_data)
     result = [research_designs_data[research_design_id] for research_design_id in research_design_ids if research_design_id in research_designs_data.keys()]
 
     return result
 
 
-def _get_research_design_ids_from_name(research_name: str, research_designs_data: dict = None, return_on_first: bool = False):
+def _get_research_design_ids_from_name(research_name: str, research_designs_data: dict = None):
     if research_designs_data is None:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(research_designs_data, RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, research_name, return_on_first=return_on_first)
+    results = core.get_ids_from_property_value(research_designs_data, RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, research_name)
     return results
 
 

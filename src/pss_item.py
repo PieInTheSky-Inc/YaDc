@@ -142,8 +142,7 @@ def get_item_info_from_id(item_id: str) -> dict:
 def get_item_details(item_name: str, as_embed=False):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    return_on_first = util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
-    item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
+    item_infos = _get_item_infos(item_name)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -154,21 +153,28 @@ def get_item_details(item_name: str, as_embed=False):
             return _get_item_info_as_text(item_name, item_infos), True
 
 
-def _get_item_infos(item_name: str, item_design_data: dict = None, return_on_first: bool = False):
+
+
+def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_match: bool = False):
     if item_design_data is None:
         item_design_data = __item_designs_cache.get_data_dict3()
 
-    item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data, return_on_first=return_on_first)
+    item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data)
     result = [item_design_data[item_design_id] for item_design_id in item_design_ids if item_design_id in item_design_data.keys()]
+
+    if result:
+        get_best_match = return_best_match or util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
+        if get_best_match:
+            result = [result[0]]
 
     return result
 
 
-def _get_item_design_ids_from_name(item_name: str, item_data: dict = None, return_on_first: bool = False):
+def _get_item_design_ids_from_name(item_name: str, item_data: dict = None):
     if item_data is None:
         item_data = __item_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name, return_on_first=return_on_first)
+    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name)
     return results
 
 
@@ -204,12 +210,15 @@ def _fix_item_name(item_name):
 def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    return_on_first = pss_assert.string_in_list(item_name, __allowed_item_names, case_sensitive=False)
-    item_infos = _get_item_infos(item_name, return_on_first=return_on_first)
+    item_infos = _get_item_infos(item_name)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
+        get_best_match = util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
+        if get_best_match:
+            item_infos = [item_infos[0]]
+
         if as_embed:
             return _get_item_price_as_embed(item_name, item_infos), True
         else:
@@ -251,7 +260,7 @@ def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE_EMBED
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_design_data = __item_designs_cache.get_data_dict3()
-    item_infos = _get_item_infos(item_name, item_design_data, return_on_first=True)
+    item_infos = _get_item_infos(item_name, item_design_data, return_best_match=True)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -489,7 +498,7 @@ def _get_best_item_line(item_info: dict):
 
 # --------- Testing ----------
 if __name__ == '__main__':
-    test_strings = ['u']
+    test_strings = ['armor']
     for item_name in test_strings:
         os.system('clear')
         result = get_item_details(item_name, as_embed=False)
