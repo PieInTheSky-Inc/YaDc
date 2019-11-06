@@ -5,8 +5,7 @@ items-*.txt
 *.csv
 
 # files created at runtime
-*.json
-!src/data/id_names.json
+launch.json
 *.xml
 
 # Byte-compiled / optimized / DLL files
