@@ -337,7 +337,7 @@ async def autodaily_fix(ctx):
     await ctx.send('Fixed daily channels')
 
 
-@autodaily.command(name='set', hidden=True, brief='Set an autodaily channel.')
+@autodaily.command(name='set', brief='Set an autodaily channel.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_set(ctx, text_channel: discord.TextChannel):
@@ -352,7 +352,7 @@ async def autodaily_set(ctx, text_channel: discord.TextChannel):
         await ctx.send(txt)
 
 
-@autodaily.command(name='get', hidden=True, brief='Get the autodaily channel.')
+@autodaily.command(name='get', brief='Get the autodaily channel.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_get(ctx):
@@ -454,7 +454,7 @@ async def autodaily_list_valid(ctx):
         ctx.send('Auto-posting of the daily announcement is not configured for any server!')
 
 
-@autodaily.command(name='remove', hidden=True, brief='Turn off autodaily feature for this server.')
+@autodaily.command(name='remove', brief='Turn off autodaily feature for this server.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_remove(ctx):
