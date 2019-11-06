@@ -373,6 +373,7 @@ async def autodaily_get(ctx):
 
 
 @autodaily.group(name='list', hidden=True)
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_list(ctx):
@@ -380,6 +381,7 @@ async def autodaily_list(ctx):
 
 
 @autodaily_list.command(name='all', hidden=True)
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_list_all(ctx):
@@ -405,6 +407,7 @@ async def autodaily_list_all(ctx):
 
 
 @autodaily_list.command(name='invalid', hidden=True)
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_list_invalid(ctx):
@@ -430,6 +433,7 @@ async def autodaily_list_invalid(ctx):
 
 
 @autodaily_list.command(name='valid', hidden=True)
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_list_valid(ctx):
