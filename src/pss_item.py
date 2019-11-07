@@ -293,7 +293,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
                 item_price = int(item_info['MarketPrice'])
                 price_sum = item_price * item_amount
                 current_level_costs += price_sum
-                current_level_lines.append(f'{item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
+                current_level_lines.append(f'> {item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
             lines.append(core.EMPTY_LINE)
