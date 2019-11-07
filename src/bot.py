@@ -181,7 +181,7 @@ async def recipe(ctx, *, char_name=None):
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(brief='Get item ingredients')
+@bot.command(brief='Get item ingredients', aliases=['ing'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def ingredients(ctx, *, name=None):
     """Get the ingredients for an item"""
