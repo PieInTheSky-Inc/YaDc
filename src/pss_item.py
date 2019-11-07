@@ -193,7 +193,7 @@ def _get_item_info_as_text(item_name: str, item_infos: dict):
 
 def _fix_item_name(item_name):
     result = item_name.lower()
-    result = re.sub('[^a-z0-9 ]', '', result)
+    result = re.sub('[^a-z0-9]', '', result)
     result = re.sub("(darkmatterrifle|dmr)(mark|mk)?(ii|2)", "dmrmarkii", result)
     result = result.replace('anonmask', 'anonymousmask')
     result = result.replace('armour', 'armor')
@@ -498,7 +498,7 @@ def _get_best_item_line(item_info: dict):
 
 # --------- Testing ----------
 if __name__ == '__main__':
-    test_strings = ['armor']
+    test_strings = ['gravity', 'gravity loader']
     for item_name in test_strings:
         os.system('clear')
         result = get_item_details(item_name, as_embed=False)

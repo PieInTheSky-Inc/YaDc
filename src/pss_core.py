@@ -9,6 +9,7 @@ import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
+import sys
 from typing import Callable
 import urllib.parse
 import urllib.request
@@ -258,12 +259,21 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     fixed_value = fix_data_delegate(property_value)
     fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
 
-    similarity_map = []
+    similarity_map = {}
     for entry_id, entry_property in fixed_data.items():
         if entry_property.startswith(fixed_value) or fixed_value in entry_property:
-            similarity_map.append((entry_id, entry_property, 1/util.get_similarity(entry_property, fixed_value)))
-    similarity_map = sorted(similarity_map, key=lambda x: f'{x[2]:0.6f}{x[1]}')
-    results = [entry_id for (entry_id, _, _) in similarity_map]
+            similarity_value = util.get_similarity(entry_property, fixed_value)
+            if similarity_value in similarity_map.keys():
+                similarity_map[similarity_value].append((entry_id, entry_property))
+            else:
+                similarity_map[similarity_value] = [(entry_id, entry_property)]
+    for similarity_value, entries in similarity_map.items():
+        similarity_map[similarity_value] = sorted(entries, key=lambda entry: entry[1])
+    similarity_values = sorted(list(similarity_map.keys()), reverse=True)
+    results = []
+    for similarity_value in similarity_values:
+        entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
+        results.extend(entry_ids)
 
     return results
 
