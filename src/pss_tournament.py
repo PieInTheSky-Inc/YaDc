@@ -33,6 +33,8 @@ def format_tourney_start(start_date, utc_now):
 
 
 def embed_tourney_start(start_date, utc_now, colour=None):
+    if colour is None:
+        colour = 0
     fields = []
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
@@ -50,7 +52,7 @@ def embed_tourney_start(start_date, utc_now, colour=None):
         delta_end = end_date - utc_now
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
         fields.append(util.get_embed_field_def('Ends', delta_end_formatted, True))
-    result = util.create_embed(f'{tourney_month} tournament', None, colour, fields)
+    result = util.create_embed(f'{tourney_month} tournament', colour=colour, fields=fields)
     return result
 
 
