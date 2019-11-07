@@ -398,7 +398,7 @@ def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_dat
 
     if item_infos:
         for item_info in item_infos:
-            lines.append(f'__{item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}__')
+            lines.append(f'**{item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
             ingredients = _get_ingredients_dict(item_info['Ingredients'])
             for item_id, amount in ingredients.items():
                 ingredient_info = item_design_data[item_id]
