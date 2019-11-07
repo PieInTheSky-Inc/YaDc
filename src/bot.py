@@ -191,6 +191,16 @@ async def ingredients(ctx, *, name=None):
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
+@bot.command(brief='Get crafting recipes')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def upgrade(ctx, *, item_name=None):
+    """Returns any crafting recipe involving the requested item."""
+    async with ctx.typing():
+        output, _ = item.get_item_upgrades_from_name(item_name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def price(ctx, *, item_name=None):

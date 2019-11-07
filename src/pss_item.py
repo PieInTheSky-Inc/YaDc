@@ -61,7 +61,7 @@ def __get_allowed_item_names():
                         is_proper_name = item_name_part == item_name_part.upper()
                         if length_matches and is_proper_name:
                             try:
-                                i = int(item_name_part)
+                                int(item_name_part)
                                 continue
                             except:
                                 if item_name_part not in NOT_ALLOWED_ITEM_NAMES:
@@ -155,7 +155,7 @@ def get_item_details(item_name: str, as_embed=False):
 
 
 
-def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_match: bool = False):
+def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
     if item_design_data is None:
         item_design_data = __item_designs_cache.get_data_dict3()
 
@@ -170,7 +170,7 @@ def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_m
     return result
 
 
-def _get_item_design_ids_from_name(item_name: str, item_data: dict = None):
+def _get_item_design_ids_from_name(item_name: str, item_data: dict = None) -> list:
     if item_data is None:
         item_data = __item_designs_cache.get_data_dict3()
 
@@ -182,7 +182,7 @@ def _get_item_info_as_embed(item_name: str, item_infos: dict):
     return ''
 
 
-def _get_item_info_as_text(item_name: str, item_infos: dict):
+def _get_item_info_as_text(item_name: str, item_infos: dict) -> list:
     lines = [f'**Item stats for \'{item_name}\'**']
 
     for item_info in item_infos:
@@ -191,7 +191,7 @@ def _get_item_info_as_text(item_name: str, item_infos: dict):
     return lines
 
 
-def _fix_item_name(item_name):
+def _fix_item_name(item_name) -> str:
     result = item_name.lower()
     result = re.sub('[^a-z0-9]', '', result)
     result = re.sub("(darkmatterrifle|dmr)(mark|mk)?(ii|2)", "dmrmarkii", result)
@@ -311,7 +311,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
         return []
 
     # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
-    ingredients_dict = dict([split_str.split('x') for split_str in ingredients_str.split('|')])
+    ingredients_dict = _get_ingredients_dict(ingredients_str)
     result = []
 
     for item_id, item_amount in ingredients_dict.items():
@@ -324,6 +324,11 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
             item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
             result.append((item_id, combined_amount, item_ingredients))
 
+    return result
+
+
+def _get_ingredients_dict(ingredients: str) -> dict:
+    result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
     return result
 
 
@@ -352,6 +357,56 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
         result.extend(flattened_subs)
 
     return result
+
+
+
+
+
+
+# ---------- Upgrade info ----------
+
+def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
+
+    item_design_data = __item_designs_cache.get_data_dict3()
+    item_infos = _get_item_infos(item_name)
+
+    if not item_infos:
+        return [f'Could not find an item named **{item_name}**.'], False
+    else:
+        item_name = item_infos[0][ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        item_infos = _get_upgrades_for(item_infos[0][ITEM_DESIGN_KEY_NAME], item_design_data)
+
+        if as_embed:
+            return _get_item_upgrades_as_embed(item_name, item_infos, item_design_data), True
+        else:
+            return _get_item_upgrades_as_text(item_name, item_infos, item_design_data), True
+
+
+def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:
+    # iterate through item_design_data and return every item_design containing the item id in question in property 'Ingredients'
+    result = [item_info for item_info in item_design_data.values() if item_id in item_info['Ingredients']]
+    return result
+
+
+def _get_item_upgrades_as_embed(item_name: str, item_infos: dict, item_design_data: dict):
+    return ''
+
+
+def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_data) -> list:
+    lines = [f'**Crafting recipes requiring {item_name}**']
+
+    if item_infos:
+        for item_info in item_infos:
+            lines.append(f'__{item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}__')
+            ingredients = _get_ingredients_dict(item_info['Ingredients'])
+            for item_id, amount in ingredients.items():
+                ingredient_info = item_design_data[item_id]
+                lines.append(f'> {ingredient_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]} x{amount}')
+    else:
+        lines.append(f'This item cannot be upgraded.')
+
+    return lines
 
 
 
