@@ -191,7 +191,7 @@ async def ingredients(ctx, *, name=None):
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(brief='Get crafting recipes')
+@bot.command(brief='Get crafting recipes', aliases=['upg'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def upgrade(ctx, *, item_name=None):
     """Returns any crafting recipe involving the requested item."""
