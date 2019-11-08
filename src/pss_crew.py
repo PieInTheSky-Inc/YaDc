@@ -319,7 +319,7 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**{found_char_name} can be prestiged into:**']
+    lines = [f'**There are {len(prestige_from_data)} ways to prestige {found_char_name} into:**']
 
     prestige_infos = []
     for value in prestige_from_data.values():
@@ -357,7 +357,7 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     char_info_to = _get_char_info(char_name)
     found_char_name = char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**{found_char_name} can be prestiged from:**']
+    lines = [f'**There are {len(prestige_to_data)} ways to prestige {found_char_name} from:**']
 
     prestige_infos = []
     for value in prestige_to_data.values():
