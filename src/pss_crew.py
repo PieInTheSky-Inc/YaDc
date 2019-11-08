@@ -319,26 +319,19 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**{found_char_name} can be prestiged into**']
+    lines = [f'**{found_char_name} can be prestiged into:**']
 
-    body_lines_raw = []
+    prestige_infos = []
     for value in prestige_from_data.values():
-        char_info_2 = char_data[value['CharacterDesignId2']]
-        char_info_to = char_data[value['ToCharacterDesignId']]
-        body_lines_raw.append((char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
-
-    if body_lines_raw:
-        intermediate_result = []
-        char_info_to_names = sorted(list(set([body_line_raw[1] for body_line_raw in body_lines_raw])))
-        for char_info_to_name in char_info_to_names:
-            char_info_2_names = sorted(list(set([body_line_raw[0] for body_line_raw in body_lines_raw if body_line_raw[1] == char_info_to_name])))
-            for char_info_2_name in char_info_2_names:
-                intermediate_result.append((char_info_2_name, char_info_to_name))
-        body_lines_raw = intermediate_result
+        char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        char_info_to_name = char_data[value['ToCharacterDesignId']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        prestige_infos.append((char_info_2_name, char_info_to_name))
 
     body_lines = []
-    for body_line_raw in body_lines_raw:
-        body_lines.append(f'+ {body_line_raw[0]} = {body_line_raw[1]}')
+    if prestige_infos:
+        prestige_infos = util.sort_tuples_by(prestige_infos, [(1, False), (0, False)])
+        for (char_info_2_name, char_info_to_name) in prestige_infos:
+            body_lines.append(f'+ {char_info_2_name} = {char_info_to_name}')
 
     if body_lines:
         lines.extend(body_lines)
@@ -364,16 +357,21 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     char_info_to = _get_char_info(char_name)
     found_char_name = char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**{found_char_name} can be prestiged from**']
-    body_lines = []
+    lines = [f'**{found_char_name} can be prestiged from:**']
 
+    prestige_infos = []
     for value in prestige_to_data.values():
-        char_info_1 = char_data[value['CharacterDesignId1']]
-        char_info_2 = char_data[value['CharacterDesignId2']]
-        body_lines.append(f'{char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} + {char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}')
+        char_info_1_name = char_data[value['CharacterDesignId1']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        prestige_infos.append((char_info_1_name, char_info_2_name))
+
+    body_lines = []
+    if prestige_infos:
+        prestige_infos = util.sort_tuples_by(prestige_infos, [(0, False), (1, False)])
+        for (char_info_1_name, char_info_2_name) in prestige_infos:
+            body_lines.append(f'{char_info_1_name} + {char_info_2_name}')
 
     if body_lines:
-        body_lines = sorted(body_lines)
         lines.extend(body_lines)
     else:
         if char_info_to['Rarity'] == 'Special':

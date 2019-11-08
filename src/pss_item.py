@@ -147,6 +147,8 @@ def get_item_details(item_name: str, as_embed=False):
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, False)])
+
         if as_embed:
             return _get_item_info_as_embed(item_name, item_infos), True
         else:
@@ -218,6 +220,8 @@ def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
         get_best_match = util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
             item_infos = [item_infos[0]]
+
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, False)])
 
         if as_embed:
             return _get_item_price_as_embed(item_name, item_infos), True
@@ -328,7 +332,9 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
 
 
 def _get_ingredients_dict(ingredients: str) -> dict:
-    result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
+    result = {}
+    if ingredients and ingredients != '0':
+        result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
     return result
 
 
@@ -376,6 +382,7 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
     else:
         item_name = item_infos[0][ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         item_infos = _get_upgrades_for(item_infos[0][ITEM_DESIGN_KEY_NAME], item_design_data)
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, False)])
 
         if as_embed:
             return _get_item_upgrades_as_embed(item_name, item_infos, item_design_data), True
@@ -385,7 +392,11 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
 
 def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:
     # iterate through item_design_data and return every item_design containing the item id in question in property 'Ingredients'
-    result = [item_info for item_info in item_design_data.values() if item_id in item_info['Ingredients']]
+    result = []
+    for item_info in item_design_data.values():
+        ingredient_item_ids = list(_get_ingredients_dict(item_info['Ingredients']).keys())
+        if item_id in ingredient_item_ids:
+            result.append(item_info)
     return result
 
 
@@ -553,10 +564,10 @@ def _get_best_item_line(item_info: dict):
 
 # --------- Testing ----------
 if __name__ == '__main__':
-    test_strings = ['gravity', 'gravity loader']
+    test_strings = ['scrap']
     for item_name in test_strings:
         os.system('clear')
-        result = get_item_details(item_name, as_embed=False)
+        result = get_item_upgrades_from_name(item_name, as_embed=False)
         for line in result[0]:
             print(line)
         result = ''
