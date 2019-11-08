@@ -4,24 +4,27 @@
 # ----- Packages ------------------------------------------------------
 import csv
 import datetime
-from enum import Enum
 import json
 import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
+import sys
+from typing import Callable
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
+import data
 import utility as util
 
 
-PSS_CHARS_FILE = 'pss-chars.txt'
-PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
-PSS_LINKS_FILE = 'src/data/links.csv'
-PSS_ABOUT_FILE = 'src/data/about.txt'
+DATABASE_URL = os.environ['DATABASE_URL']
+PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
+PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 MAXIMUM_CHARACTERS = 1900
+DB_CONN = None
+EMPTY_LINE = '\u200b'
 
 DATABASE_URL = os.environ['DATABASE_URL']
 DB_CONN = None
@@ -33,6 +36,15 @@ SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 def get_data_from_url(url):
     data = urllib.request.urlopen(url).read()
     return data.decode('utf-8')
+
+
+def get_data_from_path(path):
+    if path:
+        path = path.strip('/')
+    base_url = get_base_url()
+    url = f'{base_url}{path}'
+    return get_data_from_url(url)
+
 
 
 def save_raw_text(raw_text, filename):
@@ -82,7 +94,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
         return True
     file_stats = os.stat(filename)
     modify_date = file_stats.st_mtime
-    utc_now = util.get_utcnow(True)
+    utc_now = util.get_utcnow()
     time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
     if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
@@ -104,39 +116,112 @@ def load_data_from_url(filename, url, refresh='auto'):
     return raw_text
 
 
-def xmltree_to_dict3(raw_text, key):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    d = {}
-    for c in root:
-        for cc in c:
-            for ccc in cc:
-                d[ccc.attrib[key]] = ccc.attrib
-    return d
+def xmltree_to_dict3(raw_text):
+    root = convert_raw_xml_to_dict(raw_text)
+    for c in root.values():
+        if isinstance(c, dict):
+            for cc in c.values():
+                if isinstance(cc, dict):
+                    #d = dict(list(cc.values()))
+                    for ccc in cc.values():
+                        if isinstance(ccc, dict):
+                            return ccc
+    return {}
 
 
-def convert_3_level_xml_to_dict(raw_text, key_name, tag):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    result = {}
-    for c in root:
-        for cc in c:
-            for ccc in cc:
-                if ccc.tag != tag:
-                    continue
-                key = ccc.attrib[key_name]
-                result[key] = ccc.attrib
+def xmltree_to_dict2(raw_text):
+    root = convert_raw_xml_to_dict(raw_text)
+    for c in root.values():
+        if isinstance(c, dict):
+            for cc in c.values():
+                if isinstance(cc, dict):
+                    return cc
+    return {}
+
+
+
+
+
+def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
+    root = xml.etree.ElementTree.fromstring(raw_xml)
+    # Create an empty dictionary
+    result = convert_xml_to_dict(root, include_root)
     return result
 
 
-def xmltree_to_dict2(raw_text, key=None):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    for c in root:
-        d = {}
-        for cc in c:
-            if key is None:
-                d = cc.attrib
-            else:
-                d[cc.attrib[key]] = cc.attrib
-    return d
+def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True) -> dict:
+    if root is None:
+        return None
+
+    result = {}
+    if root.attrib:
+        if include_root:
+            result[root.tag] = fix_attrib(root.attrib)
+        else:
+            result = fix_attrib(root.attrib)
+    elif include_root:
+        result[root.tag] = {}
+
+    # Retrieve all distinct names of sub tags
+    tag_count = get_child_tag_count(root)
+
+    for child in root:
+        tag = child.tag
+        key = None
+        if tag_count[tag] < 1:
+            continue
+        elif tag_count[tag] > 1:
+            id_attr_names = data.ID_NAMES_INFO[tag]
+            if id_attr_names:
+                key = ''
+                id_attr_values = []
+                for id_attr_name in id_attr_names:
+                    id_attr_values.append(child.attrib[id_attr_name])
+                id_attr_values = sorted(id_attr_values)
+                key = '.'.join(id_attr_values)
+
+        if not key:
+            key = tag
+
+        child_dict = convert_xml_to_dict(child, False)
+        if include_root:
+            if key not in result[root.tag].keys():
+                result[root.tag][key] = child_dict
+        else:
+            if key not in result.keys():
+                result[key] = child_dict
+
+    return result
+
+
+def get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
+    if root is None:
+        return None
+
+    child_tags = list(set([child_node.tag for child_node in root]))
+    result = {}
+    for child_tag in child_tags:
+        result[child_tag] = sum(1 for child_node in root if child_node.tag == child_tag)
+
+    return result
+
+
+def fix_attrib(attrib: dict) -> dict:
+    if not attrib:
+        return None
+
+    result = {}
+
+    for (key, value) in attrib.items():
+        if key.endswith('Xml') and value:
+            raw_xml = value
+            #raw_xml = html.unescape(value)
+            fixed_value = convert_raw_xml_to_dict(raw_xml)
+            result[key[:-3]] = fixed_value
+
+        result[key] = value
+
+    return result
 
 
 def convert_2_level_xml_to_dict(raw_text, key_name, tag):
@@ -198,6 +283,160 @@ def parse_unicode(text, action):
         return urllib.parse.unquote(text)
 
 
+__rx_property_fix_replace = re.compile(r'[^a-z0-9]', re.IGNORECASE)
+__rx_allowed_candidate_fix_replace = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
+
+def fix_property_value(property_value: str) -> str:
+    result = property_value.lower()
+    result = result.strip()
+    result = __rx_property_fix_replace.sub('', result)
+    return result
+
+
+def fix_allowed_value_candidate(candidate: str) -> str:
+    result = candidate.strip()
+    result = __rx_allowed_candidate_fix_replace.sub('', result)
+    return result
+
+
+
+def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None) -> list:
+    # data structure: {id: content}
+    # fixed_data structure: {description: id}
+    if not data or not property_name or not property_value:
+        print(f'- get_ids_from_property_value: invalid data or property info. Return empty list.')
+        return []
+
+    if not fix_data_delegate:
+        fix_data_delegate = fix_property_value
+
+    fixed_value = fix_data_delegate(property_value)
+    fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
+
+    similarity_map = {}
+    for entry_id, entry_property in fixed_data.items():
+        if entry_property.startswith(fixed_value) or fixed_value in entry_property:
+            similarity_value = util.get_similarity(entry_property, fixed_value)
+            if similarity_value in similarity_map.keys():
+                similarity_map[similarity_value].append((entry_id, entry_property))
+            else:
+                similarity_map[similarity_value] = [(entry_id, entry_property)]
+    for similarity_value, entries in similarity_map.items():
+        similarity_map[similarity_value] = sorted(entries, key=lambda entry: entry[1])
+    similarity_values = sorted(list(similarity_map.keys()), reverse=True)
+    results = []
+    for similarity_value in similarity_values:
+        entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
+        results.extend(entry_ids)
+
+    return results
+
+
+def filter_data_list(data: list, by: dict, ignore_case: bool = False):
+    """Parameter 'data':
+       - A list of entity dicts
+       Parameter 'by':
+       - Keys are names of entity fields to filter by.
+       - Values are values that each respective field should have."""
+    result = data
+    if by:
+        for key, value in by.items():
+            result = _filter_data_list(result, key, value, ignore_case)
+    return result
+
+
+def _filter_data_list(data: list, by_key, by_value, ignore_case: bool):
+    """Parameter 'data':
+       - A list of entity dicts """
+    if data:
+        result = []
+        for entry in data:
+            entry_value = entry[by_key]
+            value = by_value
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+                value = str(value).lower()
+            if isinstance(by_value, list):
+                if entry_value in value:
+                    result.append(entry)
+            elif entry_value == value:
+                    result.append(entry)
+        return result
+    else:
+        return data
+
+
+def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values.
+       Parameter 'by':
+       - Keys are names of entity fields to filter by.
+       - Values are values that each respective field should have. """
+    result = data
+    if by:
+        for key, value in by.items():
+            result = _filter_data_dict(result, key, value, ignore_case)
+    return result
+
+
+def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for key, entry in data.items():
+            entry_value = entry[by_key]
+            value = by_value
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+                value = str(value).lower()
+            if isinstance(by_value, list):
+                if entry_value in value:
+                    result[key] = entry
+            elif entry_value == value:
+                    result[key] = entry
+        return result
+    else:
+        return data
+
+
+def group_data_list(data: list, by_key, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for entry in data:
+            entry_value = entry[by_key]
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+            if entry_value in result.keys():
+                result[entry_value].append(entry)
+            else:
+                result[entry_value] = [entry]
+        return result
+    else:
+        return data
+
+
+def group_data_dict(data: dict, by_key, ignore_case: bool = False):
+    """Parameter 'data':
+       - A dict with entity ids as keys and entity info as values. """
+    if data:
+        result = {}
+        for key, entry in data.items():
+            entry_value = entry[by_key]
+            if ignore_case:
+                entry_value = str(entry_value).lower()
+            if entry_value in result.keys():
+                result[entry_value][key] = entry
+            else:
+                new_group = {key: entry}
+                result[entry_value] = new_group
+        return result
+    else:
+        return data
+
+
 # ----- Display -----
 def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
     txt_list = []
@@ -239,228 +478,70 @@ def get_real_name(search_str, lst_original):
 
 # ----- Get Production Server -----
 def get_production_server():
-    url = 'http://api.pixelstarships.com/SettingService/GetLatestVersion2?languageKey=en'
+    url = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
     raw_text = get_data_from_url(url)
-    d = xmltree_to_dict2(raw_text, key=None)
+    d = xmltree_to_dict3(raw_text)
     return d['ProductionServer']
 
 
-# ----- Character Sheets -----
-def save_char_brief(d, filename=PSS_CHARS_FILE):
-    with open(filename, 'w') as f:
-        for key in d.keys():
-            entry = d[key]
-            f.write('{},{},{}\n'.format(
-                key,
-                d[key]['CharacterDesignName'],
-                d[key]['Rarity']))
-
-
-def load_char_brief(filename=PSS_CHARS_FILE):
-    with open(filename, 'r') as csvfile:
-        readCSV = csv.reader(csvfile, delimiter=',')
-        tbl, rtbl, rarity = {}, {}, {}
-        for row in readCSV:
-            char_id, char_dn, rarity[char_dn] = row
-            tbl[char_id] = char_dn
-            rtbl[char_dn] = char_id
-    return tbl, rtbl, rarity
-
-
-def get_extra_tables(d):
-    rtbl, rarity = {}, {}
-    for key in d.keys():
-        name = d[key]['CharacterDesignName']
-        rtbl[name] = key
-        rarity[name] = d[key]['Rarity']
-    return rtbl, rarity
-
-
-def load_char_brief_cache(url, filename=PSS_CHARS_FILE, raw_file=PSS_CHARS_RAW_FILE):
-    if is_old_file(filename, max_seconds=3600, verbose=False):
-        raw_text = load_data_from_url(raw_file, url, refresh='auto')
-        tbl = xmltree_to_dict3(raw_text, 'CharacterDesignId')
-        rtbl, rarity = get_extra_tables(tbl)
-        save_char_sheet(tbl, filename)
-    else:
-        tbl, rtbl, rarity = load_char_brief(filename)
-    return tbl, rtbl, rarity
+def get_base_url():
+    production_server = get_production_server()
+    result = f'https://{production_server}/'
+    return result
 
 
 # ----- Links -----
 def read_links_file():
-    with open(PSS_LINKS_FILE) as f:
-        csv_file = csv.reader(f, delimiter=',')
-        txt = '**Links**'
-        for row in csv_file:
-            title, url = row
-            txt += '\n{}: <{}>'.format(title, url.strip())
+    result = []
+    links = {}
+    for pss_links_file in PSS_LINKS_FILES:
+        try:
+            with open(pss_links_file) as f:
+                links = json.load(f)
+            break
+        except:
+            pass
+    for category, hyperlinks in links.items():
+        result.append(EMPTY_LINE)
+        result.append(f'**{category}**')
+        for (description, hyperlink) in hyperlinks:
+            result.append(f'{description}: <{hyperlink}>')
+    if len(result) > 1:
+        result = result[1:]
+    return result
+
+
+def read_about_file():
+    txt = ''
+    for pss_about_file in PSS_ABOUT_FILES:
+        try:
+            with open(pss_about_file) as f:
+                txt = f.read()
+            break
+        except:
+            pass
     return txt
 
 
-# ----- About -----
-#def read_about_file():
-#    with open(PSS_ABOUT_FILE) as f:
-#        csv_file = csv.reader(f, delimiter=',')
-#        txt = '**About**'
-#        for row in csv_file:
-#            title, url = row
-#            txt += '\n{}: <{}>'.format(title, url.strip())
-#    return txt
-
-
-class SettingType(Enum):
-    Boolean = 1
-    Float = 2
-    Integer = 3
-    Text = 4
-    Timestamp = 5
-
-    def __new__(cls, value):
-        member = object.__new__(cls)
-        member._value_ = value
-        return member
-
-    def __int__(self):
-        return self.value
-
-
-def get_setting(setting_name, setting_type):
-    setting_name = util.db_convert_text(setting_name)
-    column_name = ''
-    where = util.db_get_where_string('settingname', setting_name, True)
-    column_number = int(setting_type) + 1
-
-    result = db_select_first_from_where(SETTINGS_TABLE_NAME, where)
-    if result is None:
-        return None
-    else:
-        result = result[column_number]
-        if setting_type == SettingType.Boolean:
-            result = util.db_convert_to_boolean(result)
-        elif setting_type == SettingType.Float:
-            result = util.db_convert_to_float(result)
-        elif setting_type == SettingType.Integer:
-            result = util.db_convert_to_int(result)
-        elif setting_type == SettingType.Text:
-            result = result
-        elif setting_type == SettingType.Timestamp:
-            result = util.db_convert_to_datetime(result)
-        return result
-
-
-def try_store_setting(setting_name, value, setting_type):
-    success = False
-    error = None
-    existing_setting_value = get_setting(setting_name, setting_type)
-    setting_name = util.db_convert_text(setting_name)
-    column_name = ''
-
-    if setting_type == SettingType.Boolean:
-        column_name = 'settingboolean'
-        value = util.db_convert_boolean(value)
-    elif setting_type == SettingType.Float:
-        column_name = 'settingfloat'
-        value = value
-    elif setting_type == SettingType.Integer:
-        column_name = 'settingint'
-        value = value
-    elif setting_type == SettingType.Text:
-        column_name = 'settingtext'
-        value = util.db_convert_text(value)
-    elif setting_type == SettingType.Timestamp:
-        column_name = 'settingtimestamptz'
-        value = util.db_convert_timestamp(value)
-
-    utc_now = util.get_utcnow()
-    modify_date = util.db_convert_timestamp(utc_now)
-    values = ','.join([setting_name, modify_date, value])
-    if existing_setting_value is None:
-        query_insert = 'INSERT INTO {} (settingname, modifydate, {}) VALUES ({})'.format(SETTINGS_TABLE_NAME, column_name, values)
-        success, error = db_try_execute(query_insert)
-    else:
-        query_update = 'UPDATE {} SET modifydate = {}, {} = {} WHERE settingname = {}'.format(SETTINGS_TABLE_NAME, modify_date, column_name, value, setting_name)
-        success, error = db_try_execute(query_update)
-    return success
-
-
-# ---------- DataBase initilization ----------
-def init_db(from_scratch=False):
-    from pss_daily import DAILY_TABLE_NAME
-    from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
-    error = None
-    if from_scratch:
-        deleted_table_daily, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DAILY_TABLE_NAME))
-        if deleted_table_daily:
-            print('[init_db] dropped table {}'.format(DAILY_TABLE_NAME))
-        else:
-            print('[init_db] Could not drop table {}'.format(DAILY_TABLE_NAME))
-        deleted_table_dropship, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(DROPSHIP_TEXT_TABLE_NAME))
-        if deleted_table_dropship:
-            print('[init_db] dropped table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
-        else:
-            print('[init_db] Could not drop table {}'.format(DROPSHIP_TEXT_TABLE_NAME))
-        deleted_table_settings, error = db_try_execute('DROP TABLE IF EXISTS {} CASCADE'.format(SETTINGS_TABLE_NAME))
-        if deleted_table_settings:
-            print('[init_db] dropped table {}'.format(SETTINGS_TABLE_NAME))
-        else:
-            print('[init_db] Could not drop table {}'.format(SETTINGS_TABLE_NAME))
-    created_table_daily = try_create_table_daily()
-    created_table_dropship = try_create_table_dropship_text()
-    created_table_settings = try_create_table_settings()
-    success = created_table_daily and created_table_dropship and created_table_settings
+# ---------- DataBase ----------
+def init_db():
+    success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
     if success:
         print('[init_db] db initialization succeeded')
     else:
         print('[init_db] db initialization failed')
 
 
-def try_create_table_settings():
-    column_definitions = []
-    column_definitions.append(util.db_get_column_definition('settingname', 'text', is_primary=True, not_null=True))
-    column_definitions.append(util.db_get_column_definition('modifydate', 'timestamptz', not_null=True))
-    column_definitions.append(util.db_get_column_definition('settingboolean', 'boolean'))
-    column_definitions.append(util.db_get_column_definition('settingfloat', 'double precision'))
-    column_definitions.append(util.db_get_column_definition('settingint', 'integer'))
-    column_definitions.append(util.db_get_column_definition('settingtext', 'text'))
-    column_definitions.append(util.db_get_column_definition('settingtimestamptz', 'timestamptz'))
-    success = db_try_create_table(SETTINGS_TABLE_NAME, column_definitions)
-    return success
-
-
-def try_create_table_daily():
-    from pss_daily import DAILY_TABLE_NAME
-    column_definitions = []
-    column_definitions.append(util.db_get_column_definition('guildid', 'text', is_primary=True, not_null=True))
-    column_definitions.append(util.db_get_column_definition('channelid', 'text', not_null=True))
-    column_definitions.append(util.db_get_column_definition('canpost', 'boolean'))
-    column_definitions.append(util.db_get_column_definition('latestmessageid', 'text'))
-    success = db_try_create_table(DAILY_TABLE_NAME, column_definitions)
-    return success
-
-
-def try_create_table_dropship_text():
-    from pss_dropship import DROPSHIP_TEXT_TABLE_NAME
-    column_definitions = []
-    column_definitions.append(util.db_get_column_definition('partid', 'text', is_primary=True, not_null=True))
-    column_definitions.append(util.db_get_column_definition('oldvalue', 'text', not_null=True))
-    column_definitions.append(util.db_get_column_definition('newvalue', 'text', not_null=True))
-    column_definitions.append(util.db_get_column_definition('modifydate', 'timestamptz', not_null=True))
-    success = db_try_create_table(DROPSHIP_TEXT_TABLE_NAME, column_definitions)
-    return success
-
-
-# ---------- DataBase functionality ----------
 def db_close_cursor(cursor):
-    if cursor is not None:
+    if cursor != None:
         cursor.close()
 
 
 def db_connect():
     global DB_CONN
-    if not db_is_connected(DB_CONN):
+    if db_is_connected(DB_CONN) == False:
         try:
-            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='require')
+            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='prefer')
             return True
         except Exception as error:
             error_name = error.__class__.__name__
@@ -479,69 +560,37 @@ def db_disconnect():
 def db_execute(query, cursor):
     cursor.execute(query)
     success = db_try_commit()
+    return success
 
 
 def db_fetchall(query):
     result = None
-    error = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor is not None:
+        if cursor != None:
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
-            except (Exception, psycopg2.DatabaseError) as ex:
-                ex_name = error.__class__.__name__
-                error = f'{ex_name} while performing a query: {ex}'
-                print(f'[db_fetchall] {error}')
+            except (Exception, psycopg2.DatabaseError) as error:
+                error_name = error.__class__.__name__
+                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
         else:
-            error = 'could not get cursor'
-            print(f'[db_fetchall] {error}')
+            print('[db_fetchall] could not get cursor')
             db_disconnect()
     else:
-        error = 'could not connect to db'
-        print(f'[db_fetchall] {error}')
-    return result, error
-
-
-def db_fetchfirst(query):
-    result = None
-    error = None
-    connected = db_connect()
-    if connected:
-        cursor = db_get_cursor()
-        if cursor is not None:
-            try:
-                cursor.execute(query)
-                result = cursor.fetchall()
-            except (Exception, psycopg2.DatabaseError) as ex:
-                ex_name = error.__class__.__name__
-                error = f'{ex_name} while performing a query: {ex}'
-                print(f'[db_fetchfirst] {error}')
-            finally:
-                db_close_cursor(cursor)
-                db_disconnect()
-        else:
-            error = 'could not get cursor'
-            print(f'[db_fetchfirst] {error}')
-            db_disconnect()
-    else:
-        error = 'could not connect to db'
-        print(f'[db_fetchfirst] {error}')
-    if result and len(result) > 0:
-        return result[0], error
-    else:
-        return None, error
+        print('[db_fetchall] could not connect to db')
+    return result
 
 
 def db_get_cursor():
     global DB_CONN
-    connected = db_connect()
-    if connected:
+    if db_is_connected(DB_CONN) == False:
+        db_connect()
+    if db_is_connected(DB_CONN):
         return DB_CONN.cursor()
     else:
         print('[db_get_cursor] db is not connected')
@@ -550,77 +599,14 @@ def db_get_cursor():
 
 def db_is_connected(connection):
     if connection:
-        return connection.closed == 0
+        if connection.closed == 0:
+            return True
     return False
-
-
-def db_select_any_from(table_name):
-    query = 'SELECT * FROM {}'.format(table_name)
-    result, error = db_fetchall(query)
-    return result
-
-
-def db_select_any_from_where(table_name, where=None):
-    if where:
-        query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
-        result, error = db_fetchall(query)
-        return result
-    else:
-        return db_select_any_from(table_name)
-
-
-def db_select_any_from_where_and(table_name, where_collection):
-    if where_collection:
-        where = ' AND '.join(where_collection)
-        return db_select_any_from_where(table_name, where)
-    else:
-        return db_select_any_from_where(table_name)
-
-
-def db_select_any_from_where_or(table_name, where_collection):
-    if where_collection:
-        where = ' OR '.join(where_collection)
-        return db_select_any_from_where(table_name, where)
-    else:
-        return db_select_any_from_where(table_name)
-
-
-def db_select_first_from(table_name):
-    print('+ called db_select_first_from({})'.format(table_name))
-    query = 'SELECT * FROM {}'.format(table_name)
-    result, error = db_fetchfirst(query)
-    return result
-
-
-def db_select_first_from_where(table_name, where=None):
-    if where:
-        query = 'SELECT * FROM {} WHERE {}'.format(table_name, where)
-        result, error = db_fetchfirst(query)
-        return result
-    else:
-        return db_select_first_from(table_name)
-
-
-def db_select_first_from_where_and(table_name, where_collection):
-    if where_collection:
-        where = ' AND '.join(where_collection)
-        return db_select_first_from_where(table_name, where)
-    else:
-        return db_select_first_from_where(table_name)
-
-
-def db_select_first_from_where_or(table_name, where_collection):
-    if where_collection:
-        where = ' OR '.join(where_collection)
-        return db_select_first_from_where_or(table_name, where)
-    else:
-        return db_select_first_from_where(table_name)
 
 
 def db_try_commit():
     global DB_CONN
-    connected = db_is_connected(DB_CONN)
-    if connected:
+    if db_is_connected(DB_CONN):
         try:
             DB_CONN.commit()
             return True
@@ -640,12 +626,11 @@ def db_try_create_table(table_name, columns):
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor is not None:
+        if cursor != None:
             try:
                 db_execute(query, cursor)
-                print('[db_try_create_table] created table: {}'.format(table_name))
                 success = True
-            except psycopg2.errors.DuplicateTable as error:
+            except db_error.DuplicateTable:
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
@@ -663,7 +648,6 @@ def db_try_create_table(table_name, columns):
 
 def db_try_execute(query):
     success = False
-    error = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
@@ -671,18 +655,15 @@ def db_try_execute(query):
             try:
                 db_execute(query, cursor)
                 success = True
-            except (Exception, psycopg2.DatabaseError) as ex:
-                ex_name = ex.__class__.__name__
-                error = f'{ex_name} while performing a query: {ex}'
-                print(f'[db_try_execute] {error}')
+            except (Exception, psycopg2.DatabaseError) as error:
+                error_name = error.__class__.__name__
+                print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
         else:
-            error = 'could not get cursor'
-            print(f'[db_try_execute] {error}')
+            print('[db_try_execute] could not get cursor')
             db_disconnect()
     else:
-        error = 'could not connect to db'
-        print(f'[db_try_execute] {error}')
-    return success, error
+        print('[db_try_execute] could not connect to db')
+    return success

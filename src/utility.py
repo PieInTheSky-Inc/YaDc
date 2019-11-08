@@ -1,8 +1,30 @@
 from datetime import date, datetime, time, timedelta, timezone
-
 import discord
+import requests
+import jellyfish
+import json
 import math
+import pytz
 import subprocess
+
+
+import pss_lookups as lookups
+import settings
+
+
+def load_json_from_file(file_path: str) -> str:
+    result = None
+    with open(file_path) as fp:
+        result = json.load(fp)
+    return result
+
+
+def convert_ticks_to_seconds(ticks: int) -> float:
+    if ticks:
+        ticks = float(ticks)
+        return ticks / 40.0
+    else:
+        return 0.0
 
 
 def shell_cmd(cmd):
@@ -47,8 +69,7 @@ def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
     return result
 
 
-def get_formatted_timedelta(delta, include_relative_indicator=True):
-    total_seconds = delta.total_seconds()
+def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True) -> str:
     is_past = total_seconds < 0
     if is_past:
         total_seconds = abs(total_seconds)
@@ -62,22 +83,56 @@ def get_formatted_timedelta(delta, include_relative_indicator=True):
     days = math.floor(days)
     weeks = math.floor(weeks)
     result = ''
-    if (weeks > 0):
-        result += '{:d}w '.format(weeks)
-    result += '{:d}d {:d}h {:d}m {:d}s'.format(days, hours, minutes, seconds)
+    print_weeks = weeks > 0
+    print_days = print_weeks or days > 0
+    print_hours = print_days or hours > 0
+    print_minutes = print_hours or minutes > 0
+    if print_weeks:
+        result += f'{weeks:d}w '
+    if print_days:
+        result += f'{days:d}d '
+    if print_hours:
+        result += f'{hours:d}h '
+    if print_minutes:
+        result += f'{minutes:d}m '
+    result += f'{seconds:d}s'
+
     if include_relative_indicator:
         if is_past:
-            result += ' ago'
+            result = f'{result} ago'
         else:
-            result = 'in {}'.format(result)
+            result = f'in {result}'
     return result
 
 
-def get_utcnow(naive=False):
-    if naive:
-        return datetime.utcnow()
-    else:
-        return datetime.now(timezone.utc)
+
+def get_formatted_timedelta(delta, include_relative_indicator=True):
+    total_seconds = delta.total_seconds()
+    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator)
+
+
+def get_utcnow():
+    return datetime.now(timezone.utc)
+
+
+def parse_pss_datetime(pss_datetime: str) -> datetime:
+    pss_format = '%Y-%m-%dT%H:%M:%S'
+    detailed_pss_format = '%Y-%m-%dT%H:%M:%S.%f'
+    result = None
+    try:
+        result = datetime.strptime(pss_datetime, pss_format)
+    except ValueError:
+        result = datetime.strptime(pss_datetime, detailed_pss_format)
+    result = pytz.utc.localize(result)
+    return result
+
+
+async def post_output(ctx, output: list, maximum_characters: int):
+    if output:
+        posts = create_posts_from_lines(output, maximum_characters)
+        for post in posts:
+            if post:
+                await ctx.send(post)
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
@@ -90,105 +145,200 @@ async def get_latest_message(from_channel, by_member_id=None, with_content=None,
     return None
 
 
-def create_embed(title, description=None, colour=None, field_defs=None):
+def create_embed(title, description=None, colour=None, fields=None):
     result = discord.Embed(title=title, description=description, colour=colour)
-    if field_defs is not None:
-        for t in field_defs:
+    if fields is not None:
+        for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
     return result
 
 
-def create_embed_rich(title, description=None, colour=None,
-                      field_defs=None, thumbnail_url=None,
-                      image_url=None, author_def=None, footer_def=None):
-    result = create_embed(title, description, colour, field_defs)
-    if thumbnail_url is not None:
-        result.set_thumbnail(url=thumbnail_url)
-    if image_url is not None:
-        result.set_image(url=image_url)
-    if author_def is not None:
-        result.set_author(name=author_def[0], url=author_def[1], icon_url=author_def[2])
-    if footer_def is not None:
-        result.set_footer(text=footer_def[0], icon_url=footer_def[1])
-    return result
-
-
 def get_bot_member_colour(bot, guild):
-    bot_member = guild.get_member(bot.user.id)
-    bot_colour = bot_member.colour
-    return bot_colour
+    try:
+        bot_member = guild.get_member(bot.user.id)
+        bot_colour = bot_member.colour
+        return bot_colour
+    except:
+        return None
 
 
 def get_embed_field_def(title=None, text=None, inline=True):
-    if title and text:
-        return (title, text, inline)
-    return None
+    return (title, text, inline)
 
 
-def get_embed_author_def(name, url=None, icon_url=None):
-    if name:
-        return (name, url, icon_url)
-    return None
+def dbg_prnt(text):
+    print(f'[{get_utcnow()}]: {text}')
 
 
-def get_embed_footer_def(text, icon_url=None):
-    if text:
-        return (text, icon_url)
-    return None
-
-
-def get_embed_timestamp(date_time):
-    if date_time:
-        return date_time.strf('%Y-%m-%dT%H:%M:%S.%fZ')
-    return None
-
-
-def format_tuple_list(tuple_list, separator=':'):
-    title_width = max([len(item[0]) for item in tuple_list]) + len(separator) + 1
+def create_posts_from_lines(lines, char_limit) -> list:
     result = []
-    for item in tuple_list:
-        title_with_separator = f'{item[0]}{separator}'.ljust(title_width)
-        result.append(f'{title_with_separator}{item[1]}')
+    current_post = ''
+
+    for line in lines:
+        line_length = len(line)
+        new_post_length = 1 + len(current_post) + line_length
+        if new_post_length > char_limit:
+            result.append(current_post)
+            current_post = ''
+        if len(current_post) > 0:
+            current_post += '\n'
+
+        current_post += line
+
+    if current_post:
+        result.append(current_post)
+
     return result
 
 
-# always returns the whole left column while returning a maximum of len(left_column_list) items of the right column
-# returns a list
-def join_table_columns(left_column_list, right_column_list, separator='   '):
-    left_column_width = max([len(row) for row in left_column_list])
-    len_left = len(left_column_list)
-    len_right = len(right_column_list)
-    result = []
-    for i in range(len_left):
-        row = left_column_list[i].ljust(left_column_width)
-        if i < len_right:
-            row += f'{separator}{right_column_list[i]}'
-        result.append(row)
+def escape_escape_sequences(txt: str) -> str:
+    if txt:
+        txt = txt.replace('\\n', '\n')
+        txt = txt.replace('\\r', '\r')
+        txt = txt.replace('\\t', '\t')
+
+    return txt
+
+
+def get_reduced_number(num) -> (float, str):
+    num = float(num)
+    is_negative = num < 0
+    if is_negative:
+        num = abs(num)
+
+    counter = 0
+    while num >= 1000:
+        counter += 1
+        num /= 1000
+
+    if is_negative:
+        num *= -1
+    result = float(int(math.floor(num * 10))) / 10
+    return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
+
+
+def get_reduced_number_compact(num, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
+    reduced_num, multiplier = get_reduced_number(num)
+    result = f'{format_up_to_decimals(reduced_num, max_decimal_count)}{multiplier}'
     return result
 
 
-def join_format_tuple_list(left_tuple_list, right_tuple_list, tuple_list_separator=':', column_separator='   '):
-    left_column = format_tuple_list(left_tuple_list, tuple_list_separator)
-    right_column = format_tuple_list(right_tuple_list, tuple_list_separator)
-    result = join_table_columns(left_column, right_column, column_separator)
+def is_str_in_list(value: str, lst: list, case_sensitive: bool = False) -> bool:
+    if value and lst:
+        if not case_sensitive:
+            string = value.lower()
+            lst = [item.lower() for item in lst]
+        return string in lst
+    return False
+
+
+def format_up_to_decimals(num: float, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
+    result = f'{num:0.{max_decimal_count}f}'
+    result = result.rstrip('0').rstrip('.')
     return result
 
 
-def format_embed_rows(column_list, separator='  '):
-    result = [f'**{row[0]}**{separator}{row[1]}' for row in column_list]
+def get_wikia_link(page_name: str) -> str:
+    page_name = '_'.join([part for part in page_name.split(' ')])
+    page_name = '_'.join([part.lower().capitalize() for part in page_name.split('_')])
+    result = f'{settings.WIKIA_BASE_ADDRESS}{page_name}'
+
+    if not check_hyperlink(result):
+        page_name_split = page_name.split('_')
+        if len(page_name_split) > 1:
+            page_name = f'{page_name_split[0].upper()}_{"_".join(page_name_split[1:])}'
+        else:
+            page_name = page_name.upper()
+    result = f'{settings.WIKIA_BASE_ADDRESS}{page_name}'
+
+    if not check_hyperlink(result):
+        result = ''
+
     return result
 
 
-def is_older_than(timestamp, days=0, hours=0, minutes=0, seconds=0):
-    utc_now = get_utcnow()
-    if utc_now < timestamp:
+def check_hyperlink(hyperlink: str) -> bool:
+    if hyperlink:
+        request = requests.get(hyperlink)
+        return request.status_code == 200
+    else:
         return False
 
-    delta = utc_now - timestamp
-    delta_seconds = delta.total_seconds()
-    user_seconds = ((days * 24 + hours) * 60 + minutes) * 60 + seconds
-    result = user_seconds < delta_seconds
+
+async def try_delete_original_message(ctx):
+    try:
+        await ctx.message.delete()
+    except:
+        pass
+
+
+def get_similarity(value_to_check: str, against: str) -> float:
+    result = jellyfish.jaro_winkler(value_to_check, against)
+    #if value_to_check.startswith(against):
+    #    result += 1.0
     return result
+
+
+def get_similarity_map(values_to_check: dict, against: str) -> dict:
+    result = {}
+    for key, value in values_to_check.items():
+        similarity = get_similarity(value, against)
+        result[key] = similarity
+    return result
+
+
+def sort_entities_by(entity_infos: list, order_info: list) -> list:
+    """order_info is a list of tuples (property_name,reverse)"""
+    result = entity_infos
+    if order_info:
+        for i in range(len(order_info), 0, -1):
+            property_name = order_info[i - 1][0]
+            reverse = convert_to_boolean(order_info[i - 1][1])
+            result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
+        return result
+    else:
+        return sorted(result)
+
+
+def sort_tuples_by(data: tuple, order_info: list) -> list:
+    """order_info is a list of tuples (element index,reverse)"""
+    result = data
+    if order_info:
+        for i in range(len(order_info), 0, -1):
+            element_index = order_info[i - 1][0]
+            reverse = convert_to_boolean(order_info[i - 1][1])
+            result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
+        return result
+    else:
+        return sorted(result)
+
+
+def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
+    if value is None:
+        return default_if_none
+    if isinstance(value, str):
+        try:
+            value = bool(value)
+        except:
+            try:
+                value = float(value)
+            except:
+                try:
+                    value = int(value)
+                except:
+                    return len(value) > 0
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value > 0
+    if isinstance(value, float):
+        return value > 0.0
+    if isinstance(value, (tuple, list, dict, set)):
+        return len(value) > 0
+    raise NotImplementedError
+
+
+
 
 
 #---------- DB utilities ----------

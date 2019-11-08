@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# ----- Packages ------------------------------------------------------
 from datetime import date, datetime, time, timedelta, timezone
-
 import discord
 
 import pss_core as core
 import utility as util
 
 
-A_WEEK_PRIOR = timedelta(-7)
+# ---------- tournament command methods ----------
 
-# ----- Tournament methods ---------------------------------------------------------
+__A_WEEK_PRIOR = timedelta(-7)
+
+
 def format_tourney_start(start_date, utc_now):
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
@@ -33,6 +33,8 @@ def format_tourney_start(start_date, utc_now):
 
 
 def embed_tourney_start(start_date, utc_now, colour=None):
+    if colour is None:
+        colour = 0
     fields = []
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
@@ -49,20 +51,20 @@ def embed_tourney_start(start_date, utc_now, colour=None):
         end_date = util.get_first_of_following_month(start_date)
         delta_end = end_date - utc_now
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
-        fields.append(util.get_embed_field_def('Ends', delta_start_formatted, True))
-    result = util.create_embed(f'{tourney_month} tournament', None, colour, fields)
+        fields.append(util.get_embed_field_def('Ends', delta_end_formatted, True))
+    result = util.create_embed(f'{tourney_month} tournament', colour=colour, fields=fields)
     return result
 
 
 def get_current_tourney_start():
     first_of_next_month = util.get_first_of_next_month()
-    result = first_of_next_month + A_WEEK_PRIOR
+    result = first_of_next_month + __A_WEEK_PRIOR
     return result
 
 
 def get_next_tourney_start():
     next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month())
-    result = next_first_of_next_month + A_WEEK_PRIOR
+    result = next_first_of_next_month + __A_WEEK_PRIOR
     return result
 
 
@@ -73,5 +75,10 @@ def get_start_string(currently_running):
         return 'starts'
 
 
-def is_tourney_running(start_date, utc_now):
+def is_tourney_running(start_date=None, utc_now=None):
+    if not start_date:
+        start_date = get_current_tourney_start()
+    if not utc_now:
+        utc_now = util.get_utcnow()
+
     return start_date < utc_now

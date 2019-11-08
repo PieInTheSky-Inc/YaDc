@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
-import ast
 import asyncio
 import datetime
 import discord
@@ -17,25 +16,30 @@ import os
 import pytz
 import re
 import sys
+import time
 
-import pss_assets as assets
+import pss_exception
 import pss_core as core
+import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
+import pss_exception
 import pss_fleets as flt
-import pss_market as mkt
-import pss_prestige as p
-import pss_research as rs
+import pss_item as item
+import pss_lookups as lookups
+import pss_research as research
+import pss_room as room
 import pss_tournament as tourney
+import pss_top
 import utility as util
 
 
-# ----- Setup ---------------------------------------------------------
-RATE = 3
-COOLDOWN = 30.0
-IS_BETA = '--beta' in sys.argv
 
-if "COMMAND_PREFIX" in os.environ:
+# ----- Setup ---------------------------------------------------------
+RATE = 5
+COOLDOWN = 15.0
+
+if 'COMMAND_PREFIX' in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
 else:
     COMMAND_PREFIX='/'
@@ -43,9 +47,7 @@ else:
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
 
-for folder in ['raw', 'data']:
-    if not os.path.exists(folder):
-        os.makedir(folder)
+ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
 ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
@@ -54,14 +56,14 @@ ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
-    datefmt = "%Y-%m-%dT%H:%M:%S",
-    format = "{asctime} [{levelname:<8}] {name}: {message}\n{stack_info}")
+    datefmt = '%Y%m%d %H:%M:%S',
+    format = '{asctime} [{levelname:<8}] {name}: {message}')
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX,
                    description='This is a Discord Bot for Pixel Starships',
                    activity=ACTIVITY)
 
-setattr(bot, "logger", logging.getLogger(__name__))
+setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
 # ----- Bot Events ------------------------------------------------------------
@@ -72,24 +74,20 @@ async def on_ready():
     print(f'Bot prefix is: {COMMAND_PREFIX}')
     print('Bot logged in as {} (id={}) on {} servers'.format(
         bot.user.name, bot.user.id, len(bot.guilds)))
-    game = discord.Game(name='for /help')
     core.init_db()
-    if IS_BETA:
-        bot.loop.create_task(post_dailies_loop_beta())
-        print('[on_ready] added task: post_dailies_loop_beta()')
-    else:
-        bot.loop.create_task(post_dailies_loop())
-        print('[on_ready] added task: post_dailies_loop()')
-    assets.get_sprites_dict() # build cache
-    assets.get_files_dict() # build cache
+    bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
 async def on_command_error(ctx, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
+    elif isinstance(err, pss_exception.Error):
+        logging.getLogger().error(err, exc_info=True)
+        await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
     else:
-        bot.logger.exception(err)
+        logging.getLogger().error(err, exc_info=True)
+        await ctx.send('Error: {}'.format(err))
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -108,102 +106,44 @@ async def post_dailies_loop():
 async def post_all_dailies():
     fix_daily_channels()
     channel_ids = d.get_valid_daily_channel_ids()
-    txt = dropship.get_dropship_text()
+    output, _ = dropship.get_dropship_text()
     for channel_id in channel_ids:
         text_channel = bot.get_channel(channel_id)
         if text_channel != None:
             guild = text_channel.guild
             try:
-                await text_channel.send(txt)
+                if output:
+                    posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+                    for post in posts:
+                        await text_channel.send(post)
             except Exception as error:
-                print(f'[post_all_dailies] {error.__class__.__name__} occurred while trying to post to channel \'{text_channel.name}\' on server \'{guild.name}\': {error}')
+                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
 
 
-async def post_dailies_loop_beta():
-    while True:
-        utc_now = datetime.datetime.now(datetime.timezone.utc)
-        if utc_now.second != 0:
-            await asyncio.sleep(60 - utc_now.second)
-        else:
-            await post_all_dailies_beta(verbose=False, post_anyway=False)
-
-
-async def post_all_dailies_beta(verbose=False, post_anyway=False):
-    utc_now = util.get_utcnow()
-    utc_today = datetime.datetime(utc_now.year, utc_now.month, utc_now.day)
-    configured_channel_count = len(d.get_all_daily_channels())
-    if configured_channel_count > 0:
-        old_dropship_txt = dropship.get_dropship_text(dropship.db_get_dropship_text_parts())
-        dropship_txt, updated_parts_ids = dropship.get_and_update_auto_daily_text()
-        if post_anyway or (dropship_txt and updated_parts_ids):
-            print('[post_all_dailies] updated dropship text parts: {}'.format(updated_parts_ids))
-            fix_daily_channels(verbose)
-            valid_channels = d.get_valid_daily_channels()
-            valid_channel_ids = [int(c[1]) for c in valid_channels]
-            print('[post_all_dailies] post daily announcement to {} channels.'.format(len(valid_channel_ids)))
-            txt = '__**{}h {}m**__ {}\n'.format(utc_now.hour, utc_now.minute, ', '.join(updated_parts_ids))
-            for daily_channel in valid_channels: # daily_channel fields: 0 - guild_id; 1 - channel_id; 2 - can_post; 3 - latest_message_id
-                text_channel = bot.get_channel(int(daily_channel[1]))
-                if text_channel is not None:
-                    guild = text_channel.guild
-                    guild_member_bot = guild.get_member(bot.user.id)
-                    old_msg = None
-                    if daily_channel[3]:
-                        try:
-                            old_msg = await text_channel.fetch_message(daily_channel[3])
-                        except Exception as error:
-                            print('[post_all_dailies] {} occurred while trying to retrieve the latest message in channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
-                    try:
-                        if old_msg:
-                            await old_msg.delete()
-                        await text_channel.send(txt)
-                        new_msg = await text_channel.send(dropship_txt)
-                        updated_daily_channel = d.update_daily_channel(guild.id, latest_message_id=new_msg.id)
-                        if not updated_daily_channel:
-                            print('[post_all_dailies] could not update latest message id for channel \'{}\' on guild \'{}\': {}'.format(text_channel.name, guild.name, new_msg.id))
-                    except Exception as error:
-                        print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
-        elif verbose:
-            print('dropship text hasn\'t changed.')
-
-
-def fix_daily_channels(verbose=False):
-    if verbose:
-        print('+ called fix_daily_channels({})'.format(verbose))
-    rows = d.get_all_daily_channels()
-    if verbose:
-        print('[fix_daily_channels] retrieved {} configured daily channels: {}'.format(len(rows), ', '.join(rows)))
+def fix_daily_channels():
+    rows = d.select_daily_channel(None, None)
     for row in rows:
         can_post = False
         guild_id = int(row[0])
         channel_id = int(row[1])
         text_channel = bot.get_channel(channel_id)
-        if verbose:
-            print('[fix_daily_channels] processing guild_id \'{}\', channel_id \'{}\', text_channel \'{}\''.format(guild_id, channel_id, text_channel))
-        if text_channel is not None:
-            guild = text_channel.guild
-            if verbose:
-                print('[fix_daily_channels] retrieved guild: {}'.format(guild))
-            if guild is not None:
+        if text_channel != None:
+            guild = bot.get_guild(guild_id)
+            if guild != None:
                 guild_member = guild.get_member(bot.user.id)
-                if verbose:
-                    print('[fix_daily_channels] retrieved guild_member: {}'.format(guild_member))
-                if guild_member is not None:
+                if guild_member != None:
                     permissions = text_channel.permissions_for(guild_member)
-                    if verbose:
-                        print('[fix_daily_channels] retrieved permissions: \'{}\''.format(permissions))
-                    if permissions is not None and permissions.send_messages:
-                        if verbose:
-                            print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                    if permissions != None and permissions.send_messages == True:
+                        print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
                         can_post = True
-                    elif verbose:
+                    else:
                         print('[fix_daily_channels] bot is not allowed to post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
-                elif verbose:
+                else:
                     print('[fix_daily_channels] couldn\'t fetch member for bot for guild: {} (id: {})'.format(guild.name, guild_id))
-            elif verbose:
+            else:
                 print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
-        elif verbose:
-            print('[fix_daily_channels] couldn\t fetch channel with id: {}'.format(channel_id))
+        else:
+            print('[fix_daily_channels] couldn\'t fetch channel with id: {}'.format(channel_id))
         d.fix_daily_channel(guild_id, can_post)
 
 
@@ -227,179 +167,133 @@ async def shell(ctx, *, cmd):
 # ----- PSS Bot Commands --------------------------------------------------------------
 @bot.command(brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def prestige(ctx, *, name):
+async def prestige(ctx, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
-        prestige_txt, success = p.get_prestige(name, 'from')
-        for txt in prestige_txt:
-            await ctx.send(txt)
+        output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def recipe(ctx, *, name=''):
+async def recipe(ctx, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
-        if name.startswith('--raw '):
-            name = re.sub('^--raw[ ]+', '', name)
-            prestige_txt, success = p.get_prestige(name, 'to', raw=True)
-        else:
-            prestige_txt, success = p.get_prestige(name, 'to', raw=False)
-        if success is True:
-            for txt in prestige_txt:
-                await ctx.send(txt)
-        else:
-            await ctx.send(f'Failed to find a recipe for crew "{name}" (note that item recipes now use the `/ingredients` command)')
+        output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(brief='Get item ingredients')
+@bot.command(brief='Get item ingredients', aliases=['ing'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def ingredients(ctx, *, name=None):
     """Get the ingredients for an item"""
     async with ctx.typing():
-        content, real_name = mkt.get_item_recipe(name, levels=5)
-        if real_name is not None:
-            content = '**Ingredients for {}**\n'.format(real_name) + content
-            content = content + '\n\nNote: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons'
-            await ctx.send(content)
-            recipe_found = True
+        output, _ = item.get_ingredients_for_item(name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice'])
+@bot.command(brief='Get crafting recipes', aliases=['upg'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def upgrade(ctx, *, item_name=None):
+    """Returns any crafting recipe involving the requested item."""
+    async with ctx.typing():
+        output, _ = item.get_item_upgrades_from_name(item_name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
+@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def price(ctx, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     async with ctx.typing():
-        raw_text = mkt.load_item_design_raw()
-        item_lookup = mkt.parse_item_designs(raw_text)
-        real_name = mkt.get_real_name(item_name, item_lookup)
-        if len(item_name) < 2 and real_name != 'U':
-            await ctx.send("Please enter at least two characters for item name")
-        elif real_name is not None:
-            item_list = mkt.filter_item_designs(item_name, item_lookup, filter='price')
-            item_name_column_width = item_list.index('|') - 1
-            market_txt = "__Prices matching '{}'__```\n".format(item_name)
-            market_txt += '{} | Market price | Savy fair price\n'.format('Item name'.ljust(item_name_column_width))
-            market_txt += '{}-+--------------+----------------\n'.format(''.ljust(item_name_column_width, '-'))
-            market_txt += item_list
-            market_txt += '\n```**Note:** Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.'
-            await ctx.send(market_txt)
-        else:
-            await ctx.send("Could not find item name '{}'".format(item_name))
+        output, _ = item.get_item_price(item_name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(name='list', brief='List items/characters')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def list(ctx, *, action=''):
-    """action=crew:  shows all characters
-    action=newcrew:  shows the newest 10 characters that have been added to the game
-    action=items:    shows all items
-    action=research: shows all research
-    action=rooms:    shows all rooms
-    action=missiles: shows all missiles"""
-
-    async with ctx.typing():
-        txt_list = []
-        if action in ['chars', 'characters', 'crew', 'newchars', 'newcrew']:
-            txt_list = p.get_char_list(action)
-        elif action == 'items':
-            txt_list = mkt.get_item_list()
-        elif action == 'research':
-            txt_list = rs.get_research_names()
-        elif action == 'rooms':
-            txt_list = rs.get_room_names()
-        elif action == 'missiles':
-            txt_list = rs.get_missile_names()
-
-        for txt in txt_list:
-            await ctx.send(txt)
-
-
-@bot.command(name='stats', aliases=['char', 'item'], brief='Get item/character stats')
+@bot.command(name='stats', brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx, *, name=''):
     """Get the stats of a character/crew or item"""
     async with ctx.typing():
-        if len(name) == 0:
-            return
-        # First try to find a character match
-        # (skip this section if command was invoked with 'item'
-        found_match = False
-        if ctx.invoked_with != 'item':
-            if name.startswith('--raw '):
-                name = re.sub('^--raw[ ]+', '', name)
-                result = p.get_stats(name, embed=False, raw=True)
-                if result is not None:
-                    await ctx.send(result)
-                    found_match = True
-            else:
-                bot_colour = util.get_bot_member_colour(bot, ctx.guild)
-                result = p.get_stats(name, embed=True, colour=bot_colour, raw=False)
-                if result is not None:
-                    await ctx.send(embed=result)
-                    found_match = True
+        try:
+            char_output, char_success = crew.get_char_details_from_name(name)
+        except pss_exception.InvalidParameter:
+            char_output = None
+            char_success = False
+        try:
+            item_output, item_success = item.get_item_details(name)
+        except pss_exception.InvalidParameter:
+            item_output = None
+            item_success = False
 
-        # Next try to find an item match
-        if not found_match and ctx.invoked_with != 'char':
-            market_txt = mkt.get_item_stats(name)
-            if market_txt is not None:
-                await ctx.send(market_txt)
-                found_match = True
+    if char_success and char_output:
+        await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
 
-        if not found_match:
-            await ctx.send('Could not find entry for "{}"'.format(name))
+    if item_success and item_output:
+        if char_success:
+            await ctx.send(core.EMPTY_LINE)
+        await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
+
+    if not char_success and not item_success:
+        await ctx.send(f'Could not find a character or an item named **{name}**')
+
+
+
+@bot.command(name='char', brief='Get character stats', aliases=['crew'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def char(ctx, *, char_name):
+    """Get the stats of a character/crew."""
+    async with ctx.typing():
+        output, _ = crew.get_char_details_from_name(char_name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
+@bot.command(name='item', brief='Get item stats')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_item(ctx, *, item_name):
+    """Get the stats of an item."""
+    async with ctx.typing():
+        output, _ = item.get_item_details(item_name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def best(ctx, slot=None, enhancement=None):
+async def best(ctx, slot=None, stat=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
     async with ctx.typing():
-        raw_text = mkt.load_item_design_raw()
-        item_lookup = mkt.parse_item_designs(raw_text)
-        df_items = mkt.rtbl2items(item_lookup)
-        df_filter = mkt.filter_item(
-            df_items, slot, enhancement,
-            cols=['ItemDesignName', 'EnhancementValue', 'MarketPrice'])
-
-        txt = mkt.itemfilter2txt(df_filter)
-        if txt is None:
-            await ctx.send('No entries found for {} slot, {} enhancement'.format(
-                slot, enhancement))
-
-            str_slots = ', '.join(df_items['ItemSubType'].value_counts().index)
-            str_enhancements = ', '.join(df_items['EnhancementType'].value_counts().index)
-            txt  = 'Slots: {}\n'.format(str_slots)
-            txt += 'Enhancements: {}'.format(str_enhancements)
-            await ctx.send(txt)
-        else:
-            await ctx.send(txt)
+        output, _ = item.get_best_items(slot, stat)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(brief='Get research data')
+@bot.command(name='research', brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def research(ctx, *, research=''):
+async def cmd_research(ctx, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
-        df_research_designs = rs.get_research_designs()
-        df_selected = rs.filter_researchdf(df_research_designs, research)
-        txt = rs.research_to_txt(df_selected)
-        if txt is None:
-            await ctx.send("No entries found for '{}'".format(research))
-        else:
-            await ctx.send(txt)
+        output, _ = research.get_research_details_from_name(name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get collections')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def collection(ctx, *, collection=None):
+async def collection(ctx, *, collection_name=None):
     """Get the details on a specific collection."""
     async with ctx.typing():
-        txt = p.show_collection(collection)
-        if txt is None:
-            await ctx.send("No entries found for '{}'".format(collection))
-        else:
-            await ctx.send(txt)
+        output, _ = crew.get_collection_info(collection_name)
+    if output:
+        posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+        for post in posts:
+            await ctx.send(post)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')
@@ -408,111 +302,181 @@ async def stars(ctx, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     async with ctx.typing():
         txt = flt.get_division_stars(division)
-        txt_split = txt.split('\n\n')
-        for division_list in txt_split:
-            await ctx.send(division_list)
+    txt_split = txt.split('\n\n')
+    for division_list in txt_split:
+        await ctx.send(division_list)
 
 
 @bot.command(hidden=True, brief='Show the dailies')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def daily(ctx):
     """Show the dailies"""
+    await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        txt = dropship.get_dropship_text()
-        await ctx.message.delete()
-        await ctx.send(txt)
+        output, _ = dropship.get_dropship_text()
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
+@bot.command(brief='Show the news')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def news(ctx):
+    """Show the news"""
+    await util.try_delete_original_message(ctx)
+    async with ctx.typing():
+        output, _ = dropship.get_news()
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
+@bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily(ctx, action: str, text_channel: discord.TextChannel = None):
+async def autodaily(ctx):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
 
-    action = set:    Configure a channel on this server to have the daily announcement posted at.
-    action = remove: Stop auto-posting the daily announcement to this Discord server.
-    action = get:    See which channel has been configured on this server to receive the daily announcement.
-
     In order to use this command, you need Administrator permissions for this server.
     """
-    guild = ctx.guild
-    author_is_owner = await bot.is_owner(ctx.author)
-    txt = ''
-    if action == 'set':
-        if text_channel is None:
-            await ctx.send('You need to specify a text channel!')
+    pass
+
+
+@autodaily.command(name='fix', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_fix(ctx):
+    fix_daily_channels()
+    await ctx.send('Fixed daily channels')
+
+
+@autodaily.command(name='set', brief='Set an autodaily channel.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_set(ctx, text_channel: discord.TextChannel):
+    """Configure a channel on this server to have the daily announcement posted at."""
+    if text_channel:
+        guild = ctx.guild
+        success = d.try_store_daily_channel(guild.id, text_channel.id)
+        if success:
+            txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
         else:
-            await setdaily(ctx, text_channel)
-    elif action == 'remove':
-        await removedaily(ctx)
-    elif action == 'get':
-        await getdaily(ctx)
-    elif action == 'fix':
-        if author_is_owner:
-            fix_daily_channels()
-            await ctx.send('Fixed daily channels')
-    elif action == 'listall':
-        if author_is_owner:
-            await listalldailies(ctx, None)
-    elif action == 'listvalid':
-        if author_is_owner:
-            await listalldailies(ctx, True)
-    elif action == 'listinvalid':
-        if author_is_owner:
-            await listalldailies(ctx, False)
-    elif action == 'post':
-        if author_is_owner:
-            guild = ctx.guild
-            channel_id = d.get_daily_channel_id(guild.id)
-            if channel_id >= 0:
-                text_channel = bot.get_channel(channel_id)
-                await text_channel.send(dropship.get_dropship_text())
-    elif action == 'postall':
-        if author_is_owner:
-            await post_all_dailies_beta(verbose=True, post_anyway=True)
+            txt = 'Could not set auto-posting of the daily announcement for this server :('
+        await ctx.send(txt)
 
 
-async def setdaily(ctx, text_channel: discord.TextChannel):
-    guild = ctx.guild
-    success = d.try_store_daily_channel(guild.id, text_channel.id)
-    if success:
-        txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
-    else:
-        txt = 'Could not set auto-posting of the daily announcement for this server :('
-    await ctx.send(txt)
-
-async def getdaily(ctx):
+@autodaily.command(name='get', brief='Get the autodaily channel.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_get(ctx):
+    """See which channel has been configured on this server to receive the daily announcement."""
     guild = ctx.guild
     channel_id = d.get_daily_channel_id(guild.id)
     txt = ''
     if channel_id >= 0:
         text_channel = bot.get_channel(channel_id)
-        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(text_channel.mention)
+        if text_channel:
+            channel_name = text_channel.mention
+        else:
+            channel_name = '_deleted channel_'
+        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(channel_name)
     else:
         txt += 'Auto-posting of the daily announcement is not configured for this server!'
     await ctx.send(txt)
 
-async def listalldailies(ctx, valid = None):
-    channels = d.select_daily_channel(None, valid)
+
+@autodaily.group(name='list', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list(ctx):
+    pass
+
+
+@autodaily_list.command(name='all', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_all(ctx):
+    channels = d.select_daily_channel(None, None)
     txt = ''
     i = 0
     for channel in channels:
         text_channel = bot.get_channel(int(channel[1]))
-        guild = text_channel.guild
-        txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
-        if i == 20:
-            txt += '\n'
-            i = 0
-    if txt == '':
-        await ctx.send('No servers have been configurated to use the autodaily feature.')
-    else:
-        txt_split = txt.split('\n\n')
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
+    txt_split = txt.split('\n\n')
+    if txt_split:
         for msg in txt_split:
-            await ctx.send(msg)
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
 
-async def removedaily(ctx):
+
+@autodaily_list.command(name='invalid', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_invalid(ctx):
+    channels = d.select_daily_channel(None, False)
+    txt = ''
+    i = 0
+    for channel in channels:
+        text_channel = bot.get_channel(int(channel[1]))
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
+    txt_split = txt.split('\n\n')
+    if txt_split:
+        for msg in txt_split:
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+
+
+@autodaily_list.command(name='valid', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_list_valid(ctx):
+    channels = d.select_daily_channel(None, True)
+    txt = ''
+    i = 0
+    for channel in channels:
+        text_channel = bot.get_channel(int(channel[1]))
+        if text_channel:
+            guild = text_channel.guild
+            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
+            if i == 20:
+                txt += '\n'
+                i = 0
+        else:
+            txt += f'Invalid channel id: {channel[1]}'
+    txt_split = txt.split('\n\n')
+    if txt_split:
+        for msg in txt_split:
+                await ctx.send(msg)
+    else:
+        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+
+
+@autodaily.command(name='remove', brief='Turn off autodaily feature for this server.')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_remove(ctx):
+    """Stop auto-posting the daily announcement to this Discord server"""
     guild = ctx.guild
     txt = ''
     channel_id = d.get_daily_channel_id(guild.id)
@@ -526,6 +490,32 @@ async def removedaily(ctx):
     await ctx.send(txt)
 
 
+@autodaily.command(name='post', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_post(ctx):
+    guild = ctx.guild
+    channel_id = d.get_daily_channel_id(guild.id)
+    if channel_id >= 0:
+        text_channel = bot.get_channel(channel_id)
+        output, _ = dropship.get_dropship_text()
+        if output:
+            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            for post in posts:
+                if post:
+                    await text_channel.send(post)
+
+
+@autodaily.command(name='postall', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@commands.has_permissions(administrator=True)
+async def autodaily_postall(ctx):
+    await util.try_delete_original_message(ctx)
+    await post_all_dailies()
+
+
 @autodaily.error
 async def autodaily_error(ctx, error):
     if isinstance(error, commands.ConversionError) or isinstance(error, commands.MissingRequiredArgument):
@@ -534,36 +524,72 @@ async def autodaily_error(ctx, error):
         await ctx.send('You need the permission `Administrator` in order to be able to use this command!')
 
 
-@bot.command(brief='Get crew levelling costs')
+@bot.command(brief='Get crew levelling costs', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def level(ctx, level):
-    """Shows the cost for a crew to reach a certain level. Replace <level> with a value between 2 and 40"""
+async def level(ctx, from_level: int = None, to_level: int = None):
+    """Shows the cost for a crew to reach a certain level.
+       Parameter from_level is required to be lower than to_level
+       If only from_level is being provided, it will print out costs from level 1 to from_level"""
     async with ctx.typing():
-        txt = p.get_level_cost(level)
-        await ctx.send(txt)
+        output, _ = crew.get_level_costs(from_level, to_level)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(hidden=True, brief='(beta) Get room infos')
+@bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def roomsbeta(ctx, *, room_name=None):
-    """(beta) Shows the information for specific room types. This command is currently under testing"""
+async def top(ctx, count: int = 100):
+    """Prints either top fleets or captains (fleets by default)."""
+    if ctx.invoked_subcommand is None:
+        cmd = bot.get_command(f'top fleets')
+        await ctx.invoke(cmd, count=count)
+
+
+@top.command(name='fleets', brief='Prints top fleets', aliases=['alliances'])
+async def top_fleets(ctx, count: int = 100):
+    """Prints top fleets."""
     async with ctx.typing():
-        txt = rs.get_room_description(room_name)
-        await ctx.send(txt)
+        output, _ = pss_top.get_top_fleets(count)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+    else:
+        await ctx.send(f'Could not get top {count} fleets.')
 
 
-@bot.command(hidden=True, brief='(beta) Get missile info')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def missilebeta(ctx, *, missile_name=None):
-    """(beta) Shows the information for specific missile types. This command is currently under testing"""
+@top.command(name='captains', brief='Prints top captains', aliases=['players', 'users'])
+async def top_captains(ctx, count: int = 100):
+    """Prints top fleets."""
     async with ctx.typing():
-        txt = rs.get_missile_description(missile_name)
-        await ctx.send(txt)
+        output, _ = pss_top.get_top_captains(count)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+    else:
+        await ctx.send(f'Could not get top {count} captains.')
 
 
-@bot.command(brief='Get PSS stardate & Melbourne time')
+@bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def time(ctx):
+async def cmd_room(ctx, *, name: str = None):
+    """
+    Usage: /room [name]
+           /room [short name] [lvl]
+
+    Get detailed information on a room. If more than 2 results are found, details will be omitted.
+
+    Examples:
+    - /room mineral
+    - /room cloak generator lv2
+    - /room mst 3
+    """
+    async with ctx.typing():
+        output, _ = room.get_room_details_from_name(name)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+
+
+@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_time(ctx):
     """Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia."""
     async with ctx.typing():
         now = datetime.datetime.now()
@@ -584,7 +610,7 @@ async def time(ctx):
         first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + relativedelta(months=1, days=0)
         td = first_day_of_next_month - now
         str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-        await ctx.send(str_time)
+    await ctx.send(str_time)
 
 
 @bot.command(brief='Show links')
@@ -592,29 +618,17 @@ async def time(ctx):
 async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
-        txt = core.read_links_file()
-        await ctx.send(txt)
+        output = core.read_links_file()
+    await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(hidden=True, aliases=['unquote'], brief='Quote/unquote text')
-@commands.is_owner()
+@bot.command(brief='Display info on this bot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def quote(ctx, *, txt=''):
-    """Quote or unquote text"""
+async def about(ctx):
+    """Displays information on this bot and its authors."""
     async with ctx.typing():
-        txt = core.parse_unicode(txt, str(ctx.invoked_with))
-        await ctx.send(txt)
-
-
-@bot.command(hidden=True, brief='Parse URL')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def parse(ctx, *, url):
-    """Parses the data from a URL"""
-    async with ctx.typing():
-        txt_list = core.parse_links3(url)
-        for txt in txt_list:
-            await ctx.send(txt)
+        result = core.read_about_file()
+    await ctx.send(result)
 
 
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
@@ -631,129 +645,57 @@ async def tournament(ctx):
 @tournament.command(brief='Information on this month\'s tournament time', name='current')
 async def tournament_current(ctx):
     """Get information about the time of the current month's tournament."""
-    utc_now = util.get_utcnow()
-    start_of_tourney = tourney.get_current_tourney_start()
-    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_current_tourney_start()
+        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
 
 
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def tournament_next(ctx):
     """Get information about the time of next month's tournament."""
-    utc_now = util.get_utcnow()
-    start_of_tourney = tourney.get_next_tourney_start()
-    embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-    embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_next_tourney_start()
+        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
     await ctx.send(embed=embed)
 
 
-@bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
+@bot.command(brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def testing(ctx, *, action=None):
-    """These are testing commands, usually for debugging purposes"""
-    if action == 'restart':
-        await ctx.send('Bot will attempt a restart')
-    elif action == 'info':
-        guild = ctx.guild  # server = ctx.server
-        author = ctx.author
-        channel = ctx.channel
-        txt = 'Server (Guild): {} (id={})\n'.format(guild, guild.id)
-        txt += 'Author: {} (id={})\n'.format(author, author.id)
-        txt += 'Channel: {} (id={})\n'.format(channel, channel.id)
-        txt += 'Discord.py version: {}'.format(discord.__version__)
-        await ctx.send(txt)
-    elif action[:3] == 'say':
-        txt = action[3:]
-        await ctx.send(txt)
-    elif action == 'guilds':
-        guilds = bot.guilds
-        txt_list = []
-        txt = ''
-        for i, guild in enumerate(guilds):
-            owner = str(guild.owner)
-            txt1 = '{}. {}: {} ({}, owner - {})\n'.format(
-                i+1, guild.id, guild.name, guild.region, owner)
-            if len(txt + txt1) > 1900:
-                await ctx.send(txt + txt1)
-                txt = ''
-            else:
-                txt = txt + txt1
-        await ctx.send(txt)
-    elif action == 'invite':
-        txt = '{}'.format(bot.get_invite())
-        await ctx.send(txt)
-    elif action == 'invoked':
-        txt  = 'ctx.prefix = `{}`\n'.format(ctx.prefix)
-        txt += 'ctx.invoke = `{}`\n'.format(ctx.invoke)
-        txt += 'ctx.invoked_subcommand = `{}`\n'.format(ctx.invoked_subcommand)
-        txt += 'ctx.invoked_with = `{}`\n'.format(ctx.invoked_with)
-        txt += 'ctx.invoked_with methods: `{}`'.format(dir(ctx.invoked_with))
-        await ctx.send(txt)
-    elif action == 'actions':
-        txt = 'bot methods: `{}`'.format(dir(bot))
-        await ctx.send(txt)
-    elif action[:4] == 'doc ':
-        # /testing doc ctx.invoke
-        txt = '{}'.format(dir(action[4:]))
-        exec(txt)
-        await ctx.send(f'`{txt}`')
-    elif action[:5] == 'exec ':
-        # /testing exec print(dir(ctx.invoke))
-        # /testing exec print(ctx.invoke)
-        # /testing exec help(ctx.invoke)
-        # /testing exec print('{}{}'.format(ctx.prefix,ctx.command))
-        exec(action[5:])
-    # elif action in ['ctx', 'ctx.author', 'ctx.bot', 'ctx.channel',
-    #                 'ctx.guild', 'ctx.message']:
-    #     txt = 'format(dir({})))'.format(action)
-    #     txt = 'print("{}".' + txt
-    #     exec(txt)
-    elif action[:4] == 'sql ':
-        cmd = action[4:]
-        p.custom_sqlite_command(cmd)
-        await ctx.send('Executing SQL Command: "{}"'.format(cmd))
-    elif action == 'ctx':
-        txt = 'ctx methods: `{}`'.format(dir(ctx))
-        await ctx.send(txt)
-    elif action == 'ctx.author':
-        txt = 'ctx.author methods: `{}`'.format(dir(ctx.author))
-        await ctx.send(txt)
-    elif action == 'ctx.bot':
-        txt = 'ctx.bot methods: `{}`'.format(dir(ctx.bot))
-        await ctx.send(txt)
-    elif action == 'ctx.channel':
-        txt = 'ctx.channel methods: `{}`'.format(dir(ctx.channel))
-        await ctx.send(txt)
-    elif action == 'ctx.guild':
-        txt = 'ctx.guild methods: `{}`'.format(dir(ctx.guild))
-        await ctx.send(txt)
-    elif action == 'ctx.message':
-        txt = 'ctx.message methods: `{}`'.format(dir(ctx.guild))
-        await ctx.send(txt)
-
-    await ctx.message.delete()  # await bot.delete_message(ctx.message)
-    if action == 'restart':
-        txt = 'Bot is now attempting to restart'
-        print(txt)
-        bot.close()
-        quit()
+@commands.cooldown(rate=1, per=1, type=commands.BucketType.channel)
+async def updatecache(ctx):
+    """This command is to be used to update all caches manually."""
+    async with ctx.typing():
+        crew.__character_designs_cache.update_data()
+        crew.__collection_designs_cache.update_data()
+        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+        for prestige_to_cache in prestige_to_caches:
+            prestige_to_cache.update_data()
+        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+        for prestige_from_cache in prestige_from_caches:
+            prestige_from_cache.update_data()
+        item.__item_designs_cache.update_data()
+        room.__room_designs_cache.update_data()
+    await ctx.send('Updated all caches successfully!')
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx, action, *, params=None):
+async def test(ctx, action, *, params):
     print(f'+ called command test(ctx, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        core.init_db(True)
+        core.init_db()
         await ctx.send('Initialized the database from scratch')
-        await ctx.message.delete()
+        await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
         result, error = core.db_fetchall(query)
@@ -770,73 +712,6 @@ async def test(ctx, action, *, params=None):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
-    elif action == 'embed':
-        bot_colour = util.get_bot_member_colour(bot, ctx.guild)
-        print(f'[test] retrieved bot guild colour: {bot_colour}')
-        titl = 'Title'
-        desc = 'Description'
-        fiel = []
-        txt = params
-        if txt is None:
-            txt = 'Text'
-        elif txt.startswith('[') and txt.endswith(']'):
-            fiel_values = ast.literal_eval(txt)
-            for value in fiel_values:
-                if isinstance(value, list) or isinstance(value, tuple):
-                    if len(value) > 1:
-                        fiel.append(util.get_embed_field_def(value[0], value[1], False))
-                    elif len(value) == 1:
-                        fiel.append(util.get_embed_field_def('Field Header', value[0], False))
-                    else:
-                        fiel.append(util.get_embed_field_def('Field Header', '-', False))
-                else:
-                    fiel.append(util.get_embed_field_def('Field Header', value, False))
-        else:
-            fiel = [['Field Header', txt, False]]
-        print(f'[test] retrieved fields: {fiel}')
-        embe = util.create_embed(titl, desc, bot_colour, fiel)
-        print(f'[test] created embed: {embe}')
-        await ctx.send(embed=embe)
-    elif action == 'error':
-        raise Exception('x should not exceed 5. The value of x was: {}'.format(6))
-    elif action == 'char':
-        info_left = [
-          ('Race', 'White'),
-          ('Gender', 'Female')
-        ]
-        info_right = [
-          ('Collection', '-'),
-          ('Ability', 'Healing Rain'),
-        ]
-        info_field_content = util.join_format_tuple_list(info_left, info_right)
-
-        stats_left = [
-          ('HP', '10'),
-          ('Attack', '3.2'),
-          ('Repair', '3.1'),
-          ('Ability', '7'),
-        ]
-        stats_right = [
-          ('Pilot', '18'),
-          ('Science', '20'),
-          ('Engine', '20'),
-          ('Weapon', '20'),
-        ]
-        stats_field_content = util.join_format_tuple_list(stats_left, stats_right)
-
-        additional_left = [
-          ('Walk speed', '1'),
-          ('Fire resistance', '5')
-        ]
-        additional_right = [
-          ('Run speed', '2'),
-          ('Training capacity', '90')
-        ]
-        additional_field_content = util.join_format_tuple_list(additional_left, additional_right)
-
-        await ctx.send('```{info_field_content```')
-        await ctx.send('```{stats_field_content```')
-        await ctx.send('```{additional_field_content```')
 
 
 # ----- Run the Bot -----------------------------------------------------------

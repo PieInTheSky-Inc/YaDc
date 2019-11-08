@@ -1,308 +1,290 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# ----- Packages ------------------------------------------------------
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import discord
 
-import argparse
-import datetime
+from cache import PssCache
+import emojis
 import pss_core as core
-import pss_prestige as p
-import pss_research as rs
+import pss_crew as crew
+import pss_item as item
+import pss_lookups as lookups
+import pss_room as room
+import settings
 import utility as util
-import xml.etree.ElementTree
-
-AUTODAILY_CONFIG_TABLE_NAME = 'Autodailyconfig'
-
-base_url = 'http://{}/'.format(core.get_production_server())
-
-DROPSHIP_TEXT_PART_KEYS = ['News', 'Crew', 'Merchant', 'Shop', 'Sale', 'Reward']
-DROPSHIP_TEXT_TABLE_NAME = 'Dropship_Text'
 
 
-# ----- Utilities --------------------------------
-def request_id2item():
-    url = base_url + 'ItemService/ListItemDesigns2?languageKey=en'
-    raw_text = core.get_data_from_url(url)
-    id2item = core.xmltree_to_dict3(raw_text, 'ItemDesignId')
-    # item_lookup = mkt.parse_item_designs(raw_text)
-    # df_items = mkt.rtbl2items(item_lookup)
-    return id2item
+# ---------- Constants ----------
 
 
-def request_dropship():
-    url = base_url + 'SettingService/GetLatestVersion2?languageKey=en'
-    raw_text = core.get_data_from_url(url)
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    for c in root:
-        # c.tag == 'GetLatestSetting'
-        for cc in c:
-            # cc.tag == 'Setting'
-            d = cc.attrib
-    return d
 
 
-# ----- Text Processing --------------------------
-def get_dropshipcrew_txt(d, ctbl):
-    common_crew = ctbl[d['CommonCrewId']]
-    hero_crew = ctbl[d['HeroCrewId']]
-    common_rarity = common_crew['Rarity']
-    hero_rarity = hero_crew['Rarity']
-    txt = '**Dropship Crew**'
-    txt += '\nCommon Crew: {} (Rarity: {})'.format(
-        common_crew['CharacterDesignName'],
-        common_rarity)
-    if common_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
-        txt += ' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!'
-    txt += '\nHero Crew: {} (Rarity: {})'.format(
-        hero_crew['CharacterDesignName'],
-        hero_rarity)
-    return txt
+
+# ---------- Initilization ----------
 
 
-def get_merchantship_txt(d, id2item):
-    cargo_items = d['CargoItems'].split('|')
-    cargo_prices = d['CargoPrices'].split('|')
-    txt = '**Merchant Ship**'
-    for i, item in enumerate(cargo_items):
-        item_id, qty = item.split('x')
-        cost = cargo_prices[i].split(':')
-        txt += '\n{} x {}: {} {}'.format(
-            id2item[item_id]['ItemDesignName'], qty,
-            cost[1], cost[0])
-    return txt
 
 
-def get_item_text(item):
-    txt = "{} (Rarity = {}, Enhancement = {} {})".format(
-        item['ItemDesignName'],
-        item['Rarity'],
-        item['EnhancementValue'],
-        item['EnhancementType'])
-    return txt
+
+# ---------- Helper functions ----------
 
 
-def get_character_text(char):
-    collection = char['CollectionDesignId']
-    if collection == '0':
-        collection = 'None'
-    if collection in p.collections.keys():
-        collection = p.collections[collection]['CollectionName']
-    ability = char['SpecialAbilityType']
-    if ability in p.specials_lookup.keys():
-        ability = p.specials_lookup[ability]
-    txt = "{} (Rarity - {}, Ability - {}, Collection - {})".format(
-        char['CharacterDesignName'], char['Rarity'], ability, collection)
-    return txt
-
-
-def is_within_daterange(start_date, end_date, test_date='now',
-                        fmt='%Y-%m-%dT%H:%M:%S'):
-    # Example:
-    # is_within_daterange('2018-09-03T00:00:00', '2018-09-04T00:00:00')
-    start_date = datetime.datetime.strptime(start_date, fmt)
-    end_date = datetime.datetime.strptime(end_date, fmt)
-    if test_date == 'now':
-        test_date = datetime.datetime.now()
-    return (test_date > start_date) and (test_date < end_date)
-
-
-def get_sale_text(d, id2item, ctbl):
-    if is_within_daterange(d['SaleStartDate'], d['SaleEndDate']) is False:
-        return None
-
-    if d['SaleType'] == 'Item':
-        sale_item = id2item[d['SaleArgument']]
-        txt = "**Sale**\n{}".format(get_item_text(sale_item))
-    elif d['SaleType'] == 'Character':
-        sale_item = ctbl[d['SaleArgument']]
-        txt = "**Sale**\n{}".format(get_character_text(sale_item))
-    elif d['SaleType'] == 'Bonus':
-        txt = "**Sale**\n{}% Bonus".format(d['SaleArgument'])
-    elif d['SaleType'] == 'None':
-        return None
-    else:
-        txt = '**Sale**'
-        txt += '\nSaleType: {}'.format(d['SaleType'])
-        txt += '\nSaleArgument: {}'.format(d['SaleArgument'])
-        return txt
-    return txt
-
-
-def get_shop_item_text(d, id2item, ctbl, id2roomname):
-    if d['LimitedCatalogType'] == 'Item':
-        sale_item = id2item[d['LimitedCatalogArgument']]
-        txt = "**Shop**\n{}".format(get_item_text(sale_item))
-    elif d['LimitedCatalogType'] == 'Character':
-        sale_item = ctbl[d['LimitedCatalogArgument']]
-        txt = "**Shop**\n{}".format(get_character_text(sale_item))
-    elif d['LimitedCatalogType'] == 'Room':
-        sale_item = id2roomname[d['LimitedCatalogArgument']]
-        txt = "**Shop**\n{}".format(sale_item)
-    return txt
-
-
-def get_shop_item_cost(d):
-    txt = """Cost: {} {}, Can own (max): {}""".format(
-        d['LimitedCatalogCurrencyAmount'],
-        d['LimitedCatalogCurrencyType'],
-        d['LimitedCatalogMaxTotal'])
-    return txt
-
-def get_dailyrewards_txt(d, id2item):
-    items = d['DailyItemRewards'].split('|')
-    txt = '**Daily Rewards**'
-    txt += '\n{} {}'.format(d['DailyRewardArgument'], d['DailyRewardType'])
-    for i, item in enumerate(items):
-        item_id, qty = item.split('x')
-        txt += '\n{} x {}'.format(
-            id2item[item_id]['ItemDesignName'], qty)
-    return txt
-
-
-def get_limited_catalog_txt(d, id2item, ctbl, id2roomname):
-    expiry_date = datetime.datetime.strptime(
-        d['LimitedCatalogExpiryDate'], '%Y-%m-%dT%H:%M:%S')
-    if datetime.datetime.now() > expiry_date:
-        return None
-
-    if d['LimitedCatalogType'] == 'Item':
-        sale_item = id2item[d['LimitedCatalogArgument']]
-    elif d['LimitedCatalogType'] == 'Character':
-        sale_item = ctbl[d['LimitedCatalogArgument']]
-    elif d['LimitedCatalogType'] == 'Room':
-        sale_item = d['LimitedCatalogArgument']
-    txt = '{}, {}'.format(
-        get_shop_item_text(d, id2item, ctbl, id2roomname),
-        get_shop_item_cost(d))
-    return txt
-
-
-def get_dropship_text(text_parts=None):
-    if text_parts is None:
-        text_parts = get_dropship_text_parts()
-    text_parts_keys = text_parts.keys()
-    txt = ''
-    for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
-        if text_part_expected in text_parts_keys and text_parts[text_part_expected] is not None:
-            txt += '{}\n\n'.format(text_parts[text_part_expected])             
-    return txt
-
-
-def get_and_update_auto_daily_text():
-    utc_now = util.get_utcnow()
-    text_parts_api = get_dropship_text_parts()
-    updated = try_update_dropship_text_in_db(text_parts_api, utc_now)
-    if updated:
-        txt = ''
-        text_parts_keys = text_parts_api.keys()
-        for text_part_expected in DROPSHIP_TEXT_PART_KEYS:
-            if text_part_expected in text_parts_keys and text_parts_api[text_part_expected] is not None:
-                txt += '{}\n\n'.format(text_parts_api[text_part_expected]) 
-        return txt, updated
-    else:
-        return '', []
-
-
-def get_dropship_text_parts():
-    id2item = request_id2item()
-    ctbl, tbl_i2n, tbl_n2i, rarity = p.get_char_sheet()
-    rooms = rs.get_room_designs()
-    id2roomname = rs.create_reverse_lookup(rooms, 'RoomDesignId', 'RoomName')
-    
-    d = request_dropship()
-    result = {}
-
-    if 'News' in d.keys():
-        result['News'] = d['News']
-    result['Crew'] = get_dropshipcrew_txt(d, ctbl)
-    result['Merchant'] = get_merchantship_txt(d, id2item)
-    result['Shop'] = get_limited_catalog_txt(d, id2item, ctbl, id2roomname)
-    result['Sale'] = get_sale_text(d, id2item, ctbl)
-    result['Reward'] = get_dailyrewards_txt(d, id2item)
-    
-    return result
-
-
-def db_get_dropship_text_part(part_id):
-    result = ''
-    where = [util.db_get_where_string('partid', part_id, True)]
-    rows = core.db_select_any_from_where_and(DROPSHIP_TEXT_TABLE_NAME, where)
-    if len(rows) > 0:
-        temp = {}
-        for row in rows:
-            if row[0] == part_id:
-                result = row[2]
-    return result
-
-
-def db_get_dropship_text_parts():
-    result = {}
-    rows = core.db_select_any_from(DROPSHIP_TEXT_TABLE_NAME)
-    if len(rows) > 0:
-        temp = {}
-        for row in rows:
-            result[row[0]] = row[2]
-    return result
-
-    
-def try_update_dropship_text_in_db(text_parts, utc_now):
-    updated = []
-    db_parts = db_get_dropship_text_parts()
-    db_parts_keys = db_parts.keys()
-    if db_parts is None:
-        db_parts = []
-    for text_parts_key in text_parts.keys():
-        if text_parts_key in db_parts_keys:
-            db_value = db_parts[text_parts_key]
-            if db_parts[text_parts_key] != text_parts[text_parts_key]:
-                success = db_try_update_dropship_text(text_parts_key, db_value, text_parts[text_parts_key], utc_now)
-                if success:
-                    updated.append(text_parts_key)
-                else:
-                    print('[try_update_dropship_text_in_db] Could not update DROPSHIP_TEXT text for part \'{}\''.format(text_parts_key))
+def _convert_sale_item_mask(sale_item_mask: int) -> str:
+    result = []
+    for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
+        if (sale_item_mask & flag) != 0:
+            item, value = lookups.SALE_ITEM_MASK_LOOKUP[flag]
+            result.append(f'_{item}_ ({value})')
+    if result:
+        if len(result) > 1:
+            return f'{", ".join(result[:-1])} or {result[-1]}'
         else:
-            success = db_try_insert_dropship_text(text_parts_key, text_parts[text_parts_key], utc_now)
-            if success:
-                updated.append(text_parts_key)
-            else:
-                print('[try_update_dropship_text_in_db] Could not insert DROPSHIP_TEXT text for part \'{}\' into db'.format(text_parts_key))
-    return updated
-
-                
-def db_try_insert_dropship_text(part_id, new_value, utc_now):
-    new_value = util.db_convert_text(new_value)
-    timestamp = util.db_convert_timestamp(utc_now)
-    query_insert = 'INSERT INTO {} VALUES (\'{}\', \'\', {}, {});'.format(DROPSHIP_TEXT_TABLE_NAME, part_id, new_value, timestamp);
-    success, error = core.db_try_execute(query_insert)
-    return success
-    
-
-def db_try_update_dropship_text(part_id, old_value, new_value, utc_now):
-    timestamp = util.db_convert_timestamp(utc_now)
-    where_part_id = util.db_get_where_string('partid', part_id, True)
-    set_values = []
-    set_values.append(util.db_get_where_string('oldvalue', old_value, True))
-    set_values.append(util.db_get_where_string('newvalue', new_value, True))
-    set_values.append(util.db_get_where_string('modifydate', timestamp))
-    query_update = 'UPDATE {} SET {} WHERE {};'.format(DROPSHIP_TEXT_TABLE_NAME, ', '.join(set_values), where_part_id)
-    success, error = core.db_try_execute(query_update)
-    return success
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=
-        'Daily Rewards & Dropship API')
-    parser.add_argument('--raw', action='store_true',
-        help='Show the raw data only')
-    args = parser.parse_args()
-
-    if args.raw is True:
-        d = request_dropship()
-        print(d)
+            return result[0]
     else:
-        txt = get_dropship_text()
-        print(txt)
+        return ''
+
+
+
+
+# ---------- Dropship info ----------
+
+def get_dropship_text(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
+    path = f'SettingService/GetLatestVersion3?languageKey={language_key}&deviceType=DeviceTypeAndroid'
+    raw_text = core.get_data_from_path(path)
+    raw_data = core.xmltree_to_dict3(raw_text)
+
+    collection_design_data = crew.__collection_designs_cache.get_data_dict3()
+    char_design_data = crew.__character_designs_cache.get_data_dict3()
+    item_design_data = item.__item_designs_cache.get_data_dict3()
+    room_design_data = room.__room_designs_cache.get_data_dict3()
+
+    daily_msg = _get_daily_news_from_data_as_text(raw_data)
+    dropship_msg = _get_dropship_msg_from_data_as_text(raw_data, char_design_data, collection_design_data)
+    merchantship_msg = _get_merchantship_msg_from_data_as_text(raw_data, item_design_data)
+    shop_msg = _get_shop_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
+    sale_msg = _get_sale_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
+    daily_reward_msg = _get_daily_reward_from_data_as_text(raw_data, item_design_data)
+
+    lines = daily_msg
+    lines.append(core.EMPTY_LINE)
+    lines.extend(dropship_msg)
+    lines.append(core.EMPTY_LINE)
+    lines.extend(merchantship_msg)
+    lines.append(core.EMPTY_LINE)
+    lines.extend(shop_msg)
+    lines.append(core.EMPTY_LINE)
+    lines.extend(sale_msg)
+    lines.append(core.EMPTY_LINE)
+    lines.extend(daily_reward_msg)
+
+    return lines, True
+
+
+def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
+    result = ['No news have been provided :(']
+    if raw_data and 'News' in raw_data.keys():
+        result = [raw_data['News']]
+    return result
+
+
+def _get_dropship_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict) -> list:
+    result = [f'{emojis.pss_dropship_blue} **Dropship crew**']
+    if raw_data:
+        common_crew_id = raw_data['CommonCrewId']
+        hero_crew_id = raw_data['HeroCrewId']
+
+        common_crew_info = crew.get_char_info_short_from_id_as_text(common_crew_id, char_designs_data, collection_designs_data)
+        hero_crew_info = crew.get_char_info_short_from_id_as_text(hero_crew_id, char_designs_data, collection_designs_data)
+
+        common_crew_rarity = char_designs_data[common_crew_id]['Rarity']
+        if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
+            common_crew_info.append(' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!')
+
+        if common_crew_info:
+            result.append(f'{emojis.pss_min_big}  {"".join(common_crew_info)}')
+        if hero_crew_info:
+            result.append(f'{emojis.pss_bux}  {hero_crew_info[0]}')
+    else:
+        result.append('-')
+    return result
+
+
+def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
+    result = [f'{emojis.pss_dropship_green} **Merchant ship**']
+    if raw_data:
+        cargo_items = raw_data['CargoItems'].split('|')
+        cargo_prices = raw_data['CargoPrices'].split('|')
+        for i, cargo_info in enumerate(cargo_items):
+            item_id, amount = cargo_info.split('x')
+            if ':' in item_id:
+                _, item_id = item_id.split(':')
+            item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+            currency_type, price = cargo_prices[i].split(':')
+            currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+            result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
+    else:
+        result.append('-')
+    return result
+
+
+def _get_shop_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+    result = [f'{emojis.pss_shop} **Shop**']
+
+    shop_type = raw_data['LimitedCatalogType']
+    currency_type = raw_data['LimitedCatalogCurrencyType']
+    currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+    price = raw_data['LimitedCatalogCurrencyAmount']
+    can_own_max = raw_data['LimitedCatalogMaxTotal']
+
+    entity_id = raw_data['LimitedCatalogArgument']
+    entity_details = []
+    if shop_type == 'Character':
+        entity_details = crew.get_char_info_short_from_id_as_text(entity_id, char_designs_data, collection_designs_data)
+    elif shop_type == 'Item':
+        entity_details = item.get_item_details_short_from_id_as_text(entity_id, item_designs_data)
+    elif shop_type == 'Room':
+        entity_details = room.get_room_details_short_from_id_as_text(entity_id, room_designs_data)
+    else:
+        result.append('-')
+        return result
+
+    if entity_details:
+        result.extend(entity_details)
+
+    result.append(f'Cost: {price} {currency_emoji}')
+    result.append(f'Can own (max): {can_own_max}')
+
+    return result
+
+
+def _get_sale_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+    # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
+    result = [f'{emojis.pss_sale} **Sale**']
+
+    sale_item_mask = raw_data['SaleItemMask']
+    sale_items = _convert_sale_item_mask(int(sale_item_mask))
+    sale_quantity = raw_data['SaleQuantity']
+    result.append(f'Buy a {sale_items} _of Starbux_ and get:')
+
+    sale_type = raw_data['SaleType']
+    sale_argument = raw_data['SaleArgument']
+    if sale_type == 'Character':
+        entity_details = ''.join(crew.get_char_info_short_from_id_as_text(sale_argument, char_designs_data, collection_designs_data))
+    elif sale_type == 'Item':
+        entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, item_designs_data))
+    elif sale_type == 'Room':
+        entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, room_designs_data))
+    elif sale_type == 'Bonus':
+        entity_details = f'{sale_argument} % bonus starbux'
+    else: # Print debugging info
+        sale_title = raw_data['SaleTitle']
+        debug_details = []
+        debug_details.append(f'Sale Type: {sale_type}')
+        debug_details.append(f'Sale Argument: {sale_argument}')
+        debug_details.append(f'Sale Title: {sale_title}')
+        entity_details = '\n'.join(debug_details)
+
+    result.append(f'{sale_quantity} x {entity_details}')
+
+    return result
+
+
+def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
+    result = ['**Daily rewards**']
+
+    reward_currency = raw_data['DailyRewardType'].lower()
+    reward_currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[reward_currency]
+    reward_amount = int(raw_data['DailyRewardArgument'])
+    reward_amount, reward_multiplier = util.get_reduced_number(reward_amount)
+    result.append(f'{reward_amount:.0f}{reward_multiplier} {reward_currency_emoji}')
+
+    item_rewards = raw_data['DailyItemRewards'].split('|')
+    for item_reward in item_rewards:
+        item_id, amount = item_reward.split('x')
+        item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+        result.append(f'{amount} x {item_details}')
+
+    return result
+
+
+
+
+
+# ---------- News info ----------
+
+def get_news(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
+    path = f'SettingService/ListAllNewsDesigns?languageKey={language_key}'
+
+    try:
+        raw_text = core.get_data_from_path(path)
+        raw_data = core.xmltree_to_dict3(raw_text)
+    except Exception as err:
+        raw_data = None
+
+    if not raw_data:
+        return [f'Could not get news: {err}'], False
+    else:
+        if as_embed:
+            return _get_news_as_embed(raw_data), True
+        else:
+            return _get_news_as_text(raw_data), True
+
+
+def _get_news_as_embed(news_infos: dict) -> list:
+    result = []
+    for news_info in news_infos.values():
+        news_details = _get_news_details_as_embed(news_info)
+        if news_details:
+            result.append(news_details)
+
+    return []
+
+
+def _get_news_as_text(news_infos: dict) -> list:
+    result = []
+    for news_info in news_infos.values():
+        news_details = _get_news_details_as_text(news_info)
+        if news_details:
+            result.extend(news_details)
+            result.append(core.EMPTY_LINE)
+
+    return result
+
+
+def _get_news_details_as_embed(news_info: dict) -> discord.Embed:
+    return ''
+
+
+def _get_news_details_as_text(news_info: dict) -> list:
+    news_title = news_info['Title']
+    title = f'__{news_title}__'
+    description = util.escape_escape_sequences(news_info['Description'])
+    while '\n\n' in description:
+        description = description.replace('\n\n', '\n')
+
+    news_modify_date = util.parse_pss_datetime(news_info['UpdateDate'])
+    if news_modify_date:
+        modify_date = util.get_formatted_date(news_modify_date)
+        title = f'{title} ({modify_date})'
+
+    link = news_info['Link'].strip()
+
+    result = [f'**{title}**', description]
+    if link:
+        result.append(f'<{link}>')
+
+    return result
+
+
+
+
+
+
+
+
+
+# ---------- Testing ----------
+
+if __name__ == '__main__':
+    result, success = get_dropship_text(as_embed=False, language_key='en')
+    print('\n'.join(result))
