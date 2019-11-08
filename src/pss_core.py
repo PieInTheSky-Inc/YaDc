@@ -137,17 +137,25 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         if tag_count[tag] < 1:
             continue
         elif tag_count[tag] > 1:
-            id_attr_name = data.ID_NAMES_INFO[tag]
-            key = child.attrib[id_attr_name]
+            id_attr_names = data.ID_NAMES_INFO[tag]
+            if id_attr_names:
+                key = ''
+                id_attr_values = []
+                for id_attr_name in id_attr_names:
+                    id_attr_values.append(child.attrib[id_attr_name])
+                id_attr_values = sorted(id_attr_values)
+                key = '.'.join(id_attr_values)
 
         if not key:
             key = tag
 
         child_dict = convert_xml_to_dict(child, False)
         if include_root:
-            result[root.tag][key] = child_dict
+            if key not in result[root.tag].keys():
+                result[root.tag][key] = child_dict
         else:
-            result[key] = child_dict
+            if key not in result.keys():
+                result[key] = child_dict
 
     return result
 

@@ -320,12 +320,25 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
     lines = [f'**{found_char_name} can be prestiged into**']
-    body_lines = []
 
+    body_lines_raw = []
     for value in prestige_from_data.values():
         char_info_2 = char_data[value['CharacterDesignId2']]
         char_info_to = char_data[value['ToCharacterDesignId']]
-        body_lines.append(f'+ {char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} = {char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}')
+        body_lines_raw.append((char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME], char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]))
+
+    if body_lines_raw:
+        intermediate_result = []
+        char_info_to_names = sorted(list(set([body_line_raw[1] for body_line_raw in body_lines_raw])))
+        for char_info_to_name in char_info_to_names:
+            char_info_2_names = sorted(list(set([body_line_raw[0] for body_line_raw in body_lines_raw if body_line_raw[1] == char_info_to_name])))
+            for char_info_2_name in char_info_2_names:
+                intermediate_result.append((char_info_2_name, char_info_to_name))
+        body_lines_raw = intermediate_result
+
+    body_lines = []
+    for body_line_raw in body_lines_raw:
+        body_lines.append(f'+ {body_line_raw[0]} = {body_line_raw[1]}')
 
     if body_lines:
         lines.extend(body_lines)
@@ -360,6 +373,7 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
         body_lines.append(f'{char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} + {char_info_2[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}')
 
     if body_lines:
+        body_lines = sorted(body_lines)
         lines.extend(body_lines)
     else:
         if char_info_to['Rarity'] == 'Special':
@@ -489,7 +503,7 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 if __name__ == '__main__':
     f = get_level_costs(20, 30)
-    test_crew = ['Xin']
+    test_crew = ['infected vic']
     for crew_name in test_crew:
         os.system('clear')
         result = get_char_details_from_name(crew_name, as_embed=False)
