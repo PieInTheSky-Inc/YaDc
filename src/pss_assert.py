@@ -1,3 +1,5 @@
+import sys
+
 import pss_exception
 import settings
 
@@ -21,6 +23,15 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1,
 
     if len(value) < min_length and not value in valids:
         raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
+
+
+def parameter_is_valid_integer(value: object, parameter_name: str, min_value: int = None, max_value: int = None):
+    result = isinstance(value, int)
+    if isinstance(value, int):
+        if (min_value is not None and value < min_value) or (max_value is not None and value > max_value):
+            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
+    else:
+        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
 
 
 def string_in_list(string, lst: list, case_sensitive: bool = True) -> bool:

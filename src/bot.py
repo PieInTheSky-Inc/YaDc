@@ -522,14 +522,12 @@ async def autodaily_error(ctx, error):
 
 @bot.command(brief='Get crew levelling costs', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def level(ctx, level=None):
-    """Shows the cost for a crew to reach a certain level. Replace <level> with a value between 2 and 40"""
-    if level is None:
-        level = 0
-    else:
-        level = int(level)
+async def level(ctx, from_level: int = None, to_level: int = None):
+    """Shows the cost for a crew to reach a certain level.
+       Parameter from_level is required to be lower than to_level
+       If only from_level is being provided, it will print out costs from level 1 to from_level"""
     async with ctx.typing():
-        output, _ = crew.get_level_costs(level)
+        output, _ = crew.get_level_costs(from_level, to_level)
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 

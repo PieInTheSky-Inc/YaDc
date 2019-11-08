@@ -4,6 +4,7 @@
 import os
 
 from cache import PssCache
+import emojis
 import pss_assert
 import pss_core as core
 import pss_lookups as lookups
@@ -429,30 +430,51 @@ def _create_prestige_to_cache(char_design_id) -> PssCache:
 
 # ---------- Level Info ----------
 
-def get_level_costs(level: int) -> list:
-    if not level or level < 2 or level > 40:
-        return ['Invalid value. Enter a level between 2 and 40!']
+def get_level_costs(from_level: int, to_level: int = None) -> list:
+    # If to_level: assert that to_level > from_level and <= 41
+    # Else: swap both, set from_level = 1
+    if to_level:
+        pss_assert.parameter_is_valid_integer(from_level, 'from_level', 1, to_level - 1)
+        pss_assert.parameter_is_valid_integer(to_level, 'to_level', from_level + 1, 40)
+    else:
+        pss_assert.parameter_is_valid_integer(from_level, 'from_level', 2, 40)
+        to_level = from_level
+        from_level = 1
+
+    crew_costs = _get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP)
+    legendary_crew_costs = _get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP)
+
+    crew_cost_txt = _get_crew_cost_txt(from_level, to_level, crew_costs)
+    legendary_crew_cost_txt = _get_crew_cost_txt(from_level, to_level, legendary_crew_costs)
 
     result = ['**Level costs** (non-legendary crew, max research)']
-    result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP))
+    result.extend(crew_cost_txt)
     result.append(core.EMPTY_LINE)
     result.append('**Level costs** (legendary crew, max research)')
-    result.extend(_get_crew_cost_txt(level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP))
+    result.extend(legendary_crew_cost_txt)
 
     return result, True
 
 
-def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list) -> list:
-    gas_cost = gas_costs_lookup[level - 1]
-    xp_cost = xp_costs_lookup[level - 1]
-    gas_cost_from_1 = sum(gas_costs_lookup[:level])
-    xp_cost_from_1 = sum(xp_costs_lookup[:level])
+def _get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: list, xp_cost_lookup: list) -> (int, int, int, int):
+    gas_cost = gas_costs_lookup[to_level - 1]
+    xp_cost = xp_cost_lookup[to_level - 1]
+    gas_cost_from = sum(gas_costs_lookup[from_level - 1:to_level])
+    xp_cost_from = sum(xp_cost_lookup[from_level - 1:to_level])
 
-    result = [f'Getting from level {level - 1} to {level} requires {xp_cost:,} xp and {gas_cost:,} gas.']
-    result.append(f'Getting from level 1 to {level} requires {xp_cost_from_1:,} xp and {gas_cost_from_1:,} gas.')
+    if from_level > 1:
+        return (None, None, gas_cost_from, xp_cost_from)
+    else:
+        return (gas_cost, xp_cost, gas_cost_from, xp_cost_from)
+
+
+def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
+    result = []
+    if from_level == 1:
+        result.append(f'Getting from level {to_level - 1:d} to {to_level:d} requires {costs[1]:,} {emojis.pss_stat_xp} and {costs[0]:,}{emojis.pss_gas_big}.')
+    result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas_big}.')
 
     return result
-
 
 
 
@@ -466,6 +488,7 @@ def _get_crew_cost_txt(level: int, gas_costs_lookup: list, xp_costs_lookup: list
 # ---------- Testing ----------
 
 if __name__ == '__main__':
+    f = get_level_costs(20, 30)
     test_crew = ['Xin']
     for crew_name in test_crew:
         os.system('clear')
