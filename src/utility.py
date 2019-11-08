@@ -287,6 +287,57 @@ def get_similarity_map(values_to_check: dict, against: str) -> dict:
     return result
 
 
+def sort_entities_by(entity_infos: list, order_info: list) -> list:
+    """order_info is a list of tuples (property_name,reverse)"""
+    result = entity_infos
+    if order_info:
+        for i in range(len(order_info), 0, -1):
+            property_name = order_info[i - 1][0]
+            reverse = convert_to_boolean(order_info[i - 1][1])
+            result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
+        return result
+    else:
+        return sorted(result)
+
+
+def sort_tuples_by(data: tuple, order_info: list) -> list:
+    """order_info is a list of tuples (element index,reverse)"""
+    result = data
+    if order_info:
+        for i in range(len(order_info), 0, -1):
+            element_index = order_info[i - 1][0]
+            reverse = convert_to_boolean(order_info[i - 1][1])
+            result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
+        return result
+    else:
+        return sorted(result)
+
+
+def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
+    if value is None:
+        return default_if_none
+    if isinstance(value, str):
+        try:
+            value = bool(value)
+        except:
+            try:
+                value = float(value)
+            except:
+                try:
+                    value = int(value)
+                except:
+                    return len(value) > 0
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value > 0
+    if isinstance(value, float):
+        return value > 0.0
+    if isinstance(value, (tuple, list, dict, set)):
+        return len(value) > 0
+    raise NotImplementedError
+
+
 
 
 
