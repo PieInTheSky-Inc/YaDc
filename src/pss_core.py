@@ -20,8 +20,6 @@ import utility as util
 
 
 DATABASE_URL = os.environ['DATABASE_URL']
-PSS_CHARS_FILE = 'pss-chars.txt'
-PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 MAXIMUM_CHARACTERS = 1900
