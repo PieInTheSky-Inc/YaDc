@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 # ----- Packages ------------------------------------------------------
-import csv
 import datetime
 import json
 import os
