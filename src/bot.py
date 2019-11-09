@@ -216,12 +216,14 @@ async def price(ctx: discord.ext.commands.Context, *, item_name=None):
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
-@bot.command(name='stats', brief='Get item/character stats')
+@bot.command(name='stats', brief='Get item/crew stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
-    """Get the stats of a character/crew or item
+    """Get the stats of a character/crew or item.
 
-       The parameter <level> will only apply to crew.
+       Parameters:
+         level (optional): will only apply to crew stats.
+         name (mandatory): name of a crew or item
     """
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
@@ -252,7 +254,12 @@ async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
 @bot.command(name='char', brief='Get character stats', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def char(ctx: discord.ext.commands.Context, level=None, *, char_name=None):
-    """Get the stats of a character/crew."""
+    """Get the stats of a character/crew.
+
+       Parameters:
+         level (optional): if specified, stats for this level will be printed
+         char_name (mandatory): name of a crew
+    """
     async with ctx.typing():
         level, char_name = util.get_level_and_name(level, char_name)
         output, _ = crew.get_char_details_from_name(char_name, level=level)
@@ -273,7 +280,12 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
 @bot.command(brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def best(ctx: discord.ext.commands.Context, slot=None, stat=None):
-    """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
+    """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
+
+       Parameters:
+         slot (mandatory): the equipment slot. Use 'all' or 'any' to get infor for all slots.
+         stat (mandatory): the crew stat you're looking for.
+    """
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
     if output:
