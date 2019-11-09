@@ -18,6 +18,7 @@ import re
 import sys
 import time
 
+import emojis
 import pss_exception
 import pss_core as core
 import pss_crew as crew
@@ -79,7 +80,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_command_error(ctx, err):
+async def on_command_error(ctx: discord.ext.commands.Context, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     elif isinstance(err, pss_exception.Error):
@@ -157,7 +158,7 @@ async def ping(ctx):
 
 @bot.command(hidden=True, brief='Run shell command')
 @commands.is_owner()
-async def shell(ctx, *, cmd):
+async def shell(ctx: discord.ext.commands.Context, *, cmd):
     """Run a shell command"""
     async with ctx.typing():
         txt = util.shell_cmd(cmd)
@@ -167,7 +168,7 @@ async def shell(ctx, *, cmd):
 # ----- PSS Bot Commands --------------------------------------------------------------
 @bot.command(brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def prestige(ctx, *, char_name=None):
+async def prestige(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
         output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
@@ -177,7 +178,7 @@ async def prestige(ctx, *, char_name=None):
 
 @bot.command(brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def recipe(ctx, *, char_name=None):
+async def recipe(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
         output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
@@ -187,7 +188,7 @@ async def recipe(ctx, *, char_name=None):
 
 @bot.command(brief='Get item ingredients', aliases=['ing'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def ingredients(ctx, *, name=None):
+async def ingredients(ctx: discord.ext.commands.Context, *, name=None):
     """Get the ingredients for an item"""
     async with ctx.typing():
         output, _ = item.get_ingredients_for_item(name)
@@ -197,7 +198,7 @@ async def ingredients(ctx, *, name=None):
 
 @bot.command(brief='Get crafting recipes', aliases=['upg'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def upgrade(ctx, *, item_name=None):
+async def upgrade(ctx: discord.ext.commands.Context, *, item_name=None):
     """Returns any crafting recipe involving the requested item."""
     async with ctx.typing():
         output, _ = item.get_item_upgrades_from_name(item_name)
@@ -207,7 +208,7 @@ async def upgrade(ctx, *, item_name=None):
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def price(ctx, *, item_name=None):
+async def price(ctx: discord.ext.commands.Context, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
@@ -217,7 +218,7 @@ async def price(ctx, *, item_name=None):
 
 @bot.command(name='stats', brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def stats(ctx, *, name=''):
+async def stats(ctx: discord.ext.commands.Context, *, name=''):
     """Get the stats of a character/crew or item"""
     async with ctx.typing():
         try:
@@ -246,7 +247,7 @@ async def stats(ctx, *, name=''):
 
 @bot.command(name='char', brief='Get character stats', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def char(ctx, *, char_name):
+async def char(ctx: discord.ext.commands.Context, *, char_name):
     """Get the stats of a character/crew."""
     async with ctx.typing():
         output, _ = crew.get_char_details_from_name(char_name)
@@ -256,7 +257,7 @@ async def char(ctx, *, char_name):
 
 @bot.command(name='item', brief='Get item stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_item(ctx, *, item_name):
+async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
     """Get the stats of an item."""
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
@@ -266,7 +267,7 @@ async def cmd_item(ctx, *, item_name):
 
 @bot.command(brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def best(ctx, slot=None, stat=None):
+async def best(ctx: discord.ext.commands.Context, slot=None, stat=None):
     """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order."""
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
@@ -276,7 +277,7 @@ async def best(ctx, slot=None, stat=None):
 
 @bot.command(name='research', brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_research(ctx, *, name: str = None):
+async def cmd_research(ctx: discord.ext.commands.Context, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
         output, _ = research.get_research_details_from_name(name)
@@ -286,7 +287,7 @@ async def cmd_research(ctx, *, name: str = None):
 
 @bot.command(brief='Get collections')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def collection(ctx, *, collection_name=None):
+async def collection(ctx: discord.ext.commands.Context, *, collection_name=None):
     """Get the details on a specific collection."""
     async with ctx.typing():
         output, _ = crew.get_collection_info(collection_name)
@@ -298,7 +299,7 @@ async def collection(ctx, *, collection_name=None):
 
 @bot.command(brief='Division stars (works only during tournament finals)')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def stars(ctx, *, division=None):
+async def stars(ctx: discord.ext.commands.Context, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     async with ctx.typing():
         txt = flt.get_division_stars(division)
@@ -354,7 +355,7 @@ async def autodaily_fix(ctx):
 @autodaily.command(name='set', brief='Set an autodaily channel.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_set(ctx, text_channel: discord.TextChannel):
+async def autodaily_set(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
     """Configure a channel on this server to have the daily announcement posted at."""
     if text_channel:
         guild = ctx.guild
@@ -517,7 +518,7 @@ async def autodaily_postall(ctx):
 
 
 @autodaily.error
-async def autodaily_error(ctx, error):
+async def autodaily_error(ctx: discord.ext.commands.Context, error):
     if isinstance(error, commands.ConversionError) or isinstance(error, commands.MissingRequiredArgument):
         await ctx.send('You need to pass an action channel to the `{}autodaily` command!'.format(COMMAND_PREFIX))
     elif isinstance(error, commands.CheckFailure):
@@ -526,7 +527,7 @@ async def autodaily_error(ctx, error):
 
 @bot.command(brief='Get crew levelling costs', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def level(ctx, from_level: int = None, to_level: int = None):
+async def level(ctx: discord.ext.commands.Context, from_level: int = None, to_level: int = None):
     """Shows the cost for a crew to reach a certain level.
        Parameter from_level is required to be lower than to_level
        If only from_level is being provided, it will print out costs from level 1 to from_level"""
@@ -538,7 +539,7 @@ async def level(ctx, from_level: int = None, to_level: int = None):
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def top(ctx, count: int = 100):
+async def top(ctx: discord.ext.commands.Context, count: int = 100):
     """Prints either top fleets or captains (fleets by default)."""
     if ctx.invoked_subcommand is None:
         cmd = bot.get_command(f'top fleets')
@@ -546,7 +547,7 @@ async def top(ctx, count: int = 100):
 
 
 @top.command(name='fleets', brief='Prints top fleets', aliases=['alliances'])
-async def top_fleets(ctx, count: int = 100):
+async def top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
@@ -557,7 +558,7 @@ async def top_fleets(ctx, count: int = 100):
 
 
 @top.command(name='captains', brief='Prints top captains', aliases=['players', 'users'])
-async def top_captains(ctx, count: int = 100):
+async def top_captains(ctx: discord.ext.commands.Context, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
@@ -569,7 +570,7 @@ async def top_captains(ctx, count: int = 100):
 
 @bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_room(ctx, *, name: str = None):
+async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     """
     Usage: /room [name]
            /room [short name] [lvl]
@@ -687,8 +688,8 @@ async def updatecache(ctx):
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def test(ctx, action, *, params):
-    print(f'+ called command test(ctx, {action}, {params}) by {ctx.author}')
+async def test(ctx: discord.ext.commands.Context, action, *, params):
+    print(f'+ called command test(ctx: discord.ext.commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
         txt = util.get_formatted_datetime(utcnow)
@@ -713,6 +714,50 @@ async def test(ctx, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
+    elif action == 'options':
+        async with ctx.typing():
+            count = 10
+            if params:
+                count = int(params[0])
+            if count > 10:
+                count = 10
+            available_options = dict({emoji: i + 1 for i, emoji in enumerate(emojis.options[:count])})
+            options = [f'{emoji}: {i}' for emoji, i in available_options.items()]
+            content = "\n".join(options)
+            content = f'```{content}```'
+
+        message = await ctx.send(content)
+        await wait_for_option_selection(ctx, message, available_options)
+
+
+
+
+
+# ---------- Check functions ----------
+
+async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_message: discord.Message, available_options: dict) -> str:
+    def option_selection_check(reaction: discord.Reaction, user: discord.User):
+        if str(reaction.emoji) in available_options.keys() and user == ctx.author:
+            return True
+        else:
+            reaction.remove(user)
+            return False
+
+    for option in available_options.keys():
+        await option_message.add_reaction(option)
+
+    try:
+        reaction, _ = await bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
+    except asyncio.TimeoutError:
+        await option_message.delete()
+        await ctx.send('You\'ve waited for too long to answer :(')
+    else:
+        await option_message.delete()
+        emoji = str(reaction.emoji)
+        await ctx.send(f'You selected option {emoji}: {available_options[emoji]}')
+
+
+
 
 
 # ----- Run the Bot -----------------------------------------------------------

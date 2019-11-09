@@ -39,3 +39,16 @@ option_7 = '7️⃣'
 option_8 = '8️⃣'
 option_9 = '9️⃣'
 option_10 = '🔟'
+
+options = [
+    option_1,
+    option_2,
+    option_3,
+    option_4,
+    option_5,
+    option_6,
+    option_7,
+    option_8,
+    option_9,
+    option_10
+]
