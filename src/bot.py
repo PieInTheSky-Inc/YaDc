@@ -679,6 +679,7 @@ async def updatecache(ctx):
         for prestige_from_cache in prestige_from_caches:
             prestige_from_cache.update_data()
         item.__item_designs_cache.update_data()
+        research.__research_designs_cache.update_data()
         room.__room_designs_cache.update_data()
     await ctx.send('Updated all caches successfully!')
 
