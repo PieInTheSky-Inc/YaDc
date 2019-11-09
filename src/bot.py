@@ -718,7 +718,7 @@ async def test(ctx: discord.ext.commands.Context, action, *, params):
         async with ctx.typing():
             count = 10
             if params:
-                count = int(params[0])
+                count = int(params)
             if count > 10:
                 count = 10
             available_options = dict({emoji: i + 1 for i, emoji in enumerate(emojis.options[:count])})
@@ -737,12 +737,15 @@ async def test(ctx: discord.ext.commands.Context, action, *, params):
 
 async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_message: discord.Message, available_options: dict) -> str:
     def option_selection_check(reaction: discord.Reaction, user: discord.User):
-        if str(reaction.emoji) in available_options.keys() and user == ctx.author:
-            return True
+        if user == ctx.author:
+            emoji = str(reaction.emoji)
+            if emoji in available_options.keys() or emoji == emojis.page_stop:
+                return True
         else:
             reaction.remove(user)
             return False
 
+    await option_message.add_reaction(emojis.page_stop)
     for option in available_options.keys():
         await option_message.add_reaction(option)
 
@@ -754,7 +757,8 @@ async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_me
     else:
         await option_message.delete()
         emoji = str(reaction.emoji)
-        await ctx.send(f'You selected option {emoji}: {available_options[emoji]}')
+        if emoji != emojis.page_stop:
+            await ctx.send(f'You selected option {emoji}: {available_options[emoji]}')
 
 
 
