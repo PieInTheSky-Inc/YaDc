@@ -92,6 +92,13 @@ GRID_TYPE_MASK_LOOKUP = {
 }
 
 
+PROGRESSION_TYPES = {
+    'Linear': 1.0,
+    'EaseIn': 2.0,
+    'EaseOut': 0.5
+}
+
+
 RARITY_ORDER_LOOKUP = {
     'Common': 70,
     'Elite': 60,

@@ -5,8 +5,10 @@ import settings
 
 
 
-def valid_entity_name(name: str, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
-    valid_parameter_value(name, parameter_name='name', min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive)
+def valid_entity_name(name: str, parameter_name: str = None, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
+    if parameter_name is None:
+        parameter_name = 'name'
+    valid_parameter_value(name, parameter_name, min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive)
 
 
 def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1, allowed_values: list = [], case_sensitive: bool = False):
@@ -25,8 +27,12 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1,
         raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
 
 
-def parameter_is_valid_integer(value: object, parameter_name: str, min_value: int = None, max_value: int = None):
-    result = isinstance(value, int)
+def parameter_is_valid_integer(value: object, parameter_name: str, min_value: int = None, max_value: int = None, allow_none: bool = False):
+    if value is None:
+        if allow_none is True:
+            return
+        else:
+            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
     if isinstance(value, int):
         if (min_value is not None and value < min_value) or (max_value is not None and value > max_value):
             raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)

@@ -338,6 +338,20 @@ def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
     raise NotImplementedError
 
 
+def get_level_and_name(level, name) -> (int, str):
+    try:
+        level = int(level)
+    except:
+        if level is not None:
+            if name is None:
+                name = level
+            else:
+                name = f'{level} {name}'
+        level = None
+    return level, name
+
+
+
 
 
 

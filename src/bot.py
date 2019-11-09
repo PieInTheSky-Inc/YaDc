@@ -171,7 +171,7 @@ async def shell(ctx: discord.ext.commands.Context, *, cmd):
 async def prestige(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
-        output, _ = crew.get_prestige_from_info(char_name, as_embed=False)
+        output, _ = crew.get_prestige_from_info(char_name)
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
@@ -181,7 +181,7 @@ async def prestige(ctx: discord.ext.commands.Context, *, char_name=None):
 async def recipe(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
-        output, _ = crew.get_prestige_to_info(char_name, as_embed=False)
+        output, _ = crew.get_prestige_to_info(char_name)
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
@@ -247,10 +247,11 @@ async def stats(ctx: discord.ext.commands.Context, *, name=''):
 
 @bot.command(name='char', brief='Get character stats', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def char(ctx: discord.ext.commands.Context, *, char_name):
+async def char(ctx: discord.ext.commands.Context, level=None, *, char_name=None):
     """Get the stats of a character/crew."""
     async with ctx.typing():
-        output, _ = crew.get_char_details_from_name(char_name)
+        level, char_name = util.get_level_and_name(level, char_name)
+        output, _ = crew.get_char_details_from_name(char_name, level=level)
     if output:
         await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 

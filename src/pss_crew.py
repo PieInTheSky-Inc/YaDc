@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import math
 import os
 
 from cache import PssCache
@@ -48,37 +49,59 @@ __prestige_to_cache_dict = {}
 
 # ---------- Helper functions ----------
 
-def get_ability_name(char_id: str, char_designs_data: dict = None) -> str:
-    if char_id:
-        if not char_designs_data:
-            char_designs_data = __character_designs_cache.get_data_dict3()
-
-        char_info = char_designs_data[char_id]
+def get_ability_name(char_info: dict) -> str:
+    if char_info:
         special = char_info['SpecialAbilityType']
         if special in lookups.SPECIAL_ABILITIES_LOOKUP.keys():
             return lookups.SPECIAL_ABILITIES_LOOKUP[special]
     return 'None'
 
 
-def get_collection_name(char_id: str, char_designs_data: dict = None, collection_designs_data: dict = None) -> str:
-    if char_id:
-        if not char_designs_data:
-            char_designs_data = __character_designs_cache.get_data_dict3()
+def get_collection_name(char_info: dict, collection_designs_data: dict = None) -> str:
+    if char_info:
         if not collection_designs_data:
             collection_designs_data = __collection_designs_cache.get_data_dict3()
 
-        char_info = char_designs_data[char_id]
         collection_id = char_info[COLLECTION_DESIGN_KEY_NAME]
         if collection_id and collection_id in collection_designs_data.keys():
             return collection_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return 'None'
 
 
+def _get_stat(stat_name: str, level: int, char_info: dict) -> str:
+    is_special_stat = stat_name.lower().startswith('specialability')
+    if is_special_stat:
+        max_stat_name = 'SpecialAbilityFinalArgument'
+    else:
+        max_stat_name = f'Final{stat_name}'
+    min_value = float(char_info[stat_name])
+    max_value = float(char_info[max_stat_name])
+    progression_type = char_info['ProgressionType']
+    result = _get_stat_value(min_value, max_value, level, progression_type)
+    return result
+
+
+def _get_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> str:
+    if level is None or level < 1 or level > 40:
+        return f'{min_value:0.1f} - {max_value:0.1f}'
+    else:
+        return f'{calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
+
+
+def calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
+    exponent = lookups.PROGRESSION_TYPES[progression_type]
+    result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
+    return result
+
+
+
+
 
 # ---------- Crew info ----------
 
-def get_char_details_from_name(char_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(char_name)
+def get_char_details_from_name(char_name: str, level: int = None, as_embed: bool = settings.USE_EMBEDS):
+    pss_assert.valid_entity_name(char_name, 'char_name')
+    pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
     char_info = _get_char_info(char_name)
 
@@ -86,13 +109,13 @@ def get_char_details_from_name(char_name: str, as_embed: bool = settings.USE_EMB
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
         if as_embed:
-            return _get_char_info_as_embed(char_info), True
+            return _get_char_info_as_embed(char_info, level), True
         else:
-            return _get_char_info_as_text(char_info), True
+            return _get_char_info_as_text(char_info, level), True
 
 
 
-def _get_char_info(char_name: str):
+def _get_char_info(char_name: str) -> dict:
     char_design_data = __character_designs_cache.get_data_dict3()
     char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
 
@@ -102,7 +125,7 @@ def _get_char_info(char_name: str):
         return None
 
 
-def _get_char_design_id_from_name(char_name: str, char_data: dict = None):
+def _get_char_design_id_from_name(char_name: str, char_data: dict = None) -> str:
     if char_data is None:
         char_data = __character_designs_cache.get_data_dict3()
 
@@ -113,13 +136,46 @@ def _get_char_design_id_from_name(char_name: str, char_data: dict = None):
     return None
 
 
-def _get_char_info_as_embed(char_info: dict):
+def _get_char_info_as_embed(char_info: dict, level: int):
     return ''
 
 
-def _get_char_info_as_text(char_info: dict):
-    lines = get_char_info_from_data_as_text(char_info)
-    return lines
+def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data: dict = None) -> list:
+    if not collection_designs_data:
+        collection_designs_data = __collection_designs_cache.get_data_dict3()
+
+    char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    special = get_ability_name(char_info)
+    equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
+    collection_name = get_collection_name(char_info, collection_designs_data)
+    ability_stat = _get_stat('SpecialAbilityArgument', level, char_info)
+    hp_stat = _get_stat('Hp', level, char_info)
+    attack_stat = _get_stat('Attack', level, char_info)
+    repair_stat = _get_stat('Repair', level, char_info)
+    pilot_stat = _get_stat('Pilot', level, char_info)
+    science_stat = _get_stat('Science', level, char_info)
+    weapon_stat = _get_stat('Weapon', level, char_info)
+    engine_stat = _get_stat('Engine', level, char_info)
+
+    result = [f'**{char_name}** ({char_info["Rarity"]})']
+    if level is not None:
+        result.append(f'Level: {level}')
+    result.append(char_info['CharacterDesignDescription'])
+    result.append(f'Race: {char_info["RaceType"]}, Collection: {collection_name}, Gender: {char_info["GenderType"]}')
+    result.append(f'Ability = {ability_stat} ({special})')
+    result.append(f'HP = {hp_stat}')
+    result.append(f'Attack = {attack_stat}')
+    result.append(f'Repair = {repair_stat}')
+    result.append(f'Pilot = {pilot_stat}')
+    result.append(f'Science = {science_stat}')
+    result.append(f'Engine = {engine_stat}')
+    result.append(f'Weapon = {weapon_stat}')
+    result.append(f'Walk/run speed = {char_info["WalkingSpeed"]}/{char_info["RunSpeed"]}')
+    result.append(f'Fire resist = {char_info["FireResistance"]}')
+    result.append(f'Training cap = {char_info["TrainingCapacity"]}')
+    result.append(f'Slots = {equipment_slots}')
+
+    return result
 
 
 def _convert_equipment_mask(eqpt_mask: int) -> str:
@@ -140,37 +196,6 @@ def _get_char_list() -> list:
     return result
 
 
-def get_char_info_from_data_as_text(char_info: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
-    if not char_designs_data:
-        char_designs_data = __character_designs_cache.get_data_dict3()
-    if not collection_designs_data:
-        collection_designs_data = __collection_designs_cache.get_data_dict3()
-
-    char_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    special = get_ability_name(char_id)
-    equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
-    collection_name = get_collection_name(char_id, char_designs_data, collection_designs_data)
-
-    result = [f'**{char_name}** ({char_info["Rarity"]})']
-    result.append(char_info['CharacterDesignDescription'])
-    result.append(f'Race: {char_info["RaceType"]}, Collection: {collection_name}, Gender: {char_info["GenderType"]}')
-    result.append(f'ability = {char_info["SpecialAbilityFinalArgument"]} ({special})')
-    result.append(f'hp = {char_info["FinalHp"]}')
-    result.append(f'attack = {char_info["FinalAttack"]}')
-    result.append(f'repair = {char_info["FinalRepair"]}')
-    result.append(f'pilot = {char_info["FinalPilot"]}')
-    result.append(f'science = {char_info["FinalScience"]}')
-    result.append(f'weapon = {char_info["FinalWeapon"]}')
-    result.append(f'engine = {char_info["FinalEngine"]}')
-    result.append(f'walk/run speed = {char_info["WalkingSpeed"]}/{char_info["RunSpeed"]}')
-    result.append(f'fire resist = {char_info["FireResistance"]}')
-    result.append(f'training capacity = {char_info["TrainingCapacity"]}')
-    result.append(f'equipment = {equipment_slots}')
-
-    return result
-
-
 def get_char_info_short_from_id_as_text(char_design_id: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
     if not char_designs_data:
         char_designs_data = __character_designs_cache.get_data_dict3()
@@ -178,20 +203,17 @@ def get_char_info_short_from_id_as_text(char_design_id: dict, char_designs_data:
         collection_designs_data = __collection_designs_cache.get_data_dict3()
 
     char_info = char_designs_data[char_design_id]
-    return get_char_info_short_from_data_as_text(char_info, char_designs_data, collection_designs_data)
+    return get_char_info_short_from_data_as_text(char_info, collection_designs_data)
 
 
-def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
-    if not char_designs_data:
-        char_designs_data = __character_designs_cache.get_data_dict3()
+def get_char_info_short_from_data_as_text(char_info: dict, collection_designs_data: dict = None) -> list:
     if not collection_designs_data:
         collection_designs_data = __collection_designs_cache.get_data_dict3()
 
-    char_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     rarity = char_info['Rarity']
-    collection = get_collection_name(char_id, char_designs_data, collection_designs_data)
-    ability = get_ability_name(char_id, char_designs_data)
+    collection = get_collection_name(char_info, collection_designs_data)
+    ability = get_ability_name(char_info)
     ability_stat = int(char_info['SpecialAbilityFinalArgument'])
     ability_txt = ability
     if ability_stat:
@@ -205,7 +227,7 @@ def get_char_info_short_from_data_as_text(char_info: dict, char_designs_data: di
 
 # ---------- Collection Info ----------
 
-def get_collection_info(collection_name, as_embed=False):
+def get_collection_info(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(collection_name)
 
     collection_info = _get_collection_info(collection_name)
@@ -219,7 +241,7 @@ def get_collection_info(collection_name, as_embed=False):
             return _get_collection_info_as_text(collection_info), True
 
 
-def _get_collection_info(collection_name):
+def _get_collection_info(collection_name: str):
     collection_data = __collection_designs_cache.get_data_dict3()
     collection_design_id = _get_collection_design_id_from_name(collection_name, collection_data)
 
@@ -229,7 +251,7 @@ def _get_collection_info(collection_name):
         return None
 
 
-def _get_collection_design_id_from_name(collection_name, collection_data=None):
+def _get_collection_design_id_from_name(collection_name: str, collection_data: dict = None):
     if collection_data is None:
         collection_data = __collection_designs_cache.get_data_dict3()
 
@@ -240,12 +262,12 @@ def _get_collection_design_id_from_name(collection_name, collection_data=None):
     return None
 
 
-def _get_collection_info_as_embed(collection_info):
+def _get_collection_info_as_embed(collection_info: dict):
     # Use collection_info['ColorString'] for embed color
     return []
 
 
-def _get_collection_info_as_text(collection_info):
+def _get_collection_info_as_text(collection_info: dict):
     collection_crew = _get_collection_crew(collection_info)
     collection_perk = collection_info['EnhancementType']
     if collection_perk in lookups.COLLECTION_PERK_LOOKUP.keys():
@@ -281,7 +303,7 @@ def fix_collection_name(collection_name):
 
 # ---------- Prestige Info ----------
 
-def get_prestige_from_info(char_name, as_embed=False):
+def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
     prestige_data = _get_prestige_from_data(char_name)
@@ -295,7 +317,7 @@ def get_prestige_from_info(char_name, as_embed=False):
             return get_prestige_from_info_as_txt(char_name, prestige_data), True
 
 
-def get_prestige_to_info(char_name, as_embed=False):
+def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
     prestige_data = _get_prestige_to_data(char_name)
@@ -313,7 +335,7 @@ def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
     return ''
 
 
-def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
+def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
     # Format: '+ {id2} = {toid}
     char_data = __character_designs_cache.get_data_dict3()
     char_info_1 = _get_char_info(char_name)
@@ -347,11 +369,11 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict):
     return lines
 
 
-def get_prestige_to_info_as_embed(char_name, prestige_to_data):
+def get_prestige_to_info_as_embed(char_name: str, prestige_to_data: dict):
     return ''
 
 
-def get_prestige_to_info_as_txt(char_name, prestige_to_data):
+def get_prestige_to_info_as_txt(char_name: str, prestige_to_data: dict) -> list:
     # Format: '{id1} + {id2}
     char_data = __character_designs_cache.get_data_dict3()
     char_info_to = _get_char_info(char_name)
@@ -385,7 +407,7 @@ def get_prestige_to_info_as_txt(char_name, prestige_to_data):
     return lines
 
 
-def _get_prestige_from_data(char_name):
+def _get_prestige_from_data(char_name: str) -> dict:
     char_info = _get_char_info(char_name)
     if char_info is None:
         return None
@@ -398,7 +420,7 @@ def _get_prestige_from_data(char_name):
     return prestige_from_cache.get_data_dict3()
 
 
-def _get_prestige_to_data(char_name) -> dict:
+def _get_prestige_to_data(char_name: str) -> dict:
     char_info = _get_char_info(char_name)
     if char_info is None:
         return None
@@ -411,26 +433,26 @@ def _get_prestige_to_data(char_name) -> dict:
     return prestige_to_cache.get_data_dict3()
 
 
-def _create_and_add_prestige_from_cache(char_design_id) -> PssCache:
+def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
     cache = _create_prestige_from_cache(char_design_id)
     __prestige_from_cache_dict[char_design_id] = cache
     return cache
 
 
-def _create_and_add_prestige_to_cache(char_design_id) -> PssCache:
+def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
     cache = _create_prestige_to_cache(char_design_id)
     __prestige_to_cache_dict[char_design_id] = cache
     return cache
 
 
-def _create_prestige_from_cache(char_design_id) -> PssCache:
+def _create_prestige_from_cache(char_design_id: str) -> PssCache:
     url = f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}'
     name = f'PrestigeFrom{char_design_id}'
     result = PssCache(url, name, None)
     return result
 
 
-def _create_prestige_to_cache(char_design_id) -> PssCache:
+def _create_prestige_to_cache(char_design_id: str) -> PssCache:
     url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
@@ -497,14 +519,22 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 
 
+# Get stat for level:
+# - get exponent 'p' by ProgressionType:
+#   - Linear: p = 1.0
+#   - EaseIn: p = 2.0
+#   - EaseOut: p = 0.5
+# - get min stat 'min' & max stat 'max'
+# result = min + (max - min) * ((level - 1) / 39) ** p
+
 # ---------- Testing ----------
 
 if __name__ == '__main__':
-    f = get_level_costs(20, 30)
-    test_crew = ['infected vic']
-    for crew_name in test_crew:
+    #f = get_level_costs(20, 30)
+    test_crew = [('xin', None), ('xin', 5)]
+    for (crew_name, level) in test_crew:
         os.system('clear')
-        result = get_char_details_from_name(crew_name, as_embed=False)
+        result = get_char_details_from_name(crew_name, level, as_embed=False)
         for line in result[0]:
             print(line)
         print('')
