@@ -156,10 +156,11 @@ def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data:
     science_stat = _get_stat('Science', level, char_info)
     weapon_stat = _get_stat('Weapon', level, char_info)
     engine_stat = _get_stat('Engine', level, char_info)
-
-    result = [f'**{char_name}** ({char_info["Rarity"]})']
+    level_text = ''
     if level is not None:
-        result.append(f'Level: {level}')
+        level_text = f' - lvl {level}'
+
+    result = [f'**{char_name}** ({char_info["Rarity"]}){level_text}']
     result.append(char_info['CharacterDesignDescription'])
     result.append(f'Race: {char_info["RaceType"]}, Collection: {collection_name}, Gender: {char_info["GenderType"]}')
     result.append(f'Ability = {ability_stat} ({special})')
