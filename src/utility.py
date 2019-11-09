@@ -6,6 +6,7 @@ import json
 import math
 import pytz
 import subprocess
+import urllib.parse
 
 
 import pss_lookups as lookups
@@ -352,6 +353,13 @@ def get_level_and_name(level, name) -> (int, str):
                 name = f'{level} {name}'
         level = None
     return level, name
+
+
+def url_escape(s: str) -> str:
+    if s:
+        s = urllib.parse.quote(s, safe=' ')
+        s = s.replace(' ', '+')
+    return s
 
 
 

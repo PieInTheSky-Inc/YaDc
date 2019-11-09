@@ -35,13 +35,26 @@ DMG_TYPES = [
 ]
 
 
+DIVISION_CHAR_TO_DESIGN_ID = {
+    '-': '0',
+    'A': '1',
+    'B': '2',
+    'C': '3',
+    'D': '4'
+}
+
+
+DIVISION_DESIGN_ID_TO_CHAR = dict([(value, key) for key, value in DIVISION_CHAR_TO_DESIGN_ID.items()])
+
+
 EQUIPMENT_MASK_LOOKUP = {
     1: 'head',
     2: 'body',
     4: 'leg',
     8: 'weapon',
     16: 'accessory',
-    32: 'pet'}
+    32: 'pet'
+}
 
 
 EQUIPMENT_SLOTS_LOOKUP = {

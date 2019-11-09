@@ -121,7 +121,6 @@ def xmltree_to_dict3(raw_text):
         if isinstance(c, dict):
             for cc in c.values():
                 if isinstance(cc, dict):
-                    #d = dict(list(cc.values()))
                     for ccc in cc.values():
                         if isinstance(ccc, dict):
                             return ccc
@@ -169,15 +168,16 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         key = None
         if tag_count[tag] < 1:
             continue
-        elif tag_count[tag] > 1:
-            id_attr_names = data.ID_NAMES_INFO[tag]
-            if id_attr_names:
-                key = ''
-                id_attr_values = []
-                for id_attr_name in id_attr_names:
-                    id_attr_values.append(child.attrib[id_attr_name])
-                id_attr_values = sorted(id_attr_values)
-                key = '.'.join(id_attr_values)
+        elif tag_count[tag] >= 1:
+            if tag in data.ID_NAMES_INFO.keys():
+                id_attr_names = data.ID_NAMES_INFO[tag]
+                if id_attr_names:
+                    key = ''
+                    id_attr_values = []
+                    for id_attr_name in id_attr_names:
+                        id_attr_values.append(child.attrib[id_attr_name])
+                    id_attr_values = sorted(id_attr_values)
+                    key = '.'.join(id_attr_values)
 
         if not key:
             key = tag

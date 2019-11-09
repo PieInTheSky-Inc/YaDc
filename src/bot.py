@@ -19,7 +19,7 @@ import sys
 import time
 
 import emojis
-import pss_exception
+import pss_alliance as alliance
 import pss_core as core
 import pss_crew as crew
 import pss_daily as d
@@ -702,6 +702,29 @@ async def updatecache(ctx):
     await ctx.send('Updated all caches successfully!')
 
 
+
+@bot.command(brief='Get infos on a fleet')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
+    async with ctx.typing():
+        fleet_infos = alliance.get_fleet_details_by_name(fleet_name)
+        is_tourney_running = tourney.is_tourney_running()
+        short_fleet_infos = [alliance.get_fleet_search_details(fleet_info, is_tourney_running) for fleet_info in fleet_infos]
+        available_options = create_available_options_dict(fleet_infos)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            message = await post_selection_message(ctx, fleet_name, short_fleet_infos)
+            _, fleet_info = await wait_for_option_selection(ctx, message, available_options)
+        if fleet_info:
+            output = alliance.get_fleet_details_by_info(fleet_info)
+            await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+    else:
+        await ctx.send(f'Could not find a fleet named {fleet_name}')
+
+
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.channel)
@@ -752,7 +775,7 @@ async def test(ctx: discord.ext.commands.Context, action, *, params):
 
 # ---------- Check functions ----------
 
-async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_message: discord.Message, available_options: dict) -> str:
+async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_message: discord.Message, available_options: dict) -> (bool, dict):
     def option_selection_check(reaction: discord.Reaction, user: discord.User):
         if user == ctx.author:
             emoji = str(reaction.emoji)
@@ -770,12 +793,32 @@ async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_me
         reaction, _ = await bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
     except asyncio.TimeoutError:
         await option_message.delete()
-        await ctx.send('You\'ve waited for too long to answer :(')
+        return False, {}
     else:
-        await option_message.delete()
         emoji = str(reaction.emoji)
-        if emoji != emojis.page_stop:
-            await ctx.send(f'You selected option {emoji}: {available_options[emoji]}')
+        await option_message.delete()
+        if emoji == emojis.page_stop:
+            return False, {}
+        else:
+            return True, available_options[emoji]
+
+
+def create_available_options_dict(options: list) -> dict:
+    count = len(options)
+    result = dict({emoji: options[i] for i, emoji in enumerate(emojis.options[:count])})
+    return result
+
+
+async def post_selection_message(ctx, search_term: str, available_options: dict) -> discord.Message:
+    content = 'Multiple matches found'
+    if search_term:
+        content += f' while searching for **{search_term}**'
+    content += ':\n'
+    content += '```' + '\n'.join([f'{i + 1} - {short_fleet_info}' for i, short_fleet_info in enumerate(available_options)]) + '```'
+    result = await ctx.send(content)
+    return result
+
+
 
 
 
