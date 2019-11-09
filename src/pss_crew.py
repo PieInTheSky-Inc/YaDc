@@ -99,7 +99,7 @@ def calculate_stat_value(min_value: float, max_value: float, level: int, progres
 
 # ---------- Crew info ----------
 
-def get_char_details_from_name(char_name: str, level: int = None, as_embed: bool = settings.USE_EMBEDS):
+def get_char_details_from_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 

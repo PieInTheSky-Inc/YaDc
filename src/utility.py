@@ -274,8 +274,8 @@ async def try_delete_original_message(ctx):
 
 def get_similarity(value_to_check: str, against: str) -> float:
     result = jellyfish.jaro_winkler(value_to_check, against)
-    #if value_to_check.startswith(against):
-    #    result += 1.0
+    if value_to_check.startswith(against):
+        result += 1.0
     return result
 
 
@@ -339,6 +339,9 @@ def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
 
 
 def get_level_and_name(level, name) -> (int, str):
+    if level is None and name is None:
+        return level, name
+
     try:
         level = int(level)
     except:

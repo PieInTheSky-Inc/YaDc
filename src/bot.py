@@ -218,11 +218,15 @@ async def price(ctx: discord.ext.commands.Context, *, item_name=None):
 
 @bot.command(name='stats', brief='Get item/character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def stats(ctx: discord.ext.commands.Context, *, name=''):
-    """Get the stats of a character/crew or item"""
+async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
+    """Get the stats of a character/crew or item
+
+       The parameter <level> will only apply to crew.
+    """
     async with ctx.typing():
+        level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = crew.get_char_details_from_name(name)
+            char_output, char_success = crew.get_char_details_from_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
