@@ -39,7 +39,7 @@ class Paginator():
             await self.__post_current_page()
 
             try:
-                reaction, _ = await self.__context.bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
+                reaction, user = await self.__context.bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
             except asyncio.TimeoutError:
                 await self.__message.delete()
                 return False, {}
@@ -49,8 +49,10 @@ class Paginator():
                     await self.__message.delete()
                     return False, {}
                 elif emoji == emojis.page_next:
+                    await reaction.remove(user)
                     self.__set_next_page()
                 elif emoji == emojis.page_previous:
+                    await reaction.remove(user)
                     self.__set_previous_page()
                 else:
                     await self.__message.delete()
