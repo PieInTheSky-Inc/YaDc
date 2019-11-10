@@ -72,17 +72,18 @@ def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMB
     fleet_infos = _get_fleet_infos(fleet_name)
     fleet_ids = sorted([int(fleet_id) for fleet_id in fleet_infos.keys() if fleet_id])
     fleet_ids = [str(fleet_id) for fleet_id in fleet_ids]
-    if len(fleet_ids) > 10:
-        fleet_ids = fleet_ids[:10]
     fleet_infos = [fleet_info for fleet_id, fleet_info in fleet_infos.items() if fleet_id in fleet_ids]
     return fleet_infos
 
 
-def get_fleet_search_details(fleet_info: dict, tourney_running: bool) -> str:
+def get_fleet_search_details(fleet_info: dict) -> str:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    trophies = f'  {emojis.trophy} {fleet_info["Trophy"]}'
-    if tourney_running:
-        stars = f'  {emojis.star} {fleet_info["Score"]}'
+    fleet_trophies = fleet_info['Trophy']
+    fleet_stars = fleet_info['Score']
+    fleet_division = int(fleet_info['DivisionDesignId'])
+    trophies = f'  {emojis.trophy} {fleet_trophies}'
+    if fleet_division > 0:
+        stars = f'  {emojis.star} {fleet_stars}'
     else:
         stars = ''
     result = f'{fleet_name}{trophies}{stars}'
@@ -124,6 +125,6 @@ if __name__ == '__main__':
         os.system('clear')
         is_tourney_running = tourney.is_tourney_running()
         fleet_infos = get_fleet_details_by_name(fleet_name)
-        lines = [get_fleet_search_details(fleet_info, is_tourney_running) for fleet_info in fleet_infos]
+        lines = [get_fleet_search_details(fleet_info) for fleet_info in fleet_infos]
         for line in lines:
             print(line)

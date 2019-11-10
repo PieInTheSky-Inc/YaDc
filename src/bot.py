@@ -19,6 +19,7 @@ import sys
 import time
 
 import emojis
+import pagination
 import pss_alliance as alliance
 import pss_core as core
 import pss_crew as crew
@@ -47,8 +48,6 @@ else:
 
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
-
-ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
 ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
@@ -708,16 +707,14 @@ async def updatecache(ctx):
 async def fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
     async with ctx.typing():
         fleet_infos = alliance.get_fleet_details_by_name(fleet_name)
-        is_tourney_running = tourney.is_tourney_running()
-        short_fleet_infos = [alliance.get_fleet_search_details(fleet_info, is_tourney_running) for fleet_info in fleet_infos]
-        available_options = create_available_options_dict(fleet_infos)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
             fleet_info = fleet_infos[0]
         else:
-            message = await post_selection_message(ctx, fleet_name, short_fleet_infos)
-            _, fleet_info = await wait_for_option_selection(ctx, message, available_options)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, alliance.get_fleet_search_details)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
         if fleet_info:
             output = alliance.get_fleet_details_by_info(fleet_info)
             await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
