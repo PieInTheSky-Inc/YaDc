@@ -45,10 +45,7 @@ class Paginator():
                 return False, {}
             else:
                 emoji = str(reaction.emoji)
-                if emoji == emojis.page_stop:
-                    await self.__message.delete()
-                    return False, {}
-                elif emoji == emojis.page_next:
+                if emoji == emojis.page_next:
                     await reaction.remove(user)
                     self.__set_next_page()
                 elif emoji == emojis.page_previous:
@@ -118,9 +115,9 @@ class Paginator():
     @staticmethod
     def __get_base_reaction_emojis(pages: List[List[dict]]) -> List[str]:
         if pages and len(pages) > 1:
-            return [emojis.page_previous, emojis.page_stop, emojis.page_next]
+            return [emojis.page_previous, emojis.page_next]
         else:
-            return [emojis.page_stop]
+            return []
 
 
     @staticmethod
