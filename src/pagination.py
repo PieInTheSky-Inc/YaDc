@@ -61,7 +61,7 @@ class Paginator():
         page_no = f'page {self.__current_page_no}/{len(self.__pages)}'
         content = f'{self.__title}```{options_display}```{page_no}'
         if self.__message:
-            await Paginator.__edit_message(self.__message, self.__context.bot.user, content, list(self.__current_options.keys()), self.__base_reaction_emojis)
+            await self.__message.edit(content)
         else:
             self.__message = await self.__context.send(content)
             for base_reaction_emoji in self.__base_reaction_emojis:
@@ -91,25 +91,6 @@ class Paginator():
         new_page, new_page_no = Paginator.__get_previous_page(self.__pages, self.__current_page_no)
         self.__set_page(new_page)
         self.__current_page_no = new_page_no
-
-
-    @staticmethod
-    async def __edit_message(message: discord.Message, bot_user: discord.User, content: str, available_reaction_emojis: List[str], base_reaction_emojis: List[str]) -> None:
-        valid_emojis = available_reaction_emojis + base_reaction_emojis
-        await message.edit(content=content)
-        existing_reaction_emojis = [reaction.emoji for reaction in message.reactions]
-        reactions_to_remove = []
-        reactions_to_add = []
-        for reaction in message.reactions:
-            if reaction.emoji not in valid_emojis:
-                reactions_to_remove.append(reaction)
-        for emoji in available_reaction_emojis:
-            if emoji not in existing_reaction_emojis:
-                reactions_to_add.append(emoji)
-        for reaction in reactions_to_remove:
-            await reaction.remove(bot_user)
-        for emoji in reactions_to_add:
-            await message.add_reaction(emoji)
 
 
     @staticmethod
@@ -182,7 +163,7 @@ class Paginator():
     def __get_previous_page(pages: List[List[dict]], current_page_no: int) -> (List[dict], int):
         if pages:
             if current_page_no > 1:
-                current_page_no += 1
+                current_page_no -= 1
             else:
                 current_page_no = len(pages)
             return pages[current_page_no - 1], current_page_no
