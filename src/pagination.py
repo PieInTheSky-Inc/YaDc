@@ -65,7 +65,7 @@ class Paginator():
             page_no = ''
         content = f'{self.__title}```{options_display}```{page_no}'
         if self.__message:
-            await self.__message.edit(content)
+            await self.__message.edit(content=content)
         else:
             self.__message = await self.__context.send(content)
             for base_reaction_emoji in self.__base_reaction_emojis:
