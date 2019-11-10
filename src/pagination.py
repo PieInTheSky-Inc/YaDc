@@ -58,7 +58,11 @@ class Paginator():
 
     async def __post_current_page(self) -> None:
         options_display = Paginator.__get_options_display(self.__current_page, self.__short_text_function)
-        page_no = f'page {self.__current_page_no}/{len(self.__pages)}'
+        page_count = len(self.__pages)
+        if page_count > 1:
+            page_no = f'page {self.__current_page_no}/{len(self.__pages)}'
+        else:
+            page_no = ''
         content = f'{self.__title}```{options_display}```{page_no}'
         if self.__message:
             await self.__message.edit(content)
