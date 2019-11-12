@@ -9,6 +9,7 @@ import pss_assert
 import pss_core as core
 import pss_lookups as lookups
 import pss_tournament as tourney
+import pss_user as user
 import settings
 import utility as util
 
@@ -19,6 +20,8 @@ SEARCH_FLEETS_BASE_PATH = f'AllianceService/SearchAlliances?accessToken={setting
 FLEET_KEY_NAME = 'AllianceId'
 FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
 
+SEARCH_FLEET_USERS_BASE_PATH = f'AllianceService/ListUsers?accessToken={settings.GPAT}&skip=0&take=100&allianceId='
+
 
 
 
@@ -26,6 +29,7 @@ FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
 # ---------- Helper functions ----------
 
 def get_fleet_details_by_info(fleet_info: dict) -> list:
+
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_description = fleet_info['AllianceDescription']
     min_trophy_required = fleet_info['MinTrophyRequired']
