@@ -19,16 +19,7 @@ import settings
 import utility as util
 
 
-DATABASE_URL = os.environ['DATABASE_URL']
-PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
-PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
-MAXIMUM_CHARACTERS = 1900
 DB_CONN = None
-
-DATABASE_URL = os.environ['DATABASE_URL']
-DB_CONN = None
-SETTINGS_TABLE_NAME = 'settings'
-SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 
 # ----- Utilities --------------------------------
@@ -263,7 +254,7 @@ def parse_links3(url):
                 if isinstance(ccc.attrib, dict):
                     for k,v in ccc.attrib.items():
                         txt += f'\n - {k}: {v}'
-                        if len(txt) > MAXIMUM_CHARACTERS:
+                        if len(txt) > settings.MAXIMUM_CHARACTERS:
                             txt_list += [txt]
                             txt = ''
     return txt_list + [txt]
@@ -437,7 +428,7 @@ def group_data_dict(data: dict, by_key, ignore_case: bool = False):
 
 
 # ----- Display -----
-def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
+def list_to_text(lst, max_chars=settings.MAXIMUM_CHARACTERS):
     txt_list = []
     txt = ''
     for i, item in enumerate(lst):
@@ -493,7 +484,7 @@ def get_base_url():
 def read_links_file():
     result = []
     links = {}
-    for pss_links_file in PSS_LINKS_FILES:
+    for pss_links_file in settings.PSS_LINKS_FILES:
         try:
             with open(pss_links_file) as f:
                 links = json.load(f)
@@ -512,7 +503,7 @@ def read_links_file():
 
 def read_about_file():
     txt = ''
-    for pss_about_file in PSS_ABOUT_FILES:
+    for pss_about_file in settings.PSS_ABOUT_FILES:
         try:
             with open(pss_about_file) as f:
                 txt = f.read()
@@ -540,7 +531,7 @@ def db_connect():
     global DB_CONN
     if db_is_connected(DB_CONN) == False:
         try:
-            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='prefer')
+            DB_CONN = psycopg2.connect(settings.DATABASE_URL, sslmode='prefer')
             return True
         except Exception as error:
             error_name = error.__class__.__name__

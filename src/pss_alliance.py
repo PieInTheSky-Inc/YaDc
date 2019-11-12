@@ -58,7 +58,7 @@ def get_fleet_details_by_info(fleet_info: dict) -> list:
 async def post_fleet_details(ctx, fleet_info: dict):
     output = get_fleet_details_by_info(fleet_info)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 

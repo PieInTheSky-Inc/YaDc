@@ -114,7 +114,7 @@ async def post_all_dailies():
             guild = text_channel.guild
             try:
                 if output:
-                    posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+                    posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
                     for post in posts:
                         await text_channel.send(post)
             except Exception as error:
@@ -173,7 +173,7 @@ async def prestige(ctx: discord.ext.commands.Context, *, char_name=None):
     async with ctx.typing():
         output, _ = crew.get_prestige_from_info(char_name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get character recipes')
@@ -183,7 +183,7 @@ async def recipe(ctx: discord.ext.commands.Context, *, char_name=None):
     async with ctx.typing():
         output, _ = crew.get_prestige_to_info(char_name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item ingredients', aliases=['ing'])
@@ -193,7 +193,7 @@ async def ingredients(ctx: discord.ext.commands.Context, *, name=None):
     async with ctx.typing():
         output, _ = item.get_ingredients_for_item(name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get crafting recipes', aliases=['upg'])
@@ -203,7 +203,7 @@ async def upgrade(ctx: discord.ext.commands.Context, *, item_name=None):
     async with ctx.typing():
         output, _ = item.get_item_upgrades_from_name(item_name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
@@ -213,7 +213,7 @@ async def price(ctx: discord.ext.commands.Context, *, item_name=None):
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='stats', brief='Get item/crew stats')
@@ -239,12 +239,12 @@ async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
             item_success = False
 
     if char_success and char_output:
-        await util.post_output(ctx, char_output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, char_output, settings.MAXIMUM_CHARACTERS)
 
     if item_success and item_output:
         if char_success:
             await ctx.send(settings.EMPTY_LINE)
-        await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, item_output, settings.MAXIMUM_CHARACTERS)
 
     if not char_success and not item_success:
         await ctx.send(f'Could not find a character or an item named **{name}**')
@@ -264,7 +264,7 @@ async def char(ctx: discord.ext.commands.Context, level=None, *, char_name=None)
         level, char_name = util.get_level_and_name(level, char_name)
         output, _ = crew.get_char_details_from_name(char_name, level=level)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='item', brief='Get item stats')
@@ -274,7 +274,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -289,7 +289,7 @@ async def best(ctx: discord.ext.commands.Context, slot=None, stat=None):
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(name='research', brief='Get research data')
@@ -299,7 +299,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, name: str = None):
     async with ctx.typing():
         output, _ = research.get_research_details_from_name(name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get collections')
@@ -309,7 +309,7 @@ async def collection(ctx: discord.ext.commands.Context, *, collection_name=None)
     async with ctx.typing():
         output, _ = crew.get_collection_info(collection_name)
     if output:
-        posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+        posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
         for post in posts:
             await ctx.send(post)
 
@@ -321,7 +321,7 @@ async def stars(ctx: discord.ext.commands.Context, *, division=None):
     async with ctx.typing():
         output, _ = pss_top.get_division_stars(division=division)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(hidden=True, brief='Show the dailies')
@@ -332,7 +332,7 @@ async def daily(ctx):
     async with ctx.typing():
         output, _ = dropship.get_dropship_text()
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Show the news')
@@ -343,7 +343,7 @@ async def news(ctx):
     async with ctx.typing():
         output, _ = dropship.get_news()
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
@@ -518,7 +518,7 @@ async def autodaily_post(ctx):
         text_channel = bot.get_channel(channel_id)
         output, _ = dropship.get_dropship_text()
         if output:
-            posts = util.create_posts_from_lines(output, core.MAXIMUM_CHARACTERS)
+            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
             for post in posts:
                 if post:
                     await text_channel.send(post)
@@ -550,7 +550,7 @@ async def level(ctx: discord.ext.commands.Context, from_level: int = None, to_le
     async with ctx.typing():
         output, _ = crew.get_level_costs(from_level, to_level)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -568,7 +568,7 @@ async def top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not get top {count} fleets.')
 
@@ -579,7 +579,7 @@ async def top_captains(ctx: discord.ext.commands.Context, count: int = 100):
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not get top {count} captains.')
 
@@ -601,7 +601,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
     if output:
-        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
@@ -636,7 +636,7 @@ async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
         output = core.read_links_file()
-    await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
 
 
 @bot.command(brief='Display info on this bot')
@@ -717,7 +717,7 @@ async def fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
 
         if fleet_info:
             output = alliance.get_fleet_details_by_info(fleet_info)
-            await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
+            await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not find a fleet named {fleet_name}')
 
