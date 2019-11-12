@@ -130,6 +130,11 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
 
 async def post_output(ctx, output: list, maximum_characters: int):
     if output:
+        if output[-1] == settings.EMPTY_LINE:
+            output = output[:-1]
+        if output[0] == settings.EMPTY_LINE:
+            output = output[1:]
+
         posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
@@ -289,13 +294,17 @@ def get_similarity_map(values_to_check: dict, against: str) -> dict:
 
 
 def sort_entities_by(entity_infos: list, order_info: list) -> list:
-    """order_info is a list of tuples (property_name,reverse)"""
+    """order_info is a list of tuples (property_name,transform_function,reverse)"""
     result = entity_infos
     if order_info:
         for i in range(len(order_info), 0, -1):
             property_name = order_info[i - 1][0]
-            reverse = convert_to_boolean(order_info[i - 1][1])
-            result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
+            transform_function = order_info[i - 1][1]
+            reverse = convert_to_boolean(order_info[i - 1][2])
+            if transform_function:
+                result = sorted(result, key=lambda entity_info: transform_function(entity_info[property_name]), reverse=reverse)
+            else:
+                result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
         return result
     else:
         return sorted(result)

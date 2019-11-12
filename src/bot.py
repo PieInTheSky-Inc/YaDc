@@ -33,6 +33,7 @@ import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
 import pss_top
+import settings
 import utility as util
 
 
@@ -242,7 +243,7 @@ async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
 
     if item_success and item_output:
         if char_success:
-            await ctx.send(core.EMPTY_LINE)
+            await ctx.send(settings.EMPTY_LINE)
         await util.post_output(ctx, item_output, core.MAXIMUM_CHARACTERS)
 
     if not char_success and not item_success:

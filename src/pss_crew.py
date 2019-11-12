@@ -483,7 +483,7 @@ def get_level_costs(from_level: int, to_level: int = None) -> list:
 
     result = ['**Level costs** (non-legendary crew, max research)']
     result.extend(crew_cost_txt)
-    result.append(core.EMPTY_LINE)
+    result.append(settings.EMPTY_LINE)
     result.append('**Level costs** (legendary crew, max research)')
     result.extend(legendary_crew_cost_txt)
 

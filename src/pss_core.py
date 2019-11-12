@@ -15,6 +15,7 @@ import urllib.request
 import xml.etree.ElementTree
 
 import data
+import settings
 import utility as util
 
 
@@ -23,7 +24,6 @@ PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 MAXIMUM_CHARACTERS = 1900
 DB_CONN = None
-EMPTY_LINE = '\u200b'
 
 DATABASE_URL = os.environ['DATABASE_URL']
 DB_CONN = None
@@ -501,7 +501,7 @@ def read_links_file():
         except:
             pass
     for category, hyperlinks in links.items():
-        result.append(EMPTY_LINE)
+        result.append(settings.EMPTY_LINE)
         result.append(f'**{category}**')
         for (description, hyperlink) in hyperlinks:
             result.append(f'{description}: <{hyperlink}>')

@@ -581,7 +581,7 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
             else:
                 lines.extend(get_room_details_from_data_as_text(room_info))
                 if i < room_infos_count - 1:
-                    lines.append(core.EMPTY_LINE)
+                    lines.append(settings.EMPTY_LINE)
 
     return lines
 

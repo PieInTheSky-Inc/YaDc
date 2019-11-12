@@ -5,15 +5,20 @@ import math
 import os
 
 import emojis
+import pss_assert
 import pss_core as core
+import pss_lookups as lookups
 import pss_tournament as tourney
 import settings
+import utility as util
 
 
 # ---------- Constants ----------
 TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 TOP_CAPTAINS_BASE_PATH = f'LadderService/ListUsersByRanking?accessToken={settings.GPAT}&from=1&to='
-STARS_BASE_PATH = f''
+STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
+
+ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
 
 
 # ---------- Top 100 Alliances ----------
@@ -101,20 +106,50 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
 # ---------- Stars info ----------
 
 def get_division_stars(division: str = None, as_embed: bool = settings.USE_EMBEDS):
-    pass
+    if not tourney.is_tourney_running():
+        return [f'This command does only work during tournament finals. Use the command `/tournament` to learn when the next one is starting.'], False
+
+    if division:
+        pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
+        if division == '-':
+            division = None
+    else:
+        division = None
+
+    data = core.get_data_from_path(STARS_BASE_PATH)
+    fleet_infos = core.xmltree_to_dict3(data)
+
+    divisions = {}
+    if division:
+        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID
+        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] == division_design_id]
+        pass
+    else:
+        for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
+            if division_design_id != '0':
+                division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
+                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] == division_design_id]
+
+    if divisions:
+        result = []
+        for fleet_infos in divisions:
+            result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
+        return result, True
+    else:
+        return [], False
 
 
+def _get_division_stars_as_embed(division_letter: str, fleet_infos: dict):
+    return ''
 
 
-
-def get_division_stars(division):
-    if division is None:
-        return get_all_division_stars()
-    df_alliances = download_tournament_participants()
-    division_table = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
-    division = division.upper()
-    if division not in division_table.keys():
-        return 'Division has to be A, B, C, or D'
-    division_id = division_table[division]
-    txt = '__**Division {}**__\n{}'.format(division, fleet_df_to_scores(df_alliances, division_id))
-    return txt
+def _get_division_stars_as_text(division_letter: str, fleet_infos: dict) -> list:
+    lines = [f'__**Division {division_letter.upper()}**__']
+    fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
+    for i, fleet_info in enumerate(fleet_infos):
+        fleet_name = fleet_info['AllianceName']
+        trophies = fleet_info['Trophy']
+        stars = fleet_info['Score']
+        position = i + 1
+        lines.append(f'**{position:d}.** {stars}{emojis.star} {fleet_name} ({trophies} {emojis.trophy})')
+    return []

@@ -182,7 +182,7 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
         else:
             lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
             if i < research_infos_count - 1:
-                lines.append(core.EMPTY_LINE)
+                lines.append(settings.EMPTY_LINE)
 
     return lines
 
