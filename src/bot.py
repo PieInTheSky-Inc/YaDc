@@ -319,10 +319,9 @@ async def collection(ctx: discord.ext.commands.Context, *, collection_name=None)
 async def stars(ctx: discord.ext.commands.Context, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     async with ctx.typing():
-        txt = flt.get_division_stars(division)
-    txt_split = txt.split('\n\n')
-    for division_list in txt_split:
-        await ctx.send(division_list)
+        output, _ = pss_top.get_division_stars(division=division)
+    if output:
+        await util.post_output(ctx, output, core.MAXIMUM_CHARACTERS)
 
 
 @bot.command(hidden=True, brief='Show the dailies')
