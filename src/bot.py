@@ -20,13 +20,12 @@ import time
 
 import emojis
 import pagination
-import pss_alliance as alliance
+import pss_fleet as fleet
 import pss_core as core
 import pss_crew as crew
 import pss_daily as d
 import pss_dropship as dropship
 import pss_exception
-import pss_fleets as flt
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
@@ -702,21 +701,21 @@ async def updatecache(ctx):
 
 
 
-@bot.command(brief='Get infos on a fleet')
+@bot.command(brief='Get infos on a fleet', name='fleet')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
+async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
     async with ctx.typing():
-        fleet_infos = alliance.get_fleet_details_by_name(fleet_name)
+        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
             fleet_info = fleet_infos[0]
         else:
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, alliance.get_fleet_search_details)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            output = alliance.get_fleet_details_by_info(fleet_info)
+            output = fleet.get_fleet_details_by_info(fleet_info)
             await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
     else:
         await ctx.send(f'Could not find a fleet named {fleet_name}')

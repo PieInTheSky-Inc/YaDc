@@ -7,7 +7,6 @@ import urllib.parse
 import emojis
 import pss_assert
 import pss_core as core
-import pss_fleets as fleets
 import pss_lookups as lookups
 import pss_tournament as tourney
 import settings
