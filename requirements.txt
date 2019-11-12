@@ -3,6 +3,7 @@ discord.py
 holidays
 jellyfish
 numpy
+openpyxl
 pandas
 pip
 psycopg2
