@@ -42,14 +42,16 @@ def get_fleet_details_by_info(fleet_info: dict) -> list:
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
 
     lines = [f'**{fleet_name}**']
-    lines.append(f'*{fleet_description}*')
-    lines.append(f'Type:   {fleet_type}')
-    lines.append(f'Min trophies:   {min_trophy_required}')
-    lines.append(f'Members:   {member_count}')
-    lines.append(f'Trophies:   {util.get_reduced_number_compact(trophies)}')
+    lines.append(f'```{fleet_description}')
+    lines.append(f'Type - {fleet_type}')
+    lines.append(f'Min trophies - {min_trophy_required}')
+    lines.append(f'Members - {member_count}')
+    lines.append(f'Trophies - {util.get_reduced_number_compact(trophies)}')
     if division != '-':
-        lines.append(f'Stars:   {util.get_reduced_number_compact(stars)}')
-        lines.append(f'Division:   {division}')
+        lines.append(f'Division - {division}')
+        lines.append(f'Stars - {util.get_reduced_number_compact(stars)}')
+
+    lines[1] += '```'
 
     return lines
 
