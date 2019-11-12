@@ -10,11 +10,16 @@ import pss_tournament as tourney
 import settings
 
 
+# ---------- Constants ----------
+TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
+TOP_CAPTAINS_BASE_PATH = f'LadderService/ListUsersByRanking?accessToken={settings.GPAT}&from=1&to='
+STARS_BASE_PATH = f''
+
+
 # ---------- Top 100 Alliances ----------
 
 def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    path = f'AllianceService/ListAlliancesByRanking?skip=0&take={take}'
-    raw_data = core.get_data_from_path(path)
+    raw_data = core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_fleets_as_embed(data, take), True
@@ -57,9 +62,7 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 # ---------- Top 100 Captains ----------
 
 def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    access_token = os.getenv('GPAT')
-    path = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
-    raw_data = core.get_data_from_path(path)
+    raw_data = core.get_data_from_path(TOP_CAPTAINS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
@@ -90,3 +93,28 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
             break
 
     return lines
+
+
+
+
+
+# ---------- Stars info ----------
+
+def get_division_stars(division: str = None, as_embed: bool = settings.USE_EMBEDS):
+    pass
+
+
+
+
+
+def get_division_stars(division):
+    if division is None:
+        return get_all_division_stars()
+    df_alliances = download_tournament_participants()
+    division_table = {'A': 1, 'B': 2, 'C': 3, 'D': 4}
+    division = division.upper()
+    if division not in division_table.keys():
+        return 'Division has to be A, B, C, or D'
+    division_id = division_table[division]
+    txt = '__**Division {}**__\n{}'.format(division, fleet_df_to_scores(df_alliances, division_id))
+    return txt
