@@ -128,7 +128,7 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int):
+async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
     if output:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
@@ -139,6 +139,24 @@ async def post_output(ctx, output: list, maximum_characters: int):
         for post in posts:
             if post:
                 await ctx.send(post)
+
+
+async def post_output_with_file(ctx, output: list, file_path: str, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+    if output:
+        if output[-1] == settings.EMPTY_LINE:
+            output = output[:-1]
+        if output[0] == settings.EMPTY_LINE:
+            output = output[1:]
+
+        posts = create_posts_from_lines(output, maximum_characters)
+        last_post_index = len(posts) - 1
+        if last_post_index >= 0:
+            for i, post in enumerate(posts):
+                if post:
+                    if i == last_post_index:
+                        await ctx.send(content=post, file=file_path)
+                    else:
+                        await ctx.send(content=post)
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
@@ -369,6 +387,12 @@ def url_escape(s: str) -> str:
         s = urllib.parse.quote(s, safe=' ')
         s = s.replace(' ', '+')
     return s
+
+
+def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
+    date_value = parse_pss_datetime(pss_timestamp)
+    result = date_value.strftime('%Y-%m-%d %H:%M:%S')
+    return result
 
 
 

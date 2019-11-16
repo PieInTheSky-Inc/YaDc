@@ -715,8 +715,8 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            output = fleet.get_fleet_details_by_info(fleet_info)
-            await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+            output, file_path = fleet.get_full_fleet_info_as_text(fleet_info)
+            await util.post_output_with_file(ctx, output, file_path)
     else:
         await ctx.send(f'Could not find a fleet named {fleet_name}')
 

@@ -2,10 +2,12 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
+import discord
 import os
 import urllib.parse
 
 import emojis
+import excel
 import pss_assert
 import pss_core as core
 import pss_lookups as lookups
@@ -60,33 +62,75 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
     return lines
 
 
-def _create_fleet_sheet(fleet_users_info: dict, retrieval_date: datetime) -> str:
-    # TODO: create util.convert_pss_timestamp_to_excel()
-    timestamp = retrieval_date
-    result = []
-    for user_info in fleet_users_info:
+def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
+    fleet_infos = _get_fleet_infos(fleet_name)
+    if exact:
+        for fleet_info in fleet_infos:
+            if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] == fleet_name:
+                return fleet_info
+    if fleet_infos:
+        return fleet_infos[0]
+    else:
+        return None
+
+
+def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime) -> list:
+    result = [
+        'Timestamp',
+        'Fleet',
+        'Player name',
+        'Rank',
+        'Last Login Date',
+        'Trophies',
+        'Stars',
+        'Join Date',
+        'Logged in ago',
+        'Joined ago'
+    ]
+    for user_info in fleet_users_infos:
+        logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate'])
+        joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate'])
         line = [
-            timestamp,
+            retrieval_date,
             user_info['AllianceName'],
             user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
             user_info['AllianceMembership'],
-            user_info['LastLoginDate'],
+            util.convert_pss_timestamp_to_excel(user_info['LastLoginDate']),
             user_info['Trophy'],
             user_info['Score'],
-            user_info['AllianceJoinDate']
+            util.convert_pss_timestamp_to_excel(user_info['AllianceJoinDate']),
+            util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
+            util.get_formatted_timedelta(joined_ago, include_relative_indicator=False)
         ]
         result.append(line)
     return result
 
 
 def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
+    """Returns a list of lines for the post, as well as the path to the spreadsheet created"""
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    fleet_id = fleet_info[FLEET_KEY_NAME]
     retrieval_date = util.get_utcnow()
-    fleet_users_infos = _get_fleet_users(fleet_info[FLEET_KEY_NAME])
+    fleet_users_infos = _get_fleet_users(fleet_id)
+    if fleet_users_infos:
+        fleet_info = list(fleet_users_infos.values())[0][fleet_id]
+    else:
+        fleet_info = _get_fleet_info_by_name(fleet_name)
 
     post_content = _get_fleet_details_by_info(fleet_info, fleet_users_infos)
-    file_path = _create_fleet_sheet(fleet_users_infos, retrieval_date)
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieval_date)
+    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date)
 
-    return post_content, file_path
+    return post_content, fleet_sheet_path
+
+
+async def post_fleet_details(ctx: discord.ext.commands.Context, fleet_details: list, fleet_sheet_path: str):
+    content = '\n'.join(fleet_details)
+    await ctx.send(content=content, file=discord.File(fleet_sheet_path))
+
+
+
+
 
 
 
