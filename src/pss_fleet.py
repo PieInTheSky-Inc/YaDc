@@ -77,6 +77,7 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
 
     lines = [f'**{fleet_name}**']
     lines.append(f'```{fleet_description}')
+    lines.append(settings.EMPTY_LINE)
     lines.append(f'Type - {fleet_type}')
     lines.append(f'Min trophies - {min_trophy_required}')
     lines.append(f'Members - {member_count}')
