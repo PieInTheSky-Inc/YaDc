@@ -154,7 +154,7 @@ async def post_output_with_file(ctx, output: list, file_path: str, maximum_chara
             for i, post in enumerate(posts):
                 if post:
                     if i == last_post_index:
-                        await ctx.send(content=post, file=file_path)
+                        await ctx.send(content=post, file=discord.File(file_path))
                     else:
                         await ctx.send(content=post)
 
@@ -389,9 +389,14 @@ def url_escape(s: str) -> str:
     return s
 
 
+def format_excel_datetime(dt: datetime) -> str:
+    result = dt.strftime('%Y-%m-%d %H:%M:%S')
+    return result
+
+
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
-    date_value = parse_pss_datetime(pss_timestamp)
-    result = date_value.strftime('%Y-%m-%d %H:%M:%S')
+    dt = parse_pss_datetime(pss_timestamp)
+    result = format_excel_datetime(dt)
     return result
 
 

@@ -717,6 +717,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
         if fleet_info:
             output, file_path = fleet.get_full_fleet_info_as_text(fleet_info)
             await util.post_output_with_file(ctx, output, file_path)
+            os.remove(file_path)
     else:
         await ctx.send(f'Could not find a fleet named {fleet_name}')
 

@@ -25,6 +25,34 @@ FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
 
 SEARCH_FLEET_USERS_BASE_PATH = f'AllianceService/ListUsers?accessToken={settings.GPAT}&skip=0&take=100&allianceId='
 
+FLEET_SHEET_COLUMN_NAMES = [
+    'Timestamp',
+    'Fleet',
+    'Player name',
+    'Rank',
+    'Last Login Date',
+    'Trophies',
+    'Stars',
+    'Join Date',
+    'Logged in ago',
+    'Joined ago'
+]
+FLEET_SHEET_COLUMN_TYPES = [
+    settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    None,
+    None,
+    None,
+    settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    None,
+    None
+]
+
+
+
+
 
 
 
@@ -75,29 +103,18 @@ def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
 
 
 def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime) -> list:
-    result = [
-        'Timestamp',
-        'Fleet',
-        'Player name',
-        'Rank',
-        'Last Login Date',
-        'Trophies',
-        'Stars',
-        'Join Date',
-        'Logged in ago',
-        'Joined ago'
-    ]
-    for user_info in fleet_users_infos:
+    result = [FLEET_SHEET_COLUMN_NAMES]
+    for user_info in fleet_users_infos.values():
         logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate'])
         joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate'])
         line = [
-            retrieval_date,
+            util.format_excel_datetime(retrieval_date),
             user_info['AllianceName'],
             user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
             user_info['AllianceMembership'],
             util.convert_pss_timestamp_to_excel(user_info['LastLoginDate']),
-            user_info['Trophy'],
-            user_info['Score'],
+            int(user_info['Trophy']),
+            int(user_info['AllianceScore']),
             util.convert_pss_timestamp_to_excel(user_info['AllianceJoinDate']),
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False)
@@ -119,14 +136,9 @@ def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
 
     post_content = _get_fleet_details_by_info(fleet_info, fleet_users_infos)
     fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieval_date)
-    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date)
+    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date, FLEET_SHEET_COLUMN_TYPES)
 
     return post_content, fleet_sheet_path
-
-
-async def post_fleet_details(ctx: discord.ext.commands.Context, fleet_details: list, fleet_sheet_path: str):
-    content = '\n'.join(fleet_details)
-    await ctx.send(content=content, file=discord.File(fleet_sheet_path))
 
 
 
