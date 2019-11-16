@@ -36,7 +36,6 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
     fleet_description = fleet_info['AllianceDescription']
     min_trophy_required = fleet_info['MinTrophyRequired']
     member_count = int(fleet_info['NumberOfMembers'])
-    trophies = 0
     trophies = sum([int(user_info['Trophy']) for user_info in fleet_users_infos.values()])
     stars = int(fleet_info['Score'])
     requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
