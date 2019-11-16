@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from datetime import datetime
 import os
 import urllib.parse
 
@@ -28,13 +29,12 @@ SEARCH_FLEET_USERS_BASE_PATH = f'AllianceService/ListUsers?accessToken={settings
 
 # ---------- Helper functions ----------
 
-def get_fleet_details_by_info(fleet_info: dict) -> list:
-
+def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_description = fleet_info['AllianceDescription']
     min_trophy_required = fleet_info['MinTrophyRequired']
     member_count = int(fleet_info['NumberOfMembers'])
-    trophies = int(fleet_info['Trophy'])
+    trophies = sum([int(user_info['Trophy'] for user_info in fleet_users_infos)])
     stars = int(fleet_info['Score'])
     requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
     division_design_id = fleet_info['DivisionDesignId']
@@ -60,10 +60,34 @@ def get_fleet_details_by_info(fleet_info: dict) -> list:
     return lines
 
 
-async def post_fleet_details(ctx, fleet_info: dict):
-    output = get_fleet_details_by_info(fleet_info)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+def _create_fleet_sheet(fleet_users_info: dict, retrieval_date: datetime) -> str:
+    # TODO: create util.convert_pss_timestamp_to_excel()
+    timestamp = retrieval_date
+    result = []
+    for user_info in fleet_users_info:
+        line = [
+            timestamp,
+            user_info['AllianceName'],
+            user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
+            user_info['AllianceMembership'],
+            user_info['LastLoginDate'],
+            user_info['Trophy'],
+            user_info['Score'],
+            user_info['AllianceJoinDate']
+        ]
+        result.append(line)
+    return result
+
+
+def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
+    retrieval_date = util.get_utcnow()
+    fleet_users_infos = _get_fleet_users(fleet_info[FLEET_KEY_NAME])
+
+    post_content = _get_fleet_details_by_info(fleet_info, fleet_users_infos)
+    file_path = _create_fleet_sheet(fleet_users_infos, retrieval_date)
+
+    return post_content, file_path
+
 
 
 
@@ -95,24 +119,19 @@ def get_fleet_search_details(fleet_info: dict) -> str:
     return result
 
 
-def _get_fleet_infos(fleet_name: str):
-    fleet_data_raw = core.get_data_from_path(f'{SEARCH_FLEETS_BASE_PATH}{util.url_escape(fleet_name)}')
+def _get_fleet_infos(fleet_name: str) -> dict:
+    path = f'{SEARCH_FLEETS_BASE_PATH}{util.url_escape(fleet_name)}'
+    fleet_data_raw = core.get_data_from_path(path)
     fleet_infos = core.xmltree_to_dict3(fleet_data_raw)
     return fleet_infos
 
 
+def _get_fleet_users(alliance_id: str) -> dict:
+    path = f'{SEARCH_FLEET_USERS_BASE_PATH}{alliance_id}'
+    fleet_users_data_raw = core.get_data_from_path(path)
+    fleet_users_infos = core.xmltree_to_dict3(fleet_users_data_raw)
+    return fleet_users_infos
 
-
-# ---------- stars command methods ----------
-
-
-
-def get_top_100_raw():
-    return None
-
-
-def get_tournament_fleets_raw():
-    return None
 
 
 
