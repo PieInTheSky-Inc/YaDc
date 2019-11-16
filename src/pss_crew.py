@@ -493,8 +493,8 @@ def get_level_costs(from_level: int, to_level: int = None) -> list:
 def _get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: list, xp_cost_lookup: list) -> (int, int, int, int):
     gas_cost = gas_costs_lookup[to_level - 1]
     xp_cost = xp_cost_lookup[to_level - 1]
-    gas_cost_from = sum(gas_costs_lookup[from_level - 1:to_level])
-    xp_cost_from = sum(xp_cost_lookup[from_level - 1:to_level])
+    gas_cost_from = sum(gas_costs_lookup[from_level:to_level])
+    xp_cost_from = sum(xp_cost_lookup[from_level:to_level])
 
     if from_level > 1:
         return (None, None, gas_cost_from, xp_cost_from)
@@ -530,8 +530,8 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 # ---------- Testing ----------
 
 if __name__ == '__main__':
-    #f = get_level_costs(20, 30)
-    test_crew = [('xin', None), ('xin', 5)]
+    f = get_level_costs(20, 30)
+    test_crew = [('alpaco', 5)]
     for (crew_name, level) in test_crew:
         os.system('clear')
         result = get_char_details_from_name(crew_name, level, as_embed=False)
