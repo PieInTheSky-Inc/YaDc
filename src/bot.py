@@ -32,6 +32,7 @@ import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
 import pss_top
+import pss_user as user
 import settings
 import utility as util
 
@@ -720,6 +721,28 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
             os.remove(file_path)
     else:
         await ctx.send(f'Could not find a fleet named {fleet_name}')
+
+
+
+@bot.command(brief='Get infos on a player')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def player(ctx: discord.ext.commands.Context, *, player_name=None):
+    async with ctx.typing():
+        user_infos = user.get_user_details_by_name(player_name)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = user.get_user_details_by_info(user_info)
+            await util.post_output(ctx, output)
+    else:
+        await ctx.send(f'Could not find a player named {player_name}')
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')

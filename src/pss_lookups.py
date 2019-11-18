@@ -1,7 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import typing
+
 import emojis
+
+
+ALLIANCE_MEMBERSHIP = {
+    'Candidate': 'Candidate',
+    'Ensign': 'Ensign',
+    'Major': 'Major',
+    'Lieutenant': 'Lieutenant',
+    'Commander': 'Commander',
+    'ViceAdmiral': 'Vice Admiral',
+    'FleetAdmiral': 'Fleet Admiral'
+}
 
 
 COLLECTION_PERK_LOOKUP = {
@@ -182,6 +195,24 @@ STAT_TYPES_LOOKUP = {
 }
 
 
+USER_STATUS = {
+    'Attacking': 'Attacking',
+    'Defending': 'Defending / Immunity',
+    'Offline': 'Offline'
+}
+
+
+USER_TYPE = {
+    'Administrator': 'Administrator',
+    'Backer': 'Backer',
+    'Banned': 'Banned',
+    'Unverified': 'Unverified',
+    'UserTypeJailBroken': 'Jailbroken / Rooted',
+    'UserTypePaying': 'Subscribed',
+    'Verified': 'Verified'
+}
+
+
 XP_COSTS_LEGENDARY_LOOKUP = [
     0, 0, 810, 1350, 1890,
     2430, 3060, 3690, 4320, 4950,
@@ -202,3 +233,21 @@ XP_COSTS_LOOKUP = [
     6660, 7050, 7440, 7830, 8220,
     8610, 9030, 9450, 9870, 10290,
     10710, 11160, 11610, 12060, 12510]
+
+
+
+
+
+
+
+
+
+
+# ----------
+
+def get_lookup_value_or_default(lookup: object, key: object, default: object = None) -> object:
+    if key in lookup.keys():
+        result = lookup[key]
+    else:
+        result = default
+    return result
