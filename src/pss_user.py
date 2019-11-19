@@ -59,7 +59,8 @@ def get_user_details_by_info(user_info: dict) -> list:
     user_type = user_info['UserType']
 
     has_fleet = alliance_id != '0'
-    show_stars = has_fleet or stars != '0'
+    has_division = 'AllianceQualifyDivisionDesignId' in user_info.keys() and user_info['AllianceQualifyDivisionDesignId'] != '0'
+    show_stars = (has_fleet and has_division) or stars != '0'
 
     if has_fleet:
         division_design_id = user_info['AllianceQualifyDivisionDesignId']
