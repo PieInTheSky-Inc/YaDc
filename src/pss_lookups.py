@@ -208,8 +208,8 @@ USER_TYPE = {
     'Banned': 'Banned',
     'Mission': 'NPC',
     'Unverified': 'Unverified',
-    'UserTypeAlliance': 'Starbase'
-    'UserTypeCommunityManager', 'Community Manager'
+    'UserTypeAlliance': 'Starbase',
+    'UserTypeCommunityManager': 'Community Manager',
     'UserTypeJailBroken': 'Jailbroken / Rooted',
     'UserTypePaying': 'Subscribed',
     'Verified': 'Verified'
