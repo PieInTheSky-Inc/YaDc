@@ -846,5 +846,6 @@ async def post_selection_message(ctx, search_term: str, available_options: dict)
 
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
+    print(f'discord.py version: {discord.__version__}')
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)

@@ -1,4 +1,5 @@
 asyncio
+discord.py==1.2.5
 holidays
 jellyfish
 numpy
@@ -9,4 +10,3 @@ psycopg2
 python-dateutil
 pytz
 requests
-git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py
