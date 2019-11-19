@@ -705,6 +705,9 @@ async def updatecache(ctx):
 @bot.command(brief='Get infos on a fleet', name='fleet')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
+    """Get details on a fleet.
+
+       This command will also create a spreadsheet containing information on a fleet's members."""
     async with ctx.typing():
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
 
@@ -727,6 +730,11 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
 @bot.command(brief='Get infos on a player')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def player(ctx: discord.ext.commands.Context, *, player_name=None):
+    """Get details on a player.
+
+       You can only search for the beginning of a name.
+       Savy servers only return up to 10 results.
+       So if you can't find the player you're looking for, you need to search again."""
     async with ctx.typing():
         user_infos = user.get_user_details_by_name(player_name)
 
