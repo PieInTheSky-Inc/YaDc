@@ -140,7 +140,7 @@ def get_user_search_details(user_info: dict) -> str:
     user_trophies = user_info['Trophy']
     user_stars = user_info['AllianceScore']
     if user_info['AllianceId'] != '0':
-        fleet_division = int(user_info['Alliance']['DivisionDesignId'])
+        fleet_division = int(user_info['AllianceQualifyDivisionDesignId'])
         fleet_name = user_info['AllianceName']
     else:
         fleet_division = 0
