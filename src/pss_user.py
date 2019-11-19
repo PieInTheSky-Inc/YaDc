@@ -110,8 +110,11 @@ def get_user_details_by_info(user_info: dict) -> list:
 
 def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
     battles = wins + losses + draws
-    result = (wins + .5 * draws) / battles
-    result *= 100
+    if battles > 0:
+        result = (wins + .5 * draws) / battles
+        result *= 100
+    else:
+        result = 0.0
     return result
 
 
