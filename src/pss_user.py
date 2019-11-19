@@ -39,6 +39,7 @@ def get_user_details_by_info(user_info: dict) -> list:
         if key != user_id:
             ship_info = inspect_ship_info[key]
 
+
     alliance_id = user_info['AllianceId']
     created_on_date = util.parse_pss_datetime(user_info['CreationDate'])
     crew_donated = user_info['CrewDonated']
@@ -57,7 +58,10 @@ def get_user_details_by_info(user_info: dict) -> list:
     user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
     user_type = user_info['UserType']
 
-    if alliance_id != '0':
+    has_fleet = alliance_id != '0'
+    show_stars = has_fleet or stars != '0'
+
+    if has_fleet:
         division_design_id = user_info['AllianceQualifyDivisionDesignId']
         fleet_join_date = util.parse_pss_datetime(user_info['AllianceJoinDate'])
         fleet_joined_ago = util.get_formatted_timedelta(fleet_join_date - utc_now)
@@ -67,7 +71,7 @@ def get_user_details_by_info(user_info: dict) -> list:
         joined = f'{util.format_excel_datetime(fleet_join_date)} ({fleet_joined_ago})'
     else:
         division_design_id = '0'
-        fleet_name_and_rank = '-'
+        fleet_name_and_rank = '<no fleet>'
         joined = '-'
 
     created_ago = util.get_formatted_timedelta(created_on_date - utc_now)
@@ -90,13 +94,17 @@ def get_user_details_by_info(user_info: dict) -> list:
     lines.append(f'Account created: {created}')
     lines.append(f'Last login: {logged_in}')
     lines.append(f'Fleet: {fleet_name_and_rank}')
-    lines.append(f'Joined fleet: {joined}')
+    if has_fleet:
+        lines.append(f'Joined fleet: {joined}')
     lines.append(f'Trophies: {trophies}')
     lines.append(f'Highest trophies: {highest_trophies}')
-    lines.append(f'Division: {division}')
-    lines.append(f'Stars: {stars}')
-    lines.append(f'Crew donated: {crew_donated}')
-    lines.append(f'Crew borrowed: {crew_received}')
+    if has_fleet:
+        lines.append(f'Division: {division}')
+    if show_stars:
+        lines.append(f'Stars: {stars}')
+    if has_fleet:
+        lines.append(f'Crew donated: {crew_donated}')
+        lines.append(f'Crew borrowed: {crew_received}')
     lines.append(f'PVP win/lose/draw: {pvp_wins}/{pvp_losses}/{pvp_draws} ({pvp_win_rate:0.2f}%)')
     lines.append(f'Defense win/lose/draw: {defense_wins}/{defense_losses}/{defense_draws} ({defense_win_rate:0.2f}%)')
     lines.append(f'Level: {level}')
