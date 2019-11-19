@@ -206,7 +206,10 @@ USER_TYPE = {
     'Administrator': 'Administrator',
     'Backer': 'Backer',
     'Banned': 'Banned',
+    'Mission': 'NPC',
     'Unverified': 'Unverified',
+    'UserTypeAlliance': 'Starbase'
+    'UserTypeCommunityManager', 'Community Manager'
     'UserTypeJailBroken': 'Jailbroken / Rooted',
     'UserTypePaying': 'Subscribed',
     'Verified': 'Verified'
