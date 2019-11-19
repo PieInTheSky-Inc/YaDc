@@ -5,28 +5,38 @@ import math
 from typing import Callable, Dict, List, Tuple
 
 import emojis
+import settings
 
 
 class Paginator():
-    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], page_size: int = 5):
+    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], page_size: int = 5, use_emojis: bool = settings.DEFAULT_USE_EMOJI_PAGINATOR, timeout: float = 60.0):
         self.__context = ctx
         self.__search_term = search_term
         self.__available_options = list(available_options)
         self.__short_text_function = short_text_function
         self.__page_size = page_size
+        self.__use_emojis = use_emojis
+        self.__timeout = timeout
+
+        if not self.__use_emojis:
+            self.__page_size = len(self.__available_options)
+            self.__base_reaction_emojis = []
 
         self.__pages = Paginator.__get_pages(self.__available_options, self.__page_size)
+        self.__page_count = len(self.__pages)
         self.__current_page = []
         self.__current_page_no = 0
         self.__current_options: Dict[str, dict] = {}
         self.__set_first_page()
         self.__message: discord.Message = None
         self.__title = Paginator.__get_title(search_term)
-        self.__base_reaction_emojis = Paginator.__get_base_reaction_emojis(self.__pages)
+        if self.__use_emojis:
+            self.__base_reaction_emojis = Paginator.__get_base_reaction_emojis(self.__pages)
+
 
 
     async def wait_for_option_selection(self) -> (bool, dict):
-        def option_selection_check(reaction: discord.Reaction, user: discord.User):
+        def emoji_selection_check(reaction: discord.Reaction, user: discord.User):
             if user == self.__context.author:
                 emoji = str(reaction.emoji)
                 if (emoji in self.__current_options.keys() or emoji in self.__base_reaction_emojis) and self.__message.id == reaction.message.id:
@@ -35,43 +45,67 @@ class Paginator():
                 reaction.remove(user)
             return False
 
+        def option_selection_check(message: discord.Message):
+            if message.author == self.__context.author:
+                return True
+            return False
+
         while True:
             await self.__post_current_page()
+            reaction = None
+            user = None
+            reply: discord.Message = None
 
             try:
-                reaction, user = await self.__context.bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
+                if self.__use_emojis:
+                    reaction, user = await self.__context.bot.wait_for('reaction_add', timeout=self.__timeout, check=emoji_selection_check)
+                else:
+                    reply = await self.__context.bot.wait_for('message', timeout=self.__timeout, check=option_selection_check)
             except asyncio.TimeoutError:
                 await self.__message.delete()
                 return False, {}
             else:
-                emoji = str(reaction.emoji)
-                if emoji == emojis.page_next:
-                    await reaction.remove(user)
-                    self.__set_next_page()
-                elif emoji == emojis.page_previous:
-                    await reaction.remove(user)
-                    self.__set_previous_page()
-                else:
-                    await self.__message.delete()
-                    return True, self.__current_options[emoji]
+                if reaction and user:
+                    emoji = str(reaction.emoji)
+                    if emoji == emojis.page_next:
+                        await reaction.remove(user)
+                        self.__set_next_page()
+                    elif emoji == emojis.page_previous:
+                        await reaction.remove(user)
+                        self.__set_previous_page()
+                    else:
+                        await self.__message.delete()
+                        return True, self.__current_options[emoji]
+                elif reply:
+                    content = str(reply.content)
+                    await reply.delete()
+                    try:
+                        selection = int(content)
+                    except ValueError:
+                        pass
+                    else:
+                        if selection in self.__current_options.keys():
+                            await self.__message.delete()
+                            return True, self.__current_options[selection]
 
 
     async def __post_current_page(self) -> None:
         options_display = Paginator.__get_options_display(self.__current_page, self.__short_text_function)
-        page_count = len(self.__pages)
-        if page_count > 1:
-            page_no = f'page {self.__current_page_no}/{len(self.__pages)}'
+        if self.__page_count > 1:
+            page_no = f'page {self.__current_page_no}/{self.__page_count}'
         else:
             page_no = ''
         content = f'{self.__title}```{options_display}```{page_no}'
         if self.__message:
-            await self.__message.edit(content=content)
+            if self.__page_count > 1:
+                await self.__message.edit(content=content)
         else:
             self.__message = await self.__context.send(content)
-            for base_reaction_emoji in self.__base_reaction_emojis:
-                await self.__message.add_reaction(base_reaction_emoji)
-            for option_emoji in self.__current_options.keys():
-                await self.__message.add_reaction(option_emoji)
+            if self.__use_emojis:
+                for base_reaction_emoji in self.__base_reaction_emojis:
+                    await self.__message.add_reaction(base_reaction_emoji)
+                for option_emoji in self.__current_options.keys():
+                    await self.__message.add_reaction(option_emoji)
 
 
     def __set_first_page(self) -> None:
@@ -88,7 +122,7 @@ class Paginator():
 
     def __set_page(self, page: List[dict]) -> None:
         self.__current_page = page
-        self.__current_options = Paginator.__get_options(page)
+        self.__current_options = Paginator.__get_options(page, self.__use_emojis)
 
 
     def __set_previous_page(self) -> None:
@@ -143,11 +177,14 @@ class Paginator():
 
 
     @staticmethod
-    def __get_options(current_page: List[dict]) -> Dict[str, dict]:
+    def __get_options(current_page: List[dict], use_emojis: bool) -> Dict[str, dict]:
         result = {}
         for i, option in enumerate(current_page):
-            emoji = emojis.options[i]
-            result[emoji] = option
+            if use_emojis:
+                emoji = emojis.options[i]
+                result[emoji] = option
+            else:
+                result[i + 1] = option
         return result
 
 
@@ -157,7 +194,7 @@ class Paginator():
         for i, entity_info in enumerate(entity_infos):
             number = str(i + 1)
             short_text = short_text_function(entity_info)
-            option = f'{number.rjust(2)} - {short_text}'
+            option = f'{number.rjust(2)}: {short_text}'
             options.append(option)
         return '\n'.join(options)
 
