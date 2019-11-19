@@ -33,23 +33,24 @@ USER_DESCRIPTION_PROPERTY_NAME = 'Name'
 
 def get_user_details_by_info(user_info: dict) -> list:
     user_id = user_info[USER_KEY_NAME]
-    data_retrieval_date = util.get_utcnow()
+    utc_now = util.get_utcnow()
     inspect_ship_info = ship.get_inspect_ship_for_user(user_id)
-    user_info = inspect_ship_info['User']
-    ship_info = inspect_ship_info['Ship']
+    for key in inspect_ship_info.keys():
+        if key != user_id:
+            ship_info = inspect_ship_info[key]
 
     alliance_id = user_info['AllianceId']
     created_on_date = util.parse_pss_datetime(user_info['CreationDate'])
     crew_donated = user_info['CrewDonated']
     crew_received = user_info['CrewReceived']
-    defense_draws = user_info['PVPDefenceDraws']
-    defense_losses = user_info['PVPDefenceLosses']
-    defense_wins = user_info['PVPDefenceWins']
+    defense_draws = int(user_info['PVPDefenceDraws'])
+    defense_losses = int(user_info['PVPDefenceLosses'])
+    defense_wins = int(user_info['PVPDefenceWins'])
     highest_trophies = user_info['HighestTrophy']
     logged_in_date = util.parse_pss_datetime(user_info['LastLoginDate'])
-    pvp_draws = user_info['PVPAttackDraws']
-    pvp_losses = user_info['PVPAttackLosses']
-    pvp_wins = user_info['PVPAttackWins']
+    pvp_draws = int(user_info['PVPAttackDraws'])
+    pvp_losses = int(user_info['PVPAttackLosses'])
+    pvp_wins = int(user_info['PVPAttackWins'])
     ship_status = ship_info['ShipStatus']
     stars = user_info['AllianceScore']
     trophies = user_info['Trophy']
@@ -57,27 +58,27 @@ def get_user_details_by_info(user_info: dict) -> list:
     user_type = user_info['UserType']
 
     if alliance_id != '0':
-        division_design_id = user_info['Alliance']['DivisionDesignId']
+        division_design_id = user_info['AllianceQualifyDivisionDesignId']
         fleet_join_date = util.parse_pss_datetime(user_info['AllianceJoinDate'])
-        fleet_joined_ago = util.get_formatted_timedelta(data_retrieval_date - fleet_join_date)
+        fleet_joined_ago = util.get_formatted_timedelta(fleet_join_date - utc_now)
         fleet_name = user_info['AllianceName']
         fleet_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, user_info['AllianceMembership'], user_info['AllianceMembership'])
-        fleet_name_and_rank = f'{fleet_name} {fleet_rank}'
-        joined = f'{fleet_join_date} ({fleet_joined_ago})'
+        fleet_name_and_rank = f'{fleet_name} ({fleet_rank})'
+        joined = f'{util.format_excel_datetime(fleet_join_date)} ({fleet_joined_ago})'
     else:
         division_design_id = '0'
         fleet_name_and_rank = '-'
         joined = '-'
 
-    created_ago = util.get_formatted_timedelta(data_retrieval_date - created_on_date)
+    created_ago = util.get_formatted_timedelta(created_on_date - utc_now)
     created = f'{util.format_excel_datetime(created_on_date)} ({created_ago})'
     defense_win_rate = _calculate_win_rate(defense_wins, defense_losses, defense_draws)
     division = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, '-')
     if user_id:
-        level = ship.get_ship_level_for_user(user_id)
+        level = ship.get_ship_level(ship_info)
     else:
         level = '-'
-    logged_in_ago = util.get_formatted_timedelta(data_retrieval_date - logged_in_date)
+    logged_in_ago = util.get_formatted_timedelta(logged_in_date - utc_now)
     logged_in = f'{util.format_excel_datetime(logged_in_date)} ({logged_in_ago})'
     pvp_win_rate = _calculate_win_rate(pvp_wins, pvp_losses, pvp_draws)
     if division == '-':
@@ -110,6 +111,7 @@ def get_user_details_by_info(user_info: dict) -> list:
 def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
     battles = wins + losses + draws
     result = (wins + .5 * draws) / battles
+    result *= 100
     return result
 
 
