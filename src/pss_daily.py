@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import os
+
 import pss_core as core
 import utility as util
 
@@ -67,16 +68,27 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
     return success
 
 
+
+
+
+
+
+
+
+
 # ---------- Utilities ----------
+
 def delete_daily_channel(guild_id: int) -> bool:
     query = 'DELETE FROM serversettings WHERE guildid = \'{}\''.format(guild_id)
     success = core.db_try_execute(query)
     return success
 
+
 def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     query = 'INSERT INTO serversettings (guildid, dailychannelid, dailycanpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
     success = core.db_try_execute(query)
     return success
+
 
 def select_daily_channel(guild_id: int = None, can_post: bool = None) -> list:
     query = 'SELECT * FROM serversettings'
@@ -88,6 +100,7 @@ def select_daily_channel(guild_id: int = None, can_post: bool = None) -> list:
         query += ' WHERE canpost = {}'.format(util.db_convert_boolean(can_post))
     result = core.db_fetchall(query)
     return result
+
 
 def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool = True) -> bool:
     query = 'UPDATE serversettings SET '
