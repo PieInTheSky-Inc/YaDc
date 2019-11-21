@@ -91,6 +91,16 @@ async def on_command_error(ctx: discord.ext.commands.Context, err):
         await ctx.send('Error: {}'.format(err))
 
 
+@bot.event
+async def on_guild_join(guild: discord.Guild):
+    pass
+
+
+@bot.event
+async def on_guild_remove(guild: discord.Guild):
+    pass
+
+
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop():
     while True:
@@ -751,6 +761,21 @@ async def player(ctx: discord.ext.commands.Context, *, player_name=None):
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named {player_name}')
+
+
+@bot.group(brief='Change server settings', name='set')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_set(ctx):
+    pass
+
+
+@cmd_set.group(brief='Toggle pagination', name='pagination')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_set_pagination(ctx, switch):
+    """Toggle pagination for this server
+
+       Default is 'off' """
+    pass
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')
