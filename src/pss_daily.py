@@ -55,11 +55,11 @@ def try_remove_daily_channel(guild_id: int) -> bool:
     rows = select_daily_channel(guild_id)
     success = False
     if len(rows) == 0:
-        print('[try_remove_daily_channel] key not in db: {}'.format(guild_id))
+        print(f'[try_remove_daily_channel] key not in db: {guild_id}')
     else:
         success = delete_daily_channel(guild_id)
         if success == False:
-            print('[try_remove_daily_channel] failed to delete data row with key: {}'.format(guild_id))
+            print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
     return success
 
 
@@ -79,13 +79,13 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
 # ---------- Utilities ----------
 
 def delete_daily_channel(guild_id: int) -> bool:
-    query = 'DELETE FROM serversettings WHERE guildid = \'{}\''.format(guild_id)
+    query = f'DELETE FROM serversettings WHERE guildid = \'{guild_id}\''
     success = core.db_try_execute(query)
     return success
 
 
 def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
-    query = 'INSERT INTO serversettings (guildid, dailychannelid, dailycanpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
+    query = f'INSERT INTO serversettings (guildid, dailychannelid, dailycanpost) VALUES ({guild_id}, {channel_id}, TRUE)'
     success = core.db_try_execute(query)
     return success
 
@@ -93,11 +93,11 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
 def select_daily_channel(guild_id: int = None, can_post: bool = None) -> list:
     query = 'SELECT * FROM serversettings'
     if guild_id:
-        query += ' WHERE guildid = \'{}\''.format(guild_id)
+        query += f' WHERE guildid = \'{guild_id}\''.format()
         if can_post != None:
-            query += ' AND canpost = {}'.format(util.db_convert_boolean(can_post))
+            query += f' AND canpost = {util.db_convert_boolean(can_post)}'
     if can_post != None:
-        query += ' WHERE canpost = {}'.format(util.db_convert_boolean(can_post))
+        query += f' WHERE canpost = {util.db_convert_boolean(can_post)}'
     result = core.db_fetchall(query)
     return result
 
@@ -105,7 +105,7 @@ def select_daily_channel(guild_id: int = None, can_post: bool = None) -> list:
 def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool = True) -> bool:
     query = 'UPDATE serversettings SET '
     if channel_id != None:
-        query += 'channelid = \'{}\', '.format(channel_id)
-    query += 'dailycanpost = {} WHERE guildid = \'{}\''.format(util.db_convert_boolean(can_post), guild_id)
+        query += f'channelid = \'{channel_id}\', '
+    query += f'dailycanpost = {util.db_convert_boolean(can_post)} WHERE guildid = \'{guild_id}\''
     success = core.db_try_execute(query)
     return success
