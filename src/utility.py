@@ -481,29 +481,29 @@ def db_convert_timestamp(datetime: datetime) -> str:
     else:
         return None
 
-def db_convert_to_boolean(db_boolean: str) -> bool:
+def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
     if db_boolean is None:
-        return None
+        return default_if_none
     db_upper = db_boolean.upper()
     if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
         return True
     else:
         return False
 
-def db_convert_to_datetime(db_timestamp: str) -> datetime:
+def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> datetime:
     if db_timestamp is None:
-        return None
+        return default_if_none
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
 
-def db_convert_to_int(db_int: str) -> int:
+def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
     if db_int is None:
-        return None
+        return default_if_none
     result = int(db_int)
     return result
 
-def db_convert_to_float(db_float: str) -> float:
+def db_convert_to_float(db_float: str, default_if_none: bool = None) -> float:
     if db_float is None:
-        return None
+        return default_if_none
     result = float(db_float)
     return result
