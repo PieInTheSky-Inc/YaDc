@@ -407,69 +407,63 @@ def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name, column_type, is_primary=False, not_null=False):
-    column_name_txt = column_name.upper()
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False) -> str:
+    column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
     is_primary_txt = ''
     not_null_txt = ''
     if is_primary:
-        is_primary_txt = ' PRIMARY KEY'
+        is_primary_txt = 'PRIMARY KEY'
     if not_null:
-        not_null_txt = ' NOT NULL'
-    result = '{} {}{}{}'.format(column_name_txt, column_type_txt, is_primary_txt, not_null_txt)
-    return result
+        not_null_txt = 'NOT NULL'
+    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt}'
+    return result.strip()
 
 
-def db_get_where_and_string(where_strings):
+def db_get_where_and_string(where_strings: list) -> str:
     if where_strings:
-        result = ''
-        for i in range(0, len(where_strings)):
-            if i > 0:
-                result += ' AND '
-            result += where_strings[i]
-        return result
+        return ' AND '.join(where_strings)
+    else:
+        return ''
 
 
-def db_get_where_or_string(where_strings):
+def db_get_where_or_string(where_strings: list) -> str:
     if where_strings:
-        result = ''
-        for i in range(0, len(where_strings)):
-            if i > 0:
-                result += ' OR '
-            result += where_strings[i]
-        return result
+        return ' OR '.join(where_strings)
+    else:
+        return ''
 
 
-def db_get_where_string(column_name, column_value, is_text_type=False):
+def db_get_where_string(column_name: str, column_value: object, is_text_type: bool = False) -> str:
     column_name = column_name.lower()
     if is_text_type:
         column_value = db_convert_text(column_value)
-    return '{} = {}'.format(column_name, column_value)
+    return f'{column_name} = {column_value}'
 
 
-def db_convert_boolean(value):
+def db_convert_boolean(value: bool) -> str:
     if value:
         return 'TRUE'
     else:
         return 'FALSE'
 
-def db_convert_text(value):
+def db_convert_text(value: object) -> str:
     if value:
         result = str(value)
         result = result.replace('\'', '\'\'')
-        result = '\'{}\''.format(result)
+        result = f'\'{result}\''
         return result
     else:
         return ''
 
-def db_convert_timestamp(datetime):
+def db_convert_timestamp(datetime: datetime) -> str:
     if datetime:
-        result = 'TIMESTAMPTZ \'{}\''.format(datetime.strftime(DB_TIMESTAMP_FORMAT))
+        result = f'TIMESTAMPTZ \'{datetime.strftime(DB_TIMESTAMP_FORMAT)}\''
         return result
     else:
         return None
 
-def db_convert_to_boolean(db_boolean):
+def db_convert_to_boolean(db_boolean: str) -> bool:
     if db_boolean is None:
         return None
     db_upper = db_boolean.upper()
@@ -478,19 +472,19 @@ def db_convert_to_boolean(db_boolean):
     else:
         return False
 
-def db_convert_to_datetime(db_timestamp):
+def db_convert_to_datetime(db_timestamp: str) -> datetime:
     if db_timestamp is None:
         return None
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
 
-def db_convert_to_int(db_int):
+def db_convert_to_int(db_int: str) -> int:
     if db_int is None:
         return None
     result = int(db_int)
     return result
 
-def db_convert_to_float(db_float):
+def db_convert_to_float(db_float: str) -> float:
     if db_float is None:
         return None
     result = float(db_float)
