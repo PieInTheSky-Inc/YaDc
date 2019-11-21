@@ -67,17 +67,17 @@ def fix_daily_channel(guild_id, can_post):
 
 # ---------- Utilities ----------
 def delete_daily_channel(guild_id):
-    query = 'DELETE FROM daily WHERE guildid = \'{}\''.format(guild_id)
+    query = 'DELETE FROM serversettings WHERE guildid = \'{}\''.format(guild_id)
     success = core.db_try_execute(query)
     return success
 
 def insert_daily_channel(guild_id, channel_id):
-    query = 'INSERT INTO daily (guildid, channelid, canpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
+    query = 'INSERT INTO serversettings (guildid, channelid, canpost) VALUES ({},{},TRUE)'.format(guild_id, channel_id)
     success = core.db_try_execute(query)
     return success
 
 def select_daily_channel(guild_id = None, can_post = None):
-    query = 'SELECT * FROM daily'
+    query = 'SELECT * FROM serversettings'
     if guild_id:
         query += ' WHERE guildid = \'{}\''.format(guild_id)
         if can_post != None:
@@ -88,7 +88,7 @@ def select_daily_channel(guild_id = None, can_post = None):
     return result
 
 def update_daily_channel(guild_id, channel_id = None, can_post = True):
-    query = 'UPDATE daily SET '
+    query = 'UPDATE serversettings SET '
     if channel_id != None:
         query += 'channelid = \'{}\', '.format(channel_id)
     query += 'canpost = {} WHERE guildid = \'{}\''.format(convert_can_post(can_post), guild_id)
