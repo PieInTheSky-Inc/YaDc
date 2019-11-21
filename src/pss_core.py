@@ -522,7 +522,7 @@ def init_db():
             ('guildid', 'TEXT', True, True),
             ('dailychannelid', 'TEXT', False, False),
             ('dailycanpost', 'BOOLEAN', False, False),
-            ('latestdailymessageid', 'TEXT', False, False),
+            ('dailylatestmessageid', 'TEXT', False, False),
             ('usepagination', 'BOOLEAN', False, False)
         ])
         success_settings = db_try_create_table('settings', [
@@ -552,7 +552,7 @@ def db_update_schema_v_1_2_2_0():
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
         ('dailycanpost', 'BOOLEAN', False, False),
-        ('latestdailymessageid', 'TEXT', False, False),
+        ('dailylatestmessageid', 'TEXT', False, False),
         ('usepagination', 'BOOLEAN', False, False)
     ]
 
