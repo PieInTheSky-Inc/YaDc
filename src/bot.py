@@ -807,69 +807,20 @@ async def test(ctx: discord.ext.commands.Context, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
-    elif action == 'options':
-        async with ctx.typing():
-            count = 10
-            if params:
-                count = int(params)
-            if count > 10:
-                count = 10
-            available_options = dict({emoji: i + 1 for i, emoji in enumerate(emojis.options[:count])})
-            options = [f'{emoji}: {i}' for emoji, i in available_options.items()]
-            content = "\n".join(options)
-            content = f'```{content}```'
-
-        message = await ctx.send(content)
-        await wait_for_option_selection(ctx, message, available_options)
 
 
-
-
-
-# ---------- Check functions ----------
-
-async def wait_for_option_selection(ctx: discord.ext.commands.Context, option_message: discord.Message, available_options: dict) -> (bool, dict):
-    def option_selection_check(reaction: discord.Reaction, user: discord.User):
-        if user == ctx.author:
-            emoji = str(reaction.emoji)
-            if emoji in available_options.keys() or emoji == emojis.page_stop:
-                return True
-        else:
-            reaction.remove(user)
-            return False
-
-    await option_message.add_reaction(emojis.page_stop)
-    for option in available_options.keys():
-        await option_message.add_reaction(option)
-
-    try:
-        reaction, _ = await bot.wait_for('reaction_add', timeout=60.0, check=option_selection_check)
-    except asyncio.TimeoutError:
-        await option_message.delete()
-        return False, {}
+@bot.command(hidden=True)
+@commands.is_owner()
+async def updateschema(ctx: discord.ext.commands.Context):
+    success = core.db_update_schema_v_1_2_2_0()
+    if success:
+        await ctx.send('Successfully updated db schema.')
     else:
-        emoji = str(reaction.emoji)
-        await option_message.delete()
-        if emoji == emojis.page_stop:
-            return False, {}
-        else:
-            return True, available_options[emoji]
+        await ctx.send('An error ocurred while updating the db schema.')
 
 
-def create_available_options_dict(options: list) -> dict:
-    count = len(options)
-    result = dict({emoji: options[i] for i, emoji in enumerate(emojis.options[:count])})
-    return result
 
 
-async def post_selection_message(ctx, search_term: str, available_options: dict) -> discord.Message:
-    content = 'Multiple matches found'
-    if search_term:
-        content += f' while searching for **{search_term}**'
-    content += ':\n'
-    content += '```' + '\n'.join([f'{i + 1} - {short_fleet_info}' for i, short_fleet_info in enumerate(available_options)]) + '```'
-    result = await ctx.send(content)
-    return result
 
 
 

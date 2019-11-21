@@ -400,6 +400,24 @@ def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
     return result
 
 
+def compare_versions(version_1: str, version_2: str) -> int:
+    """Compares to version strings with format x.x.x.x
+
+    Returns:
+    -1, if version_1 is higher than version_2
+    0, if version_1 is equal to version_2
+    1, if version_1 is lower than version_2 """
+    version_1 = version_1.strip('v')
+    version_2 = version_2.strip('v')
+    version_1_split = version_1.split('.')
+    version_2_split = version_2.split('.')
+    for i in range(0, len(version_1_split)):
+        if version_1_split[i] < version_2_split[i]:
+            return 1
+        elif version_1_split[i] > version_2_split[i]:
+            return -1
+    return 0
+
 
 
 
@@ -407,7 +425,7 @@ def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False) -> str:
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, alter_column: bool = False) -> str:
     column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
     is_primary_txt = ''

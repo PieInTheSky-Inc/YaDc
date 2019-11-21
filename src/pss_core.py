@@ -515,16 +515,83 @@ def read_about_file():
 
 # ---------- DataBase ----------
 def init_db():
-    success = _db_try_alter_daily_table()
-    success = db_try_create_table('serversettings', ['guildid TEXT PRIMARY KEY NOT NULL', 'dailychannelid TEXT NOT NULL', 'dailycanpost BOOLEAN', 'pagination BOOLEAN'])
-    if success:
-        print('[init_db] db initialization succeeded')
+    success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
+
+    if success_update_1_2_2_0:
+        success_serversettings = db_try_create_table('serversettings', [
+            ('guildid', 'TEXT', True, True),
+            ('dailychannelid', 'TEXT', False, False),
+            ('dailycanpost', 'BOOLEAN', False, False),
+            ('latestdailymessageid', 'TEXT', False, False),
+            ('usepagination', 'BOOLEAN', False, False)
+        ])
+        success_settings = db_try_create_table('settings', [
+            ('settingname', 'TEXT', True, True),
+            ('modifydate', 'TIMESTAMPTZ', False, True),
+            ('settingboolean', 'BOOLEAN', False, False),
+            ('settingfloat', 'FLOAT', False, False),
+            ('settingint', 'INT', False, False),
+            ('settingtext', 'TEXT', False, False),
+            ('settingtimestamp', 'TIMESTAMPTZ', False, False)
+        ])
+        if success_serversettings and success_settings:
+            print('[init_db] DB initialization succeeded')
+        else:
+            print('[init_db] DB initialization failed')
     else:
-        print('[init_db] db initialization failed')
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
+
+
+def db_update_schema_v_1_2_2_0():
+    query_lines = []
+    rename_columns = [
+        ('channelid', 'dailychannelid'),
+        ('canpost', 'dailycanpost')
+    ]
+    column_definitions = [
+        ('guildid', 'TEXT', True, True),
+        ('dailychannelid', 'TEXT', False, False),
+        ('dailycanpost', 'BOOLEAN', False, False),
+        ('latestdailymessageid', 'TEXT', False, False),
+        ('usepagination', 'BOOLEAN', False, False)
+    ]
+
+    schema_version = db_get_schema_version()
+    if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
+        return True
+
+    db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
+
+    column_names = db_get_column_names('serversettings')
+    column_names = [column_name.lower() for column_name in column_names]
+    for (name_from, name_to) in rename_columns:
+        if name_from in column_names:
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings RENAME COLUMN {name_from} TO {name_to};')
+
+    column_names = db_get_column_names('serversettings')
+    column_names = [column_name.lower() for column_name in column_names]
+    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+        if column_name not in column_names:
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+
+    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+        if column_name in column_names:
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} TYPE {column_type};')
+            if column_not_null:
+                not_null_toggle = 'SET'
+            else:
+                not_null_toggle = 'DROP'
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} {not_null_toggle} NOT NULL;')
+
+    query = '\n'.join(query_lines)
+    success = db_try_execute(query)
+    if success:
+        success = db_try_set_schema_version('1.2.2.0')
+    return success
 
 
 def db_close_cursor(cursor: psycopg2.extensions.cursor) -> None:
-    if cursor != None:
+    if cursor is not None:
         cursor.close()
 
 
@@ -536,7 +603,7 @@ def db_connect() -> bool:
             return True
         except Exception as error:
             error_name = error.__class__.__name__
-            print('[db_connect] {} occurred while establishing connection: {}'.format(error_name, error))
+            print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
             return False
     else:
         return True
@@ -548,10 +615,8 @@ def db_disconnect() -> None:
         DB_CONN.close()
 
 
-def db_execute(query: str, cursor: psycopg2.extensions.cursor) -> bool:
+def db_execute(query: str, cursor: psycopg2.extensions.cursor) -> None:
     cursor.execute(query)
-    success = db_try_commit()
-    return success
 
 
 def db_fetchall(query: str) -> list:
@@ -559,13 +624,13 @@ def db_fetchall(query: str) -> list:
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
-                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+                print(f'[db_fetchall] {error_name} while performing a query: {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
@@ -577,15 +642,52 @@ def db_fetchall(query: str) -> list:
     return result
 
 
+def db_get_column_list(column_definitions: list) -> str:
+    result = []
+    for column_definition in column_definitions:
+        result.append(util.db_get_column_definition(*column_definition))
+    return ', '.join(result)
+
+
+def db_get_column_names(table_name: str, cursor: psycopg2.extensions.cursor=None) -> list:
+    created_cursor = False
+    if cursor is None:
+        cursor = db_get_cursor()
+        created_cursor = True
+    result = None
+    query = f'SELECT * FROM {table_name} LIMIT 0'
+    success = db_try_execute(query, cursor)
+    if success:
+        result = [desc.name for desc in cursor.description]
+    if created_cursor:
+        db_close_cursor(cursor)
+        db_disconnect()
+    return result
+
+
 def db_get_cursor() -> psycopg2.extensions.cursor:
     global DB_CONN
-    if db_is_connected(DB_CONN) == False:
-        db_connect()
-    if db_is_connected(DB_CONN):
+    connected = db_is_connected(DB_CONN)
+    if not connected:
+        connected = db_connect()
+    if connected:
         return DB_CONN.cursor()
     else:
         print('[db_get_cursor] db is not connected')
     return None
+
+
+def db_get_schema_version() -> str:
+    where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
+    query = f'SELECT * FROM settings WHERE {where_string}'
+    try:
+        results = db_fetchall(query)
+    except:
+        results = []
+    if results:
+        return results[0][5]
+    else:
+        return ''
 
 
 def db_is_connected(connection: psycopg2.extensions.connection) -> bool:
@@ -595,7 +697,21 @@ def db_is_connected(connection: psycopg2.extensions.connection) -> bool:
     return False
 
 
-def _db_try_alter_daily_table() -> bool:
+def db_try_set_schema_version(version: str) -> bool:
+    prior_version = db_get_schema_version()
+    utc_now = util.get_utcnow()
+    modify_date_for_db = util.db_convert_timestamp(utc_now)
+    version_for_db = util.db_convert_text(version)
+    if prior_version == '':
+        query = f'INSERT INTO settings (settingname, modifydate, settingtext) VALUES (\'schema_version\', {modify_date_for_db}, {version_for_db})'
+    else:
+        where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
+        query = f'UPDATE settings SET settingtext = {version_for_db}, modifydate = {modify_date_for_db} WHERE {where_string}'
+    success = db_try_execute(query)
+    return success
+
+
+def _db_try_rename_daily_table() -> bool:
     query_rename = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings;'
     result = db_try_execute(query_rename)
     return result
@@ -609,7 +725,7 @@ def db_try_commit() -> bool:
             return True
         except (Exception, psycopg2.DatabaseError) as error:
             error_name = error.__class__.__name__
-            print('[db_try_commit] {} while committing: {}'.format(error_name, error))
+            print(f'[db_try_commit] {error_name} while committing: {error}')
             return False
     else:
         print('[db_try_commit] db is not connected')
@@ -617,30 +733,22 @@ def db_try_commit() -> bool:
 
 
 def db_try_create_table(table_name: str, column_definitions: list) -> bool:
-    query_create = f'CREATE TABLE {table_name};'
-    success_create = False
-    success_columns = True
+    column_list = db_get_column_list(column_definitions)
+    query_create = f'CREATE TABLE {table_name} ({column_list});'
+    success = False
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 db_execute(query_create, cursor)
-                success_create = True
-            except db_error.lookup('42P07'): # DuplicateTable
-                success_create = True
+                success = db_try_commit()
+            except db_error.lookup('42P07'):  # DuplicateTable
+                db_try_rollback()
+                success = True
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
                 print(f'[db_try_create_table] {error_name} while performing the query \'{query_create}\': {error}')
-
-            for column_definition in column_definitions:
-                query_column = f'ALTER TABLE IF EXISTS {table_name} ADD COLUMN IF NOT EXISTS {column_definition}'
-                try:
-                    db_execute(query_column, cursor)
-                except (Exception, psycopg2.DatabaseError) as error:
-                    success_columns = False
-                    error_name = error.__class__.__name__
-                    print(f'[db_try_create_table] {error_name} while performing the query \'{query_column}\': {error}')
 
             db_close_cursor(cursor)
             db_disconnect()
@@ -649,23 +757,26 @@ def db_try_create_table(table_name: str, column_definitions: list) -> bool:
             db_disconnect()
     else:
         print('[db_try_create_table] could not connect to db')
-    return success_create and success_columns
+    return success
 
 
-def db_try_execute(query: str) -> bool:
+def db_try_execute(query: str, cursor: psycopg2.extensions.cursor = None) -> bool:
     if query and query[-1] != ';':
         query += ';'
     success = False
     connected = db_connect()
     if connected:
-        cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is None:
+            cursor = db_get_cursor()
+        if cursor is not None:
             try:
                 db_execute(query, cursor)
+                db_try_commit()
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
+                db_try_rollback()
                 error_name = error.__class__.__name__
-                print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
+                print(f'[db_try_execute] {error_name} while performing the query \'{query}\': {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
@@ -675,3 +786,17 @@ def db_try_execute(query: str) -> bool:
     else:
         print('[db_try_execute] could not connect to db')
     return success
+
+
+def db_try_rollback() -> None:
+    if db_is_connected(DB_CONN):
+        try:
+            DB_CONN.rollback()
+            return True
+        except (Exception, psycopg2.DatabaseError) as error:
+            error_name = error.__class__.__name__
+            print(f'[db_try_rollback] {error_name} while rolling back: {error}')
+            return False
+    else:
+        print('[db_try_rollback] db is not connected')
+        return False
