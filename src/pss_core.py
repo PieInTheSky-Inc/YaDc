@@ -636,7 +636,7 @@ def db_try_create_table(table_name: str, column_definitions: list) -> bool:
             for column_definition in column_definitions:
                 query_column = f'ALTER TABLE IF EXISTS {table_name} ADD COLUMN IF NOT EXISTS {column_definition}'
                 try:
-                    db_execute(query_create, cursor)
+                    db_execute(query_column, cursor)
                 except (Exception, psycopg2.DatabaseError) as error:
                     success_columns = False
                     error_name = error.__class__.__name__
