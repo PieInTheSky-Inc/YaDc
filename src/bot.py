@@ -84,22 +84,28 @@ async def on_ready():
 async def on_command_error(ctx: discord.ext.commands.Context, err):
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
-    elif isinstance(err, pss_exception.Error):
-        logging.getLogger().error(err, exc_info=True)
-        await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
     else:
         logging.getLogger().error(err, exc_info=True)
-        await ctx.send('Error: {}'.format(err))
+        if isinstance(err, pss_exception.Error):
+            await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
+        elif isinstance(err, commands.CheckFailure):
+            await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
+        else:
+            await ctx.send(f'Error: {err}')
 
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    pass
+    success = server_settings.db_create_server_settings(guild.id)
+    if not success:
+        print(f'[on_guild_join] Could not create server settings for guild {guild.name} (ID: {guild.id})')
 
 
 @bot.event
 async def on_guild_remove(guild: discord.Guild):
-    pass
+    success = server_settings.db_delete_server_settings(guild.id)
+    if not success:
+        print(f'[on_guild_join] Could not delete server settings for guild {guild.name} (ID: {guild.id})')
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -343,6 +349,7 @@ async def news(ctx):
 
 
 @bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
+@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily(ctx):
@@ -355,7 +362,7 @@ async def autodaily(ctx):
     pass
 
 
-@autodaily.command(name='fix', hidden=True)
+@autodaily.command(brief='Fix the auto-daily channels.', name='fix')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -365,45 +372,7 @@ async def autodaily_fix(ctx: discord.ext.commands.Context):
     await ctx.send('Fixed daily channels')
 
 
-@autodaily.command(name='set', brief='Set an autodaily channel.')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@commands.has_permissions(administrator=True)
-async def autodaily_set(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
-    """Configure a channel on this server to have the daily announcement posted at."""
-    async with ctx.typing():
-        if text_channel:
-            guild = ctx.guild
-            success = daily.try_store_daily_channel(guild.id, text_channel.id)
-            if success:
-                output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
-            else:
-                output = ['Could not set auto-posting of the daily announcement for this server :(']
-        else:
-            output = ['You need to provide a text channel!']
-    await util.post_output(ctx, output)
-
-
-@autodaily.command(name='get', brief='Get the autodaily channel.')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@commands.has_permissions(administrator=True)
-async def autodaily_get(ctx: discord.ext.commands.Context):
-    """See which channel has been configured on this server to receive the daily announcement."""
-    async with ctx.typing():
-        guild = ctx.guild
-        channel_id = server_settings.db_get_daily_channel_id(guild.id)
-        if channel_id >= 0:
-            text_channel = bot.get_channel(channel_id)
-            if text_channel:
-                channel_name = text_channel.mention
-            else:
-                channel_name = '_<deleted channel>_'
-            output = [f'The daily announcement will be auto-posted at 1 am UTC in channel {channel_name}.']
-        else:
-            output = ['Auto-posting of the daily announcement is not configured for this server!']
-    await util.post_output(ctx, output)
-
-
-@autodaily.group(name='list', hidden=True)
+@autodaily.group(name='list')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -411,7 +380,7 @@ async def autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
 
-@autodaily_list.command(name='all', hidden=True)
+@autodaily_list.command(name='all')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -421,7 +390,7 @@ async def autodaily_list_all(ctx: discord.ext.commands.Context):
     await util.post_output(ctx, output)
 
 
-@autodaily_list.command(name='invalid', hidden=True)
+@autodaily_list.command(name='invalid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -431,7 +400,7 @@ async def autodaily_list_invalid(ctx: discord.ext.commands.Context):
     await util.post_output(ctx, output)
 
 
-@autodaily_list.command(name='valid', hidden=True)
+@autodaily_list.command(name='valid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -441,25 +410,7 @@ async def autodaily_list_valid(ctx: discord.ext.commands.Context):
     await util.post_output(ctx, output)
 
 
-@autodaily.command(name='remove', brief='Turn off autodaily feature for this server.')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-@commands.has_permissions(administrator=True)
-async def autodaily_remove(ctx: discord.ext.commands.Context):
-    """Stop auto-posting the daily announcement to this Discord server"""
-    async with ctx.typing():
-        guild = ctx.guild
-        channel_id = server_settings.db_get_daily_channel_id(guild.id)
-        if channel_id is not None:
-            if daily.try_remove_daily_channel(guild.id):
-                output = ['Removed auto-posting the daily announcement from this server.']
-            else:
-                output = ['Could not remove auto-posting the daily announcement from this server.']
-        else:
-            output = ['Auto-posting of the daily announcement is not configured for this server!']
-    await util.post_output(ctx, output)
-
-
-@autodaily.command(name='post', hidden=True)
+@autodaily.command(name='post')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
@@ -472,21 +423,13 @@ async def autodaily_post(ctx: discord.ext.commands.Context):
         await util.post_output_to_channel(text_channel, output)
 
 
-@autodaily.command(name='postall', hidden=True)
+@autodaily.command(name='postall')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
 async def autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
     await post_all_dailies()
-
-
-@autodaily.error
-async def autodaily_error(ctx: discord.ext.commands.Context, error):
-    if isinstance(error, commands.ConversionError) or isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('You need to pass an action channel to the `{}autodaily` command!'.format(COMMAND_PREFIX))
-    elif isinstance(error, commands.CheckFailure):
-        await ctx.send('You need the permission `Administrator` in order to be able to use this command!')
 
 
 @bot.command(brief='Get crew levelling costs', aliases=['lvl'])
@@ -693,17 +636,141 @@ async def player(ctx: discord.ext.commands.Context, *, player_name=None):
         await ctx.send(f'Could not find a player named {player_name}')
 
 
-@bot.group(brief='Change server settings', name='set')
+
+
+
+
+
+
+
+
+@bot.group(brief='Retrieve server settings', name='get')
+@commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_set(ctx: discord.ext.commands.Context):
+async def cmd_get(ctx: discord.ext.commands.Context):
+    """Retrieve settings for this server. You need administrator privileges to do so."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
-@cmd_set.group(brief='Set pagination', name='pagination', aliases=['pages'])
+@cmd_get.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
+    """Retrieve the pagination setting for this server. You need administrator privileges to do so."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            channel_name = server_settings.get_daily_channel_name(ctx)
+            if channel_name:
+                output = [f'The daily announcement will be auto-posted at 1 am UTC in channel {channel_name}.']
+            else:
+                output = ['Auto-posting of the daily announcement is not configured for this server!']
+        await util.post_output(ctx, output)
+
+
+@cmd_get.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_get_pagination(ctx: discord.ext.commands.Context):
+    """Retrieve the pagination setting for this server. You need administrator privileges to do so."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            use_pagination_mode = server_settings.db_get_use_pagination(ctx.guild.id)
+            output = [f'Pagination on this server has been set to: {use_pagination_mode}']
+        await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@bot.group(brief='Reset server settings', name='reset')
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_reset(ctx: discord.ext.commands.Context):
+    """Reset settings to defaults for this server. You need administrator privileges to do so."""
+    if ctx.channel.type != discord.ChannelType.text:
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+
+
+@cmd_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_reset_autodaily(ctx: discord.ext.commands.Context):
+    """Reset auto-posting the daily for this server. You need administrator privileges to do so."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
+            if success:
+                output = ['Successfully removed auto-daily settings for this server.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
+    """Reset pagination for this server. You need administrator privileges to do so."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            _ = server_settings.db_reset_use_pagination(ctx.guild.id)
+            use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
+            output = [f'Pagination on this server is: {use_pagination_mode}']
+        await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@bot.group(brief='Change server settings', name='set')
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_set(ctx: discord.ext.commands.Context):
+    """Configure settings for this server. You need administrator privileges to do so."""
+    if ctx.channel.type != discord.ChannelType.text:
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+
+
+@cmd_set.command(brief='Set auto-daily', name='autodaily', aliases=['daily'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
+    """Set a channel to automatically post the daily announcement in at 1 am UTC."""
+    if ctx.channel.type != discord.ChannelType.text:
+        async with ctx.typing():
+            if text_channel:
+                success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
+                if success:
+                    output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
+                else:
+                    output = [
+                        'Could not set auto-posting of the daily announcement for this server :(',
+                        'Please try again or contact the bot\'s author.'
+                    ]
+            else:
+                output = ['You need to provide a text channel!']
+        await util.post_output(ctx, output)
+
+
+@cmd_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
+@commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
-    """Set pagination for this server
+    """Set pagination for this server. You need administrator privileges to do so.
 
        If the <switch> parameter is not set, this command will toggle the setting.
        Valid values for <switch> are:
@@ -712,18 +779,22 @@ async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = No
        Default is 'OFF' """
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
-            if ctx.guild and ctx.guild.id:
-                guild_id = ctx.guild.id
-                if switch is not None:
-                    switch = util.convert_input_to_boolean(switch)
-                    result = server_settings.db_update_use_pagination(guild_id, switch)
-                else:
-                    result = server_settings.toggle_use_pagination(ctx.guild.id)
-                use_pagination_mode = server_settings.convert_use_pagination(result)
+            if switch is not None:
+                switch = util.convert_input_to_boolean(switch)
+                result = server_settings.db_update_use_pagination(ctx.guild.id, switch)
             else:
-                use_pagination_mode = None
+                result = server_settings.toggle_use_pagination(ctx.guild.id)
+            use_pagination_mode = server_settings.convert_to_on_off(result)
             output = [f'Pagination on this server is: {use_pagination_mode}']
         await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')

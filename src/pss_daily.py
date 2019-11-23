@@ -11,7 +11,7 @@ import utility as util
 
 def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
-    rows = server_settings.db_get_daily_channels(guild_id, None)
+    rows = server_settings.db_get_autodaily_settings(guild_id=guild_id, can_post=None)
     if len(rows) == 0:
         success = insert_daily_channel(guild_id, text_channel_id)
         if success == False:
@@ -36,7 +36,7 @@ def get_daily_channel_id(guild_id: int) -> int:
 
 
 def get_all_daily_channel_ids() -> list:
-    rows = server_settings.db_get_daily_channels(None, None)
+    rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
     if len(rows) == 0:
         return []
     else:
@@ -45,7 +45,7 @@ def get_all_daily_channel_ids() -> list:
 
 
 def get_valid_daily_channel_ids() -> list:
-    rows = server_settings.db_get_daily_channels(None, True)
+    rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=True)
     if len(rows) == 0:
         return []
     else:
@@ -54,14 +54,9 @@ def get_valid_daily_channel_ids() -> list:
 
 
 def try_remove_daily_channel(guild_id: int) -> bool:
-    rows = server_settings.db_get_daily_channels(guild_id)
-    success = False
-    if len(rows) == 0:
-        print(f'[try_remove_daily_channel] key not in db: {guild_id}')
-    else:
-        success = delete_daily_channel(guild_id)
-        if success == False:
-            print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
+    success = server_settings.db_reset_autodaily_settings(guild_id)
+    if success == False:
+        print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
     return success
 
 
@@ -93,7 +88,7 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
 
 
 def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
-    channels = server_settings.db_get_daily_channels(guild_id, can_post)
+    channels = server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
     for channel in channels:
         text_channel = ctx.bot.get_channel(int(channel[1]))

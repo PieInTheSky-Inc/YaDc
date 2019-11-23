@@ -1,3 +1,5 @@
+import discord
+
 import pss_core as core
 import utility as util
 
@@ -6,6 +8,28 @@ def get_server_settings(guild_id) -> tuple:
     pass
 
 # TODO: add functions for getting AND storing individual settings
+
+
+def convert_to_on_off(value: bool) -> str:
+    if value is True:
+        return 'ON'
+    elif value is False:
+        return 'OFF'
+    else:
+        return '<NOT SET>'
+
+
+def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
+    channel_id = db_get_daily_channel_id(ctx.guild.id)
+    if channel_id is not None:
+        text_channel = ctx.bot.get_channel(channel_id)
+        if text_channel:
+            channel_name = text_channel.mention
+        else:
+            channel_name = '_<deleted channel>_'
+    else:
+        channel_name = None
+    return channel_name
 
 
 def toggle_use_pagination(guild_id: int) -> bool:
@@ -17,15 +41,6 @@ def toggle_use_pagination(guild_id: int) -> bool:
         return not use_pagination
     else:
         return use_pagination
-
-
-def convert_use_pagination(use_pagination: bool) -> str:
-    if use_pagination is True:
-        return 'ON'
-    elif use_pagination is False:
-        return 'OFF'
-    else:
-        return '<NOT SET>'
 
 
 
@@ -41,6 +56,13 @@ def convert_use_pagination(use_pagination: bool) -> str:
 
 def db_create_server_settings(guild_id: int) -> bool:
     query = f'INSERT INTO serversettings (guildid) VALUES ({guild_id})'
+    success = core.db_try_execute(query)
+    return success
+
+
+def db_delete_server_settings(guild_id: int) -> bool:
+    where = util.db_get_where_string('guildid', guild_id, is_text_type=True)
+    query = f'DELETE FROM serversettings WHERE {where}'
     success = core.db_try_execute(query)
     return success
 
