@@ -167,7 +167,7 @@ def fix_daily_channels():
 
 # ----- General Bot Commands ----------------------------------------------------------
 @bot.command(brief='Ping the server')
-async def ping(ctx):
+async def ping(ctx: discord.ext.commands.Context):
     """Ping the server to verify that it\'s listening for commands"""
     async with ctx.typing():
         await ctx.send('Pong!')
@@ -330,7 +330,7 @@ async def stars(ctx: discord.ext.commands.Context, *, division=None):
 
 @bot.command(hidden=True, brief='Show the dailies', name='daily')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_daily(ctx):
+async def cmd_daily(ctx: discord.ext.commands.Context):
     """Show the dailies"""
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
@@ -340,7 +340,7 @@ async def cmd_daily(ctx):
 
 @bot.command(brief='Show the news')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def news(ctx):
+async def news(ctx: discord.ext.commands.Context):
     """Show the news"""
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
@@ -352,7 +352,7 @@ async def news(ctx):
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily(ctx):
+async def autodaily(ctx: discord.ext.commands.Context):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
@@ -489,7 +489,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_time(ctx):
+async def cmd_time(ctx: discord.ext.commands.Context):
     """Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia."""
     async with ctx.typing():
         now = datetime.datetime.now()
@@ -515,7 +515,7 @@ async def cmd_time(ctx):
 
 @bot.command(brief='Show links')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def links(ctx):
+async def links(ctx: discord.ext.commands.Context):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
         output = core.read_links_file()
@@ -524,7 +524,7 @@ async def links(ctx):
 
 @bot.command(brief='Display info on this bot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def about(ctx):
+async def about(ctx: discord.ext.commands.Context):
     """Displays information on this bot and its authors."""
     async with ctx.typing():
         txt = core.read_about_file()
@@ -533,7 +533,7 @@ async def about(ctx):
 
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.channel)
-async def tournament(ctx):
+async def tournament(ctx: discord.ext.commands.Context):
     """Get information about the time of the tournament.
        If this command is called without a sub command, it will display
        information about the time of the current month's tournament."""
@@ -543,7 +543,7 @@ async def tournament(ctx):
 
 
 @tournament.command(brief='Information on this month\'s tournament time', name='current')
-async def tournament_current(ctx):
+async def tournament_current(ctx: discord.ext.commands.Context):
     """Get information about the time of the current month's tournament."""
     async with ctx.typing():
         utc_now = util.get_utcnow()
@@ -554,7 +554,7 @@ async def tournament_current(ctx):
 
 
 @tournament.command(brief='Information on next month\'s tournament time', name='next')
-async def tournament_next(ctx):
+async def tournament_next(ctx: discord.ext.commands.Context):
     """Get information about the time of next month's tournament."""
     async with ctx.typing():
         utc_now = util.get_utcnow()
@@ -567,7 +567,7 @@ async def tournament_next(ctx):
 @bot.command(brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=1, per=1, type=commands.BucketType.channel)
-async def updatecache(ctx):
+async def updatecache(ctx: discord.ext.commands.Context):
     """This command is to be used to update all caches manually."""
     async with ctx.typing():
         crew.__character_designs_cache.update_data()
@@ -644,16 +644,19 @@ async def player(ctx: discord.ext.commands.Context, *, player_name=None):
 
 
 
-@bot.group(brief='Retrieve server settings', name='get')
+@bot.group(brief='Server settings', name='settings')
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_get(ctx: discord.ext.commands.Context):
-    """Retrieve settings for this server. You need administrator privileges to do so."""
+async def cmd_settings(ctx: discord.ext.commands.Context):
+    """Retrieve settings for this server.
+       Set settings for this server using the subcommands 'set' and 'reset'.
+
+       You need the Administrator permission to use any of these commands."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
-@cmd_get.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
+@cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
@@ -668,14 +671,14 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_get.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
+@cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_get_pagination(ctx: discord.ext.commands.Context):
     """Retrieve the pagination setting for this server. You need administrator privileges to do so."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
-            use_pagination_mode = server_settings.db_get_use_pagination(ctx.guild.id)
+            use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
             output = [f'Pagination on this server has been set to: {use_pagination_mode}']
         await util.post_output(ctx, output)
 
@@ -688,11 +691,13 @@ async def cmd_get_pagination(ctx: discord.ext.commands.Context):
 
 
 
-@bot.group(brief='Reset server settings', name='reset')
+@cmd_settings.group(brief='Reset server settings', name='reset')
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_reset(ctx: discord.ext.commands.Context):
-    """Reset settings to defaults for this server. You need administrator privileges to do so."""
+    """Reset settings to defaults for this server.
+
+       You need the Administrator permission to use any of these commands."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
@@ -701,7 +706,9 @@ async def cmd_reset(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_reset_autodaily(ctx: discord.ext.commands.Context):
-    """Reset auto-posting the daily for this server. You need administrator privileges to do so."""
+    """Reset auto-posting the daily for this server.
+
+       You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
@@ -719,7 +726,9 @@ async def cmd_reset_autodaily(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
-    """Reset pagination for this server. You need administrator privileges to do so."""
+    """Reset pagination for this server.
+
+       You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
@@ -736,11 +745,13 @@ async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
 
 
 
-@bot.group(brief='Change server settings', name='set')
+@cmd_settings.group(brief='Change server settings', name='set')
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_set(ctx: discord.ext.commands.Context):
-    """Configure settings for this server. You need administrator privileges to do so."""
+    """Configure settings for this server.
+
+       You need the Administrator permission to use any of these commands."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
@@ -749,8 +760,10 @@ async def cmd_set(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
-    """Set a channel to automatically post the daily announcement in at 1 am UTC."""
-    if ctx.channel.type != discord.ChannelType.text:
+    """Set a channel to automatically post the daily announcement in at 1 am UTC.
+
+       You need the Administrator permission to use this command."""
+    if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             if text_channel:
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
@@ -770,13 +783,15 @@ async def cmd_set_autodaily(ctx: discord.ext.commands.Context, text_channel: dis
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
-    """Set pagination for this server. You need administrator privileges to do so.
+    """Set pagination for this server.
 
        If the <switch> parameter is not set, this command will toggle the setting.
        Valid values for <switch> are:
        - Turning it on: on, true, yes, 1
        - Turning it off: off, false, no, 0
-       Default is 'OFF' """
+       Default is 'OFF'
+
+       You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             if switch is not None:

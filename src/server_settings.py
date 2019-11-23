@@ -72,7 +72,7 @@ def db_get_daily_channel_id(guild_id: int) -> int:
     settings = _db_get_server_settings(guild_id, setting_names=setting_names)
     if settings:
         for setting in settings:
-            return util.db_convert_to_int(setting[0][0])
+            return util.db_convert_to_int(setting[0])
     else:
         return None
 

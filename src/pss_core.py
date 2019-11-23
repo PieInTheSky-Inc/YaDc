@@ -544,10 +544,10 @@ def init_db():
 
 def db_update_schema_v_1_2_2_0():
     query_lines = []
-    rename_columns = [
-        ('channelid', 'dailychannelid'),
-        ('canpost', 'dailycanpost')
-    ]
+    rename_columns = {
+        'channelid': 'dailychannelid',
+        'canpost': 'dailycanpost'
+    }
     column_definitions = [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -564,18 +564,12 @@ def db_update_schema_v_1_2_2_0():
 
     column_names = db_get_column_names('serversettings')
     column_names = [column_name.lower() for column_name in column_names]
-    for (name_from, name_to) in rename_columns:
+    for name_from, name_to in rename_columns.items():
         if name_from in column_names:
             query_lines.append(f'ALTER TABLE IF EXISTS serversettings RENAME COLUMN {name_from} TO {name_to};')
 
-    column_names = db_get_column_names('serversettings')
-    column_names = [column_name.lower() for column_name in column_names]
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
-        if column_name not in column_names:
-            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
-
-    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
-        if column_name in column_names:
+        if column_name in rename_columns.values() or column_name in column_names:
             query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} TYPE {column_type};')
             if column_not_null:
                 not_null_toggle = 'SET'
@@ -586,7 +580,16 @@ def db_update_schema_v_1_2_2_0():
     query = '\n'.join(query_lines)
     success = db_try_execute(query)
     if success:
-        success = db_try_set_schema_version('1.2.2.0')
+        query_lines = []
+        column_names = db_get_column_names('serversettings')
+        column_names = [column_name.lower() for column_name in column_names]
+        for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+            if column_name not in column_names:
+                query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+        query = '\n'.join(query_lines)
+        success = db_try_execute(query)
+        if success:
+            success = db_try_set_schema_version('1.2.2.0')
     return success
 
 
