@@ -696,10 +696,8 @@ async def player(ctx: discord.ext.commands.Context, *, player_name=None):
 @bot.group(brief='Change server settings', name='set')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_set(ctx: discord.ext.commands.Context):
-    if ctx.channel.type != 'text':
-        ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
-        return
-    pass
+    if ctx.channel.type != discord.ChannelType.text:
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
 @cmd_set.group(brief='Set pagination', name='pagination', aliases=['pages'])
@@ -712,19 +710,20 @@ async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = No
        - Turning it on: on, true, yes, 1
        - Turning it off: off, false, no, 0
        Default is 'OFF' """
-    async with ctx.typing():
-        if ctx.guild and ctx.guild.id:
-            guild_id = ctx.guild.id
-            if switch is not None:
-                switch = util.convert_input_to_boolean(switch)
-                result = server_settings.db_update_use_pagination(guild_id, switch)
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            if ctx.guild and ctx.guild.id:
+                guild_id = ctx.guild.id
+                if switch is not None:
+                    switch = util.convert_input_to_boolean(switch)
+                    result = server_settings.db_update_use_pagination(guild_id, switch)
+                else:
+                    result = server_settings.toggle_use_pagination(ctx.guild.id)
+                use_pagination_mode = server_settings.convert_use_pagination(result)
             else:
-                result = server_settings.toggle_use_pagination(ctx.guild.id)
-            use_pagination_mode = server_settings.convert_use_pagination(result)
-        else:
-            use_pagination_mode = None
-        output = [f'Pagination on this server is: {use_pagination_mode}']
-    await util.post_output(ctx, output)
+                use_pagination_mode = None
+            output = [f'Pagination on this server is: {use_pagination_mode}']
+        await util.post_output(ctx, output)
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')

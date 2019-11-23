@@ -500,6 +500,8 @@ def db_convert_timestamp(datetime: datetime) -> str:
 def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
     if db_boolean is None:
         return default_if_none
+    if isinstance(db_boolean, bool):
+        return db_boolean
     db_upper = db_boolean.upper()
     if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
         return True
