@@ -23,7 +23,7 @@ import pagination
 import pss_fleet as fleet
 import pss_core as core
 import pss_crew as crew
-import pss_daily as d
+import pss_daily as daily
 import pss_dropship as dropship
 import pss_exception
 import pss_item as item
@@ -33,6 +33,7 @@ import pss_room as room
 import pss_tournament as tourney
 import pss_top
 import pss_user as user
+import server_settings
 import settings
 import utility as util
 
@@ -116,7 +117,7 @@ async def post_dailies_loop():
 
 async def post_all_dailies():
     fix_daily_channels()
-    channel_ids = d.get_valid_daily_channel_ids()
+    channel_ids = daily.get_valid_daily_channel_ids()
     output, _ = dropship.get_dropship_text()
     for channel_id in channel_ids:
         text_channel = bot.get_channel(channel_id)
@@ -132,7 +133,7 @@ async def post_all_dailies():
 
 
 def fix_daily_channels():
-    rows = d.select_daily_channel(None, None)
+    rows = server_settings.db_get_autodaily_settings(None, None)
     for row in rows:
         can_post = False
         guild_id = int(row[0])
@@ -155,7 +156,7 @@ def fix_daily_channels():
                 print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
         else:
             print('[fix_daily_channels] couldn\'t fetch channel with id: {}'.format(channel_id))
-        d.fix_daily_channel(guild_id, can_post)
+        daily.fix_daily_channel(guild_id, can_post)
 
 
 # ----- General Bot Commands ----------------------------------------------------------
@@ -182,8 +183,7 @@ async def prestige(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige combinations of the character specified"""
     async with ctx.typing():
         output, _ = crew.get_prestige_from_info(char_name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get character recipes')
@@ -192,8 +192,7 @@ async def recipe(ctx: discord.ext.commands.Context, *, char_name=None):
     """Get the prestige recipes of a character"""
     async with ctx.typing():
         output, _ = crew.get_prestige_to_info(char_name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get item ingredients', aliases=['ing'])
@@ -202,8 +201,7 @@ async def ingredients(ctx: discord.ext.commands.Context, *, name=None):
     """Get the ingredients for an item"""
     async with ctx.typing():
         output, _ = item.get_ingredients_for_item(name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get crafting recipes', aliases=['upg'])
@@ -212,8 +210,7 @@ async def upgrade(ctx: discord.ext.commands.Context, *, item_name=None):
     """Returns any crafting recipe involving the requested item."""
     async with ctx.typing():
         output, _ = item.get_item_upgrades_from_name(item_name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', aliases=['fairprice', 'cost'])
@@ -222,8 +219,7 @@ async def price(ctx: discord.ext.commands.Context, *, item_name=None):
     """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(name='stats', brief='Get item/crew stats')
@@ -248,13 +244,13 @@ async def stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
             item_output = None
             item_success = False
 
-    if char_success and char_output:
-        await util.post_output(ctx, char_output, settings.MAXIMUM_CHARACTERS)
+    if char_success:
+        await util.post_output(ctx, char_output)
 
-    if item_success and item_output:
+    if item_success:
         if char_success:
             await ctx.send(settings.EMPTY_LINE)
-        await util.post_output(ctx, item_output, settings.MAXIMUM_CHARACTERS)
+        await util.post_output(ctx, item_output)
 
     if not char_success and not item_success:
         await ctx.send(f'Could not find a character or an item named **{name}**')
@@ -273,8 +269,7 @@ async def char(ctx: discord.ext.commands.Context, level=None, *, char_name=None)
     async with ctx.typing():
         level, char_name = util.get_level_and_name(level, char_name)
         output, _ = crew.get_char_details_from_name(char_name, level=level)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(name='item', brief='Get item stats')
@@ -283,8 +278,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
     """Get the stats of an item."""
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get best items for a slot')
@@ -298,8 +292,7 @@ async def best(ctx: discord.ext.commands.Context, slot=None, stat=None):
     """
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(name='research', brief='Get research data')
@@ -308,8 +301,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, name: str = None):
     """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
     async with ctx.typing():
         output, _ = research.get_research_details_from_name(name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get collections')
@@ -318,10 +310,7 @@ async def collection(ctx: discord.ext.commands.Context, *, collection_name=None)
     """Get the details on a specific collection."""
     async with ctx.typing():
         output, _ = crew.get_collection_info(collection_name)
-    if output:
-        posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
-        for post in posts:
-            await ctx.send(post)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Division stars (works only during tournament finals)')
@@ -330,19 +319,17 @@ async def stars(ctx: discord.ext.commands.Context, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
     async with ctx.typing():
         output, _ = pss_top.get_division_stars(division=division)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
-@bot.command(hidden=True, brief='Show the dailies')
+@bot.command(hidden=True, brief='Show the dailies', name='daily')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def daily(ctx):
+async def cmd_daily(ctx):
     """Show the dailies"""
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
         output, _ = dropship.get_dropship_text()
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Show the news')
@@ -352,8 +339,7 @@ async def news(ctx):
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
         output, _ = dropship.get_news()
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.group(hidden=True, brief='Configure auto-posting the daily announcement for the current server.')
@@ -373,8 +359,9 @@ async def autodaily(ctx):
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_fix(ctx):
-    fix_daily_channels()
+async def autodaily_fix(ctx: discord.ext.commands.Context):
+    async with ctx.typing():
+        fix_daily_channels()
     await ctx.send('Fixed daily channels')
 
 
@@ -383,41 +370,44 @@ async def autodaily_fix(ctx):
 @commands.has_permissions(administrator=True)
 async def autodaily_set(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
     """Configure a channel on this server to have the daily announcement posted at."""
-    if text_channel:
-        guild = ctx.guild
-        success = d.try_store_daily_channel(guild.id, text_channel.id)
-        if success:
-            txt = 'Set auto-posting of the daily announcement to channel {}.'.format(text_channel.mention)
+    async with ctx.typing():
+        if text_channel:
+            guild = ctx.guild
+            success = daily.try_store_daily_channel(guild.id, text_channel.id)
+            if success:
+                output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
+            else:
+                output = ['Could not set auto-posting of the daily announcement for this server :(']
         else:
-            txt = 'Could not set auto-posting of the daily announcement for this server :('
-        await ctx.send(txt)
+            output = ['You need to provide a text channel!']
+    await util.post_output(ctx, output)
 
 
 @autodaily.command(name='get', brief='Get the autodaily channel.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_get(ctx):
+async def autodaily_get(ctx: discord.ext.commands.Context):
     """See which channel has been configured on this server to receive the daily announcement."""
-    guild = ctx.guild
-    channel_id = d.get_daily_channel_id(guild.id)
-    txt = ''
-    if channel_id >= 0:
-        text_channel = bot.get_channel(channel_id)
-        if text_channel:
-            channel_name = text_channel.mention
+    async with ctx.typing():
+        guild = ctx.guild
+        channel_id = server_settings.db_get_daily_channel_id(guild.id)
+        if channel_id >= 0:
+            text_channel = bot.get_channel(channel_id)
+            if text_channel:
+                channel_name = text_channel.mention
+            else:
+                channel_name = '_<deleted channel>_'
+            output = [f'The daily announcement will be auto-posted at 1 am UTC in channel {channel_name}.']
         else:
-            channel_name = '_deleted channel_'
-        txt += 'The daily announcement will be auto-posted at 1 am UTC in channel {}.'.format(channel_name)
-    else:
-        txt += 'Auto-posting of the daily announcement is not configured for this server!'
-    await ctx.send(txt)
+            output = ['Auto-posting of the daily announcement is not configured for this server!']
+    await util.post_output(ctx, output)
 
 
 @autodaily.group(name='list', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_list(ctx):
+async def autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
 
@@ -425,120 +415,68 @@ async def autodaily_list(ctx):
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_list_all(ctx):
-    channels = d.select_daily_channel(None, None)
-    txt = ''
-    i = 0
-    for channel in channels:
-        text_channel = bot.get_channel(int(channel[1]))
-        if text_channel:
-            guild = text_channel.guild
-            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
-            if i == 20:
-                txt += '\n'
-                i = 0
-        else:
-            txt += f'Invalid channel id: {channel[1]}'
-    txt_split = txt.split('\n\n')
-    if txt_split:
-        for msg in txt_split:
-                await ctx.send(msg)
-    else:
-        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+async def autodaily_list_all(ctx: discord.ext.commands.Context):
+    async with ctx.typing():
+        output = daily.get_daily_channels(ctx, None, None)
+    await util.post_output(ctx, output)
 
 
 @autodaily_list.command(name='invalid', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_list_invalid(ctx):
-    channels = d.select_daily_channel(None, False)
-    txt = ''
-    i = 0
-    for channel in channels:
-        text_channel = bot.get_channel(int(channel[1]))
-        if text_channel:
-            guild = text_channel.guild
-            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
-            if i == 20:
-                txt += '\n'
-                i = 0
-        else:
-            txt += f'Invalid channel id: {channel[1]}'
-    txt_split = txt.split('\n\n')
-    if txt_split:
-        for msg in txt_split:
-                await ctx.send(msg)
-    else:
-        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+async def autodaily_list_invalid(ctx: discord.ext.commands.Context):
+    async with ctx.typing():
+        output = daily.get_daily_channels(ctx, None, False)
+    await util.post_output(ctx, output)
 
 
 @autodaily_list.command(name='valid', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_list_valid(ctx):
-    channels = d.select_daily_channel(None, True)
-    txt = ''
-    i = 0
-    for channel in channels:
-        text_channel = bot.get_channel(int(channel[1]))
-        if text_channel:
-            guild = text_channel.guild
-            txt += '{}: #{} ({})\n'.format(guild.name, text_channel.name, channel[2])
-            if i == 20:
-                txt += '\n'
-                i = 0
-        else:
-            txt += f'Invalid channel id: {channel[1]}'
-    txt_split = txt.split('\n\n')
-    if txt_split:
-        for msg in txt_split:
-                await ctx.send(msg)
-    else:
-        ctx.send('Auto-posting of the daily announcement is not configured for any server!')
+async def autodaily_list_valid(ctx: discord.ext.commands.Context):
+    async with ctx.typing():
+        output = daily.get_daily_channels(ctx, None, True)
+    await util.post_output(ctx, output)
 
 
 @autodaily.command(name='remove', brief='Turn off autodaily feature for this server.')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_remove(ctx):
+async def autodaily_remove(ctx: discord.ext.commands.Context):
     """Stop auto-posting the daily announcement to this Discord server"""
-    guild = ctx.guild
-    txt = ''
-    channel_id = d.get_daily_channel_id(guild.id)
-    if channel_id >= 0:
-        if d.try_remove_daily_channel(guild.id):
-            txt += 'Removed auto-posting the daily announcement from this server.'
+    async with ctx.typing():
+        guild = ctx.guild
+        channel_id = server_settings.db_get_daily_channel_id(guild.id)
+        if channel_id is not None:
+            if daily.try_remove_daily_channel(guild.id):
+                output = ['Removed auto-posting the daily announcement from this server.']
+            else:
+                output = ['Could not remove auto-posting the daily announcement from this server.']
         else:
-            txt += 'Could not remove auto-posting the daily announcement from this server.'
-    else:
-        txt += 'Auto-posting of the daily announcement is not configured for this server!'
-    await ctx.send(txt)
+            output = ['Auto-posting of the daily announcement is not configured for this server!']
+    await util.post_output(ctx, output)
 
 
 @autodaily.command(name='post', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_post(ctx):
+async def autodaily_post(ctx: discord.ext.commands.Context):
     guild = ctx.guild
-    channel_id = d.get_daily_channel_id(guild.id)
-    if channel_id >= 0:
+    channel_id = server_settings.db_get_daily_channel_id(guild.id)
+    if channel_id is not None:
         text_channel = bot.get_channel(channel_id)
         output, _ = dropship.get_dropship_text()
-        if output:
-            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
-            for post in posts:
-                if post:
-                    await text_channel.send(post)
+        await util.post_output_to_channel(text_channel, output)
 
 
 @autodaily.command(name='postall', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 @commands.has_permissions(administrator=True)
-async def autodaily_postall(ctx):
+async def autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
     await post_all_dailies()
 
@@ -559,8 +497,7 @@ async def level(ctx: discord.ext.commands.Context, from_level: int = None, to_le
        If only from_level is being provided, it will print out costs from level 1 to from_level"""
     async with ctx.typing():
         output, _ = crew.get_level_costs(from_level, to_level)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -577,10 +514,7 @@ async def top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
-    else:
-        await ctx.send(f'Could not get top {count} fleets.')
+    await util.post_output(ctx, output)
 
 
 @top.command(name='captains', brief='Prints top captains', aliases=['players', 'users'])
@@ -588,10 +522,7 @@ async def top_captains(ctx: discord.ext.commands.Context, count: int = 100):
     """Prints top fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
-    else:
-        await ctx.send(f'Could not get top {count} captains.')
+    await util.post_output(ctx, output)
 
 
 @bot.command(name='room', brief='Get room infos')
@@ -610,8 +541,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     """
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
-    if output:
-        await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
@@ -646,7 +576,7 @@ async def links(ctx):
     """Shows the links for useful sites in Pixel Starships"""
     async with ctx.typing():
         output = core.read_links_file()
-    await util.post_output(ctx, output, settings.MAXIMUM_CHARACTERS)
+    await util.post_output(ctx, output)
 
 
 @bot.command(brief='Display info on this bot')
@@ -654,8 +584,8 @@ async def links(ctx):
 async def about(ctx):
     """Displays information on this bot and its authors."""
     async with ctx.typing():
-        result = core.read_about_file()
-    await ctx.send(result)
+        txt = core.read_about_file()
+    await ctx.send(txt)
 
 
 @bot.group(brief='Information on tournament time', aliases=['tourney'])
@@ -765,17 +695,36 @@ async def player(ctx: discord.ext.commands.Context, *, player_name=None):
 
 @bot.group(brief='Change server settings', name='set')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_set(ctx):
+async def cmd_set(ctx: discord.ext.commands.Context):
+    if ctx.channel.type != 'text':
+        ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+        return
     pass
 
 
-@cmd_set.group(brief='Toggle pagination', name='pagination')
+@cmd_set.group(brief='Set pagination', name='pagination', aliases=['pages'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
-async def cmd_set_pagination(ctx, switch):
-    """Toggle pagination for this server
+async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
+    """Set pagination for this server
 
-       Default is 'off' """
-    pass
+       If the <switch> parameter is not set, this command will toggle the setting.
+       Valid values for <switch> are:
+       - Turning it on: on, true, yes, 1
+       - Turning it off: off, false, no, 0
+       Default is 'OFF' """
+    async with ctx.typing():
+        if ctx.guild and ctx.guild.id:
+            guild_id = ctx.guild.id
+            if switch is not None:
+                switch = util.convert_input_to_boolean(switch)
+                result = server_settings.db_update_use_pagination(guild_id, switch)
+            else:
+                result = server_settings.toggle_use_pagination(ctx.guild.id)
+            use_pagination_mode = server_settings.convert_use_pagination(result)
+        else:
+            use_pagination_mode = None
+        output = [f'Pagination on this server is: {use_pagination_mode}']
+    await util.post_output(ctx, output)
 
 
 @bot.command(hidden=True, brief='These are testing commands, usually for debugging purposes')

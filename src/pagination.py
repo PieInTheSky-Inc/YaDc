@@ -6,17 +6,23 @@ from typing import Callable, Dict, List, Tuple
 
 import emojis
 import settings
+import server_settings
 
 
 class Paginator():
-    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], page_size: int = 5, use_emojis: bool = settings.DEFAULT_USE_EMOJI_PAGINATOR, timeout: float = 60.0):
+    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], page_size: int = 5, timeout: float = 60.0):
         self.__context = ctx
         self.__search_term = search_term
         self.__available_options = list(available_options)
         self.__short_text_function = short_text_function
         self.__page_size = page_size
-        self.__use_emojis = use_emojis
         self.__timeout = timeout
+
+        if ctx.channel.type == 'text' and ctx.guild and ctx.guild.id:
+            guild_id = ctx.guild.id
+            self.__use_emojis = server_settings.db_get_use_pagination(guild_id)
+        else:
+            self.__use_emojis = True
 
         if not self.__use_emojis:
             self.__page_size = len(self.__available_options)

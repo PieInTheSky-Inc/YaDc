@@ -129,7 +129,12 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
 
 
 async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
-    if output:
+    if output and ctx.channel:
+        await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+
+
+async def post_output_to_channel(text_channel: discord.TextChannel, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+    if output and text_channel:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
         if output[0] == settings.EMPTY_LINE:
@@ -138,7 +143,7 @@ async def post_output(ctx, output: list, maximum_characters: int = settings.MAXI
         posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
-                await ctx.send(post)
+                await text_channel.send(post)
 
 
 async def post_output_with_file(ctx, output: list, file_path: str, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
@@ -339,6 +344,17 @@ def sort_tuples_by(data: tuple, order_info: list) -> list:
         return result
     else:
         return sorted(result)
+
+
+def convert_input_to_boolean(s: str) -> bool:
+    result = None
+    if s:
+        s = s.lower()
+        if s == 'on' or s == '1' or s[0] == 't' or s[0] == 'y':
+            result = True
+        elif s == 'off'or s == '0' or s[0] == 'f' or s[0] == 'n':
+            result = False
+    return result
 
 
 def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
