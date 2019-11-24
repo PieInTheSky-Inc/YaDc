@@ -429,7 +429,7 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
         display_property_name, include_value = _get_overload_info(room_type, display_property_name)
         if include_value is not False:
             if include_display_name:
-                display_property_name = f'{display_property_name}: '
+                display_property_name = f'{display_property_name} = '
             else:
                 display_property_name = ''
             return f'{display_property_name}{value}'

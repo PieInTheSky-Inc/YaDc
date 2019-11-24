@@ -29,7 +29,7 @@ class InvalidParameter(Error):
 
 
     def __get_message(self) -> str:
-        result = f'Parameter **{self.__parameter_name}** recieved invalid value **{self.__invalid_value}**.'
+        result = f'Parameter `{self.__parameter_name}` recieved invalid value `{self.__invalid_value}`.'
         if self.__add_validity_hint:
             hints = []
             if self.__min_length > 1:

@@ -53,7 +53,7 @@ def get_ability_name(char_info: dict) -> str:
         special = char_info['SpecialAbilityType']
         if special in lookups.SPECIAL_ABILITIES_LOOKUP.keys():
             return lookups.SPECIAL_ABILITIES_LOOKUP[special]
-    return 'None'
+    return None
 
 
 def get_collection_name(char_info: dict, collection_designs_data: dict = None) -> str:
@@ -144,6 +144,10 @@ def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data:
         collection_designs_data = __collection_designs_cache.get_data_dict3()
 
     char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    rarity = char_info['Rarity']
+    description = char_info['CharacterDesignDescription']
+    race_type = char_info['RaceType']
+    gender = char_info['GenderType']
     special = get_ability_name(char_info)
     equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
     collection_name = get_collection_name(char_info, collection_designs_data)
@@ -155,14 +159,21 @@ def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data:
     science_stat = _get_stat('Science', level, char_info)
     weapon_stat = _get_stat('Weapon', level, char_info)
     engine_stat = _get_stat('Engine', level, char_info)
+    walk_speed = char_info['WalkingSpeed']
+    run_speed = char_info['RunSpeed']
+    fire_resistance = char_info['FireResistance']
+    training_capacity = char_info['TrainingCapacity']
     level_text = ''
     if level is not None:
         level_text = f' - lvl {level}'
 
-    result = [f'**{char_name}** ({char_info["Rarity"]}){level_text}']
-    result.append(char_info['CharacterDesignDescription'])
-    result.append(f'Race: {char_info["RaceType"]}, Collection: {collection_name}, Gender: {char_info["GenderType"]}')
-    result.append(f'Ability = {ability_stat} ({special})')
+    result = [f'**{char_name}** ({rarity}){level_text}']
+    result.append(f'_{description}_')
+    result.append(f'Race = {race_type}, Collection = {collection_name}, Gender = {gender}')
+    if special:
+        result.append(f'Ability = {ability_stat} ({special})')
+    else:
+        result.append(f'Ability = -')
     result.append(f'HP = {hp_stat}')
     result.append(f'Attack = {attack_stat}')
     result.append(f'Repair = {repair_stat}')
@@ -170,10 +181,13 @@ def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data:
     result.append(f'Science = {science_stat}')
     result.append(f'Engine = {engine_stat}')
     result.append(f'Weapon = {weapon_stat}')
-    result.append(f'Walk/run speed = {char_info["WalkingSpeed"]}/{char_info["RunSpeed"]}')
-    result.append(f'Fire resist = {char_info["FireResistance"]}')
-    result.append(f'Training cap = {char_info["TrainingCapacity"]}')
-    result.append(f'Slots = {equipment_slots}')
+    result.append(f'Walk/run speed = {walk_speed}/{run_speed}')
+    result.append(f'Fire resist = {fire_resistance}')
+    result.append(f'Training cap = {training_capacity}')
+    if equipment_slots:
+        result.append(f'Slots = {equipment_slots}')
+    else:
+        result.append(f'Slots = -')
 
     return result
 
@@ -272,13 +286,20 @@ def _get_collection_info_as_text(collection_info: dict):
     collection_perk = collection_info['EnhancementType']
     if collection_perk in lookups.COLLECTION_PERK_LOOKUP.keys():
         collection_perk = lookups.COLLECTION_PERK_LOOKUP[collection_perk]
+    description = collection_info['CollectionDescription']
+    min_combo = collection_info['MinCombo']
+    max_combo = collection_info['MaxCombo']
+    base_enhancement_value = collection_info['BaseEnhancementValue']
+    step_enhancement_value = collection_info['StepEnhancementValue']
+
+    characters = ', '.join(collection_crew)
 
     lines = []
     lines.append(f'**{collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
-    lines.append(f'{collection_info["CollectionDescription"]}')
-    lines.append(f'Combo Min...Max: {collection_info["MinCombo"]}...{collection_info["MaxCombo"]}')
-    lines.append(f'{collection_perk}: {collection_info["BaseEnhancementValue"]} (Base), {collection_info["StepEnhancementValue"]} (Step)')
-    lines.append(f'Characters: {", ".join(collection_crew)}')
+    lines.append(f'_{description}_')
+    lines.append(f'Combo Min...Max = {min_combo}...{max_combo}')
+    lines.append(f'{collection_perk} = {base_enhancement_value} (Base), {step_enhancement_value} (Step)')
+    lines.append(f'Characters = {characters}')
 
     return lines
 

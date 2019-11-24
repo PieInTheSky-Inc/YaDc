@@ -60,12 +60,12 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
         required_research_name = None
 
     result = [f'**{name}**']
-    result.append(description)
-    result.append(f'Cost: {costs}')
-    result.append(f'Duration: {duration}')
-    result.append(f'Required LAB lvl: {required_lab_level}')
+    result.append(f'_{description}_')
+    result.append(f'Cost = {costs}')
+    result.append(f'Duration = {duration}')
+    result.append(f'Required LAB lvl = {required_lab_level}')
     if required_research_name:
-        result.append(f'Required Research: {required_research_name}')
+        result.append(f'Required Research = {required_research_name}')
 
     return result
 
