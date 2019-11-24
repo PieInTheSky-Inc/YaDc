@@ -104,7 +104,7 @@ def get_item_details_from_data_as_text(item_info: dict) -> list:
     if bonus_type == 'None':
         bonus_txt = bonus_type
     else:
-        bonus_txt = f'+{bonus_value} {bonus_type}'
+        bonus_txt = f'{bonus_type} +{bonus_value}'
 
     return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
 
@@ -550,7 +550,7 @@ def _get_best_item_line(item_info: dict):
     market_price = item_info['MarketPrice']
     rarity = item_info['Rarity']
     enhancement_value = float(item_info['EnhancementValue'])
-    result = f'{name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
+    result = f'> {name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
     return result
 
 
