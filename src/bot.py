@@ -766,7 +766,7 @@ async def cmd_reset_prefix(ctx: discord.ext.commands.Context):
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             _ = server_settings.reset_prefix(ctx.guild.id)
-            prefix = server_settings.db_get_prefix(ctx.guild.id)
+            prefix = server_settings.get_prefix_or_default(ctx.guild.id)
             output = [f'Prefix for this server has been reset to: {prefix}']
         await util.post_output(ctx, output)
 
