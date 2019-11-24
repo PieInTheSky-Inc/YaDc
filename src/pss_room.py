@@ -429,7 +429,7 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
         display_property_name, include_value = _get_overload_info(room_type, display_property_name)
         if include_value is not False:
             if include_display_name:
-                display_property_name = f'{display_property_name}: '
+                display_property_name = f'{display_property_name} = '
             else:
                 display_property_name = ''
             return f'{display_property_name}{value}'
@@ -581,7 +581,7 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
             else:
                 lines.extend(get_room_details_from_data_as_text(room_info))
                 if i < room_infos_count - 1:
-                    lines.append(core.EMPTY_LINE)
+                    lines.append(settings.EMPTY_LINE)
 
     return lines
 

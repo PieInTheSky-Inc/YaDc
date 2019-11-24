@@ -1,11 +1,12 @@
 asyncio
+discord.py==1.2.5
 holidays
 jellyfish
 numpy
+openpyxl
 pandas
 pip
 psycopg2
 python-dateutil
 pytz
 requests
-discord.py==1.2.5

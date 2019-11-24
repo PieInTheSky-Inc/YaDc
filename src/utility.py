@@ -6,6 +6,7 @@ import json
 import math
 import pytz
 import subprocess
+import urllib.parse
 
 
 import pss_lookups as lookups
@@ -127,12 +128,40 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int):
-    if output:
+async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+    if output and ctx.channel:
+        await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+
+
+async def post_output_to_channel(text_channel: discord.TextChannel, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+    if output and text_channel:
+        if output[-1] == settings.EMPTY_LINE:
+            output = output[:-1]
+        if output[0] == settings.EMPTY_LINE:
+            output = output[1:]
+
         posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
-                await ctx.send(post)
+                await text_channel.send(post)
+
+
+async def post_output_with_file(ctx, output: list, file_path: str, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+    if output:
+        if output[-1] == settings.EMPTY_LINE:
+            output = output[:-1]
+        if output[0] == settings.EMPTY_LINE:
+            output = output[1:]
+
+        posts = create_posts_from_lines(output, maximum_characters)
+        last_post_index = len(posts) - 1
+        if last_post_index >= 0:
+            for i, post in enumerate(posts):
+                if post:
+                    if i == last_post_index:
+                        await ctx.send(content=post, file=discord.File(file_path))
+                    else:
+                        await ctx.send(content=post)
 
 
 async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
@@ -274,8 +303,8 @@ async def try_delete_original_message(ctx):
 
 def get_similarity(value_to_check: str, against: str) -> float:
     result = jellyfish.jaro_winkler(value_to_check, against)
-    #if value_to_check.startswith(against):
-    #    result += 1.0
+    if value_to_check.startswith(against):
+        result += 1.0
     return result
 
 
@@ -288,13 +317,17 @@ def get_similarity_map(values_to_check: dict, against: str) -> dict:
 
 
 def sort_entities_by(entity_infos: list, order_info: list) -> list:
-    """order_info is a list of tuples (property_name,reverse)"""
+    """order_info is a list of tuples (property_name,transform_function,reverse)"""
     result = entity_infos
     if order_info:
-        for i in range(len(order_info) - 1, 0, -1):
-            property_name = order_info[i][0]
-            reverse = convert_to_boolean(order_info[i][1])
-            result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
+        for i in range(len(order_info), 0, -1):
+            property_name = order_info[i - 1][0]
+            transform_function = order_info[i - 1][1]
+            reverse = convert_to_boolean(order_info[i - 1][2])
+            if transform_function:
+                result = sorted(result, key=lambda entity_info: transform_function(entity_info[property_name]), reverse=reverse)
+            else:
+                result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
         return result
     else:
         return sorted(result)
@@ -305,12 +338,23 @@ def sort_tuples_by(data: tuple, order_info: list) -> list:
     result = data
     if order_info:
         for i in range(len(order_info), 0, -1):
-            element_index = order_info[i-1][0]
-            reverse = convert_to_boolean(order_info[i-1][1])
+            element_index = order_info[i - 1][0]
+            reverse = convert_to_boolean(order_info[i - 1][1])
             result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
         return result
     else:
         return sorted(result)
+
+
+def convert_input_to_boolean(s: str) -> bool:
+    result = None
+    if s:
+        s = s.lower()
+        if s == 'on' or s == '1' or s[0] == 't' or s[0] == 'y':
+            result = True
+        elif s == 'off'or s == '0' or s[0] == 'f' or s[0] == 'n':
+            result = False
+    return result
 
 
 def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
@@ -338,97 +382,153 @@ def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
     raise NotImplementedError
 
 
+def get_level_and_name(level, name) -> (int, str):
+    if level is None and name is None:
+        return level, name
+
+    try:
+        level = int(level)
+    except:
+        if level is not None:
+            if name is None:
+                name = level
+            else:
+                name = f'{level} {name}'
+        level = None
+    return level, name
+
+
+def url_escape(s: str) -> str:
+    if s:
+        s = urllib.parse.quote(s, safe=' ')
+        s = s.replace(' ', '+')
+    return s
+
+
+def format_excel_datetime(dt: datetime) -> str:
+    result = dt.strftime('%Y-%m-%d %H:%M:%S')
+    return result
+
+
+def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
+    dt = parse_pss_datetime(pss_timestamp)
+    result = format_excel_datetime(dt)
+    return result
+
+
+def compare_versions(version_1: str, version_2: str) -> int:
+    """Compares to version strings with format x.x.x.x
+
+    Returns:
+    -1, if version_1 is higher than version_2
+    0, if version_1 is equal to version_2
+    1, if version_1 is lower than version_2 """
+    version_1 = version_1.strip('v')
+    version_2 = version_2.strip('v')
+    version_1_split = version_1.split('.')
+    version_2_split = version_2.split('.')
+    for i in range(0, len(version_1_split)):
+        if version_1_split[i] < version_2_split[i]:
+            return 1
+        elif version_1_split[i] > version_2_split[i]:
+            return -1
+    return 0
+
+
+def is_guild_channel(channel: discord.abc.Messageable) -> bool:
+    if hasattr(channel, 'guild') and channel.guild:
+        return True
+    else:
+        return False
+
+
 
 
 
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name, column_type, is_primary=False, not_null=False):
-    column_name_txt = column_name.upper()
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, alter_column: bool = False) -> str:
+    column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
     is_primary_txt = ''
     not_null_txt = ''
     if is_primary:
-        is_primary_txt = ' PRIMARY KEY'
+        is_primary_txt = 'PRIMARY KEY'
     if not_null:
-        not_null_txt = ' NOT NULL'
-    result = '{} {}{}{}'.format(column_name_txt, column_type_txt, is_primary_txt, not_null_txt)
-    return result
+        not_null_txt = 'NOT NULL'
+    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt}'
+    return result.strip()
 
 
-def db_get_where_and_string(where_strings):
+def db_get_where_and_string(where_strings: list) -> str:
     if where_strings:
-        result = ''
-        for i in range(0, len(where_strings)):
-            if i > 0:
-                result += ' AND '
-            result += where_strings[i]
-        return result
+        return ' AND '.join(where_strings)
+    else:
+        return ''
 
 
-def db_get_where_or_string(where_strings):
+def db_get_where_or_string(where_strings: list) -> str:
     if where_strings:
-        result = ''
-        for i in range(0, len(where_strings)):
-            if i > 0:
-                result += ' OR '
-            result += where_strings[i]
-        return result
+        return ' OR '.join(where_strings)
+    else:
+        return ''
 
 
-def db_get_where_string(column_name, column_value, is_text_type=False):
+def db_get_where_string(column_name: str, column_value: object, is_text_type: bool = False) -> str:
     column_name = column_name.lower()
     if is_text_type:
         column_value = db_convert_text(column_value)
-    return '{} = {}'.format(column_name, column_value)
+    return f'{column_name} = {column_value}'
 
 
-def db_convert_boolean(value):
+def db_convert_boolean(value: bool) -> str:
     if value:
         return 'TRUE'
     else:
         return 'FALSE'
 
-def db_convert_text(value):
+def db_convert_text(value: object) -> str:
     if value:
         result = str(value)
         result = result.replace('\'', '\'\'')
-        result = '\'{}\''.format(result)
+        result = f'\'{result}\''
         return result
     else:
         return ''
 
-def db_convert_timestamp(datetime):
+def db_convert_timestamp(datetime: datetime) -> str:
     if datetime:
-        result = 'TIMESTAMPTZ \'{}\''.format(datetime.strftime(DB_TIMESTAMP_FORMAT))
+        result = f'TIMESTAMPTZ \'{datetime.strftime(DB_TIMESTAMP_FORMAT)}\''
         return result
     else:
         return None
 
-def db_convert_to_boolean(db_boolean):
+def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
     if db_boolean is None:
-        return None
+        return default_if_none
+    if isinstance(db_boolean, bool):
+        return db_boolean
     db_upper = db_boolean.upper()
     if db_upper == 'TRUE' or db_upper == '1' or db_upper == 'T' or db_upper == 'Y' or db_upper == 'YES':
         return True
     else:
         return False
 
-def db_convert_to_datetime(db_timestamp):
+def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> datetime:
     if db_timestamp is None:
-        return None
+        return default_if_none
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
 
-def db_convert_to_int(db_int):
+def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
     if db_int is None:
-        return None
+        return default_if_none
     result = int(db_int)
     return result
 
-def db_convert_to_float(db_float):
+def db_convert_to_float(db_float: str, default_if_none: bool = None) -> float:
     if db_float is None:
-        return None
+        return default_if_none
     result = float(db_float)
     return result

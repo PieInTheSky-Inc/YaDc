@@ -66,15 +66,15 @@ def get_dropship_text(as_embed: bool = settings.USE_EMBEDS, language_key: str = 
     daily_reward_msg = _get_daily_reward_from_data_as_text(raw_data, item_design_data)
 
     lines = daily_msg
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.extend(dropship_msg)
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.extend(merchantship_msg)
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.extend(shop_msg)
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.extend(sale_msg)
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.extend(daily_reward_msg)
 
     return lines, True
@@ -246,7 +246,7 @@ def _get_news_as_text(news_infos: dict) -> list:
         news_details = _get_news_details_as_text(news_info)
         if news_details:
             result.extend(news_details)
-            result.append(core.EMPTY_LINE)
+            result.append(settings.EMPTY_LINE)
 
     return result
 

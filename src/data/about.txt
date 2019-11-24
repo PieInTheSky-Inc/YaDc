@@ -3,5 +3,7 @@ This bot is based on the Discord bot _Dolores_ by jzx3.
 It has been modified heavily to provide more functionality and response faster
 than before.
 
+Join support server: https://discordapp.com/invite/kKguSec
+
 Author: The worst.
 Profile pic by: Skepster

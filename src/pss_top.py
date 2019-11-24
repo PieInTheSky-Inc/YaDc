@@ -5,16 +5,26 @@ import math
 import os
 
 import emojis
+import pss_assert
 import pss_core as core
+import pss_lookups as lookups
 import pss_tournament as tourney
 import settings
+import utility as util
+
+
+# ---------- Constants ----------
+TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
+TOP_CAPTAINS_BASE_PATH = f'LadderService/ListUsersByRanking?accessToken={settings.GPAT}&from=1&to='
+STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
+
+ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
 
 
 # ---------- Top 100 Alliances ----------
 
 def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    path = f'AllianceService/ListAlliancesByRanking?skip=0&take={take}'
-    raw_data = core.get_data_from_path(path)
+    raw_data = core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_fleets_as_embed(data, take), True
@@ -57,9 +67,7 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 # ---------- Top 100 Captains ----------
 
 def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    access_token = os.getenv('GPAT')
-    path = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
-    raw_data = core.get_data_from_path(path)
+    raw_data = core.get_data_from_path(TOP_CAPTAINS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
@@ -89,4 +97,62 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
         if position == take:
             break
 
+    return lines
+
+
+
+
+
+# ---------- Stars info ----------
+
+def get_division_stars(division: str = None, as_embed: bool = settings.USE_EMBEDS):
+    if not tourney.is_tourney_running():
+        return [f'This command does only work during tournament finals. Use the command `/tournament` to learn when the next one is starting.'], False
+
+    if division:
+        pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
+        if division == '-':
+            division = None
+    else:
+        division = None
+
+    data = core.get_data_from_path(STARS_BASE_PATH)
+    fleet_infos = core.xmltree_to_dict3(data)
+
+    divisions = {}
+    if division:
+        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID[division.upper()]
+        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+        pass
+    else:
+        for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
+            if division_design_id != '0':
+                division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
+                divisions[division_letter] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+
+    if divisions:
+        result = []
+        for division_letter, fleet_infos in divisions.items():
+            result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
+            result.append(settings.EMPTY_LINE)
+        if result:
+            result = result[:-1]
+        return result, True
+    else:
+        return [], False
+
+
+def _get_division_stars_as_embed(division_letter: str, fleet_infos: dict):
+    return ''
+
+
+def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list:
+    lines = [f'__**Division {division_letter.upper()}**__']
+    fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
+    for i, fleet_info in enumerate(fleet_infos):
+        fleet_name = fleet_info['AllianceName']
+        trophies = fleet_info['Trophy']
+        stars = fleet_info['Score']
+        position = i + 1
+        lines.append(f'**{position:d}.** {stars}{emojis.star} {fleet_name} ({trophies} {emojis.trophy})')
     return lines

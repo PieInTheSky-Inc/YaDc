@@ -60,12 +60,12 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
         required_research_name = None
 
     result = [f'**{name}**']
-    result.append(description)
-    result.append(f'Cost: {costs}')
-    result.append(f'Duration: {duration}')
-    result.append(f'Required LAB lvl: {required_lab_level}')
+    result.append(f'_{description}_')
+    result.append(f'Cost = {costs}')
+    result.append(f'Duration = {duration}')
+    result.append(f'Required LAB lvl = {required_lab_level}')
     if required_research_name:
-        result.append(f'Required Research: {required_research_name}')
+        result.append(f'Required Research = {required_research_name}')
 
     return result
 
@@ -182,7 +182,7 @@ def _get_research_info_as_text(research_name: str, research_infos: dict, researc
         else:
             lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
             if i < research_infos_count - 1:
-                lines.append(core.EMPTY_LINE)
+                lines.append(settings.EMPTY_LINE)
 
     return lines
 

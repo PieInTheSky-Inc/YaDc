@@ -20,6 +20,7 @@
     "File": ["Id"],
     "Friend": ["Id"],
     "GetCatalogQuantity": null,
+    "GetLatestSetting": null,
     "GetStats": ["UserId"],
     "History": ["HistoryId"],
     "Item": ["ItemId"],

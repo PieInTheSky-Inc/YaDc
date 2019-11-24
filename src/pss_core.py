@@ -2,7 +2,6 @@
 # -*- coding: UTF-8 -*-
 
 # ----- Packages ------------------------------------------------------
-import csv
 import datetime
 import json
 import os
@@ -16,17 +15,11 @@ import urllib.request
 import xml.etree.ElementTree
 
 import data
+import settings
 import utility as util
 
 
-DATABASE_URL = os.environ['DATABASE_URL']
-PSS_CHARS_FILE = 'pss-chars.txt'
-PSS_CHARS_RAW_FILE = 'pss-chars-raw.txt'
-PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
-PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
-MAXIMUM_CHARACTERS = 1900
-DB_CONN = None
-EMPTY_LINE = '\u200b'
+DB_CONN: psycopg2.extensions.connection = None
 
 
 # ----- Utilities --------------------------------
@@ -53,16 +46,47 @@ def save_raw_text(raw_text, filename):
             f.write(raw_text)
 
 
+def read_raw_text(filename):
+    try:
+        with open(filename, 'r') as f:
+            result = f.read()
+            return result
+    except:
+        with open(filename, 'r', encoding='utf-8') as f:
+            result = f.read()
+            return result
+
+
+def save_json_to_file(obj, filename):
+    try:
+        with open(filename, 'w') as f:
+            json.dump(obj, f)
+    except:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(obj, f)
+
+
+def read_json_from_file(filename):
+    result = None
+    try:
+        with open(filename, 'r') as f:
+            result = json.load(f)
+    except:
+        with open(filename, 'r', encoding='utf-8') as f:
+            result = json.load(f)
+    return result
+
+
 def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
     """Returns true if the file modification date > max_days / max_seconds ago
     or if the file does not exist"""
-    if os.path.isfile(filename) is not True:
+    if not os.path.isfile(filename):
         return True
-    st = os.stat(filename)
-    mtime = st.st_mtime
-    now = datetime.datetime.now()
-    time_diff = now - datetime.datetime.fromtimestamp(mtime)
-    if verbose is True:
+    file_stats = os.stat(filename)
+    modify_date = file_stats.st_mtime
+    utc_now = util.get_utcnow()
+    time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
+    if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
     return (time_diff.days > max_days) or time_diff.seconds > max_seconds
 
@@ -70,7 +94,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
 def load_data_from_url(filename, url, refresh='auto'):
     if os.path.isfile(filename) and refresh != 'true':
         if refresh == 'auto':
-            if is_old_file(filename, max_seconds=3600):
+            if is_old_file(filename, max_seconds=3600, verbose=False):
                 raw_text = get_data_from_url(url)
                 save_raw_text(raw_text, filename)
                 return raw_text
@@ -88,7 +112,6 @@ def xmltree_to_dict3(raw_text):
         if isinstance(c, dict):
             for cc in c.values():
                 if isinstance(cc, dict):
-                    #d = dict(list(cc.values()))
                     for ccc in cc.values():
                         if isinstance(ccc, dict):
                             return ccc
@@ -136,15 +159,16 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         key = None
         if tag_count[tag] < 1:
             continue
-        elif tag_count[tag] > 1:
-            id_attr_names = data.ID_NAMES_INFO[tag]
-            if id_attr_names:
-                key = ''
-                id_attr_values = []
-                for id_attr_name in id_attr_names:
-                    id_attr_values.append(child.attrib[id_attr_name])
-                id_attr_values = sorted(id_attr_values)
-                key = '.'.join(id_attr_values)
+        elif tag_count[tag] >= 1:
+            if tag in data.ID_NAMES_INFO.keys():
+                id_attr_names = data.ID_NAMES_INFO[tag]
+                if id_attr_names:
+                    key = ''
+                    id_attr_values = []
+                    for id_attr_name in id_attr_names:
+                        id_attr_values.append(child.attrib[id_attr_name])
+                    id_attr_values = sorted(id_attr_values)
+                    key = '.'.join(id_attr_values)
 
         if not key:
             key = tag
@@ -190,6 +214,18 @@ def fix_attrib(attrib: dict) -> dict:
     return result
 
 
+def convert_2_level_xml_to_dict(raw_text, key_name, tag):
+    root = xml.etree.ElementTree.fromstring(raw_text)
+    result = {}
+    for c in root:
+        for cc in c:
+            if cc.tag != tag:
+                continue
+            key = cc.attrib[key_name]
+            result[key] = cc.attrib
+    return result
+
+
 def create_reverse_lookup(d, new_key, new_value):
     """Creates a dictionary of the form:
     {'new_key': 'new_value'}"""
@@ -218,7 +254,7 @@ def parse_links3(url):
                 if isinstance(ccc.attrib, dict):
                     for k,v in ccc.attrib.items():
                         txt += f'\n - {k}: {v}'
-                        if len(txt) > MAXIMUM_CHARACTERS:
+                        if len(txt) > settings.MAXIMUM_CHARACTERS:
                             txt_list += [txt]
                             txt = ''
     return txt_list + [txt]
@@ -392,7 +428,7 @@ def group_data_dict(data: dict, by_key, ignore_case: bool = False):
 
 
 # ----- Display -----
-def list_to_text(lst, max_chars=MAXIMUM_CHARACTERS):
+def list_to_text(lst, max_chars=settings.MAXIMUM_CHARACTERS):
     txt_list = []
     txt = ''
     for i, item in enumerate(lst):
@@ -448,7 +484,7 @@ def get_base_url():
 def read_links_file():
     result = []
     links = {}
-    for pss_links_file in PSS_LINKS_FILES:
+    for pss_links_file in settings.PSS_LINKS_FILES:
         try:
             with open(pss_links_file) as f:
                 links = json.load(f)
@@ -456,7 +492,7 @@ def read_links_file():
         except:
             pass
     for category, hyperlinks in links.items():
-        result.append(EMPTY_LINE)
+        result.append(settings.EMPTY_LINE)
         result.append(f'**{category}**')
         for (description, hyperlink) in hyperlinks:
             result.append(f'{description}: <{hyperlink}>')
@@ -467,7 +503,7 @@ def read_links_file():
 
 def read_about_file():
     txt = ''
-    for pss_about_file in PSS_ABOUT_FILES:
+    for pss_about_file in settings.PSS_ABOUT_FILES:
         try:
             with open(pss_about_file) as f:
                 txt = f.read()
@@ -479,56 +515,127 @@ def read_about_file():
 
 # ---------- DataBase ----------
 def init_db():
-    success = db_try_create_table('DAILY', ['GUILDID TEXT PRIMARY KEY NOT NULL', 'CHANNELID TEXT NOT NULL', 'CANPOST BOOLEAN'])
-    if success:
-        print('[init_db] db initialization succeeded')
+    success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
+
+    if success_update_1_2_2_0:
+        success_serversettings = db_try_create_table('serversettings', [
+            ('guildid', 'TEXT', True, True),
+            ('dailychannelid', 'TEXT', False, False),
+            ('dailycanpost', 'BOOLEAN', False, False),
+            ('dailylatestmessageid', 'TEXT', False, False),
+            ('usepagination', 'BOOLEAN', False, False),
+            ('prefix', 'TEXT', False, False)
+        ])
+        success_settings = db_try_create_table('settings', [
+            ('settingname', 'TEXT', True, True),
+            ('modifydate', 'TIMESTAMPTZ', False, True),
+            ('settingboolean', 'BOOLEAN', False, False),
+            ('settingfloat', 'FLOAT', False, False),
+            ('settingint', 'INT', False, False),
+            ('settingtext', 'TEXT', False, False),
+            ('settingtimestamp', 'TIMESTAMPTZ', False, False)
+        ])
+        if success_serversettings and success_settings:
+            print('[init_db] DB initialization succeeded')
+        else:
+            print('[init_db] DB initialization failed')
     else:
-        print('[init_db] db initialization failed')
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
 
 
-def db_close_cursor(cursor):
-    if cursor != None:
+def db_update_schema_v_1_2_2_0():
+    query_lines = []
+    rename_columns = {
+        'channelid': 'dailychannelid',
+        'canpost': 'dailycanpost'
+    }
+    column_definitions = [
+        ('guildid', 'TEXT', True, True),
+        ('dailychannelid', 'TEXT', False, False),
+        ('dailycanpost', 'BOOLEAN', False, False),
+        ('dailylatestmessageid', 'TEXT', False, False),
+        ('usepagination', 'BOOLEAN', False, False),
+        ('prefix', 'TEXT', False, False)
+    ]
+
+    schema_version = db_get_schema_version()
+    if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
+        return True
+
+    db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
+
+    column_names = db_get_column_names('serversettings')
+    column_names = [column_name.lower() for column_name in column_names]
+    for name_from, name_to in rename_columns.items():
+        if name_from in column_names:
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings RENAME COLUMN {name_from} TO {name_to};')
+
+    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+        if column_name in rename_columns.values() or column_name in column_names:
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} TYPE {column_type};')
+            if column_not_null:
+                not_null_toggle = 'SET'
+            else:
+                not_null_toggle = 'DROP'
+            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} {not_null_toggle} NOT NULL;')
+
+    query = '\n'.join(query_lines)
+    success = db_try_execute(query)
+    if success:
+        query_lines = []
+        column_names = db_get_column_names('serversettings')
+        column_names = [column_name.lower() for column_name in column_names]
+        for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+            if column_name not in column_names:
+                query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+        query = '\n'.join(query_lines)
+        success = db_try_execute(query)
+        if success:
+            success = db_try_set_schema_version('1.2.2.0')
+    return success
+
+
+def db_close_cursor(cursor: psycopg2.extensions.cursor) -> None:
+    if cursor is not None:
         cursor.close()
 
 
-def db_connect():
+def db_connect() -> bool:
     global DB_CONN
     if db_is_connected(DB_CONN) == False:
         try:
-            DB_CONN = psycopg2.connect(DATABASE_URL, sslmode='prefer')
+            DB_CONN = psycopg2.connect(settings.DATABASE_URL, sslmode='prefer')
             return True
         except Exception as error:
             error_name = error.__class__.__name__
-            print('[db_connect] {} occurred while establishing connection: {}'.format(error_name, error))
+            print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
             return False
     else:
         return True
 
 
-def db_disconnect():
+def db_disconnect() -> None:
     global DB_CONN
     if db_is_connected(DB_CONN):
         DB_CONN.close()
 
 
-def db_execute(query, cursor):
+def db_execute(query: str, cursor: psycopg2.extensions.cursor) -> None:
     cursor.execute(query)
-    success = db_try_commit()
-    return success
 
 
-def db_fetchall(query):
+def db_fetchall(query: str) -> list:
     result = None
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
                 cursor.execute(query)
                 result = cursor.fetchall()
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
-                print('[db_fetchall] {} while performing a query: {}'.format(error_name, error))
+                print(f'[db_fetchall] {error_name} while performing a query: {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
@@ -540,25 +647,82 @@ def db_fetchall(query):
     return result
 
 
-def db_get_cursor():
+def db_get_column_list(column_definitions: list) -> str:
+    result = []
+    for column_definition in column_definitions:
+        result.append(util.db_get_column_definition(*column_definition))
+    return ', '.join(result)
+
+
+def db_get_column_names(table_name: str, cursor: psycopg2.extensions.cursor=None) -> list:
+    created_cursor = False
+    if cursor is None:
+        cursor = db_get_cursor()
+        created_cursor = True
+    result = None
+    query = f'SELECT * FROM {table_name} LIMIT 0'
+    success = db_try_execute(query, cursor)
+    if success:
+        result = [desc.name for desc in cursor.description]
+    if created_cursor:
+        db_close_cursor(cursor)
+        db_disconnect()
+    return result
+
+
+def db_get_cursor() -> psycopg2.extensions.cursor:
     global DB_CONN
-    if db_is_connected(DB_CONN) == False:
-        db_connect()
-    if db_is_connected(DB_CONN):
+    connected = db_is_connected(DB_CONN)
+    if not connected:
+        connected = db_connect()
+    if connected:
         return DB_CONN.cursor()
     else:
         print('[db_get_cursor] db is not connected')
     return None
 
 
-def db_is_connected(connection):
+def db_get_schema_version() -> str:
+    where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
+    query = f'SELECT * FROM settings WHERE {where_string}'
+    try:
+        results = db_fetchall(query)
+    except:
+        results = []
+    if results:
+        return results[0][5]
+    else:
+        return ''
+
+
+def db_is_connected(connection: psycopg2.extensions.connection) -> bool:
     if connection:
         if connection.closed == 0:
             return True
     return False
 
 
-def db_try_commit():
+def db_try_set_schema_version(version: str) -> bool:
+    prior_version = db_get_schema_version()
+    utc_now = util.get_utcnow()
+    modify_date_for_db = util.db_convert_timestamp(utc_now)
+    version_for_db = util.db_convert_text(version)
+    if prior_version == '':
+        query = f'INSERT INTO settings (settingname, modifydate, settingtext) VALUES (\'schema_version\', {modify_date_for_db}, {version_for_db})'
+    else:
+        where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
+        query = f'UPDATE settings SET settingtext = {version_for_db}, modifydate = {modify_date_for_db} WHERE {where_string}'
+    success = db_try_execute(query)
+    return success
+
+
+def _db_try_rename_daily_table() -> bool:
+    query_rename = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings;'
+    result = db_try_execute(query_rename)
+    return result
+
+
+def db_try_commit() -> bool:
     global DB_CONN
     if db_is_connected(DB_CONN):
         try:
@@ -566,32 +730,33 @@ def db_try_commit():
             return True
         except (Exception, psycopg2.DatabaseError) as error:
             error_name = error.__class__.__name__
-            print('[db_try_commit] {} while committing: {}'.format(error_name, error))
+            print(f'[db_try_commit] {error_name} while committing: {error}')
             return False
     else:
         print('[db_try_commit] db is not connected')
         return False
 
 
-def db_try_create_table(table_name, columns):
-    column_list = ', '.join(columns)
-    query = 'CREATE TABLE {} ({});'.format(table_name, column_list)
+def db_try_create_table(table_name: str, column_definitions: list) -> bool:
+    column_list = db_get_column_list(column_definitions)
+    query_create = f'CREATE TABLE {table_name} ({column_list});'
     success = False
     connected = db_connect()
     if connected:
         cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is not None:
             try:
-                db_execute(query, cursor)
-                success = True
-            except db_error.DuplicateTable:
+                db_execute(query_create, cursor)
+                success = db_try_commit()
+            except db_error.lookup('42P07'):  # DuplicateTable
+                db_try_rollback()
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
                 error_name = error.__class__.__name__
-                print('[db_try_create_table] {} while performing a query: {}'.format(error_name, error))
-            finally:
-                db_close_cursor(cursor)
-                db_disconnect()
+                print(f'[db_try_create_table] {error_name} while performing the query \'{query_create}\': {error}')
+
+            db_close_cursor(cursor)
+            db_disconnect()
         else:
             print('[db_try_create_table] could not get cursor')
             db_disconnect()
@@ -600,18 +765,23 @@ def db_try_create_table(table_name, columns):
     return success
 
 
-def db_try_execute(query):
+def db_try_execute(query: str, cursor: psycopg2.extensions.cursor = None) -> bool:
+    if query and query[-1] != ';':
+        query += ';'
     success = False
     connected = db_connect()
     if connected:
-        cursor = db_get_cursor()
-        if cursor != None:
+        if cursor is None:
+            cursor = db_get_cursor()
+        if cursor is not None:
             try:
                 db_execute(query, cursor)
+                db_try_commit()
                 success = True
             except (Exception, psycopg2.DatabaseError) as error:
+                db_try_rollback()
                 error_name = error.__class__.__name__
-                print('[db_try_execute] {} while performing a query: {}'.format(error_name, error))
+                print(f'[db_try_execute] {error_name} while performing the query \'{query}\': {error}')
             finally:
                 db_close_cursor(cursor)
                 db_disconnect()
@@ -621,3 +791,17 @@ def db_try_execute(query):
     else:
         print('[db_try_execute] could not connect to db')
     return success
+
+
+def db_try_rollback() -> None:
+    if db_is_connected(DB_CONN):
+        try:
+            DB_CONN.rollback()
+            return True
+        except (Exception, psycopg2.DatabaseError) as error:
+            error_name = error.__class__.__name__
+            print(f'[db_try_rollback] {error_name} while rolling back: {error}')
+            return False
+    else:
+        print('[db_try_rollback] db is not connected')
+        return False

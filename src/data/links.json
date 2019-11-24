@@ -1,22 +1,23 @@
 {
     "Pixel Starships official": [
-        ["facebook","https://www.facebook.com/pixelstarships"],
-        ["instagram","https://www.instagram.com/pixelstarships"],
-        ["official discord","https://discord.gg/pss"],
-        ["official website","https://www.pixelstarships.com"],
-        ["tumblr","http://pixelstarships.tumblr.com/"],
-        ["twitter","https://twitter.com/pixelstarships"]
+        ["facebook", "https://www.facebook.com/pixelstarships"],
+        ["instagram", "https://www.instagram.com/pixelstarships"],
+        ["official discord", "https://discord.gg/pss"],
+        ["official website", "https://www.pixelstarships.com"],
+        ["tumblr", "http://pixelstarships.tumblr.com/"],
+        ["twitter", "https://twitter.com/pixelstarships"]
     ],
     "Guides and help": [
-        ["aiguide","http://thepssguide.byethost15.com"],
-        ["pixel perfect guide","https://www.pixelperfectguide.com"],
-        ["pixyship","http://pixyship.com"],
-        ["orion boards","http://orions.boards.net"],
-        ["wiki","https://pixelstarships.wikia.com"]
+        ["aiguide", "http://thepssguide.byethost15.com"],
+        ["pixel perfect guide", "https://www.pixelperfectguide.com"],
+        ["pixyship", "http://pixyship.com"],
+        ["orion boards", "http://orions.boards.net"],
+        ["wiki", "https://pixelstarships.wikia.com"]
     ],
     "This bot": [
-        ["add bot to your server (contact author)","http://bit.ly/invite-pss-statistics"],
-        ["github","https://github.com/PieInTheSky-Inc/pss-statistics"],
-        ["github (original dolores)","https://github.com/jzx3/heroku-pss"]
+        ["add bot to your server", "http://bit.ly/invite-pss-statistics"],
+        ["github", "https://github.com/PieInTheSky-Inc/pss-statistics"],
+        ["github (original dolores)", "https://github.com/jzx3/heroku-pss"],
+        ["support server", "https://discordapp.com/invite/kKguSec"]
     ]
 }

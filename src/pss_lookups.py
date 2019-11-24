@@ -1,7 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import typing
+
 import emojis
+
+
+ALLIANCE_MEMBERSHIP = {
+    'Candidate': 'Candidate',
+    'Ensign': 'Ensign',
+    'Major': 'Major',
+    'Lieutenant': 'Lieutenant',
+    'Commander': 'Commander',
+    'ViceAdmiral': 'Vice Admiral',
+    'FleetAdmiral': 'Fleet Admiral'
+}
 
 
 COLLECTION_PERK_LOOKUP = {
@@ -35,13 +48,26 @@ DMG_TYPES = [
 ]
 
 
+DIVISION_CHAR_TO_DESIGN_ID = {
+    '-': '0',
+    'A': '1',
+    'B': '2',
+    'C': '3',
+    'D': '4'
+}
+
+
+DIVISION_DESIGN_ID_TO_CHAR = dict([(value, key) for key, value in DIVISION_CHAR_TO_DESIGN_ID.items()])
+
+
 EQUIPMENT_MASK_LOOKUP = {
     1: 'head',
     2: 'body',
     4: 'leg',
     8: 'weapon',
     16: 'accessory',
-    32: 'pet'}
+    32: 'pet'
+}
 
 
 EQUIPMENT_SLOTS_LOOKUP = {
@@ -89,6 +115,13 @@ GAS_COSTS_LOOKUP = [
 GRID_TYPE_MASK_LOOKUP = {
     1: 'A',
     2: 'B'
+}
+
+
+PROGRESSION_TYPES = {
+    'Linear': 1.0,
+    'EaseIn': 2.0,
+    'EaseOut': 0.5
 }
 
 
@@ -162,6 +195,27 @@ STAT_TYPES_LOOKUP = {
 }
 
 
+USER_STATUS = {
+    'Attacking': 'Attacking',
+    'Defending': 'Defending / Immunity',
+    'Offline': 'Offline'
+}
+
+
+USER_TYPE = {
+    'Administrator': 'Administrator',
+    'Backer': 'Backer',
+    'Banned': 'Banned',
+    'Mission': 'NPC',
+    'Unverified': 'Unverified',
+    'UserTypeAlliance': 'Starbase',
+    'UserTypeCommunityManager': 'Community Manager',
+    'UserTypeJailBroken': 'Jailbroken / Rooted',
+    'UserTypePaying': 'Subscribed',
+    'Verified': 'Verified'
+}
+
+
 XP_COSTS_LEGENDARY_LOOKUP = [
     0, 0, 810, 1350, 1890,
     2430, 3060, 3690, 4320, 4950,
@@ -182,3 +236,21 @@ XP_COSTS_LOOKUP = [
     6660, 7050, 7440, 7830, 8220,
     8610, 9030, 9450, 9870, 10290,
     10710, 11160, 11610, 12060, 12510]
+
+
+
+
+
+
+
+
+
+
+# ----------
+
+def get_lookup_value_or_default(lookup: object, key: object, default: object = None) -> object:
+    if key in lookup.keys():
+        result = lookup[key]
+    else:
+        result = default
+    return result

@@ -104,7 +104,7 @@ def get_item_details_from_data_as_text(item_info: dict) -> list:
     if bonus_type == 'None':
         bonus_txt = bonus_type
     else:
-        bonus_txt = f'+{bonus_value} {bonus_type}'
+        bonus_txt = f'{bonus_type} +{bonus_value}'
 
     return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
 
@@ -147,6 +147,8 @@ def get_item_details(item_name: str, as_embed=False):
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+
         if as_embed:
             return _get_item_info_as_embed(item_name, item_infos), True
         else:
@@ -219,6 +221,8 @@ def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
         if get_best_match:
             item_infos = [item_infos[0]]
 
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+
         if as_embed:
             return _get_item_price_as_embed(item_name, item_infos), True
         else:
@@ -245,7 +249,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 
         lines.append(f'{item_name} ({rarity}) - {prices}')
 
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
@@ -296,7 +300,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
                 current_level_lines.append(f'> {item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
-            lines.append(core.EMPTY_LINE)
+            lines.append(settings.EMPTY_LINE)
 
         lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
     else:
@@ -328,7 +332,9 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
 
 
 def _get_ingredients_dict(ingredients: str) -> dict:
-    result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
+    result = {}
+    if ingredients and ingredients != '0':
+        result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
     return result
 
 
@@ -376,6 +382,7 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
     else:
         item_name = item_infos[0][ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         item_infos = _get_upgrades_for(item_infos[0][ITEM_DESIGN_KEY_NAME], item_design_data)
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
 
         if as_embed:
             return _get_item_upgrades_as_embed(item_name, item_infos, item_design_data), True
@@ -385,7 +392,11 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
 
 def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:
     # iterate through item_design_data and return every item_design containing the item id in question in property 'Ingredients'
-    result = [item_info for item_info in item_design_data.values() if item_id in item_info['Ingredients']]
+    result = []
+    for item_info in item_design_data.values():
+        ingredient_item_ids = list(_get_ingredients_dict(item_info['Ingredients']).keys())
+        if item_id in ingredient_item_ids:
+            result.append(item_info)
     return result
 
 
@@ -511,7 +522,7 @@ def _get_best_items_as_text(slot: str, stat: str, item_designs: list) -> list:
     for entry in item_designs:
         lines.append(_get_best_item_line(entry))
 
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
@@ -528,7 +539,7 @@ def _get_best_items_as_text_all(stat: str, item_designs: list) -> list:
         for entry in group:
             lines.append(_get_best_item_line(entry))
 
-    lines.append(core.EMPTY_LINE)
+    lines.append(settings.EMPTY_LINE)
     lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
 
     return lines
@@ -539,7 +550,7 @@ def _get_best_item_line(item_info: dict):
     market_price = item_info['MarketPrice']
     rarity = item_info['Rarity']
     enhancement_value = float(item_info['EnhancementValue'])
-    result = f'{name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
+    result = f'> {name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
     return result
 
 
@@ -553,10 +564,10 @@ def _get_best_item_line(item_info: dict):
 
 # --------- Testing ----------
 if __name__ == '__main__':
-    test_strings = ['gravity', 'gravity loader']
+    test_strings = ['scrap']
     for item_name in test_strings:
         os.system('clear')
-        result = get_item_details(item_name, as_embed=False)
+        result = get_item_upgrades_from_name(item_name, as_embed=False)
         for line in result[0]:
             print(line)
         result = ''
