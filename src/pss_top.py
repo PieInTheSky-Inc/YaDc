@@ -128,12 +128,15 @@ def get_division_stars(division: str = None, as_embed: bool = settings.USE_EMBED
         for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
             if division_design_id != '0':
                 division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
-                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+                divisions[division_letter] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
 
     if divisions:
         result = []
         for division_letter, fleet_infos in divisions.items():
             result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
+            result.append(settings.EMPTY_LINE)
+        if result:
+            result = result[:-1]
         return result, True
     else:
         return [], False
