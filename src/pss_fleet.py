@@ -206,8 +206,9 @@ def get_fleet_users_stars_from_info(fleet_info: dict) -> list:
         fleet_id = fleet_info[FLEET_KEY_NAME]
         fleet_users_infos = _get_fleet_users(fleet_id).values()
         fleet_users_infos = sorted(fleet_users_infos, key=lambda user_info: int(user_info['AllianceScore']), reverse=True)
+        full_star_count = sum([user_info['AllianceScore'] for user_info in fleet_users_infos])
 
-        lines = [f'**{fleet_name} member stars**']
+        lines = [f'**{fleet_name} member stars ({full_star_count}{emojis.star})**']
         for i, user_info in enumerate(fleet_users_infos):
             user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
             stars = user_info['AllianceScore']
