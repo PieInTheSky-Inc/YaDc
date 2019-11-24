@@ -121,18 +121,18 @@ def get_division_stars(division: str = None, as_embed: bool = settings.USE_EMBED
 
     divisions = {}
     if division:
-        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID
-        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] == division_design_id]
+        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID[division.upper()]
+        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
         pass
     else:
         for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
             if division_design_id != '0':
                 division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
-                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] == division_design_id]
+                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
 
     if divisions:
         result = []
-        for fleet_infos in divisions:
+        for division_letter, fleet_infos in divisions.items():
             result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
         return result, True
     else:
@@ -143,7 +143,7 @@ def _get_division_stars_as_embed(division_letter: str, fleet_infos: dict):
     return ''
 
 
-def _get_division_stars_as_text(division_letter: str, fleet_infos: dict) -> list:
+def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list:
     lines = [f'__**Division {division_letter.upper()}**__']
     fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
     for i, fleet_info in enumerate(fleet_infos):
@@ -152,4 +152,4 @@ def _get_division_stars_as_text(division_letter: str, fleet_infos: dict) -> list
         stars = fleet_info['Score']
         position = i + 1
         lines.append(f'**{position:d}.** {stars}{emojis.star} {fleet_name} ({trophies} {emojis.trophy})')
-    return []
+    return lines
