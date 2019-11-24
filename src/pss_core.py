@@ -528,6 +528,7 @@ def init_db():
     success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
 
     if success_update_1_2_2_0:
+        db_try_set_schema_version('1.2.2.0')
         success_serversettings = db_try_create_table('serversettings', [
             ('guildid', 'TEXT', True, True),
             ('dailychannelid', 'TEXT', False, False),
@@ -591,8 +592,6 @@ def db_update_schema_v_1_2_2_0():
                 query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
         query = '\n'.join(query_lines)
         success = db_try_execute(query)
-        if success:
-            success = db_try_set_schema_version('1.2.2.0')
     return success
 
 
