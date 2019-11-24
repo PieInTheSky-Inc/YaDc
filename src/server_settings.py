@@ -1,13 +1,11 @@
 import discord
 
 import pss_core as core
+import settings
 import utility as util
 
-def get_server_settings(guild_id) -> tuple:
-    # TODO: get server settings
-    pass
 
-# TODO: add functions for getting AND storing individual settings
+
 
 
 def convert_to_on_off(value: bool) -> str:
@@ -32,6 +30,29 @@ def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
     return channel_name
 
 
+def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
+    result = None
+    if util.is_guild_channel(message.channel):
+        result = get_prefix_or_default(message.channel.guild.id)
+    else:
+        result = settings.PREFIX_DEFAULT
+    return result
+
+
+def get_prefix_or_default(guild_id: int) -> str:
+    result = db_get_prefix(guild_id)
+    if result is None:
+        result = settings.PREFIX_DEFAULT
+    return result
+
+
+def set_prefix(guild_id: int, prefix: str) -> bool:
+    if not db_get_has_settings(guild_id):
+        db_create_server_settings(guild_id)
+    success = db_update_prefix(guild_id, prefix)
+    return success
+
+
 def toggle_use_pagination(guild_id: int) -> bool:
     if not db_get_has_settings(guild_id):
         db_create_server_settings(guild_id)
@@ -41,6 +62,8 @@ def toggle_use_pagination(guild_id: int) -> bool:
         return not use_pagination
     else:
         return use_pagination
+
+
 
 
 
@@ -120,6 +143,16 @@ def db_get_has_settings(guild_id: int) -> bool:
         return False
 
 
+def db_get_prefix(guild_id: int) -> str:
+    setting_names = ['prefix']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names)
+    if settings:
+        for setting in settings:
+            return str(setting[0])
+    else:
+        return None
+
+
 def db_get_use_pagination(guild_id: int) -> bool:
     setting_names = ['usepagination']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names)
@@ -141,6 +174,17 @@ def db_reset_autodaily_settings(guild_id: int) -> bool:
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
+    return True
+
+
+def db_reset_prefix(guild_id: int) -> bool:
+    current_prefix = db_get_prefix(guild_id)
+    if current_prefix is not None:
+        settings = {
+            'prefix': 'NULL'
+        }
+        success = _db_update_server_setting(guild_id, settings)
+        return success
     return True
 
 
@@ -183,7 +227,7 @@ def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
     current_daily_channel_id = db_get_daily_channel_id(guild_id)
     if not current_daily_channel_id or channel_id != current_daily_channel_id:
         settings = {
-            'dailychannelid': channel_id,
+            'dailychannelid': util.db_convert_text(channel_id),
             'dailycanpost': util.convert_to_boolean(True),
             'dailylatestmessageid': 'NULL'
         }
@@ -196,7 +240,18 @@ def db_update_daily_latest_message_id(guild_id: int, message_id: int) -> bool:
     current_daily_latest_message_id = db_get_daily_latest_message_id(guild_id)
     if not current_daily_latest_message_id or message_id != current_daily_latest_message_id:
         settings = {
-            'dailylatestmessageid': message_id
+            'dailylatestmessageid': util.db_convert_text(message_id)
+        }
+        success = _db_update_server_setting(guild_id, settings)
+        return success
+    return True
+
+
+def db_update_prefix(guild_id: int, prefix: str) -> bool:
+    current_prefix = db_get_prefix(guild_id)
+    if not current_prefix or prefix != current_prefix:
+        settings = {
+            'prefix': util.db_convert_text(prefix)
         }
         success = _db_update_server_setting(guild_id, settings)
         return success
@@ -236,6 +291,14 @@ def _db_get_server_settings(guild_id: int = None, setting_names: list = None, ad
         return rows
     else:
         return None
+
+
+def _db_reset_server_setting(guild_id: int, settings: dict) -> bool:
+    where = util.db_get_where_string('guildid', guild_id, is_text_type=True)
+    set_string = ', '.join([f'{key} = NULL' for key in settings.keys()])
+    query = f'UPDATE serversettings SET {set_string} WHERE {where}'
+    success = core.db_try_execute(query)
+    return success
 
 
 def _db_update_server_setting(guild_id: int, settings: dict) -> bool:

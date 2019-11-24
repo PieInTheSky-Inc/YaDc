@@ -523,7 +523,8 @@ def init_db():
             ('dailychannelid', 'TEXT', False, False),
             ('dailycanpost', 'BOOLEAN', False, False),
             ('dailylatestmessageid', 'TEXT', False, False),
-            ('usepagination', 'BOOLEAN', False, False)
+            ('usepagination', 'BOOLEAN', False, False),
+            ('prefix', 'TEXT', False, False)
         ])
         success_settings = db_try_create_table('settings', [
             ('settingname', 'TEXT', True, True),
@@ -553,7 +554,8 @@ def db_update_schema_v_1_2_2_0():
         ('dailychannelid', 'TEXT', False, False),
         ('dailycanpost', 'BOOLEAN', False, False),
         ('dailylatestmessageid', 'TEXT', False, False),
-        ('usepagination', 'BOOLEAN', False, False)
+        ('usepagination', 'BOOLEAN', False, False),
+        ('prefix', 'TEXT', False, False)
     ]
 
     schema_version = db_get_schema_version()

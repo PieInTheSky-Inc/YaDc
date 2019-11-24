@@ -20,12 +20,13 @@ import time
 
 import emojis
 import pagination
-import pss_fleet as fleet
+import pss_assert
 import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
 import pss_exception
+import pss_fleet as fleet
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
@@ -46,7 +47,7 @@ COOLDOWN = 15.0
 if 'COMMAND_PREFIX' in os.environ:
     COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
 else:
-    COMMAND_PREFIX='/'
+    COMMAND_PREFIX=server_settings.get_prefix
 
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
@@ -660,7 +661,9 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
-    """Retrieve the pagination setting for this server. You need administrator privileges to do so."""
+    """Retrieve the pagination setting for this server.
+
+       You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             channel_name = server_settings.get_daily_channel_name(ctx)
@@ -675,11 +678,27 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
 async def cmd_get_pagination(ctx: discord.ext.commands.Context):
-    """Retrieve the pagination setting for this server. You need administrator privileges to do so."""
+    """Retrieve the pagination setting for this server.
+
+       You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
             output = [f'Pagination on this server has been set to: {use_pagination_mode}']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_get_prefix(ctx: discord.ext.commands.Context):
+    """Retrieve the prefix setting for this server.
+
+       You need the Administrator permission to use this command."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            prefix = server_settings.get_prefix_or_default(ctx.guild.id)
+            output = [f'Prefix for this server is: `{prefix}`']
         await util.post_output(ctx, output)
 
 
@@ -734,6 +753,21 @@ async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
             use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
             output = [f'Pagination on this server is: {use_pagination_mode}']
+        await util.post_output(ctx, output)
+
+
+@cmd_reset.command(brief='Reset prefix settings', name='prefix')
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_reset_prefix(ctx: discord.ext.commands.Context):
+    """Reset prefix for this server.
+
+       You need the Administrator permission to use this command."""
+    if ctx.channel.type == discord.ChannelType.text:
+        async with ctx.typing():
+            _ = server_settings.db_reset_use_pagination(ctx.guild.id)
+            prefix = server_settings.db_get_prefix(ctx.guild.id)
+            output = [f'Prefix for this server has been reset to: {prefix}']
         await util.post_output(ctx, output)
 
 
@@ -801,6 +835,24 @@ async def cmd_set_pagination(ctx: discord.ext.commands.Context, switch: str = No
                 result = server_settings.toggle_use_pagination(ctx.guild.id)
             use_pagination_mode = server_settings.convert_to_on_off(result)
             output = [f'Pagination on this server is: {use_pagination_mode}']
+        await util.post_output(ctx, output)
+
+
+@cmd_set.command(brief='Set prefix', name='prefix')
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_set_prefix(ctx: discord.ext.commands.Context, prefix: str = None):
+    """Set prefix for this server.
+
+       You need the Administrator permission to use this command. """
+    if ctx.channel.type == discord.ChannelType.text:
+        pss_assert.valid_parameter_value(prefix, 'prefix', min_length=1)
+        async with ctx.typing():
+            success = server_settings.set_prefix(ctx.guild.id, prefix)
+            if success:
+                output = [f'Prefix for this server has been set to: {prefix}']
+            else:
+                output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
 
 
