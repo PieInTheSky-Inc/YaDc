@@ -772,7 +772,7 @@ async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
             use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
-            output = [f'Pagination on this server is: {use_pagination_mode}']
+            output = [f'Pagination on this server is: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
 
 
@@ -787,7 +787,7 @@ async def cmd_reset_prefix(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             _ = server_settings.reset_prefix(ctx.guild.id)
             prefix = server_settings.get_prefix_or_default(ctx.guild.id)
-            output = [f'Prefix for this server has been reset to: {prefix}']
+            output = [f'Prefix for this server has been reset to: `{prefix}`']
         await util.post_output(ctx, output)
 
 
