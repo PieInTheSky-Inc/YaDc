@@ -99,14 +99,14 @@ async def on_command_error(ctx: discord.ext.commands.Context, err):
 async def on_guild_join(guild: discord.Guild):
     success = server_settings.db_create_server_settings(guild.id)
     if not success:
-        print(f'[on_guild_join] Could not create server settings for guild {guild.name} (ID: {guild.id})')
+        print(f'[on_guild_join] Could not create server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
 @bot.event
 async def on_guild_remove(guild: discord.Guild):
     success = server_settings.db_delete_server_settings(guild.id)
     if not success:
-        print(f'[on_guild_join] Could not delete server settings for guild {guild.name} (ID: {guild.id})')
+        print(f'[on_guild_join] Could not delete server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -260,7 +260,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level=None, *, name=None)
         await util.post_output(ctx, item_output)
 
     if not char_success and not item_success:
-        await ctx.send(f'Could not find a character or an item named **{name}**')
+        await ctx.send(f'Could not find a character or an item named `{name}`.')
 
 
 
@@ -607,7 +607,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
             await util.post_output_with_file(ctx, output, file_path)
             os.remove(file_path)
     else:
-        await ctx.send(f'Could not find a fleet named {fleet_name}')
+        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
 
 
@@ -634,7 +634,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name=None):
                 output = user.get_user_details_by_info(user_info)
             await util.post_output(ctx, output)
     else:
-        await ctx.send(f'Could not find a player named {player_name}')
+        await ctx.send(f'Could not find a player named `{player_name}`.')
 
 
 
