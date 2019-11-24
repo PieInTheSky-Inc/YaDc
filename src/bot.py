@@ -655,6 +655,19 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
        You need the Administrator permission to use any of these commands."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+    elif ctx.invoked_subcommand is None:
+        autodaily_channel_mention = server_settings.get_daily_channel_mention(ctx)
+        if autodaily_channel_mention is None:
+            autodaily_channel_mention = '<not set>'
+        use_pagination = server_settings.get_pagination_mode(ctx.guild.id)
+        prefix = server_settings.get_prefix_or_default(ctx.guild.id)
+        output = [
+            f'**```Server settings for {ctx.guild.name}```' +
+            f'Auto-daily channel**:  {autodaily_channel_mention}',
+            f'**Pagination**:  `{use_pagination}`',
+            f'**Prefix**:  `{prefix}`'
+        ]
+        await util.post_output(ctx, output)
 
 
 @cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
@@ -666,7 +679,7 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
        You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
-            channel_name = server_settings.get_daily_channel_name(ctx)
+            channel_name = server_settings.get_daily_channel_mention(ctx)
             if channel_name:
                 output = [f'The daily announcement will be auto-posted at 1 am UTC in channel {channel_name}.']
             else:
@@ -683,7 +696,7 @@ async def cmd_get_pagination(ctx: discord.ext.commands.Context):
        You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
-            use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
+            use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
             output = [f'Pagination on this server has been set to: {use_pagination_mode}']
         await util.post_output(ctx, output)
 
@@ -751,7 +764,7 @@ async def cmd_reset_pagination(ctx: discord.ext.commands.Context):
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
-            use_pagination_mode = server_settings.convert_to_on_off(server_settings.db_get_use_pagination(ctx.guild.id))
+            use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
             output = [f'Pagination on this server is: {use_pagination_mode}']
         await util.post_output(ctx, output)
 
@@ -850,7 +863,7 @@ async def cmd_set_prefix(ctx: discord.ext.commands.Context, prefix: str = None):
         async with ctx.typing():
             success = server_settings.set_prefix(ctx.guild.id, prefix)
             if success:
-                output = [f'Prefix for this server has been set to: {prefix}']
+                output = [f'Prefix for this server has been set to: `{prefix}`']
             else:
                 output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)

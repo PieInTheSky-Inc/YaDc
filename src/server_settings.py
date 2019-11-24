@@ -17,7 +17,7 @@ def convert_to_on_off(value: bool) -> str:
         return '<NOT SET>'
 
 
-def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
+def get_daily_channel_mention(ctx: discord.ext.commands.Context) -> str:
     channel_id = db_get_daily_channel_id(ctx.guild.id)
     if channel_id is not None:
         text_channel = ctx.bot.get_channel(channel_id)
@@ -27,6 +27,19 @@ def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
             channel_name = '_<deleted channel>_'
     else:
         channel_name = None
+    return channel_name
+
+
+def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
+    channel_id = db_get_daily_channel_id(ctx.guild.id)
+    if channel_id is not None:
+        text_channel = ctx.bot.get_channel(channel_id)
+        if text_channel:
+            channel_name = text_channel.name
+        else:
+            channel_name = '<deleted channel>'
+    else:
+        channel_name = '<not set>'
     return channel_name
 
 
@@ -41,8 +54,14 @@ def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
 
 def get_prefix_or_default(guild_id: int) -> str:
     result = db_get_prefix(guild_id)
-    if result is None:
+    if result is None or result.lower() == 'none':
         result = settings.PREFIX_DEFAULT
+    return result
+
+
+def get_pagination_mode(guild_id: int) -> str:
+    use_pagination_mode = db_get_use_pagination(guild_id)
+    result = convert_to_on_off(use_pagination_mode)
     return result
 
 
