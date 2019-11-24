@@ -60,14 +60,15 @@ FLEET_SHEET_COLUMN_TYPES = [
 # ---------- Helper functions ----------
 
 def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
+    division_design_id = fleet_info['DivisionDesignId']
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_description = fleet_info['AllianceDescription']
-    min_trophy_required = fleet_info['MinTrophyRequired']
     member_count = int(fleet_info['NumberOfMembers'])
-    trophies = sum([int(user_info['Trophy']) for user_info in fleet_users_infos.values()])
-    stars = int(fleet_info['Score'])
+    min_trophy_required = fleet_info['MinTrophyRequired']
+    ranking = fleet_info['Ranking']
     requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
-    division_design_id = fleet_info['DivisionDesignId']
+    stars = int(fleet_info['Score'])
+    trophies = sum([int(user_info['Trophy']) for user_info in fleet_users_infos.values()])
 
     if requires_approval:
         fleet_type = 'Private'
@@ -78,13 +79,14 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
     lines = [f'**{fleet_name}**']
     lines.append(f'```{fleet_description}')
     lines.append(settings.EMPTY_LINE)
-    lines.append(f'Type - {fleet_type}')
+    lines.append(f'Ranking - {ranking}')
     lines.append(f'Min trophies - {min_trophy_required}')
     lines.append(f'Members - {member_count}')
     lines.append(f'Trophies - {util.get_reduced_number_compact(trophies)}')
     if division != '-':
         lines.append(f'Division - {division}')
         lines.append(f'Stars - {util.get_reduced_number_compact(stars)}')
+    lines.append(f'Type - {fleet_type}')
 
     lines[-1] += '```'
 
