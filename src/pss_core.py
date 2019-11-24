@@ -525,10 +525,10 @@ def init_db():
         ('settingtimestamp', 'TIMESTAMPTZ', False, False)
     ])
 
+    db_try_set_schema_version('1.2.2.0')
     success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
 
     if success_update_1_2_2_0:
-        db_try_set_schema_version('1.2.2.0')
         success_serversettings = db_try_create_table('serversettings', [
             ('guildid', 'TEXT', True, True),
             ('dailychannelid', 'TEXT', False, False),
