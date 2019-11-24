@@ -765,7 +765,7 @@ async def cmd_reset_prefix(ctx: discord.ext.commands.Context):
        You need the Administrator permission to use this command."""
     if ctx.channel.type == discord.ChannelType.text:
         async with ctx.typing():
-            _ = server_settings.db_reset_use_pagination(ctx.guild.id)
+            _ = server_settings.reset_prefix(ctx.guild.id)
             prefix = server_settings.db_get_prefix(ctx.guild.id)
             output = [f'Prefix for this server has been reset to: {prefix}']
         await util.post_output(ctx, output)

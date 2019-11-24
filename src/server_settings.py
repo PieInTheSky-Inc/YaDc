@@ -46,6 +46,11 @@ def get_prefix_or_default(guild_id: int) -> str:
     return result
 
 
+def reset_prefix(guild_id: int) -> bool:
+    success = db_reset_prefix(guild_id)
+    return success
+
+
 def set_prefix(guild_id: int, prefix: str) -> bool:
     if not db_get_has_settings(guild_id):
         db_create_server_settings(guild_id)
