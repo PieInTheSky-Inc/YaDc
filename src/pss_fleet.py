@@ -198,6 +198,34 @@ def _get_fleet_users(alliance_id: str) -> dict:
 
 
 
+# ---------- Stars ----------
+
+def get_fleet_users_stars_from_info(fleet_info: dict) -> list:
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    fleet_users_infos = _get_fleet_users(fleet_id).values()
+    fleet_users_infos = sorted(fleet_users_infos, key=lambda user_info: int(user_info['AllianceScore']), reverse=True)
+
+    lines = [f'**{fleet_name}\'s stars']
+    for i, user_info in enumerate(fleet_users_infos):
+        user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+        rank = user_info['AllianceMembership']
+        stars = user_info['AllianceScore']
+        trophies = user_info['Trophy']
+        lines.append(f'**{i + 1}.** {stars}{emojis.star} {user_name} ({rank}, {trophies}{emojis.trophy})')
+
+    return lines
+
+
+
+
+
+
+
+
+
+
+
 # ---------- Testing ----------
 
 if __name__ == '__main__':

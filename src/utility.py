@@ -436,7 +436,7 @@ def compare_versions(version_1: str, version_2: str) -> int:
 
 
 def is_guild_channel(channel: discord.abc.Messageable) -> bool:
-    if channel.guild:
+    if hasattr(channel, 'guild') and channel.guild:
         return True
     else:
         return False

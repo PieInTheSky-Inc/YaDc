@@ -310,13 +310,41 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name=N
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Division stars (works only during tournament finals)', name='stars')
+@bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars(ctx: discord.ext.commands.Context, *, division=None):
     """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
-    async with ctx.typing():
-        output, _ = pss_top.get_division_stars(division=division)
-    await util.post_output(ctx, output)
+    if ctx.invoked_subcommand is None:
+        if tourney.is_tourney_running():
+            async with ctx.typing():
+                output, _ = pss_top.get_division_stars(division=division)
+            await util.post_output(ctx, output)
+        else:
+            await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
+
+
+@cmd_stars.command(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name):
+    """Get stars earned by the specified fleet during final tournament week."""
+    if tourney.is_tourney_running():
+        async with ctx.typing():
+            fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+
+        if fleet_infos:
+            if len(fleet_infos) == 1:
+                fleet_info = fleet_infos[0]
+            else:
+                paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
+                _, fleet_info = await paginator.wait_for_option_selection()
+
+            if fleet_info:
+                output = fleet.get_fleet_users_stars_from_info(fleet_info)
+                await util.post_output(ctx, output)
+        else:
+            await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
+    else:
+        await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
 
 
 @bot.command(brief='Show the dailies', name='daily', hidden=True)
@@ -655,7 +683,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
        Set settings for this server using the subcommands 'set' and 'reset'.
 
        You need the Administrator permission to use any of these commands."""
-    if ctx.channel.type != discord.ChannelType.text:
+    if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
     elif ctx.invoked_subcommand is None:
         autodaily_channel_mention = server_settings.get_daily_channel_mention(ctx)
@@ -679,7 +707,7 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
     """Retrieve the pagination setting for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             channel_name = server_settings.get_daily_channel_mention(ctx)
             if channel_name:
@@ -696,7 +724,7 @@ async def cmd_get_pagination(ctx: discord.ext.commands.Context):
     """Retrieve the pagination setting for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
             output = [f'Pagination on this server has been set to: {use_pagination_mode}']
@@ -710,7 +738,7 @@ async def cmd_get_prefix(ctx: discord.ext.commands.Context):
     """Retrieve the prefix setting for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             prefix = server_settings.get_prefix_or_default(ctx.guild.id)
             output = [f'Prefix for this server is: `{prefix}`']
@@ -732,7 +760,7 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
     """Reset settings to defaults for this server.
 
        You need the Administrator permission to use any of these commands."""
-    if ctx.channel.type != discord.ChannelType.text:
+    if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
     elif ctx.invoked_subcommand is None:
         reset_autodaily = bot.get_command(f'settings reset autodaily')
@@ -750,7 +778,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """Reset auto-posting the daily for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
             if success:
@@ -770,7 +798,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """Reset pagination for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
             use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
@@ -785,7 +813,7 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """Reset prefix for this server.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             _ = server_settings.reset_prefix(ctx.guild.id)
             prefix = server_settings.get_prefix_or_default(ctx.guild.id)
@@ -808,7 +836,7 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
     """Configure settings for this server.
 
        You need the Administrator permission to use any of these commands."""
-    if ctx.channel.type != discord.ChannelType.text:
+    if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
@@ -819,9 +847,9 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
     """Set a channel to automatically post the daily announcement in at 1 am UTC.
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            if text_channel:
+            if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
                     output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
@@ -831,7 +859,7 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
                         'Please try again or contact the bot\'s author.'
                     ]
             else:
-                output = ['You need to provide a text channel!']
+                output = ['You need to provide a text channel on a server!']
         await util.post_output(ctx, output)
 
 
@@ -848,7 +876,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
        Default is 'OFF'
 
        You need the Administrator permission to use this command."""
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             if switch is not None:
                 switch = util.convert_input_to_boolean(switch)
@@ -856,7 +884,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
             else:
                 result = server_settings.toggle_use_pagination(ctx.guild.id)
             use_pagination_mode = server_settings.convert_to_on_off(result)
-            output = [f'Pagination on this server is: {use_pagination_mode}']
+            output = [f'Pagination on this server is: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
 
 
@@ -867,7 +895,7 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
     """Set prefix for this server.
 
        You need the Administrator permission to use this command. """
-    if ctx.channel.type == discord.ChannelType.text:
+    if util.is_guild_channel(ctx.channel):
         pss_assert.valid_parameter_value(prefix, 'prefix', min_length=1)
         async with ctx.typing():
             success = server_settings.set_prefix(ctx.guild.id, prefix)
