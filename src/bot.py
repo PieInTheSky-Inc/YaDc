@@ -732,6 +732,13 @@ async def cmd_reset(ctx: discord.ext.commands.Context):
        You need the Administrator permission to use any of these commands."""
     if ctx.channel.type != discord.ChannelType.text:
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+    elif ctx.invoked_subcommand is None:
+        reset_autodaily = bot.get_command(f'settings reset autodaily')
+        reset_pagination = bot.get_command(f'settings reset pagination')
+        reset_prefix = bot.get_command(f'settings reset prefix')
+        await ctx.invoke(reset_autodaily)
+        await ctx.invoke(reset_pagination)
+        await ctx.invoke(reset_prefix)
 
 
 @cmd_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
