@@ -582,7 +582,10 @@ def db_update_schema_v_1_2_2_0():
             query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} {not_null_toggle} NOT NULL;')
 
     query = '\n'.join(query_lines)
-    success = db_try_execute(query)
+    if query:
+        success = db_try_execute(query)
+    else:
+        success = True
     if success:
         query_lines = []
         column_names = db_get_column_names('serversettings')
@@ -591,7 +594,10 @@ def db_update_schema_v_1_2_2_0():
             if column_name not in column_names:
                 query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
         query = '\n'.join(query_lines)
-        success = db_try_execute(query)
+        if query:
+            success = db_try_execute(query)
+        else:
+            success = True
     return success
 
 
