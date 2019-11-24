@@ -84,13 +84,13 @@ class Paginator():
                         return True, self.__current_options[emoji]
                 elif reply:
                     content = str(reply.content)
-                    await reply.delete()
                     try:
                         selection = int(content)
                     except ValueError:
                         pass
                     else:
                         if selection in self.__current_options.keys():
+                            await reply.delete()
                             await self.__message.delete()
                             return True, self.__current_options[selection]
 
