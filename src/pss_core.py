@@ -515,6 +515,16 @@ def read_about_file():
 
 # ---------- DataBase ----------
 def init_db():
+    success_settings = db_try_create_table('settings', [
+        ('settingname', 'TEXT', True, True),
+        ('modifydate', 'TIMESTAMPTZ', False, True),
+        ('settingboolean', 'BOOLEAN', False, False),
+        ('settingfloat', 'FLOAT', False, False),
+        ('settingint', 'INT', False, False),
+        ('settingtext', 'TEXT', False, False),
+        ('settingtimestamp', 'TIMESTAMPTZ', False, False)
+    ])
+
     success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
 
     if success_update_1_2_2_0:
@@ -525,15 +535,6 @@ def init_db():
             ('dailylatestmessageid', 'TEXT', False, False),
             ('usepagination', 'BOOLEAN', False, False),
             ('prefix', 'TEXT', False, False)
-        ])
-        success_settings = db_try_create_table('settings', [
-            ('settingname', 'TEXT', True, True),
-            ('modifydate', 'TIMESTAMPTZ', False, True),
-            ('settingboolean', 'BOOLEAN', False, False),
-            ('settingfloat', 'FLOAT', False, False),
-            ('settingint', 'INT', False, False),
-            ('settingtext', 'TEXT', False, False),
-            ('settingtimestamp', 'TIMESTAMPTZ', False, False)
         ])
         if success_serversettings and success_settings:
             print('[init_db] DB initialization succeeded')
