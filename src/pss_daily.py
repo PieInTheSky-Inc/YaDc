@@ -90,14 +90,17 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
 def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
     channels = server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
-    for channel in channels:
-        text_channel = ctx.bot.get_channel(int(channel[1]))
-        if text_channel:
-            guild = text_channel.guild
-            result.append(f'{guild.name}: #{text_channel.name} ({channel[2]})')
-        else:
-            result.append(f'Invalid channel id: {channel[1]}')
-    if not result:
+    at_least_one = False
+    for (channel_id, can_post, _) in channels:
+        if channel_id:
+            at_least_one = True
+            text_channel = ctx.bot.get_channel(int(channel_id))
+            if text_channel:
+                guild = text_channel.guild
+                result.append(f'{guild.name}: #{text_channel.name} ({can_post})')
+            else:
+                result.append(f'Invalid channel id: {channel_id}')
+    if not at_least_one:
         result.append('Auto-posting of the daily announcement is not configured for any server!')
     return result
 

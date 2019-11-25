@@ -135,7 +135,7 @@ def db_get_daily_can_post(guild_id: int) -> bool:
 
 
 def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None) -> list:
-    wheres = []
+    wheres = ['dailychannelid IS NOT NULL']
     if can_post is not None:
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
     setting_names = ['dailychannelid', 'dailycanpost', 'dailylatestmessageid']
