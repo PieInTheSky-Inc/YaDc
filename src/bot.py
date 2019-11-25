@@ -409,15 +409,15 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
 @bot.command(brief='Get best items for a slot', name='best')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
-    f"""
+    """
     Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
     Usage:
       /best [slot] [stat]
 
     Parameters:
-      slot: the equipment slot. Use 'all' or 'any' to get info for all slots. Mandatory. Valid values are: [{', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys())}]
-      stat: the crew stat you're looking for. Mandatory. Valid values are: [{', '.join(lookups.STAT_TYPES_LOOKUP.keys())}]
+      slot: the equipment slot. Use 'all' or 'any' to get info for all slots. Mandatory. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
+      stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
 
     Examples:
       /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
@@ -477,7 +477,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
-    f"""
+    """
     Get stars earned by each fleet during the current final tournament week.
 
     Usage:
@@ -485,7 +485,7 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
       /stars <division>
 
     Parameters:
-      division: The letter of the division to show the star counts for. Optional. Valid values: [{', '.join([division_char for division_char in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if division_char != '-'])}]
+      division: The letter of the division to show the star counts for. Optional. Valid values: [A, B, C, D]
 
     Examples:
       /stars - Prints the star count for every fleet competing in the current tournament finals.
@@ -676,8 +676,8 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
       to_level:   The level to which the requirements shall be calculated. Mandatory.
 
     Examples:
-        /level 35 - will print exp and gas requirements from level 1 to 35
-        /level 25 35 - will print exp and gas requirements from level 25 to 35"""
+        /level 35 - Prints exp and gas requirements from level 1 to 35
+        /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
         output, _ = crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
