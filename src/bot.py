@@ -1046,7 +1046,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 @cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
+async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
     Retrieve the auto-daily setting for this server.
 
@@ -1073,7 +1073,7 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
 @cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_get_pagination(ctx: discord.ext.commands.Context):
+async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
     Retrieve the pagination setting for this server.
 
@@ -1090,14 +1090,14 @@ async def cmd_get_pagination(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
-            output = [f'Pagination on this server has been set to: {use_pagination_mode}']
+            output = [f'Pagination on this server has been set to: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
 
 
 @cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_get_prefix(ctx: discord.ext.commands.Context):
+async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
     Retrieve the prefix setting for this server.
 
