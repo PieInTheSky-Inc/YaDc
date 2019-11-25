@@ -40,7 +40,7 @@ def get_all_daily_channel_ids() -> list:
     if len(rows) == 0:
         return []
     else:
-        results = [int(t[1]) for t in rows]
+        results = [int(channel_id) for (channel_id, _, _) in rows]
         return results
 
 
@@ -49,7 +49,7 @@ def get_valid_daily_channel_ids() -> list:
     if len(rows) == 0:
         return []
     else:
-        results = [int(t[1]) for t in rows]
+        results = [int(channel_id) for (channel_id, _, _) in rows]
         return results
 
 
