@@ -1,11 +1,34 @@
 import discord
 
+import pss_assert
 import pss_core as core
 import settings
 import utility as util
 
 
 
+_VALID_PAGINATION_SWITCH_VALUES = {
+    'on': True,
+    'true': True,
+    '1': True,
+    'yes': True,
+    'off': False,
+    'false': False,
+    '0': False,
+    'no': False
+}
+
+
+def convert_from_on_off(switch: str) -> bool:
+    if switch is None:
+        return None
+    else:
+        switch = switch.lower()
+        if switch in _VALID_PAGINATION_SWITCH_VALUES.keys():
+            result = _VALID_PAGINATION_SWITCH_VALUES[switch]
+            return result
+        else:
+            return None
 
 
 def convert_to_on_off(value: bool) -> str:
@@ -15,6 +38,24 @@ def convert_to_on_off(value: bool) -> str:
         return 'OFF'
     else:
         return '<NOT SET>'
+
+
+def fix_prefixes() -> bool:
+    all_prefixes = _db_get_server_settings(guild_id=None, setting_names=['guildid', 'prefix'])
+    all_success = True
+    if all_prefixes:
+        for guild_id, prefix in all_prefixes:
+            if guild_id and prefix and prefix.startswith(' '):
+                new_prefix = prefix.lstrip()
+                if new_prefix:
+                    print(f'[fix_prefixes] Fixing prefix \'{prefix}\' for guild with id \'{guild_id}\'. New prefix is: \'{new_prefix}\'')
+                    success = set_prefix(guild_id, new_prefix)
+                else:
+                    print(f'[fix_prefixes] Fixing prefix \'{prefix}\' for guild with id \'{guild_id}\'. New prefix is: \'{settings.PREFIX_DEFAULT}\'')
+                    success = reset_prefix(guild_id)
+                if not success:
+                    all_success = False
+    return all_success
 
 
 def get_daily_channel_mention(ctx: discord.ext.commands.Context) -> str:
@@ -68,6 +109,22 @@ def get_pagination_mode(guild_id: int) -> str:
 def reset_prefix(guild_id: int) -> bool:
     success = db_reset_prefix(guild_id)
     return success
+
+
+def set_pagination(guild_id: int, switch: str) -> bool:
+    if not db_get_has_settings(guild_id):
+        db_create_server_settings(guild_id)
+
+    if switch is None:
+        return toggle_use_pagination(guild_id)
+    else:
+        pss_assert.valid_parameter_value(switch, 'switch', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
+        use_pagination = convert_from_on_off(switch)
+        success = db_update_use_pagination(guild_id, use_pagination)
+        if success:
+            return use_pagination
+        else:
+            return not use_pagination
 
 
 def set_prefix(guild_id: int, prefix: str) -> bool:
@@ -293,6 +350,14 @@ def db_update_use_pagination(guild_id: int, use_pagination: bool) -> bool:
     return True
 
 
+
+
+
+
+
+
+
+
 # ---------- Utilities ----------
 
 def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = []) -> list:
@@ -309,7 +374,10 @@ def _db_get_server_settings(guild_id: int = None, setting_names: list = None, ad
         wheres.extend(additional_wheres)
 
     where = util.db_get_where_and_string(wheres)
-    query = f'SELECT {setting_string} FROM serversettings WHERE {where}'
+    if where:
+        query = f'SELECT {setting_string} FROM serversettings WHERE {where}'
+    else:
+        query = f'SELECT {setting_string} FROM serversettings'
     rows = core.db_fetchall(query)
     if rows:
         return rows
@@ -331,3 +399,16 @@ def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
     query = f'UPDATE serversettings SET {set_string} WHERE {where}'
     success = core.db_try_execute(query)
     return success
+
+
+
+
+
+
+
+
+
+
+# ---------- Main ----------
+
+fix_prefixes()
