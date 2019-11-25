@@ -485,7 +485,7 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
       /stars <division>
 
     Parameters:
-      division: The letter of the division to show the star counts for. Optional. Valid values: [{', '.join([division_char for division_char in DIVISION_CHAR_TO_DESIGN_ID.keys() if division_char != '-'])}]
+      division: The letter of the division to show the star counts for. Optional. Valid values: [{', '.join([division_char for division_char in settings.DIVISION_CHAR_TO_DESIGN_ID.keys() if division_char != '-'])}]
 
     Examples:
       /stars - Prints the star count for every fleet competing in the current tournament finals.
