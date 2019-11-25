@@ -670,6 +670,7 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
 
     Usage:
       /level <from_level> [to_level]
+      /lvl <from_level> [to_level]
 
     Parameters:
       from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
