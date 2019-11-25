@@ -677,8 +677,8 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
       to_level:   The level to which the requirements shall be calculated. Mandatory.
 
     Examples:
-        /level 35 - Prints exp and gas requirements from level 1 to 35
-        /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
+      /level 35 - Prints exp and gas requirements from level 1 to 35
+      /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
         output, _ = crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
