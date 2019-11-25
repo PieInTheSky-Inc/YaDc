@@ -378,7 +378,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
       This command will only print stats for the crew with the best matching crew_name.
     """
     async with ctx.typing():
-        level, char_name = util.get_level_and_name(level, crew_name)
+        level, crew_name = util.get_level_and_name(level, crew_name)
         output, _ = crew.get_char_details_from_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
