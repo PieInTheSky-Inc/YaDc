@@ -75,8 +75,8 @@ async def on_ready():
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot prefix is: {COMMAND_PREFIX}')
-    print('Bot logged in as {} (id={}) on {} servers'.format(
-        bot.user.name, bot.user.id, len(bot.guilds)))
+    print(f'Bot version is: {settings.VERSION}')
+    print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     core.init_db()
     bot.loop.create_task(post_dailies_loop())
 
@@ -136,7 +136,7 @@ async def post_all_dailies():
                     for post in posts:
                         await text_channel.send(post)
             except Exception as error:
-                print('[post_all_dailies] {} occurred while trying to post to channel \'{}\' on server \'{}\': {}'.format(error.__class__.__name__, text_channel.name, guild.name, error))
+                print(f'[post_all_dailies] {error.__class__.__name__} occurred while trying to post to channel \'{text_channel.name}\' on server \'{guild.name}\': {error}')
 
 
 def fix_daily_channels():
@@ -153,58 +153,133 @@ def fix_daily_channels():
                 if guild_member != None:
                     permissions = text_channel.permissions_for(guild_member)
                     if permissions != None and permissions.send_messages == True:
-                        print('[fix_daily_channels] bot can post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                        print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
                         can_post = True
                     else:
-                        print('[fix_daily_channels] bot is not allowed to post in configured channel \'{}\' (id: {}) on server \'{}\' (id: {})'.format(text_channel.name, channel_id, guild.name, guild_id))
+                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
                 else:
-                    print('[fix_daily_channels] couldn\'t fetch member for bot for guild: {} (id: {})'.format(guild.name, guild_id))
+                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
             else:
-                print('[fix_daily_channels] couldn\'t fetch guild for channel \'{}\' (id: {}) with id: {}'.format(text_channel.name, channel_id, guild_id))
+                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
         else:
-            print('[fix_daily_channels] couldn\'t fetch channel with id: {}'.format(channel_id))
+            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
         daily.fix_daily_channel(guild_id, can_post)
 
 
 # ----- General Bot Commands ----------------------------------------------------------
 @bot.command(brief='Ping the server', name='ping')
 async def cmd_ping(ctx: discord.ext.commands.Context):
-    """Ping the server to verify that it\'s listening for commands"""
+    """
+    Ping the bot to verify that it\'s listening for commands.
+
+    Usage:
+      /ping
+
+    Examples:
+      /ping - The bot will answer with 'Pong!'.
+    """
     await ctx.send('Pong!')
 
 
-# ----- PSS Bot Commands --------------------------------------------------------------
+
+
+
+
+
+
+
+
+# ---------- PSS Bot Commands ----------
+
 @bot.command(brief='Get prestige combos of crew', name='prestige')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prestige(ctx: discord.ext.commands.Context, *, char_name=None):
-    """Get the prestige combinations of the character specified"""
+async def cmd_prestige(ctx: discord.ext.commands.Context, *, crew_name: str):
+    """
+    Get the prestige combinations of the crew specified.
+
+    Usage:
+      /prestige [crew_name]
+
+    Parameters:
+      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+
+    Examples:
+      /prestige xin - Will print all prestige combinations including the crew 'Xin'.
+
+    Notes:
+      This command will only print recipes for the crew with the best matching crew name.
+    """
     async with ctx.typing():
-        output, _ = crew.get_prestige_from_info(char_name)
+        output, _ = crew.get_prestige_from_info(crew_name)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get character recipes', name='recipe')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_recipe(ctx: discord.ext.commands.Context, *, char_name=None):
-    """Get the prestige recipes of a character"""
+async def cmd_recipe(ctx: discord.ext.commands.Context, *, crew_name: str):
+    """
+    Get the prestige recipes of the crew specified.
+
+    Usage:
+      /recipe [crew_name]
+
+    Parameters:
+      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
+
+    Examples:
+      /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
+
+    Notes:
+      This command will only print recipes for the crew with the best matching crew name.
+    """
     async with ctx.typing():
-        output, _ = crew.get_prestige_to_info(char_name)
+        output, _ = crew.get_prestige_to_info(crew_name)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get item ingredients', name='ingredients', aliases=['ing'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_ingredients(ctx: discord.ext.commands.Context, *, name=None):
-    """Get the ingredients for an item"""
+async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
+    """
+    Get the ingredients for an item to be crafted with their estimated crafting costs.
+
+    Usage:
+      /ingredients [item_name]
+      /ing [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be crafted. Mandatory.
+
+    Examples:
+      /ingredients large mineral crate - Prints the crafting costs and recipe for a 'Large Mineral Crate'.
+
+    Notes:
+      This command will only print crafting costs for the item with the best matching item name.
+    """
     async with ctx.typing():
-        output, _ = item.get_ingredients_for_item(name)
+        output, _ = item.get_ingredients_for_item(item_name)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get crafting recipes', name='upgrade', aliases=['upg'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_upgrade(ctx: discord.ext.commands.Context, *, item_name=None):
-    """Returns any crafting recipe involving the requested item."""
+async def cmd_upgrade(ctx: discord.ext.commands.Context, *, item_name: str):
+    """
+    Get the items a specified item can be crafted into.
+
+    Usage:
+      /upgrade [item_name]
+      /upg [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be upgraded. Mandatory.
+
+    Examples:
+      /upgrade large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
+
+    Notes:
+      This command will only print crafting costs for the item with the best matching item name.
+    """
     async with ctx.typing():
         output, _ = item.get_item_upgrades_from_name(item_name)
     await util.post_output(ctx, output)
@@ -212,8 +287,25 @@ async def cmd_upgrade(ctx: discord.ext.commands.Context, *, item_name=None):
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_price(ctx: discord.ext.commands.Context, *, item_name=None):
-    """Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified, as returned by the PSS API. Note that prices returned by the API may not reflect the real market value, due to transfers between alts/friends"""
+async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
+    """
+    Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
+
+    Usage:
+      /price [item_name]
+      /fairprice [item_name]
+      /cost [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be crafted. Mandatory.
+
+    Examples:
+      /price mineral crate - Prints prices for all items having 'mineral crate' in their names.
+
+    Notes:
+      Market prices returned may not reflect the real market value, due to transfers between alts/friends.
+      This command will print prices for all items matching the specified item_name.
+    """
     async with ctx.typing():
         output, _ = item.get_item_price(item_name)
     await util.post_output(ctx, output)
@@ -221,12 +313,24 @@ async def cmd_price(ctx: discord.ext.commands.Context, *, item_name=None):
 
 @bot.command(brief='Get item/crew stats', name='stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stats(ctx: discord.ext.commands.Context, level=None, *, name=None):
-    """Get the stats of a character/crew or item.
+async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, name: str = None):
+    """
+    Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
 
-       Parameters:
-         level (optional): will only apply to crew stats.
-         name (mandatory): name of a crew or item
+    Usage:
+      /stats <level> [name]
+
+    Parameters:
+      level: Level of a crew. Will only apply to crew stats. Optional.
+      name:  (Part of) the name of a crew or item. Mandatory.
+
+    Examples:
+      /stats hug - Will output results of the commands '/char hug' and '/item hug'
+      /stats 25 hug - Will output results of the command '/char 25 hug' and '/item hug'
+
+    Notes:
+      This command will only print stats for the crew with the best matching name.
+      This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
@@ -253,26 +357,50 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level=None, *, name=None)
         await ctx.send(f'Could not find a character or an item named `{name}`.')
 
 
-
 @bot.command(brief='Get character stats', name='char', aliases=['crew'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_char(ctx: discord.ext.commands.Context, level=None, *, char_name=None):
-    """Get the stats of a character/crew.
+async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew_name: str = None):
+    """
+    Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
 
-       Parameters:
-         level (optional): if specified, stats for this level will be printed
-         char_name (mandatory): name of a crew
+    Usage:
+      /stats <level> [name]
+
+    Parameters:
+      level: Level of a crew. Optional.
+      name:  (Part of) the name of a crew. Mandatory.
+
+    Examples:
+      /stats hug - Will print the stats range for a crew having 'hug' in its name.
+      /stats 25 hug - Will print the stats range for a level 25 crew having 'hug' in its name.
+
+    Notes:
+      This command will only print stats for the crew with the best matching crew_name.
     """
     async with ctx.typing():
-        level, char_name = util.get_level_and_name(level, char_name)
-        output, _ = crew.get_char_details_from_name(char_name, level=level)
+        level, char_name = util.get_level_and_name(level, crew_name)
+        output, _ = crew.get_char_details_from_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get item stats', name='item')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
-    """Get the stats of an item."""
+async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
+    """
+    Get the stats of any item matching the given item_name.
+
+    Usage:
+      /item [item_name]
+
+    Parameters:
+      item_name:  (Part of) the name of an item. Mandatory.
+
+    Examples:
+      /item hug - Will print some stats for an item having 'hug' in its name.
+
+    Notes:
+      This command will print information for all items matching the specified name.
+    """
     async with ctx.typing():
         output, _ = item.get_item_details(item_name)
     await util.post_output(ctx, output)
@@ -280,12 +408,20 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name):
 
 @bot.command(brief='Get best items for a slot', name='best')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_best(ctx: discord.ext.commands.Context, slot=None, stat=None):
-    """Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
+async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
+    f"""
+    Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
-       Parameters:
-         slot (mandatory): the equipment slot. Use 'all' or 'any' to get infor for all slots.
-         stat (mandatory): the crew stat you're looking for.
+    Usage:
+      /best [slot] [stat]
+
+    Parameters:
+      slot: the equipment slot. Use 'all' or 'any' to get info for all slots. Mandatory. Valid values are: [{', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys())}]
+      stat: the crew stat you're looking for. Mandatory. Valid values are: [{', '.join(lookups.STAT_TYPES_LOOKUP.keys())}]
+
+    Examples:
+      /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
+      /best all hp - Prints all equipment items for all slots providing a HP bonus.
     """
     async with ctx.typing():
         output, _ = item.get_best_items(slot, stat)
@@ -294,17 +430,45 @@ async def cmd_best(ctx: discord.ext.commands.Context, slot=None, stat=None):
 
 @bot.command(brief='Get research data', name='research')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_research(ctx: discord.ext.commands.Context, *, name: str = None):
-    """Get the research details on a specific research. If multiple matches are found, only a brief summary will be provided"""
+async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str):
+    """
+    Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
+
+    Usage:
+      /research [research_name]
+
+    Parameters:
+      research_name: The name of the research to get details on.
+
+    Examples:
+      /research python - Will print information on all researches having 'python' in their names.
+
+    Notes:
+      This command will print information for all researches matching the specified name.
+    """
     async with ctx.typing():
-        output, _ = research.get_research_details_from_name(name)
+        output, _ = research.get_research_details_from_name(research_name)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get collections', name='collection', aliases=['coll'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name=None):
-    """Get the details on a specific collection."""
+async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: str):
+    """
+    Get the details on a specific collection.
+
+    Usage:
+      /collection [collection_name]
+
+    Parameters:
+      collection_name: The name of the collection to get details on.
+
+    Examples:
+      /collection_name savy - Will print information on a collection having 'savy' in its name.
+
+    Notes:
+      This command will only print stats for the collection with the best matching collection_name.
+    """
     async with ctx.typing():
         output, _ = crew.get_collection_info(collection_name)
     await util.post_output(ctx, output)
@@ -312,8 +476,24 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name=N
 
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars(ctx: discord.ext.commands.Context, *, division=None):
-    """Get stars earned by each fleet during final tournament week. Replace [division] with a division name (a, b, c or d)"""
+async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
+    f"""
+    Get stars earned by each fleet during the current final tournament week.
+
+    Usage:
+      /stars
+      /stars <division>
+
+    Parameters:
+      division: The letter of the division to show the star counts for. Optional. Valid values: [{', '.join([division_char for division_char in DIVISION_CHAR_TO_DESIGN_ID.keys() if division_char != '-'])}]
+
+    Examples:
+      /stars - Prints the star count for every fleet competing in the current tournament finals.
+      /stars A - Prints the star count for every fleet competing in division A in the current tournament finals.
+
+    Notes:
+      This command does not work outside of the tournament finals week.
+    """
     if ctx.invoked_subcommand is None:
         if tourney.is_tourney_running():
             async with ctx.typing():
@@ -325,8 +505,23 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division=None):
 
 @cmd_stars.command(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name):
-    """Get stars earned by the specified fleet during final tournament week."""
+async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
+    """
+    Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
+
+    Usage:
+      /stars
+      /stars fleet [fleet_name]
+
+    Parameters:
+      fleet_name: The (beginning of the) name of a fleet to show the star counts for. Mandatory.
+
+    Examples:
+      /stars fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection, prints the star count for every member of the fleet, if it competes in the current tournament finals.
+
+    Notes:
+      This command does not work outside of the tournament finals week.
+    """
     if tourney.is_tourney_running():
         async with ctx.typing():
             fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
@@ -347,27 +542,43 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name):
         await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
 
 
-@bot.command(brief='Show the dailies', name='daily', hidden=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@bot.command(brief='Show the dailies', name='daily')
+@commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
 async def cmd_daily(ctx: discord.ext.commands.Context):
-    """Show the dailies"""
+    """
+    Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
+
+    Usage:
+      /daily
+
+    Examples:
+      /daily - Prints the information described above.
+    """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
         output, _ = dropship.get_dropship_text()
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Show the news', name='news', hidden=True)
+@bot.command(brief='Show the news', name='news')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_news(ctx: discord.ext.commands.Context):
-    """Show the news"""
+    """
+    Prints all news in ascending order.
+
+    Usage:
+      /news
+
+    Examples:
+      /news - Prints the information described above.
+    """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
         output, _ = dropship.get_news()
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Configure auto-posting the daily announcement for the current server.', name='autodaily', hidden=True)
+@bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 @commands.has_permissions(administrator=True)
@@ -376,7 +587,7 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
     The daily announcement is the message that this bot will post, when you use the /daily command.
 
-    In order to use this command, you need Administrator permissions for this server.
+    In order to use this command, you need the Administrator permission for the current Discord server/guild.
     """
     pass
 
@@ -453,10 +664,20 @@ async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_level(ctx: discord.ext.commands.Context, from_level: int = None, to_level: int = None):
-    """Shows the cost for a crew to reach a certain level.
-       Parameter from_level is required to be lower than to_level
-       If only from_level is being provided, it will print out costs from level 1 to from_level"""
+async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level: int = None):
+    """
+    Shows the cost for a crew to reach a certain level.
+
+    Usage:
+      /level <from_level> [to_level]
+
+    Parameters:
+      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
+      to_level:   The level to which the requirements shall be calculated. Mandatory.
+
+    Examples:
+        /level 35 - will print exp and gas requirements from level 1 to 35
+        /level 25 35 - will print exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
         output, _ = crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
@@ -465,7 +686,18 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int = None, t
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top(ctx: discord.ext.commands.Context, count: int = 100):
-    """Prints either top fleets or captains (fleets by default)."""
+    """
+    Prints either top fleets or captains. Prints top 100 fleets by default.
+
+    Usage:
+      /top <count>
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top - prints top 100 fleets.
+      /top 30 - prints top 30 fleets."""
     if ctx.invoked_subcommand is None:
         cmd = bot.get_command(f'top fleets')
         await ctx.invoke(cmd, count=count)
@@ -473,7 +705,18 @@ async def cmd_top(ctx: discord.ext.commands.Context, count: int = 100):
 
 @cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
 async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
-    """Prints top fleets."""
+    """
+    Prints top fleets. Prints top 100 fleets by default.
+
+    Usage:
+      /top fleets <count>
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top fleets - prints top 100 fleets.
+      /top fleets 30 - prints top 30 fleets."""
     async with ctx.typing():
         output, _ = pss_top.get_top_fleets(count)
     await util.post_output(ctx, output)
@@ -481,7 +724,18 @@ async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
 
 @cmd_top.command(brief='Prints top captains', name='players', aliases=['captains', 'users'])
 async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
-    """Prints top fleets."""
+    """
+    Prints top captains. Prints top 100 captains by default.
+
+    Usage:
+      /top captains <count>
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top captains - prints top 100 captains.
+      /top captains 30 - prints top 30 captains."""
     async with ctx.typing():
         output, _ = pss_top.get_top_captains(count)
     await util.post_output(ctx, output)
@@ -491,15 +745,21 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     """
-    Usage: /room [name]
-           /room [short name] [lvl]
-
     Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
+    Usage:
+      /room [name]
+      /room [short name] [room level]
+
+    Parameters:
+      name:       A room's name or part of it. Mandatory.
+      short name: A room's short name (2 or 3 characters). Mandatory.
+      room level: A room's level. Mandatory.
+
     Examples:
-    - /room mineral
-    - /room cloak generator lv2
-    - /room mst 3
+      /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
+      /room cloak generator lv2 - Searches for rooms having 'cloak generator lv2' in their names and prints their details.
+      /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
@@ -509,7 +769,15 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_time(ctx: discord.ext.commands.Context):
-    """Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia."""
+    """
+    Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
+
+    Usage:
+      /time
+
+    Examples:
+      /time - Prints PSS stardate, day & time in Melbourne and public holidays.
+    """
     async with ctx.typing():
         now = datetime.datetime.now()
         today = datetime.date(now.year, now.month, now.day)
@@ -535,7 +803,15 @@ async def cmd_time(ctx: discord.ext.commands.Context):
 @bot.command(brief='Show links', name='links')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_links(ctx: discord.ext.commands.Context):
-    """Shows the links for useful sites in Pixel Starships"""
+    """
+    Shows the links for useful sites regarding Pixel Starships.
+
+    Usage:
+      /links
+
+    Examples:
+      /links - Shows the links for useful sites regarding Pixel Starships.
+    """
     async with ctx.typing():
         output = core.read_links_file()
     await util.post_output(ctx, output)
@@ -544,7 +820,16 @@ async def cmd_links(ctx: discord.ext.commands.Context):
 @bot.command(brief='Display info on this bot', name='about', aliases=['info'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_about(ctx: discord.ext.commands.Context):
-    """Displays information on this bot and its authors."""
+    """
+    Displays information on this bot and its authors.
+
+    Usage:
+      /about
+      /info
+
+    Examples:
+      /about - Displays information on this bot and its authors.
+    """
     async with ctx.typing():
         output = [
             core.read_about_file(),
@@ -556,7 +841,15 @@ async def cmd_about(ctx: discord.ext.commands.Context):
 @bot.command(brief='Get an invite link', name='invite')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_invite(ctx: discord.ext.commands.Context):
-    """Produces an invite link."""
+    """
+    Produces an invite link and sends it via DM.
+
+    Usage:
+      /invite
+
+    Examples:
+      /invite - Produces an invite link and sends it via DM.
+    """
     nick = ctx.guild.me.nick
     await ctx.author.send(f'Invite {nick} to your server: http://bit.ly/invite-pss-statistics')
     await ctx.send('Sent invite link via DM.')
@@ -565,9 +858,16 @@ async def cmd_invite(ctx: discord.ext.commands.Context):
 @bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_tournament(ctx: discord.ext.commands.Context):
-    """Get information about the time of the tournament.
-       If this command is called without a sub command, it will display
-       information about the time of the current month's tournament."""
+    """
+    Get information about the starting time of the tournament.
+
+    Usage:
+      /tournament
+      /tourney
+
+    Examples:
+      /tournament - Displays information about the starting time of this month's tournament.
+    """
     if ctx.invoked_subcommand is None:
         cmd = bot.get_command('tournament current')
         await ctx.invoke(cmd)
@@ -575,7 +875,16 @@ async def cmd_tournament(ctx: discord.ext.commands.Context):
 
 @cmd_tournament.command(brief='Information on this month\'s tournament time', name='current')
 async def cmd_tournament_current(ctx: discord.ext.commands.Context):
-    """Get information about the time of the current month's tournament."""
+    """
+    Get information about the starting time of the current month's tournament.
+
+    Usage:
+      /tournament current
+      /tourney current
+
+    Examples:
+      /tournament current - Displays information about the starting time of this month's tournament.
+    """
     async with ctx.typing():
         utc_now = util.get_utcnow()
         start_of_tourney = tourney.get_current_tourney_start()
@@ -586,7 +895,16 @@ async def cmd_tournament_current(ctx: discord.ext.commands.Context):
 
 @cmd_tournament.command(brief='Information on next month\'s tournament time', name='next')
 async def cmd_tournament_next(ctx: discord.ext.commands.Context):
-    """Get information about the time of next month's tournament."""
+    """
+    Get information about the starting time of the next month's tournament.
+
+    Usage:
+      /tournament next
+      /tourney next
+
+    Examples:
+      /tournament next - Displays information about the starting time of next month's tournament.
+    """
     async with ctx.typing():
         utc_now = util.get_utcnow()
         start_of_tourney = tourney.get_next_tourney_start()
@@ -618,10 +936,19 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
 
 @bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
-    """Get details on a fleet.
+async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
+    """
+    Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
-       This command will also create a spreadsheet containing information on a fleet's members."""
+    Usage:
+      /fleet [fleet_name]
+      /alliance [fleet_name]
+
+    Parameters:
+      fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
+
+    Examples:
+      /fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection prints fleet details and posts the spreadsheet."""
     async with ctx.typing():
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
 
@@ -643,12 +970,19 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name=None):
 
 @bot.command(brief='Get infos on a player', name='player', aliases=['user'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_player(ctx: discord.ext.commands.Context, *, player_name=None):
-    """Get details on a player.
+async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
+    """
+    Get details on a payer. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
-       You can only search for the beginning of a name.
-       Savy servers only return up to 10 results.
-       So if you can't find the player you're looking for, you need to search again."""
+    Usage:
+      /player [player_name]
+      /user [player_name]
+
+    Parameters:
+      player_name: The (beginning of the) name of the player to search for. Mandatory.
+
+    Examples:
+      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details."""
     async with ctx.typing():
         user_infos = user.get_user_details_by_name(player_name)
 
@@ -679,12 +1013,21 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name=None):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings(ctx: discord.ext.commands.Context):
-    """Retrieve settings for this server.
-       Set settings for this server using the subcommands 'set' and 'reset'.
+    """
+    Retrieve settings for this Discord server/guild.
+    Set settings for this server using the subcommands 'set' and 'reset'.
 
-       You need the Administrator permission to use any of these commands."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings
+
+    Examples:
+      /settings - Prints all settings for the current Discord server/guild.
+    """
     if not util.is_guild_channel(ctx.channel):
-        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+        await ctx.send('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
     elif ctx.invoked_subcommand is None:
         autodaily_channel_mention = server_settings.get_daily_channel_mention(ctx)
         if autodaily_channel_mention is None:
@@ -704,9 +1047,19 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
-    """Retrieve the pagination setting for this server.
+    """
+    Retrieve the auto-daily setting for this server.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily
+      /settings daily
+
+    Examples:
+      /settings autodaily - Prints the auto-daily setting for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             channel_name = server_settings.get_daily_channel_mention(ctx)
@@ -721,9 +1074,19 @@ async def cmd_get_autodaily(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_get_pagination(ctx: discord.ext.commands.Context):
-    """Retrieve the pagination setting for this server.
+    """
+    Retrieve the pagination setting for this server.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings pagination
+      /settings pages
+
+    Examples:
+      /settings pagination - Prints the pagination setting for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
@@ -735,9 +1098,18 @@ async def cmd_get_pagination(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_get_prefix(ctx: discord.ext.commands.Context):
-    """Retrieve the prefix setting for this server.
+    """
+    Retrieve the prefix setting for this server.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings prefix
+
+    Examples:
+      /settings prefix - Prints the prefix setting for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             prefix = server_settings.get_prefix_or_default(ctx.guild.id)
@@ -757,9 +1129,18 @@ async def cmd_get_prefix(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset(ctx: discord.ext.commands.Context):
-    """Reset settings to defaults for this server.
+    """
+    Reset settings for this server.
 
-       You need the Administrator permission to use any of these commands."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset
+
+    Examples:
+      /settings reset - Resets all settings for the current Discord server/guild.
+    """
     if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
     elif ctx.invoked_subcommand is None:
@@ -775,9 +1156,19 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
-    """Reset auto-posting the daily for this server.
+    """
+    Reset the auto-daily settings for this server.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily
+      /settings reset daily
+
+    Examples:
+      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
@@ -795,9 +1186,19 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
-    """Reset pagination for this server.
+    """
+    Reset the pagination settings for this server to 'ON'.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset pagination
+      /settings reset pages
+
+    Examples:
+      /settings reset pagination - Resets the pagination settings for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             _ = server_settings.db_reset_use_pagination(ctx.guild.id)
@@ -810,9 +1211,18 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
-    """Reset prefix for this server.
+    """
+    Reset the prefix settings for this server to '/'.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset prefix
+
+    Examples:
+      /settings reset prefix - Resets the prefix settings for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             _ = server_settings.reset_prefix(ctx.guild.id)
@@ -833,9 +1243,18 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set(ctx: discord.ext.commands.Context):
-    """Configure settings for this server.
+    """
+    Sets settings for this server.
 
-       You need the Administrator permission to use any of these commands."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      Refer to sub-command help.
+
+    Examples:
+      Refer to sub-command help.
+    """
     if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
@@ -844,9 +1263,22 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
-    """Set a channel to automatically post the daily announcement in at 1 am UTC.
+    """
+    Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
-       You need the Administrator permission to use this command."""
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily [text_channel_mention]
+      /settings set daily [text_channel_mention]
+
+    Parameters:
+      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Mandatory.
+
+    Examples:
+      /settings set autodaily #announcements - Sets the channel #announcements to receive the /daily message once a day.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
@@ -867,22 +1299,29 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
-    """Set pagination for this server.
+    """
+    Sets or toggle the pagination for this server. The default is 'ON'.
 
-       If the <switch> parameter is not set, this command will toggle the setting.
-       Valid values for <switch> are:
-       - Turning it on: on, true, yes, 1
-       - Turning it off: off, false, no, 0
-       Default is 'OFF'
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
 
-       You need the Administrator permission to use this command."""
+    Usage:
+      /settings set pagination <switch>
+      /settings set pages <switch>
+
+    Parameters:
+      switch: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
+
+    Notes:
+      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
+
+    Examples:
+      /settings set pagination - Toggles the pagination setting for the current Discord server/guild depending on the current setting.
+      /settings set pagination off - Turns off pagination for the current Discord server/guild.
+    """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            if switch is not None:
-                switch = util.convert_input_to_boolean(switch)
-                result = server_settings.db_update_use_pagination(ctx.guild.id, switch)
-            else:
-                result = server_settings.toggle_use_pagination(ctx.guild.id)
+            result = server_settings.set_pagination(ctx.guild.id, switch)
             use_pagination_mode = server_settings.convert_to_on_off(result)
             output = [f'Pagination on this server is: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
@@ -891,11 +1330,24 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
 @cmd_settings_set.command(brief='Set prefix', name='prefix')
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str = None):
-    """Set prefix for this server.
+async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str):
+    """
+    Set the prefix for this server. The default is '/'.
 
-       You need the Administrator permission to use this command. """
-    if util.is_guild_channel(ctx.channel):
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set prefix [prefix]
+
+    Parameters:
+      prefix: A string determining the new prefix. Mandatory. Leading whitespace will be omitted.
+
+    Examples:
+      /settings set prefix & - Sets the bot's prefix for the current Discord server/guild to '&'
+    """
+    if util.is_guild_channel(ctx.channel) and prefix:
+        prefix = prefix.lstrip()
         pss_assert.valid_parameter_value(prefix, 'prefix', min_length=1)
         async with ctx.typing():
             success = server_settings.set_prefix(ctx.guild.id, prefix)
