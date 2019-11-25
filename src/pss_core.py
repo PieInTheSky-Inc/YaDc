@@ -515,32 +515,37 @@ def read_about_file():
 
 # ---------- DataBase ----------
 def init_db():
-    success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
+    success_settings = db_try_create_table('settings', [
+        ('settingname', 'TEXT', True, True),
+        ('modifydate', 'TIMESTAMPTZ', False, True),
+        ('settingboolean', 'BOOLEAN', False, False),
+        ('settingfloat', 'FLOAT', False, False),
+        ('settingint', 'INT', False, False),
+        ('settingtext', 'TEXT', False, False),
+        ('settingtimestamp', 'TIMESTAMPTZ', False, False)
+    ])
+    if success_settings:
+        success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
 
-    if success_update_1_2_2_0:
-        success_serversettings = db_try_create_table('serversettings', [
-            ('guildid', 'TEXT', True, True),
-            ('dailychannelid', 'TEXT', False, False),
-            ('dailycanpost', 'BOOLEAN', False, False),
-            ('dailylatestmessageid', 'TEXT', False, False),
-            ('usepagination', 'BOOLEAN', False, False),
-            ('prefix', 'TEXT', False, False)
-        ])
-        success_settings = db_try_create_table('settings', [
-            ('settingname', 'TEXT', True, True),
-            ('modifydate', 'TIMESTAMPTZ', False, True),
-            ('settingboolean', 'BOOLEAN', False, False),
-            ('settingfloat', 'FLOAT', False, False),
-            ('settingint', 'INT', False, False),
-            ('settingtext', 'TEXT', False, False),
-            ('settingtimestamp', 'TIMESTAMPTZ', False, False)
-        ])
-        if success_serversettings and success_settings:
-            print('[init_db] DB initialization succeeded')
+        if success_update_1_2_2_0:
+            success_serversettings = db_try_create_table('serversettings', [
+                ('guildid', 'TEXT', True, True),
+                ('dailychannelid', 'TEXT', False, False),
+                ('dailycanpost', 'BOOLEAN', False, False),
+                ('dailylatestmessageid', 'TEXT', False, False),
+                ('usepagination', 'BOOLEAN', False, False),
+                ('prefix', 'TEXT', False, False)
+            ])
+            if success_serversettings:
+                print('[init_db] DB initialization succeeded')
+
+
+            else:
+                print('[init_db] DB initialization failed upon creating the table \'serversettings\'.')
         else:
-            print('[init_db] DB initialization failed')
+            print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
     else:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
+        print('[init_db] DB initialization failed upon creating the table \'settings\'.')
 
 
 def db_update_schema_v_1_2_2_0():
