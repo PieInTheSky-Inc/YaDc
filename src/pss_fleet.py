@@ -62,7 +62,7 @@ FLEET_SHEET_COLUMN_TYPES = [
 def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
     division_design_id = fleet_info['DivisionDesignId']
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    fleet_description = fleet_info['AllianceDescription']
+    fleet_description = fleet_info['AllianceDescription'].strip()
     member_count = int(fleet_info['NumberOfMembers'])
     min_trophy_required = fleet_info['MinTrophyRequired']
     requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
@@ -75,9 +75,10 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
         fleet_type = 'Public'
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
 
-    lines = [f'**{fleet_name}**']
-    lines.append(f'```{fleet_description}')
-    lines.append(settings.EMPTY_LINE)
+    lines = [f'**```{fleet_name}```**```']
+    if fleet_description:
+        lines.append(f'{fleet_description}')
+        lines.append(settings.EMPTY_LINE)
     lines.append(f'Min trophies - {min_trophy_required}')
     lines.append(f'Members - {member_count}')
     lines.append(f'Trophies - {util.get_reduced_number_compact(trophies)}')
