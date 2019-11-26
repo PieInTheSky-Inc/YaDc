@@ -1264,7 +1264,7 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 @cmd_settings_set.command(brief='Set auto-daily', name='autodaily', aliases=['daily'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel):
+async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
@@ -1276,13 +1276,15 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
       /settings set daily [text_channel_mention]
 
     Parameters:
-      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Mandatory.
+      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will set the current channel.
 
     Examples:
       /settings set autodaily #announcements - Sets the channel #announcements to receive the /daily message once a day.
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
+            if not text_channel:
+                text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
