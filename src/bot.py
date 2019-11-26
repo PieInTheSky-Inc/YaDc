@@ -261,13 +261,14 @@ async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get crafting recipes', name='upgrade', aliases=['upg'])
+@bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_upgrade(ctx: discord.ext.commands.Context, *, item_name: str):
+async def cmd_craft(ctx: discord.ext.commands.Context, *, item_name: str):
     """
     Get the items a specified item can be crafted into.
 
     Usage:
+      /craft [item_name]
       /upgrade [item_name]
       /upg [item_name]
 
@@ -275,7 +276,7 @@ async def cmd_upgrade(ctx: discord.ext.commands.Context, *, item_name: str):
       item_name: (Part of) the name of an item to be upgraded. Mandatory.
 
     Examples:
-      /upgrade large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
+      /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
 
     Notes:
       This command will only print crafting costs for the item with the best matching item name.
