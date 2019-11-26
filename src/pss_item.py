@@ -375,13 +375,15 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_design_data = __item_designs_cache.get_data_dict3()
+    item_ids = _get_item_design_ids_from_name(item_name)
     item_infos = _get_item_infos(item_name)
 
-    if not item_infos:
+    if not item_ids:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
-        item_name = item_infos[0][ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        item_infos = _get_upgrades_for(item_infos[0][ITEM_DESIGN_KEY_NAME], item_design_data)
+        item_infos = []
+        for item_id in item_ids:
+            item_infos.extend(_get_upgrades_for(item_id, item_design_data))
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
 
         if as_embed:
