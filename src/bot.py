@@ -1272,13 +1272,14 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
     This command can only be used on Discord servers/guilds.
 
     Usage:
-      /settings set autodaily [text_channel_mention]
-      /settings set daily [text_channel_mention]
+      /settings set autodaily <text_channel_mention>
+      /settings set daily <text_channel_mention>
 
     Parameters:
       text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will set the current channel.
 
     Examples:
+      /settings set autodaily - Sets the current channel to receive the /daily message once a day.
       /settings set autodaily #announcements - Sets the channel #announcements to receive the /daily message once a day.
     """
     if util.is_guild_channel(ctx.channel):
