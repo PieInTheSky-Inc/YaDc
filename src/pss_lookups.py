@@ -76,6 +76,7 @@ EQUIPMENT_SLOTS_LOOKUP = {
     'helm': 'EquipmentHead',
     'helmet': 'EquipmentHead',
     'body': 'EquipmentBody',
+    'chest': 'EquipmentBody',
     'shirt': 'EquipmentBody',
     'armor': 'EquipmentBody',
     'leg': 'EquipmentLeg',
