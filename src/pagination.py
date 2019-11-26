@@ -19,8 +19,11 @@ class Paginator():
         self.__timeout = timeout
 
         if ctx.channel.type == discord.ChannelType.text and ctx.guild and ctx.guild.id:
-            guild_id = ctx.guild.id
-            self.__use_emojis = server_settings.db_get_use_pagination(guild_id)
+            bot_permissions = ctx.me.permissions_in(ctx.channel)
+            if bot_permissions.add_reactions:
+                self.__use_emojis = server_settings.db_get_use_pagination(ctx.guild.id)
+            else:
+                self.__use_emojis = False
         else:
             self.__use_emojis = True
 
