@@ -1,19 +1,19 @@
-# Pixel Starships Discord Bot
+# Yet another Dolores Clone
 
-This is a Discord Bot for Pixel Starships, targeted for hosting on Heroku
+This is a Discord Bot for Pixel Starships, targeted for hosting on Heroku.
 
 ## 1. Setup for Hosting on Heroku
 
 1. Create a Heroku account and go to the [dashboard](https://dashboard.heroku.com)
 2. Fork this repository to your own Github account
-3. Under overview, choose "Configure Dynos"
-   Enable the option where it says `worker: python src/bot.py`.
-4. Under the deploy option, connect to your Github account, and select this repository.
+3. Under the deploy option, connect to your Github account, and select this repository.
    Select the button for automatic deploys.
-5. Under settings, choose "Reveal Config Vars".
+4. Under settings, choose "Reveal Config Vars".
    Enter `DISCORD_BOT_TOKEN` as the variable name.
    Enter the value from the bot token retrieved from the
    [Discord developer page](https://discordapp.com/developers/applications)
+5. Under overview, choose "Configure Dynos"
+   Enable the option where it says `worker: python src/bot.py`.
 
 ## 2. Self-Hosted Setup
 
