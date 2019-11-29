@@ -12,7 +12,7 @@ This is a Discord Bot for Pixel Starships, targeted for hosting on Heroku.
    Enter `DISCORD_BOT_TOKEN` as the variable name.
    Enter the value from the bot token retrieved from the
    [Discord developer page](https://discordapp.com/developers/applications)
-5. Under overview, choose "Configure Dynos"
+5. Under Resources,
    Enable the option where it says `worker: python src/bot.py`.
 
 ## 2. Self-Hosted Setup
