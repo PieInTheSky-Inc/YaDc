@@ -20,6 +20,7 @@ import utility as util
 # ---------- Constants ----------
 
 SEARCH_FLEETS_BASE_PATH = f'AllianceService/SearchAlliances?accessToken={settings.GPAT}&skip=0&take=100&name='
+GET_ALLIANCE_BASE_PATH = f'AllianceService/GetAlliance?accessToken={settings.GPAT}&allianceId='
 FLEET_KEY_NAME = 'AllianceId'
 FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
 
@@ -60,11 +61,14 @@ FLEET_SHEET_COLUMN_TYPES = [
 # ---------- Helper functions ----------
 
 def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
+    fleet_info = _get_fleet_info_by_id(fleet_info[FLEET_KEY_NAME])
+
     division_design_id = fleet_info['DivisionDesignId']
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_description = fleet_info['AllianceDescription'].strip()
     member_count = int(fleet_info['NumberOfMembers'])
     min_trophy_required = fleet_info['MinTrophyRequired']
+    ranking = util.get_ranking(fleet_info['Ranking'])
     requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
     stars = int(fleet_info['Score'])
     trophies = sum([int(user_info['Trophy']) for user_info in fleet_users_infos.values()])
@@ -77,8 +81,8 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
 
     lines = [f'**```{fleet_name}```**```']
     if fleet_description:
-        lines.append(f'{fleet_description}')
-        lines.append(settings.EMPTY_LINE)
+        lines.append(f'{fleet_description}``````')
+    lines.append(f'Ranking - {ranking}')
     lines.append(f'Min trophies - {min_trophy_required}')
     lines.append(f'Members - {member_count}')
     lines.append(f'Trophies - {util.get_reduced_number_compact(trophies)}')
@@ -93,7 +97,7 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
 
 
 def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
-    fleet_infos = _get_fleet_infos(fleet_name)
+    fleet_infos = _get_fleet_infos_by_name(fleet_name)
     if exact:
         for fleet_info in fleet_infos:
             if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] == fleet_name:
@@ -156,7 +160,7 @@ def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
 def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
 
-    fleet_infos = _get_fleet_infos(fleet_name)
+    fleet_infos = _get_fleet_infos_by_name(fleet_name)
     fleet_ids = sorted([int(fleet_id) for fleet_id in fleet_infos.keys() if fleet_id])
     fleet_ids = [str(fleet_id) for fleet_id in fleet_ids]
     fleet_infos = [fleet_info for fleet_id, fleet_info in fleet_infos.items() if fleet_id in fleet_ids]
@@ -177,7 +181,14 @@ def get_fleet_search_details(fleet_info: dict) -> str:
     return result
 
 
-def _get_fleet_infos(fleet_name: str) -> dict:
+def _get_fleet_info_by_id(fleet_id: str) -> dict:
+    path = f'{GET_ALLIANCE_BASE_PATH}{fleet_id}'
+    fleet_data_raw = core.get_data_from_path(path)
+    fleet_info = core.xmltree_to_dict3(fleet_data_raw)
+    return fleet_info
+
+
+def _get_fleet_infos_by_name(fleet_name: str) -> dict:
     path = f'{SEARCH_FLEETS_BASE_PATH}{util.url_escape(fleet_name)}'
     fleet_data_raw = core.get_data_from_path(path)
     fleet_infos = core.xmltree_to_dict3(fleet_data_raw)
