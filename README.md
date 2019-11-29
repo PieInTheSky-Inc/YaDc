@@ -1,4 +1,4 @@
-# Yet another Dolores Clone
+# Yet another Dolores clone
 
 This is a Discord Bot for Pixel Starships, targeted for hosting on Heroku.
 
