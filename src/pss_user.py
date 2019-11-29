@@ -8,6 +8,7 @@ import urllib.parse
 import emojis
 import pss_assert
 import pss_core as core
+import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_ship as ship
 import settings
@@ -39,8 +40,8 @@ def get_user_details_by_info(user_info: dict) -> list:
         if key != user_id:
             ship_info = inspect_ship_info[key]
 
+    fleet_id = user_info['AllianceId']
 
-    alliance_id = user_info['AllianceId']
     created_on_date = util.parse_pss_datetime(user_info['CreationDate'])
     crew_donated = user_info['CrewDonated']
     crew_received = user_info['CrewReceived']
@@ -58,15 +59,14 @@ def get_user_details_by_info(user_info: dict) -> list:
     user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
     user_type = user_info['UserType']
 
-    has_fleet = alliance_id != '0'
-    has_division = 'AllianceQualifyDivisionDesignId' in user_info.keys() and user_info['AllianceQualifyDivisionDesignId'] != '0'
-    show_stars = (has_fleet and has_division) or stars != '0'
+    has_fleet = fleet_id != '0'
 
     if has_fleet:
-        division_design_id = user_info['AllianceQualifyDivisionDesignId']
+        fleet_info = fleet._get_fleet_info_by_id(fleet_id)
+        division_design_id = fleet_info['DivisionDesignId']
         fleet_join_date = util.parse_pss_datetime(user_info['AllianceJoinDate'])
         fleet_joined_ago = util.get_formatted_timedelta(fleet_join_date - utc_now)
-        fleet_name = user_info['AllianceName']
+        fleet_name = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, user_info['AllianceMembership'], user_info['AllianceMembership'])
         fleet_name_and_rank = f'{fleet_name} ({fleet_rank})'
         joined = f'{util.format_excel_datetime(fleet_join_date)} ({fleet_joined_ago})'
@@ -86,8 +86,6 @@ def get_user_details_by_info(user_info: dict) -> list:
     logged_in_ago = util.get_formatted_timedelta(logged_in_date - utc_now)
     logged_in = f'{util.format_excel_datetime(logged_in_date)} ({logged_in_ago})'
     pvp_win_rate = _calculate_win_rate(pvp_wins, pvp_losses, pvp_draws)
-    if division == '-':
-        stars = '-'
     status = lookups.get_lookup_value_or_default(lookups.USER_STATUS, ship_status, default=ship_status)
     user_type = lookups.get_lookup_value_or_default(lookups.USER_TYPE, user_type, user_type)
 
@@ -101,7 +99,7 @@ def get_user_details_by_info(user_info: dict) -> list:
     lines.append(f'Highest trophies: {highest_trophies}')
     if has_fleet:
         lines.append(f'Division: {division}')
-    if show_stars:
+    if stars != '0':
         lines.append(f'Stars: {stars}')
     if has_fleet:
         lines.append(f'Crew donated: {crew_donated}')
