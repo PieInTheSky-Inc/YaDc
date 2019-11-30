@@ -110,7 +110,8 @@ def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
 
 def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: dict, fleet_data: dict) -> list:
     fleet_id = fleet_info[FLEET_KEY_NAME]
-    fleet_info['Score'] = fleet_data[fleet_id]['Score']
+    if fleet_id in fleet_data.keys():
+        fleet_info['Score'] = fleet_data[fleet_id]['Score']
     return _get_fleet_details_by_info(fleet_info, fleet_users_infos)
 
 
