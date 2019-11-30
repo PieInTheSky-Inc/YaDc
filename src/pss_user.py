@@ -115,6 +115,12 @@ def get_user_details_by_info(user_info: dict) -> list:
     return lines
 
 
+def _get_user_details_from_tournament_data(user_info: dict, user_data: dict) -> list:
+    user_id = user_info[USER_KEY_NAME]
+    user_info['AllianceScore'] = user_data[user_id]['AllianceScore']
+    return get_user_details_by_info(user_info)
+
+
 def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
     battles = wins + losses + draws
     if battles > 0:

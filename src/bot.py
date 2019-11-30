@@ -19,6 +19,7 @@ import sys
 import time
 
 import emojis
+import gdrive
 import pagination
 import pss_assert
 import pss_core as core
@@ -53,6 +54,18 @@ PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
 
 ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
+
+tournament_data = gdrive.TourneyData(
+    settings.GDRIVE_PROJECT_ID,
+    settings.GDRIVE_PRIVATE_KEY_ID,
+    settings.GDRIVE_PRIVATE_KEY,
+    settings.GDRIVE_CLIENT_EMAIL,
+    settings.GDRIVE_CLIENT_ID,
+    settings.GDRIVE_SCOPES,
+    settings.GDRIVE_FOLDER_ID,
+    settings.GDRIVE_SERVICE_ACCOUNT_FILE,
+    settings.GDRIVE_SETTINGS_FILE
+)
 
 
 # ----- Bot Setup -------------------------------------------------------------
@@ -475,9 +488,40 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
     await util.post_output(ctx, output)
 
 
+@bot.group(name='test1')
+async def cmd_test1(ctx, *, args: str = None):
+    if ctx.invoked_subcommand is None:
+        if args == 'test2':
+            cmd = bot.get_command(f'test1 test2')
+            await ctx.invoke(cmd)
+        elif args and args.startswith('test2 '):
+            cmd = bot.get_command(f'test1 test2')
+            await ctx.invoke(cmd, args=str(args[6:]))
+        else:
+            await ctx.send(f'Executed command: `test1` with args `{args}`')
+
+
+@cmd_test1.group(name='test2')
+async def cmd_test1_test2(ctx, *, args: str = None):
+    if ctx.invoked_subcommand is None:
+        if args == 'past':
+            cmd = bot.get_command(f'test1 test2 past')
+            await ctx.invoke(cmd)
+        elif args and args.startswith('past '):
+            cmd = bot.get_command(f'test1 test2 past')
+            await ctx.invoke(cmd, args=str(args[6:]))
+        else:
+            await ctx.send(f'Executed command: `test1 test2` with args `{args}`')
+
+
+@cmd_test1_test2.command(name='past')
+async def cmd_test1_test2_past(ctx, *, args: str = None):
+    await ctx.send(f'Executed command: `test1 test2 past` with args `{args}`')
+
+
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
+async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str):
     """
     Get stars earned by each fleet during the current final tournament week.
 
@@ -496,15 +540,30 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
       This command does not work outside of the tournament finals week.
     """
     if ctx.invoked_subcommand is None:
-        if tourney.is_tourney_running():
-            async with ctx.typing():
-                output, _ = pss_top.get_division_stars(division=division)
-            await util.post_output(ctx, output)
-        else:
-            await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
+        called_subcommand = False
+        subcommands = ['fleet']
+        for subcommand in subcommands:
+            subcommand_length = len(subcommand)
+            if division == subcommand:
+                called_subcommand = True
+                cmd = bot.get_command(f'stars {subcommand}')
+                await ctx.invoke(cmd)
+            elif division and division.startswith(f'{subcommand} '):
+                called_subcommand = True
+                cmd = bot.get_command(f'stars {subcommand}')
+                args = str(division[subcommand_length:]).strip()
+                await ctx.invoke(cmd, fleet_name=args)
+
+        if not called_subcommand:
+            if tourney.is_tourney_running():
+                async with ctx.typing():
+                    output, _ = pss_top.get_division_stars(division=division)
+                await util.post_output(ctx, output)
+            else:
+                await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
 
 
-@cmd_stars.command(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
+@cmd_stars.group(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
@@ -523,24 +582,26 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
     Notes:
       This command does not work outside of the tournament finals week.
     """
-    if tourney.is_tourney_running():
-        async with ctx.typing():
-            fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+    async with ctx.typing():
+        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
 
-        if fleet_infos:
-            if len(fleet_infos) == 1:
-                fleet_info = fleet_infos[0]
-            else:
-                paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
-                _, fleet_info = await paginator.wait_for_option_selection()
-
-            if fleet_info:
-                output = fleet.get_fleet_users_stars_from_info(fleet_info)
-                await util.post_output(ctx, output)
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
         else:
-            await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
+            _, fleet_info = await paginator.wait_for_option_selection()
     else:
-        await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
+        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
+
+    if fleet_info:
+        async with ctx.typing():
+            if tourney.is_tourney_running():
+                output = fleet.get_fleet_users_stars_from_info(fleet_info)
+            else:
+                (fleet_data, user_data) = tournament_data.get_data()
+                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data)
+            await util.post_output(ctx, output)
 
 
 @bot.command(brief='Show the dailies', name='daily')

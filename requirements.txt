@@ -1,5 +1,6 @@
 asyncio
 discord.py==1.2.5
+google-auth
 holidays
 jellyfish
 numpy
@@ -7,6 +8,7 @@ openpyxl
 pandas
 pip
 psycopg2
+PyDrive
 python-dateutil
 pytz
 requests

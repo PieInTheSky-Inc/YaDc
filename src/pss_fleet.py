@@ -108,6 +108,12 @@ def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
         return None
 
 
+def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: dict, fleet_data: dict) -> list:
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    fleet_info['Score'] = fleet_data[fleet_id]['Score']
+    return _get_fleet_details_by_info(fleet_info, fleet_users_infos)
+
+
 def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime) -> list:
     result = [FLEET_SHEET_COLUMN_NAMES]
     for user_info in fleet_users_infos.values():
@@ -229,6 +235,26 @@ def get_fleet_users_stars_from_info(fleet_info: dict) -> list:
     else:
         lines = [f'The fleet `{fleet_name}` does not compete in the current tournament finals.']
     return lines
+
+
+def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dict, user_data: dict) -> list:
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    if fleet_id in fleet_data.keys():
+        user_infos = [user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id]
+        fleet_users_infos = sorted(user_infos, key=lambda user_info: int(user_info['AllianceScore']), reverse=True)
+        full_star_count = sum([int(user_info['AllianceScore']) for user_info in fleet_users_infos])
+
+        lines = [f'**{fleet_name} member stars ({full_star_count}{emojis.star})**']
+        for i, user_info in enumerate(fleet_users_infos):
+            user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+            stars = user_info['AllianceScore']
+            trophies = user_info['Trophy']
+            lines.append(f'**{i + 1}.** {stars}{emojis.star} {user_name} ({trophies}{emojis.trophy})')
+    else:
+        lines = [f'The fleet `{fleet_name}` did not compete in the last tournament finals.']
+    return lines
+
 
 
 

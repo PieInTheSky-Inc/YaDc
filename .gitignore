@@ -6,6 +6,8 @@ items-*.txt
 
 # files created at runtime
 launch.json
+client_secrets.json
+settings.yaml
 *.xml
 *.xlsx
 
