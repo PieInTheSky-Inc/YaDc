@@ -362,19 +362,24 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> l
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**There are {len(prestige_from_data)} ways to prestige {found_char_name} into:**']
+    lines = [f'**{found_char_name}** can prestige into:']
 
-    prestige_infos = []
+    prestige_targets = {}
     for value in prestige_from_data.values():
         char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
         char_info_to_name = char_data[value['ToCharacterDesignId']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        prestige_infos.append((char_info_2_name, char_info_to_name))
+
+        if prestige_targets.get(char_info_to_name) is not None:
+            prestige_targets[char_info_to_name].append(char_info_2_name)
+        else:
+            prestige_targets[char_info_to_name] = [char_info_2_name]
 
     body_lines = []
-    if prestige_infos:
-        prestige_infos = util.sort_tuples_by(prestige_infos, [(1, False), (0, False)])
-        for (char_info_2_name, char_info_to_name) in prestige_infos:
-            body_lines.append(f'+ {char_info_2_name} = {char_info_to_name}')
+    for prestige_target, prestige_partners in vars(prestige_targets).iteritems():
+        body_lines.append('')
+        body_lines.append(f'**{prestige_target}** with:')
+        body_lines.append(', '.join(prestige_partners))
+        body_lines.append('')
 
     if body_lines:
         lines.extend(body_lines)
