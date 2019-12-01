@@ -482,6 +482,12 @@ def get_month_from_short_name(month_short_name: str) -> int:
         return None
 
 
+def get_historic_data_note(dt: datetime) -> str:
+    timestamp = get_formatted_datetime(dt)
+    result = f'```This is historic data from: {timestamp}```'
+    return result
+
+
 
 
 

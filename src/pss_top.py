@@ -139,8 +139,7 @@ def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_
         if result:
             result = result[:-1]
             if retrieved_date is not None:
-                timestamp = util.get_formatted_datetime(retrieved_date)
-                result.append(f'```This is historic data. The data has been obtained at: {timestamp}```')
+                result.append(util.get_historic_data_note(retrieved_date))
         return result, True
     else:
         return [], False
@@ -164,40 +163,3 @@ def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list
         position = i + 1
         lines.append(f'**{position:d}.** {stars} {emojis.star} `{fleet_name}`{trophy_str}')
     return lines
-
-
-def get_division_stars_from_tournament_data(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
-    if not tourney.is_tourney_running():
-        return [f'This command does only work during tournament finals. Use the command `/tournament` to learn when the next one is starting.'], False
-
-    if division:
-        pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
-        if division == '-':
-            division = None
-    else:
-        division = None
-
-    data = core.get_data_from_path(STARS_BASE_PATH)
-    fleet_infos = core.xmltree_to_dict3(data)
-
-    divisions = {}
-    if division:
-        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID[division.upper()]
-        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
-        pass
-    else:
-        for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
-            if division_design_id != '0':
-                division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
-                divisions[division_letter] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
-
-    if divisions:
-        result = []
-        for division_letter, fleet_infos in divisions.items():
-            result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
-            result.append(settings.EMPTY_LINE)
-        if result:
-            result = result[:-1]
-        return result, True
-    else:
-        return [], False

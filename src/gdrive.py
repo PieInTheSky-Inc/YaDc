@@ -249,7 +249,7 @@ class TourneyData():
         users_dict = dict(users)
         for entry in data:
             result[entry[0]] = {
-                'UserId': entry[0],
+                'Id': entry[0],
                 'AllianceId': entry[1],
                 'Trophy': entry[2],
                 'AllianceScore': entry[3],

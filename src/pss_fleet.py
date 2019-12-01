@@ -242,35 +242,26 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info['DivisionDesignId']]
 
-    ranked_user_infos = {}
-    for user_info in fleet_users_infos:
-        stars = user_info['AllianceScore']
-        if stars in ranked_user_infos.keys():
-            ranked_user_infos[stars].append(user_info)
-        else:
-            ranked_user_infos[stars] = [user_info]
+    fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
 
-    ranked_user_infos = sorted([(stars, user_infos) for stars, user_infos in ranked_user_infos.items()], key=lambda info: int(info[0]), reverse=True)
-
-    users_processed = 0
     lines = [f'**{fleet_name} member stars (division {division})**']
-    for (stars, user_infos) in ranked_user_infos:
-        user_infos = sorted(user_infos, key=lambda user_info: user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
-        user_names = '`, `'.join([user_info[user.USER_DESCRIPTION_PROPERTY_NAME] for user_info in user_infos])
-        lines.append(f'**{users_processed + 1}.** {stars} {emojis.star} `{user_names}`')
-        users_processed += len(user_infos)
+    for i, user_info in enumerate(fleet_users_infos):
+        stars = user_info['AllianceScore']
+        user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+        lines.append(f'**{i + 1}.** {stars} {emojis.star} `{user_name}`')
+
     if retrieved_date is not None:
-        timestamp = util.get_formatted_datetime(retrieved_date)
-        lines.append(f'```This is historic data. The data has been obtained at: {timestamp}```')
+        lines.append(util.get_historic_data_note(retrieved_date))
+
     return lines
 
 
 def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dict, user_data: dict, retrieved_date: datetime) -> list:
     fleet_id = fleet_info[FLEET_KEY_NAME]
-    fleet_users_infos = []
+    fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
         fleet_info['DivisionDesignId'] = fleet_data[fleet_id]['DivisionDesignId']
-        fleet_users_infos = [user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id]
+        fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
     return get_fleet_users_stars_from_info(fleet_info, fleet_users_infos, retrieved_date=retrieved_date)
 
 
