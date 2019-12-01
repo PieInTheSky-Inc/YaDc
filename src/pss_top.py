@@ -162,7 +162,7 @@ def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list
             trophy_str = ''
         stars = fleet_info['Score']
         position = i + 1
-        lines.append(f'**{position:d}.** {stars} {emojis.star} `{fleet_name}` {trophy_str}')
+        lines.append(f'**{position:d}.** {stars} {emojis.star} `{fleet_name}`{trophy_str}')
     return lines
 
 
