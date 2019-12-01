@@ -146,7 +146,7 @@ async def post_output_to_channel(text_channel: discord.TextChannel, output: list
                 await text_channel.send(post)
 
 
-async def post_output_with_file(ctx, output: list, file_path: str, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+async def post_output_with_files(ctx, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
     if output:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
@@ -155,11 +155,12 @@ async def post_output_with_file(ctx, output: list, file_path: str, maximum_chara
 
         posts = create_posts_from_lines(output, maximum_characters)
         last_post_index = len(posts) - 1
+        files = [discord.File(file_path) for file_path in file_paths]
         if last_post_index >= 0:
             for i, post in enumerate(posts):
                 if post:
                     if i == last_post_index:
-                        await ctx.send(content=post, file=discord.File(file_path))
+                        await ctx.send(content=post, files=files)
                     else:
                         await ctx.send(content=post)
 

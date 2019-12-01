@@ -253,6 +253,9 @@ class TourneyData():
                 'AllianceId': entry[1],
                 'Trophy': entry[2],
                 'AllianceScore': entry[3],
+                'AllianceMembership': entry[4],
+                'AllianceJoinDate': entry[5],
+                'LastLoginDate': entry[6],
                 'Name': users_dict[entry[0]]
             }
         return result

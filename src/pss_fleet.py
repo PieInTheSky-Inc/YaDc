@@ -10,6 +10,7 @@ import emojis
 import excel
 import pss_assert
 import pss_core as core
+import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_tournament as tourney
 import pss_user as user
@@ -99,7 +100,7 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
 def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
     fleet_infos = _get_fleet_infos_by_name(fleet_name)
     if exact:
-        for fleet_info in fleet_infos:
+        for fleet_info in fleet_infos.values():
             if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] == fleet_name:
                 return fleet_info
     if fleet_infos:
@@ -115,14 +116,17 @@ def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: di
     return _get_fleet_details_by_info(fleet_info, fleet_users_infos)
 
 
-def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime) -> list:
+def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None) -> list:
     result = [FLEET_SHEET_COLUMN_NAMES]
+
     for user_info in fleet_users_infos.values():
         logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate'])
         joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate'])
+        if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
+            fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
             util.format_excel_datetime(retrieval_date),
-            user_info['AllianceName'],
+            fleet_name,
             user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
             user_info['AllianceMembership'],
             util.convert_pss_timestamp_to_excel(user_info['LastLoginDate']),
@@ -136,7 +140,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime) ->
     return result
 
 
-def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
+def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_data: dict = None, data_date: datetime = None) -> (list, list):
     """Returns a list of lines for the post, as well as the path to the spreadsheet created"""
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_id = fleet_info[FLEET_KEY_NAME]
@@ -149,9 +153,18 @@ def get_full_fleet_info_as_text(fleet_info: dict) -> (list, str):
 
     post_content = _get_fleet_details_by_info(fleet_info, fleet_users_infos)
     fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieval_date)
-    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date, FLEET_SHEET_COLUMN_TYPES)
+    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date, FLEET_SHEET_COLUMN_TYPES)
+    file_paths = [fleet_sheet_path_current]
 
-    return post_content, fleet_sheet_path
+    if fleet_data and fleet_id in fleet_data.keys() and user_data and data_date:
+        fleet_info = fleet_data[fleet_id]
+        fleet_name = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
+        fleet_users_infos = dict({user_id: user_info for user_id, user_info in user_data.items() if user_info['AllianceId'] == fleet_id})
+        fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, data_date, fleet_name)
+        fleet_sheet_path_past = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, data_date, FLEET_SHEET_COLUMN_TYPES)
+        file_paths.append(fleet_sheet_path_past)
+
+    return post_content, file_paths
 
 
 

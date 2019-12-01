@@ -1034,9 +1034,12 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            output, file_path = fleet.get_full_fleet_info_as_text(fleet_info)
-            await util.post_output_with_file(ctx, output, file_path)
-            os.remove(file_path)
+            async with ctx.typing():
+                (fleet_data, user_data, data_date) = tournament_data.get_data()
+                output, file_paths = fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
+            await util.post_output_with_files(ctx, output, file_paths)
+            for file_path in file_paths:
+                os.remove(file_path)
     else:
         await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
