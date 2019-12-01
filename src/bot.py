@@ -521,7 +521,7 @@ async def cmd_test1_test2_past(ctx, *, args: str = None):
 
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str):
+async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     """
     Get stars earned by each fleet during the current final tournament week.
 
@@ -558,9 +558,11 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str):
             if tourney.is_tourney_running():
                 async with ctx.typing():
                     output, _ = pss_top.get_division_stars(division=division)
-                await util.post_output(ctx, output)
             else:
-                await ctx.send(f'This command cannot be used, when the tournament finals are not running.')
+                async with ctx.typing():
+                    (fleet_data, _, data_date) = tournament_data.get_data()
+                    output, _ = pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
+            await util.post_output(ctx, output)
 
 
 @cmd_stars.group(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
@@ -580,14 +582,14 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
       /stars fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection, prints the star count for every member of the fleet, if it competes in the current tournament finals.
 
     Notes:
-      This command does not work outside of the tournament finals week.
+      If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
     async with ctx.typing():
         is_tourney_running = tourney.is_tourney_running()
         (fleet_data, user_data, data_date) = tournament_data.get_data()
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
         if is_tourney_running:
-            fleet_info = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
         else:
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in fleet_data.keys()]
 

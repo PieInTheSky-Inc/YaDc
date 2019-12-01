@@ -168,7 +168,7 @@ class TourneyData():
 
     def __read_data(self) -> (dict, dict):
         self.__WRITE_LOCK.acquire()
-        result = (self.__fleet_data, self.__user_data, self.__data_date)
+        result = (dict(self.__fleet_data), dict(self.__user_data), self.__data_date)
         self.__WRITE_LOCK.release()
         return result
 
@@ -225,6 +225,7 @@ class TourneyData():
         for i, entry in enumerate(fleet_data):
             result[entry[0]] = {
                 'AllianceId': entry[0],
+                'AllianceName': entry[1],
                 'Score': entry[2]
             }
             if len(entry) == 4:
