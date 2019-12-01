@@ -161,7 +161,7 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
         fleet_name = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_users_infos = dict({user_id: user_info for user_id, user_info in user_data.items() if user_info['AllianceId'] == fleet_id})
         fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, data_date, fleet_name)
-        file_name = f'{fleet_name}_tournament-results_{data_date.year}-{util.get_month_short_name(data_date).lower()}.xlsx'
+        file_name = f'{fleet_name}_tournament-{data_date.year}-{util.get_month_short_name(data_date).lower()}.xlsx'
         fleet_sheet_path_past = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, data_date, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
         file_paths.append(fleet_sheet_path_past)
 
