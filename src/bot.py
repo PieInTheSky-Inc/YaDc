@@ -583,7 +583,13 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
       This command does not work outside of the tournament finals week.
     """
     async with ctx.typing():
+        is_tourney_running = tourney.is_tourney_running()
+        (fleet_data, user_data, data_date) = tournament_data.get_data()
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+        if is_tourney_running:
+            fleet_info = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
+        else:
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in fleet_data.keys()]
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -591,17 +597,20 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         else:
             paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
             _, fleet_info = await paginator.wait_for_option_selection()
-    else:
-        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
-    if fleet_info:
-        async with ctx.typing():
-            if tourney.is_tourney_running():
-                output = fleet.get_fleet_users_stars_from_info(fleet_info)
-            else:
-                (fleet_data, user_data) = tournament_data.get_data()
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data)
-            await util.post_output(ctx, output)
+        if fleet_info:
+            async with ctx.typing():
+                if tourney.is_tourney_running():
+                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info).values()
+                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
+                else:
+                    output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
+                await util.post_output(ctx, output)
+    else:
+        if is_tourney_running:
+            await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+        else:
+            await ctx.send(f'Could not find a fleet named `{fleet_name}` that participated in the last tournament.')
 
 
 @bot.command(brief='Show the dailies', name='daily')

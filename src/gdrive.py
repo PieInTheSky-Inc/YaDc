@@ -33,6 +33,7 @@ class TourneyData():
         self.__retrieved_date: datetime = None
         self.__fleet_data: dict = None
         self.__user_data: dict = None
+        self.__data_date: dict = None
 
         self.__initialized = False
         self.__initialize(project_id, private_key_id, private_key, client_email, client_id)
@@ -52,6 +53,20 @@ class TourneyData():
         self.__add_reader()
         result = self.__read_data()
         self.__remove_reader()
+        return result
+
+
+    def get_data_date(self) -> datetime:
+        self.__WRITE_LOCK.acquire()
+        result = self.__data_date
+        self.__WRITE_LOCK.release()
+        return result
+
+
+    def get_retrieved_date(self) -> datetime:
+        self.__WRITE_LOCK.acquire()
+        result = self.__retrieved_date
+        self.__WRITE_LOCK.release()
         return result
 
 
@@ -146,16 +161,14 @@ class TourneyData():
 
 
     def __is_data_outdated(self, utc_now: datetime) -> bool:
-        self.__WRITE_LOCK.acquire()
-        retrieved_date = self.__retrieved_date
-        self.__WRITE_LOCK.release()
-        result = retrieved_date is None or (retrieved_date < utc_now and (retrieved_date.month < utc_now.month or retrieved_date.year < utc_now.year))
+        data_date = self.get_data_date()
+        result = data_date is None or (data_date < utc_now and (data_date.month < utc_now.month or data_date.year < utc_now.year))
         return result
 
 
     def __read_data(self) -> (dict, dict):
         self.__WRITE_LOCK.acquire()
-        result = (self.__fleet_data, self.__user_data)
+        result = (self.__fleet_data, self.__user_data, self.__data_date)
         self.__WRITE_LOCK.release()
         return result
 
@@ -177,6 +190,7 @@ class TourneyData():
         self.__ensure_settings_file_exists()
 
         utc_now = util.get_utcnow()
+        data_date = TourneyData.__fix_filename_datetime(utc_now)
         g_file_name = TourneyData.__get_latest_file_name(utc_now)
         g_file = self.__get_first_file(g_file_name)
         raw_data = g_file.GetContentString()
@@ -190,17 +204,18 @@ class TourneyData():
             can_write = self.__get_reader_count() == 0
             if not can_write:
                 time.sleep(random.random())
-            self.__write_data(new_fleet_data, new_user_data, utc_now)
+            self.__write_data(new_fleet_data, new_user_data, utc_now, data_date)
             self.__finish_write()
             return True
         return False
 
 
-    def __write_data(self, fleet_data: dict, user_data: dict, retrieved_date: datetime) -> None:
+    def __write_data(self, fleet_data: dict, user_data: dict, retrieved_date: datetime, data_date: datetime) -> None:
         self.__WRITE_LOCK.acquire()
         self.__fleet_data = fleet_data
         self.__user_data = user_data
         self.__retrieved_date = retrieved_date
+        self.__data_date = data_date
         self.__WRITE_LOCK.release()
 
 
@@ -244,7 +259,7 @@ class TourneyData():
 
     @staticmethod
     def __fix_filename_datetime(dt: datetime) -> datetime:
-        dt = datetime(dt.year, dt.month, 1)
+        dt = datetime(dt.year, dt.month, 1, tzinfo=timezone.utc)
         dt = dt - timedelta(minutes=1)
         return dt
 
