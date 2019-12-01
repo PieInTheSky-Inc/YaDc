@@ -246,9 +246,13 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
 
     lines = [f'**{fleet_name} member stars (division {division})**']
     for i, user_info in enumerate(fleet_users_infos):
+        if i == 65:
+            j = 5
         stars = user_info['AllianceScore']
         user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
-        lines.append(f'**{i + 1}.** {stars} {emojis.star} `{user_name}`')
+        if util.should_escape_entity_name(user_name):
+            user_name = f'`{user_name}`'
+        lines.append(f'**{i + 1}.** {stars} {emojis.star} {user_name}')
 
     if retrieved_date is not None:
         lines.append(util.get_historic_data_note(retrieved_date))

@@ -488,6 +488,11 @@ def get_historic_data_note(dt: datetime) -> str:
     return result
 
 
+def should_escape_entity_name(entity_name: str) -> bool:
+    result = entity_name != entity_name.strip() or any((c in entity_name) for c in ['_', '*'])
+    return result
+
+
 
 
 
