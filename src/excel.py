@@ -5,10 +5,13 @@ import settings
 import utility as util
 
 
-def create_xl_from_data(data: list, file_prefix: str, data_retrieval_date: datetime, column_formats: list) -> str:
+def create_xl_from_data(data: list, file_prefix: str, data_retrieval_date: datetime, column_formats: list, file_name: str = None) -> str:
     if data_retrieval_date is None:
         data_retrieval_date = util.get_utcnow()
-    save_to = get_file_name(file_prefix, data_retrieval_date)
+    if file_name:
+        save_to = file_name
+    else:
+        save_to = get_file_name(file_prefix, data_retrieval_date)
 
     wb = openpyxl.Workbook()
     ws = wb.active
