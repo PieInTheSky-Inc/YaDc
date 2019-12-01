@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import calendar
 import typing
 
 import emojis
@@ -117,6 +118,10 @@ GRID_TYPE_MASK_LOOKUP = {
     1: 'A',
     2: 'B'
 }
+
+
+MONTH_NAME_TO_NUMBER = dict({calendar.month_name[number]: number for number in range(1, 13)})
+MONTH_SHORT_NAME_TO_NUMBER = dict({calendar.month_abbr[number]: number for number in range(1, 13)})
 
 
 PROGRESSION_TYPES = {

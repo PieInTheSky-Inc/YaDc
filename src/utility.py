@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timedelta, timezone
+import calendar
 import discord
 import requests
 import jellyfish
@@ -455,6 +456,30 @@ def get_ranking(ranking: str) -> str:
         elif ranking.endswith('3'):
             result += 'rd'
     return result
+
+
+def get_month_name(dt: datetime) -> str:
+    result = calendar.month_name[dt.month]
+    return result
+
+
+def get_month_short_name(dt: datetime) -> str:
+    result = calendar.month_abbr[dt.month]
+    return result
+
+
+def get_month_from_name(month_name: str) -> int:
+    if month_name in lookups.MONTH_NAME_TO_NUMBER.keys():
+        return lookups.MONTH_NAME_TO_NUMBER[month_name]
+    else:
+        return None
+
+
+def get_month_from_short_name(month_short_name: str) -> int:
+    if month_short_name in lookups.MONTH_SHORT_NAME_TO_NUMBER.keys():
+        return lookups.MONTH_SHORT_NAME_TO_NUMBER[month_short_name]
+    else:
+        return None
 
 
 
