@@ -19,8 +19,13 @@ import utility as util
 
 class TourneyData():
     def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: list, folder_id: str, service_account_file_path: str, settings_file_path: str):
-        self._scopes: list = list(scopes)
+        self._client_email: str = client_email
+        self._client_id: str = client_id
         self._folder_id: str = folder_id
+        self._private_key: str = private_key
+        self._private_key_id: str = private_key_id
+        self._project_id: str = project_id
+        self._scopes: list = list(scopes)
         self._service_account_file_path: str = service_account_file_path
         self._settings_file_path: str = settings_file_path
 
@@ -36,7 +41,7 @@ class TourneyData():
         self.__data_date: dict = None
 
         self.__initialized = False
-        self.__initialize(project_id, private_key_id, private_key, client_email, client_id)
+        self.__initialize()
 
 
     def get_data(self) -> (dict, dict):
@@ -113,8 +118,8 @@ class TourneyData():
             print(f'Created settings yaml file at: {settings_file_path}')
 
 
-    def __ensure_settings_file_exists(self) -> None:
-        self.__create_service_account_settings_yaml(self._settings_file_path, self._service_account_file_path, self._scopes)
+    def __ensure_initialized(self) -> None:
+        self.__initialize()
 
 
     def __finish_write(self) -> None:
@@ -124,8 +129,6 @@ class TourneyData():
 
 
     def __get_first_file(self, file_name: str) -> pydrive.files.GoogleDriveFile:
-        self.__assert_initialized()
-        self.__ensure_settings_file_exists()
         file_list = self.__drive.ListFile({'q': f"'{self._folder_id}' in parents and title = '{file_name}'"}).GetList()
         for file_def in file_list:
             return file_def
@@ -146,23 +149,20 @@ class TourneyData():
         return result
 
 
-    def __initialize(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str):
-        self.__create_service_account_credential_json(project_id, private_key_id, private_key, client_email, client_id, self._service_account_file_path)
+    def __initialize(self):
+        self.__create_service_account_credential_json(self._project_id, self._private_key_id, self._private_key, self._client_email, self._client_id, self._service_account_file_path)
         self.__create_service_account_settings_yaml(self._settings_file_path, self._service_account_file_path, self._scopes)
         self.__gauth: pydrive.auth.GoogleAuth = pydrive.auth.GoogleAuth(settings_file=self._settings_file_path)
         credentials = pydrive.auth.ServiceAccountCredentials.from_json_keyfile_name(self._service_account_file_path, self._scopes)
         self.__gauth.credentials = credentials
         self.__drive: pydrive.drive.GoogleDrive = pydrive.drive.GoogleDrive(self.__gauth)
-        data = self.get_data()
-        self.__retrieved_date = util.get_utcnow()
-        self.__fleet_data = data[0]
-        self.__user_data = data[1]
+        self.__update_data(initializing=True)
         self.__initialized = True
 
 
     def __is_data_outdated(self, utc_now: datetime) -> bool:
-        data_date = self.get_data_date()
-        result = data_date is None or (data_date < utc_now and (data_date.month < utc_now.month or data_date.year < utc_now.year))
+        retrieved_date = self.get_retrieved_date()
+        result = retrieved_date is None or (retrieved_date < utc_now and (retrieved_date.month < utc_now.month or retrieved_date.year < utc_now.year))
         return result
 
 
@@ -185,9 +185,9 @@ class TourneyData():
         self.__WRITE_LOCK.release()
 
 
-    def __update_data(self) -> bool:
-        self.__assert_initialized()
-        self.__ensure_settings_file_exists()
+    def __update_data(self, initializing: bool = False) -> bool:
+        if not initializing:
+            self.__initialize()
 
         utc_now = util.get_utcnow()
         data_date = TourneyData.__fix_filename_datetime(utc_now)
