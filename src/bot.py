@@ -155,28 +155,29 @@ async def post_all_dailies():
 def fix_daily_channels():
     rows = server_settings.db_get_autodaily_settings(None, None)
     for row in rows:
-        can_post = False
-        guild_id = int(row[0])
-        channel_id = int(row[1])
-        text_channel = bot.get_channel(channel_id)
-        if text_channel != None:
-            guild = bot.get_guild(guild_id)
-            if guild != None:
-                guild_member = guild.get_member(bot.user.id)
-                if guild_member != None:
-                    permissions = text_channel.permissions_for(guild_member)
-                    if permissions != None and permissions.send_messages == True:
-                        print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
-                        can_post = True
+        if row[0]:
+            can_post = False
+            guild_id = int(row[0])
+            channel_id = int(row[1])
+            text_channel = bot.get_channel(channel_id)
+            if text_channel != None:
+                guild = bot.get_guild(guild_id)
+                if guild != None:
+                    guild_member = guild.get_member(bot.user.id)
+                    if guild_member != None:
+                        permissions = text_channel.permissions_for(guild_member)
+                        if permissions != None and permissions.send_messages == True:
+                            print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
+                            can_post = True
+                        else:
+                            print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
                     else:
-                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
+                        print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
                 else:
-                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
+                    print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
             else:
-                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
-        else:
-            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
-        daily.fix_daily_channel(guild_id, can_post)
+                print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
+            daily.fix_daily_channel(guild_id, can_post)
 
 
 # ----- General Bot Commands ----------------------------------------------------------
