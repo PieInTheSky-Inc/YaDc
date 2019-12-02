@@ -489,8 +489,21 @@ def get_historic_data_note(dt: datetime) -> str:
 
 
 def should_escape_entity_name(entity_name: str) -> bool:
-    result = entity_name != entity_name.strip() or any((c in entity_name) for c in ['_', '*'])
-    return result
+    if entity_name:
+        if entity_name != entity_name.strip():
+            return True
+        if '~~' in entity_name:
+            return True
+        for markdown in ['_', '*']:
+            if entity_name.startswith(markdown):
+                return True
+            if entity_name.endswith(markdown):
+                return True
+            if f'{markdown} ' in entity_name:
+                return True
+            if f' {markdown}' in entity_name:
+                return True
+    return False
 
 
 
