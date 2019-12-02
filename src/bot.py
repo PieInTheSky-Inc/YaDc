@@ -608,7 +608,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
                     output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
-                await util.post_output(ctx, output)
+            await util.post_output(ctx, output)
     else:
         if is_tourney_running:
             await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
