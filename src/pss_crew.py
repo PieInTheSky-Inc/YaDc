@@ -357,29 +357,26 @@ def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
 
 
 def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
-    # Format: '+ {id2} = {toid}
     char_data = __character_designs_cache.get_data_dict3()
     char_info_1 = _get_char_info(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-    lines = [f'**{found_char_name}** can prestige into:']
+    lines = [f'**{found_char_name} got {len(prestige_from_data)} ways to prestige into:**']
 
     prestige_targets = {}
     for value in prestige_from_data.values():
         char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
         char_info_to_name = char_data[value['ToCharacterDesignId']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
-        if prestige_targets.get(char_info_to_name) is not None:
-            prestige_targets[char_info_to_name].append(char_info_2_name)
-        else:
-            prestige_targets[char_info_to_name] = [char_info_2_name]
+        if char_info_to_name not in prestige_targets.keys():
+            prestige_targets[char_info_to_name] = []
+        prestige_targets[char_info_to_name].append(char_info_2_name)
 
     body_lines = []
-    for prestige_target, prestige_partners in vars(prestige_targets).iteritems():
-        body_lines.append('')
+    for prestige_target, prestige_partners in prestige_targets.items():
+        body_lines.append(settings.EMPTY_LINE)
         body_lines.append(f'**{prestige_target}** with:')
-        body_lines.append(', '.join(prestige_partners))
-        body_lines.append('')
+        body_lines.append(f'> {", ".join(prestige_partners)}')
 
     if body_lines:
         lines.extend(body_lines)
