@@ -362,7 +362,7 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> l
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     combination_count = len(prestige_from_data)
 
-    lines = [f'**{found_char_name}** has **{combination_count}** combinations to prestige into:']
+    lines = [f'**{found_char_name}** has **{combination_count}** prestige combinations:']
 
     prestige_targets = {}
     for value in prestige_from_data.values():
