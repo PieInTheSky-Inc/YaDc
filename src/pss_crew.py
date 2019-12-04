@@ -374,7 +374,7 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> l
 
     body_lines = []
     for prestige_target in sorted(list(prestige_targets.keys())):
-        prestige_partners = prestige_targets[prestige_target]
+        prestige_partners = sorted(prestige_targets[prestige_target])
         body_lines.append(f'**{prestige_target}** with:')
         body_lines.append(f'> {", ".join(prestige_partners)}')
 
