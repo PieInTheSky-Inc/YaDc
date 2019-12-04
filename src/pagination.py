@@ -46,7 +46,7 @@ class Paginator():
 
     async def wait_for_option_selection(self) -> (bool, dict):
         def emoji_selection_check(reaction: discord.Reaction, user: discord.User):
-            if user == self.__context.author:
+            if user != self.__context.bot.user:
                 emoji = str(reaction.emoji)
                 if (emoji in self.__current_options.keys() or emoji in self.__base_reaction_emojis) and self.__message.id == reaction.message.id:
                     return True
@@ -57,8 +57,14 @@ class Paginator():
                 return True
             return False
 
+        repost_page = False
+        await self.__post_current_page()
+
         while True:
-            await self.__post_current_page()
+            if repost_page:
+                await self.__post_current_page()
+
+            repost_page = self.__use_emojis
             reaction = None
             user = None
             reply: discord.Message = None
@@ -75,16 +81,18 @@ class Paginator():
                 if reaction and user:
                     if user != self.__context.author:
                         await reaction.remove(user)
-                    emoji = str(reaction.emoji)
-                    if emoji == emojis.page_next:
-                        await reaction.remove(user)
-                        self.__set_next_page()
-                    elif emoji == emojis.page_previous:
-                        await reaction.remove(user)
-                        self.__set_previous_page()
+                        repost_page = False
                     else:
-                        await self.__message.delete()
-                        return True, self.__current_options[emoji]
+                        emoji = str(reaction.emoji)
+                        if emoji == emojis.page_next:
+                            await reaction.remove(user)
+                            self.__set_next_page()
+                        elif emoji == emojis.page_previous:
+                            await reaction.remove(user)
+                            self.__set_previous_page()
+                        else:
+                            await self.__message.delete()
+                            return True, self.__current_options[emoji]
                 elif reply:
                     content = str(reply.content)
                     try:
