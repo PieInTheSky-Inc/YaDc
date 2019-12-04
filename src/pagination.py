@@ -51,7 +51,7 @@ class Paginator():
                 if (emoji in self.__current_options.keys() or emoji in self.__base_reaction_emojis) and self.__message.id == reaction.message.id:
                     return True
             else:
-                reaction.remove(user)
+                await reaction.remove(user)
             return False
 
         def option_selection_check(message: discord.Message):
