@@ -896,7 +896,7 @@ async def cmd_links(ctx: discord.ext.commands.Context):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_about(ctx: discord.ext.commands.Context):
     """
-    Displays information on this bot and its authors.
+    Displays information about this bot and its authors.
 
     Usage:
       /about
