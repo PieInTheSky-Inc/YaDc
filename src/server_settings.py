@@ -111,6 +111,11 @@ def reset_prefix(guild_id: int) -> bool:
     return success
 
 
+def reset_daily_delete_on_change(guild_id: int) -> bool:
+    success = db_reset_daily_delete_on_change(guild_id)
+    return success
+
+
 def set_pagination(guild_id: int, switch: str) -> bool:
     if not db_get_has_settings(guild_id):
         db_create_server_settings(guild_id)
@@ -132,6 +137,17 @@ def set_prefix(guild_id: int, prefix: str) -> bool:
         db_create_server_settings(guild_id)
     success = db_update_prefix(guild_id, prefix)
     return success
+
+
+def toggle_daily_delete_on_change(guild_id: int) -> bool:
+    if not db_get_has_settings(guild_id):
+        db_create_server_settings(guild_id)
+    delete_on_change = db_get_daily_delete_on_change(guild_id)
+    success = db_update_daily_delete_on_change(guild_id, not delete_on_change)
+    if success:
+        return not delete_on_change
+    else:
+        return delete_on_change
 
 
 def toggle_use_pagination(guild_id: int) -> bool:
@@ -171,6 +187,26 @@ def db_delete_server_settings(guild_id: int) -> bool:
     return success
 
 
+def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None) -> list:
+    wheres = ['dailychannelid IS NOT NULL']
+    if can_post is not None:
+        wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
+    setting_names = ['dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+    if settings:
+        result = []
+        for setting in settings:
+            result.append((
+                util.db_convert_to_int(setting[0]),
+                util.db_convert_to_boolean(setting[1]),
+                util.db_convert_to_int(setting[2]),
+                util.db_convert_to_boolean(setting[3])
+            ))
+        return result
+    else:
+        return [(None, None, None, None)]
+
+
 def db_get_daily_channel_id(guild_id: int) -> int:
     setting_names = ['dailychannelid']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names)
@@ -191,19 +227,14 @@ def db_get_daily_can_post(guild_id: int) -> bool:
         return None
 
 
-def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None) -> list:
-    wheres = ['dailychannelid IS NOT NULL']
-    if can_post is not None:
-        wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
-    setting_names = ['dailychannelid', 'dailycanpost', 'dailylatestmessageid']
-    settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+def db_get_daily_delete_on_change(guild_id: int) -> bool:
+    setting_names = ['dailydeleteonchange']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names)
     if settings:
-        result = []
         for setting in settings:
-            result.append((util.db_convert_to_int(setting[0]), util.db_convert_to_boolean(setting[1]), util.db_convert_to_int(setting[2])))
-        return result
+            return util.db_convert_to_boolean(setting[0])
     else:
-        return [(None, None, None)]
+        return None
 
 
 def db_get_daily_latest_message_id(guild_id: int) -> int:
@@ -244,7 +275,7 @@ def db_get_use_pagination(guild_id: int) -> bool:
         return None
 
 
-def db_reset_autodaily_settings(guild_id: int) -> bool:
+def db_reset_autodaily_channel(guild_id: int) -> bool:
     current_autodaily_settings = db_get_autodaily_settings(guild_id)
     for current_setting in current_autodaily_settings:
         if current_setting is not None:
@@ -256,6 +287,11 @@ def db_reset_autodaily_settings(guild_id: int) -> bool:
             success = _db_update_server_setting(guild_id, settings)
             return success
     return True
+
+
+def db_reset_daily_delete_on_change(guild_id: int) -> bool:
+    success = db_update_daily_delete_on_change(guild_id, False)
+    return success
 
 
 def db_reset_prefix(guild_id: int) -> bool:
@@ -280,7 +316,7 @@ def db_reset_use_pagination(guild_id: int) -> bool:
     return True
 
 
-def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None) -> bool:
+def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None) -> bool:
     (current_channel_id, current_can_post, current_latest_message_id) = db_get_autodaily_settings(guild_id)
     if not current_channel_id or not current_can_post or not current_latest_message_id or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id:
         settings = {
@@ -288,6 +324,8 @@ def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post
             'dailycanpost': util.db_convert_to_boolean(can_post),
             'dailylatestmessageid': util.db_convert_text(latest_message_id)
         }
+        if delete_on_change is not None:
+            settings['dailydeleteonchange'] = util.db_convert_to_boolean(delete_on_change)
         success = _db_update_server_setting(guild_id, settings)
         return success
     return True
@@ -311,6 +349,17 @@ def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
             'dailychannelid': util.db_convert_text(channel_id),
             'dailycanpost': util.convert_to_boolean(True),
             'dailylatestmessageid': 'NULL'
+        }
+        success = _db_update_server_setting(guild_id, settings)
+        return success
+    return True
+
+
+def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> bool:
+    current_daily_delete_on_change = db_get_daily_delete_on_change(guild_id)
+    if not current_daily_delete_on_change or delete_on_change != current_daily_delete_on_change:
+        settings = {
+            'dailydeleteonchange': util.convert_to_boolean(delete_on_change),
         }
         success = _db_update_server_setting(guild_id, settings)
         return success

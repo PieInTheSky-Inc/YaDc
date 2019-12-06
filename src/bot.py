@@ -1249,7 +1249,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
+            success = server_settings.db_reset_autodaily_channel(ctx.guild.id)
             if success:
                 output = ['Successfully removed auto-daily settings for this server.']
             else:
