@@ -40,6 +40,15 @@ def convert_to_on_off(value: bool) -> str:
         return '<NOT SET>'
 
 
+def convert_to_edit_delete(value: bool) -> str:
+    if value is True:
+        return 'Delete daily post on change and post new.'
+    elif value is False:
+        return 'Edit daily post on change'
+    else:
+        return '<NOT SET>'
+
+
 def fix_prefixes() -> bool:
     all_prefixes = _db_get_server_settings(guild_id=None, setting_names=['guildid', 'prefix'])
     all_success = True

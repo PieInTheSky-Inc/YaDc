@@ -1337,10 +1337,21 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
-@cmd_settings_set.command(brief='Set auto-daily', name='autodaily', aliases=['daily'])
+@cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
+async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel=None):
+    """
+    Change auto-daily settings for this server.
+    """
+    if not util.is_guild_channel(ctx.channel):
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+
+
+@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
@@ -1348,15 +1359,15 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
     This command can only be used on Discord servers/guilds.
 
     Usage:
-      /settings set autodaily <text_channel_mention>
-      /settings set daily <text_channel_mention>
+      /settings set autodaily channel <text_channel_mention>
+      /settings set daily ch <text_channel_mention>
 
     Parameters:
       text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will set the current channel.
 
     Examples:
-      /settings set autodaily - Sets the current channel to receive the /daily message once a day.
-      /settings set autodaily #announcements - Sets the channel #announcements to receive the /daily message once a day.
+      /settings set daily channel - Sets the current channel to receive the /daily message once a day.
+      /settings set autodaily ch #announcements - Sets the channel #announcements to receive the /daily message once a day.
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
@@ -1373,6 +1384,31 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
                     ]
             else:
                 output = ['You need to provide a text channel on a server!']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['change'])
+@commands.has_permissions(administrator=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
+    """
+    Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
+
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily changemode
+      /settings set daily change
+
+    Examples:
+      /settings set autodaily changemode - Toggles the change mode.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            result = server_settings.toggle_daily_delete_on_change(ctx.guild.id)
+            change_mode = server_settings.convert_to_edit_delete(result)
+            output = [f'Change mode on this server is set to: `{change_mode}`']
         await util.post_output(ctx, output)
 
 
