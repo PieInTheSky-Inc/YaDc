@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import discord
+from threading import Lock
 
 from cache import PssCache
 import emojis
@@ -16,7 +17,8 @@ import utility as util
 
 # ---------- Constants ----------
 
-
+__DAILY_CACHE = ''
+__DAILY_CACHE_LOCK = Lock()
 
 
 
@@ -42,6 +44,32 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
             return result[0]
     else:
         return ''
+
+
+def _get_daily_cache() -> str:
+    __DAILY_CACHE_LOCK.acquire()
+    result = DAILY_CACHE
+    __DAILY_CACHE_LOCK.release()
+    return result
+
+
+def _has_daily_changed(raw_text: str) -> bool:
+    daily_cache = _get_daily_cache()
+    result = raw_text != daily_cache
+    return result
+
+
+def _set_daily_cache(raw_text: str) -> None:
+    __DAILY_CACHE_LOCK.acquire()
+    global DAILY_CACHE
+    DAILY_CACHE = raw_text
+    __DAILY_CACHE_LOCK.release()
+
+
+
+
+
+
 
 
 
@@ -205,6 +233,11 @@ def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict)
         result.append(f'{amount} x {item_details}')
 
     return result
+
+
+
+
+
 
 
 
