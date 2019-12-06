@@ -517,16 +517,19 @@ def should_escape_entity_name(entity_name: str) -> bool:
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, alter_column: bool = False) -> str:
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, default: object = None) -> str:
     column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
     is_primary_txt = ''
     not_null_txt = ''
+    default_txt = ''
     if is_primary:
         is_primary_txt = 'PRIMARY KEY'
     if not_null:
         not_null_txt = 'NOT NULL'
-    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt}'
+    if default is not None:
+        default_txt = f'DEFAULT {default}'
+    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt} {default_txt}'
     return result.strip()
 
 
@@ -552,12 +555,14 @@ def db_get_where_string(column_name: str, column_value: object, is_text_type: bo
 
 
 def db_convert_boolean(value: bool) -> str:
+    """Convert from python bool to postgresql BOOLEAN"""
     if value:
         return 'TRUE'
     else:
         return 'FALSE'
 
 def db_convert_text(value: object) -> str:
+    """Convert from python string to postgresql TEXT"""
     if value:
         result = str(value)
         result = result.replace('\'', '\'\'')
@@ -567,6 +572,7 @@ def db_convert_text(value: object) -> str:
         return ''
 
 def db_convert_timestamp(datetime: datetime) -> str:
+    """Convert from python datetime to postgresql TIMESTAMPTZ"""
     if datetime:
         result = f'TIMESTAMPTZ \'{datetime.strftime(DB_TIMESTAMP_FORMAT)}\''
         return result
@@ -574,6 +580,7 @@ def db_convert_timestamp(datetime: datetime) -> str:
         return None
 
 def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
+    """Convert from postgresql BOOLEAN to python bool"""
     if db_boolean is None:
         return default_if_none
     if isinstance(db_boolean, bool):
@@ -585,18 +592,21 @@ def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool
         return False
 
 def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> datetime:
+    """Convert from postgresql TIMESTAMPTZ to python datetime"""
     if db_timestamp is None:
         return default_if_none
     result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
     return result
 
 def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
+    """Convert from postgresql INTEGER to python int"""
     if db_int is None:
         return default_if_none
     result = int(db_int)
     return result
 
 def db_convert_to_float(db_float: str, default_if_none: bool = None) -> float:
+    """Convert from postgresql NUMERIC to python float"""
     if db_float is None:
         return default_if_none
     result = float(db_float)
