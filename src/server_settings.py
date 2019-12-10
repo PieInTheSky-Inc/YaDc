@@ -198,22 +198,25 @@ def db_delete_server_settings(guild_id: int) -> bool:
 
 def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None) -> list:
     wheres = ['dailychannelid IS NOT NULL']
+    if guild_id is not None:
+        wheres.append(util.db_get_where_string('guildid', util.db_convert_text(str(guild_id))))
     if can_post is not None:
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
-    setting_names = ['dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
+    setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     if settings:
         result = []
         for setting in settings:
             result.append((
                 util.db_convert_to_int(setting[0]),
-                util.db_convert_to_boolean(setting[1]),
-                util.db_convert_to_int(setting[2]),
-                util.db_convert_to_boolean(setting[3])
+                util.db_convert_to_int(setting[1]),
+                util.db_convert_to_boolean(setting[2]),
+                util.db_convert_to_int(setting[3]),
+                util.db_convert_to_boolean(setting[4])
             ))
         return result
     else:
-        return [(None, None, None, None)]
+        return [(None, None, None, None, None)]
 
 
 def db_get_daily_channel_id(guild_id: int) -> int:

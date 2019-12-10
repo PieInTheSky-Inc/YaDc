@@ -419,7 +419,7 @@ def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
 
 
 def compare_versions(version_1: str, version_2: str) -> int:
-    """Compares to version strings with format x.x.x.x
+    """Compares two version strings with format x.x.x.x
 
     Returns:
     -1, if version_1 is higher than version_2
@@ -506,6 +506,33 @@ def should_escape_entity_name(entity_name: str) -> bool:
     return False
 
 
+def get_seconds_to_wait(interval_length: int, utc_now: datetime = None) -> float:
+    """
+    interval_length: length of interval to wait in minutes
+    """
+    interval_length = float(interval_length)
+    if utc_now is None:
+        utc_now = get_utcnow()
+    result = (interval_length * 60.0) - ((float(utc_now.minute) % interval_length) * 60.0) - float(utc_now.second) - float(utc_now.microsecond) / 1000000.0
+    return result
+
+
+def dicts_equal(d1: dict, d2: dict) -> bool:
+    """
+    Checks, whether the contents of two dicts are equal
+    """
+    if d1 and d2:
+        for key, value in d1.items():
+            if key not in d2.keys():
+                return False
+            if d2[key] != value:
+                return False
+    elif not d1 and not d2:
+        return True
+    else:
+        return False
+    return True
+
 
 
 
@@ -562,7 +589,7 @@ def db_convert_boolean(value: bool) -> str:
         return 'FALSE'
 
 def db_convert_text(value: object) -> str:
-    """Convert from python string to postgresql TEXT"""
+    """Convert from python object to postgresql TEXT"""
     if value:
         result = str(value)
         result = result.replace('\'', '\'\'')

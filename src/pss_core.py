@@ -848,3 +848,59 @@ def db_try_rollback() -> None:
     else:
         print('[db_try_rollback] db is not connected')
         return False
+
+
+def db_get_setting(setting_name: str) -> (object, datetime):
+    where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
+    query = f'SELECT * FROM settings WHERE {where_string}'
+    try:
+        results = db_fetchall(query)
+    except:
+        results = []
+    if results:
+        result = results[0]
+        modify_date = util.db_convert_to_datetime(result[1])
+        if result[2]:
+            return (util.db_convert_to_boolean(result[2]), modify_date)
+        elif result[3]:
+            return (util.db_convert_to_float(result[3]), modify_date)
+        elif result[4]:
+            return (util.db_convert_to_int(result[4]), modify_date)
+        elif result[5]:
+            return (str(result[5]), modify_date)
+        elif result[6]:
+            return (util.db_convert_to_datetime(result[6]), modify_date)
+        else:
+            return (None, modify_date)
+    else:
+        return (None, None)
+
+
+def db_set_setting(setting_name: str, value: object) -> bool:
+    column_name = None
+    if isinstance(value, bool):
+        db_value = util.db_convert_boolean(value)
+        column_name = 'settingboolean'
+    elif isinstance(value, int):
+        db_value = util.db_convert_to_int(value)
+        column_name = 'settingint'
+    elif isinstance(value, float):
+        db_value = util.db_convert_to_float(value)
+        column_name = 'settingfloat'
+    elif isinstance(value, datetime):
+        db_value = util.db_convert_to_datetime(value)
+        column_name = 'settingtimestamptz'
+    else:
+        db_value = util.db_convert_text(value)
+        column_name = 'settingtext'
+
+    setting = db_get_setting(setting_name)
+    utc_now = util.get_utcnow()
+    modify_date = util.db_convert_timestamp(utc_now)
+    if setting is None:
+        query = f'INSERT INTO settings (settingname, modifydate, {column_name}) VALUES ({util.db_convert_text(setting_name)}, {modify_date}, {db_value})'
+    elif setting != value:
+        where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
+        query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
+    success = db_try_execute(query)
+    return success

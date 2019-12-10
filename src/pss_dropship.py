@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from datetime import datetime
 import discord
 from threading import Lock
 
@@ -17,8 +18,9 @@ import utility as util
 
 # ---------- Constants ----------
 
-__DAILY_CACHE = ''
-__DAILY_CACHE_LOCK = Lock()
+DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
+
+
 
 
 
@@ -29,7 +31,6 @@ __DAILY_CACHE_LOCK = Lock()
 
 
 # ---------- Helper functions ----------
-
 
 def _convert_sale_item_mask(sale_item_mask: int) -> str:
     result = []
@@ -46,24 +47,11 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
         return ''
 
 
-def _get_daily_cache() -> str:
-    __DAILY_CACHE_LOCK.acquire()
-    result = DAILY_CACHE
-    __DAILY_CACHE_LOCK.release()
+def get_dropship_info(language_key: str = 'en') -> dict:
+    path = f'{DROPSHIP_BASE_PATH}{language_key}'
+    raw_text = core.get_data_from_path(path)
+    result = core.xmltree_to_dict3(raw_text)
     return result
-
-
-def _has_daily_changed(raw_text: str) -> bool:
-    daily_cache = _get_daily_cache()
-    result = raw_text != daily_cache
-    return result
-
-
-def _set_daily_cache(raw_text: str) -> None:
-    __DAILY_CACHE_LOCK.acquire()
-    global DAILY_CACHE
-    DAILY_CACHE = raw_text
-    __DAILY_CACHE_LOCK.release()
 
 
 
@@ -76,22 +64,22 @@ def _set_daily_cache(raw_text: str) -> None:
 
 # ---------- Dropship info ----------
 
-def get_dropship_text(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
-    path = f'SettingService/GetLatestVersion3?languageKey={language_key}&deviceType=DeviceTypeAndroid'
-    raw_text = core.get_data_from_path(path)
-    raw_data = core.xmltree_to_dict3(raw_text)
+def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
+    if not daily_info:
+        raw_text = get_dropship_info(language_key=language_key)
+        daily_info = core.xmltree_to_dict3(raw_text)
 
     collection_design_data = crew.__collection_designs_cache.get_data_dict3()
     char_design_data = crew.__character_designs_cache.get_data_dict3()
     item_design_data = item.__item_designs_cache.get_data_dict3()
     room_design_data = room.__room_designs_cache.get_data_dict3()
 
-    daily_msg = _get_daily_news_from_data_as_text(raw_data)
-    dropship_msg = _get_dropship_msg_from_data_as_text(raw_data, char_design_data, collection_design_data)
-    merchantship_msg = _get_merchantship_msg_from_data_as_text(raw_data, item_design_data)
-    shop_msg = _get_shop_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
-    sale_msg = _get_sale_msg_from_data_as_text(raw_data, char_design_data, collection_design_data, item_design_data, room_design_data)
-    daily_reward_msg = _get_daily_reward_from_data_as_text(raw_data, item_design_data)
+    daily_msg = _get_daily_news_from_data_as_text(daily_info)
+    dropship_msg = _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
+    merchantship_msg = _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
+    shop_msg = _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+    sale_msg = _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+    daily_reward_msg = _get_daily_reward_from_data_as_text(daily_info, item_design_data)
 
     lines = daily_msg
     lines.append(settings.EMPTY_LINE)
