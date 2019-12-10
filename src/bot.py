@@ -124,17 +124,16 @@ async def on_guild_remove(guild: discord.Guild):
 
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop():
-    first_run = True
     while True:
-        daily_info = daily.convert_to_daily_info(dropship.get_dropship_info())
+        daily_info = daily.get_daily_info()
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
-        if first_run or has_daily_changed:
-            first_run = False
+        if has_daily_changed:
             daily.db_set_daily_info(daily_info)
             await post_all_dailies(daily_info)
         # Wait for the next datetime being a multiple of 5 minutes
-        await asyncio.sleep(util.get_seconds_to_wait(5))
+        seconds_to_wait = util.get_seconds_to_wait(5)
+        await asyncio.sleep(seconds_to_wait)
 
 
 async def post_all_dailies(daily_info: dict) -> None:
@@ -787,7 +786,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 @commands.has_permissions(administrator=True)
 async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
-    daily_info = dropship.get_dropship_info()
+    daily_info = daily.get_daily_info()
     await post_all_dailies(daily_info)
 
 

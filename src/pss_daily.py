@@ -168,6 +168,12 @@ def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, 
     return result
 
 
+def get_daily_info():
+    latest_settings = core.get_latest_settings()
+    result = convert_to_daily_info(latest_settings)
+    return result
+
+
 def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     success = server_settings.db_create_server_settings(guild_id)
     if success:

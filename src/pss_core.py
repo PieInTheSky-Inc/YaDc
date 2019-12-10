@@ -22,6 +22,11 @@ import utility as util
 DB_CONN: psycopg2.extensions.connection = None
 
 
+# ---------- Constants ----------
+
+LATEST_SETTINGS_BASE_URL = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
+
+
 # ----- Utilities --------------------------------
 def get_data_from_url(url):
     data = urllib.request.urlopen(url).read()
@@ -34,7 +39,6 @@ def get_data_from_path(path):
     base_url = get_base_url()
     url = f'{base_url}{path}'
     return get_data_from_url(url)
-
 
 
 def save_raw_text(raw_text, filename):
@@ -466,12 +470,20 @@ def get_real_name(search_str, lst_original):
             return None
 
 
-# ----- Get Production Server -----
-def get_production_server():
-    url = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
+# ---------- Get Production Server ----------
+
+def get_latest_settings(language_key: str = 'en') -> dict:
+    if not language_key:
+        language_key = 'en'
+    url = f'{LATEST_SETTINGS_BASE_URL}{language_key}'
     raw_text = get_data_from_url(url)
-    d = xmltree_to_dict3(raw_text)
-    return d['ProductionServer']
+    result = xmltree_to_dict3(raw_text)
+    return result
+
+
+def get_production_server(language_key: str = 'en'):
+    latest_settings = get_latest_settings(language_key=language_key)
+    return latest_settings['ProductionServer']
 
 
 def get_base_url():
