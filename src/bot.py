@@ -719,7 +719,7 @@ async def cmd_news(ctx: discord.ext.commands.Context):
 @bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily(ctx: discord.ext.commands.Context):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
@@ -733,7 +733,7 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Fix the auto-daily channels.', name='fix')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         fix_daily_channels()
@@ -743,7 +743,7 @@ async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
 @cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
@@ -751,7 +751,7 @@ async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, None)
@@ -761,7 +761,7 @@ async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, False)
@@ -771,7 +771,7 @@ async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, True)
@@ -781,7 +781,7 @@ async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     guild = ctx.guild
     channel_id = server_settings.db_get_daily_channel_id(guild.id)
@@ -794,7 +794,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Post a daily message on all servers\' auto-daily channels', name='postall')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
     daily_info = daily.get_daily_info()
@@ -1153,7 +1153,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
 
 
 @bot.group(brief='Server settings', name='settings', invoke_without_command=True)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings(ctx: discord.ext.commands.Context):
     """
@@ -1187,7 +1187,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
@@ -1214,7 +1214,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
@@ -1238,7 +1238,7 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
@@ -1269,7 +1269,7 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Reset server settings', name='reset', invoke_without_command=True)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset(ctx: discord.ext.commands.Context):
     """
@@ -1296,7 +1296,7 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
@@ -1326,7 +1326,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
@@ -1351,7 +1351,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
@@ -1383,7 +1383,7 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Change server settings', name='set', invoke_without_command=False)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set(ctx: discord.ext.commands.Context):
     """
@@ -1403,7 +1403,7 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
     """
@@ -1414,7 +1414,7 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
@@ -1453,7 +1453,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['mode'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
     """
@@ -1478,7 +1478,7 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
     """
@@ -1510,7 +1510,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
 
 
 @cmd_settings_set.command(brief='Set prefix', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str):
     """
