@@ -1395,7 +1395,7 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 @cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel=None):
+async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
     """
     Change auto-daily settings for this server.
     """
