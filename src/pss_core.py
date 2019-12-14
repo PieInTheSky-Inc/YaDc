@@ -906,7 +906,7 @@ def db_set_setting(setting_name: str, value: object) -> bool:
         db_value = util.db_convert_text(value)
         column_name = 'settingtext'
 
-    setting = db_get_setting(setting_name)
+    setting, _ = db_get_setting(setting_name)
     utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
     if setting is None:
