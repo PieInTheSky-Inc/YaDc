@@ -143,8 +143,9 @@ async def post_all_dailies(daily_info: dict) -> None:
     print(f'[post_all_dailies] Retrieved autodaily settings.')
     output, _ = dropship.get_dropship_text(daily_info=daily_info)
     for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in autodaily_settings:
-        can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output)
-        server_settings.db_update_autodaily_settings(guild_id, can_post=can_post, latest_message_id=latest_message_id)
+        if guild_id is not None:
+            can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output)
+            server_settings.db_update_autodaily_settings(guild_id, can_post=can_post, latest_message_id=latest_message_id)
 
 
 async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list) -> (bool, str):
