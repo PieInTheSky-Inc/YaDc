@@ -223,8 +223,12 @@ async def fix_daily_channels():
             except:
                 guild = None
             if guild is not None:
-                if guild.me is not None:
-                    permissions = text_channel.permissions_for(guild.me)
+                try:
+                    me = await guild.fetch_member(bot.user)
+                except:
+                    me = None
+                if me is not None:
+                    permissions = text_channel.permissions_for(me)
                     if permissions is not None and permissions.send_messages is True:
                         print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
                         can_post = True
