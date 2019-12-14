@@ -128,8 +128,6 @@ async def post_dailies_loop():
         daily_info = daily.get_daily_info()
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
-        # TODO: Remove before production
-        has_daily_changed = True
         if has_daily_changed:
             daily.db_set_daily_info(daily_info)
             await post_all_dailies(daily_info)
