@@ -152,9 +152,15 @@ def toggle_daily_delete_on_change(guild_id: int) -> bool:
     if not db_get_has_settings(guild_id):
         db_create_server_settings(guild_id)
     delete_on_change = db_get_daily_delete_on_change(guild_id)
-    success = db_update_daily_delete_on_change(guild_id, not delete_on_change)
+    if delete_on_change is True:
+        new_value = None
+    elif delete_on_change is False:
+        new_value = True
+    else:
+        new_value = False
+    success = db_update_daily_delete_on_change(guild_id, new_value)
     if success:
-        return not delete_on_change
+        return new_value
     else:
         return delete_on_change
 
