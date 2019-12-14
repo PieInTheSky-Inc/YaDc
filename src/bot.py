@@ -154,6 +154,11 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
     """
     Returns (can_post, latest_message_id)
     """
+    if delete_on_change is None or delete_on_change is True:
+        post_new = True
+    else:
+        post_new = False
+
     if channel_id and output:
         can_post = True
         post = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)[0]
@@ -170,9 +175,8 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                 can_post = False
 
             if can_post:
-                edited_message = False
                 if latest_message:
-                    if delete_on_change:
+                    if delete_on_change is True:
                         try:
                             await latest_message.delete()
                             latest_message = None
@@ -182,12 +186,11 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                     else:
                         try:
                             await latest_message.edit(content=post)
-                            edited_message = True
                             print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
                         except:
                             can_post = False
 
-                if delete_on_change or not edited_message:
+                if post_new:
                     try:
                         latest_message = await text_channel.send(post)
                         print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{channel_id}] on guild [{guild.id}]')
