@@ -125,18 +125,19 @@ async def on_guild_remove(guild: discord.Guild):
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop():
     while True:
+        utc_now = util.get_utcnow()
         daily_info = daily.get_daily_info()
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
         if has_daily_changed:
             daily.db_set_daily_info(daily_info)
-            await post_all_dailies(daily_info)
+            await post_all_dailies(daily_info, utc_now)
         # Wait for the next datetime being a multiple of 5 minutes
         seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_all_dailies(daily_info: dict) -> None:
+async def post_all_dailies(daily_info: dict, utc_now: datetime) -> None:
     await fix_daily_channels()
     print(f'[post_all_dailies] Fixed daily channels.')
     autodaily_settings = server_settings.db_get_autodaily_settings(can_post=True)
@@ -144,11 +145,11 @@ async def post_all_dailies(daily_info: dict) -> None:
     output, _ = dropship.get_dropship_text(daily_info=daily_info)
     for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in autodaily_settings:
         if guild_id is not None:
-            can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output)
+            can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output, utc_now)
             server_settings.db_update_autodaily_settings(guild_id, can_post=can_post, latest_message_id=latest_message_id)
 
 
-async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list) -> (bool, str):
+async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list, utc_now: datetime) -> (bool, str):
     """
     Returns (can_post, latest_message_id)
     """
@@ -161,7 +162,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
         can_post = True
         post = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)[0]
         text_channel = bot.get_channel(channel_id)
-        latest_message = None
+        latest_message: discord.Message = None
         if text_channel is not None:
             guild = text_channel.guild
             try:
@@ -173,7 +174,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                 can_post = False
 
             if can_post:
-                if latest_message:
+                if latest_message and latest_message.created_at.day != utc_now.day:
                     if delete_on_change is True:
                         try:
                             await latest_message.delete()
@@ -190,7 +191,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                 else:
                     post_new = True
 
-                if post_new:
+                if post_new and can_post:
                     try:
                         latest_message = await text_channel.send(post)
                         print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{channel_id}] on guild [{guild.id}]')
@@ -797,7 +798,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
     daily_info = daily.get_daily_info()
-    await post_all_dailies(daily_info)
+    await post_all_dailies(daily_info, util.get_utcnow())
 
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
