@@ -198,9 +198,14 @@ def db_get_daily_info() -> (dict, datetime):
     for daily_info_field in DAILY_INFO_FIELDS:
         setting_name = f'daily{daily_info_field}'
         value, modify_date = core.db_get_setting(setting_name)
-        modify_dates.append(modify_date)
-        result[daily_info_field] = value
-    return (result, max(modify_dates))
+        if modify_date:
+            modify_dates.append(modify_date)
+        if value:
+            result[daily_info_field] = value
+    if result and modify_dates:
+        return (result, max(modify_dates))
+    else:
+        return ({}, None)
 
 
 def db_set_daily_info(daily_info: dict) -> bool:
