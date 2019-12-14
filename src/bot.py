@@ -161,7 +161,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
             guild = text_channel.guild
             try:
                 if can_post:
-                    latest_message = text_channel.fetch_message(latest_message_id)
+                    latest_message = await text_channel.fetch_message(latest_message_id)
             except discord.NotFound:
                 pass
             except:
