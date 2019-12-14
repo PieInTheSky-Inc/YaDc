@@ -909,10 +909,11 @@ def db_set_setting(setting_name: str, value: object) -> bool:
     setting, _ = db_get_setting(setting_name)
     utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
+    query = ''
     if setting is None:
         query = f'INSERT INTO settings (settingname, modifydate, {column_name}) VALUES ({util.db_convert_text(setting_name)}, {modify_date}, {db_value})'
     elif setting != value:
         where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
         query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
-    success = db_try_execute(query)
+    success = not query or db_try_execute(query)
     return success
