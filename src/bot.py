@@ -183,7 +183,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                             print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]')
                         except:
                             can_post = False
-                    else:
+                    elif delete_on_change is False:
                         try:
                             await latest_message.edit(content=post)
                             print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
@@ -224,7 +224,7 @@ async def fix_daily_channels():
                 guild = None
             if guild is not None:
                 try:
-                    me = await guild.fetch_member(bot.user)
+                    me = await guild.fetch_member(bot.user.id)
                 except:
                     me = None
                 if me is not None:
