@@ -871,7 +871,7 @@ def db_get_setting(setting_name: str) -> (object, datetime):
         results = []
     if results:
         result = results[0]
-        modify_date = util.db_convert_to_datetime(result[1])
+        modify_date = result[1]
         if result[2]:
             return (util.db_convert_to_boolean(result[2]), modify_date)
         elif result[3]:
@@ -881,7 +881,7 @@ def db_get_setting(setting_name: str) -> (object, datetime):
         elif result[5]:
             return (str(result[5]), modify_date)
         elif result[6]:
-            return (util.db_convert_to_datetime(result[6]), modify_date)
+            return (result[6], modify_date)
         else:
             return (None, modify_date)
     else:
