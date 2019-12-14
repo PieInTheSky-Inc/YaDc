@@ -190,7 +190,7 @@ def toggle_use_pagination(guild_id: int) -> bool:
 # ---------- DB functions ----------
 
 def db_create_server_settings(guild_id: int) -> bool:
-    query = f'INSERT INTO serversettings (guildid) VALUES ({guild_id})'
+    query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ({guild_id}, {util.db_convert_boolean(True)})'
     success = core.db_try_execute(query)
     return success
 
