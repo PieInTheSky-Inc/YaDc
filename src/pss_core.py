@@ -568,7 +568,7 @@ def init_db():
 
 def db_update_schema_v_1_2_4_0():
     column_definitions = [
-        ('dailydeleteonchange', 'BOOLEAN', False, False, util.db_convert_boolean(False))
+        ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
 
     schema_version = db_get_schema_version()
