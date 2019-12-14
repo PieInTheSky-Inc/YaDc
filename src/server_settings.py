@@ -301,7 +301,8 @@ def db_reset_autodaily_channel(guild_id: int) -> bool:
             settings = {
                 'dailychannelid': 'NULL',
                 'dailycanpost': 'NULL',
-                'dailylatestmessageid': 'NULL'
+                'dailylatestmessageid': 'NULL',
+                'dailydeleteonchange': util.db_convert_boolean(True)
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
