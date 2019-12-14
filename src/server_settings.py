@@ -250,7 +250,8 @@ def db_get_daily_delete_on_change(guild_id: int) -> bool:
     settings = _db_get_server_settings(guild_id, setting_names=setting_names)
     if settings:
         for setting in settings:
-            return util.db_convert_to_boolean(setting[0])
+            result = util.db_convert_to_boolean(setting[0])
+            return result
     else:
         return None
 
@@ -379,7 +380,7 @@ def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> b
     current_daily_delete_on_change = db_get_daily_delete_on_change(guild_id)
     if not current_daily_delete_on_change or delete_on_change != current_daily_delete_on_change:
         settings = {
-            'dailydeleteonchange': util.convert_to_boolean(delete_on_change),
+            'dailydeleteonchange': util.db_convert_boolean(delete_on_change),
         }
         success = _db_update_server_setting(guild_id, settings)
         return success
