@@ -139,7 +139,7 @@ async def post_dailies_loop():
 
 
 async def post_all_dailies(daily_info: dict) -> None:
-    fix_daily_channels()
+    await fix_daily_channels()
     print(f'[post_all_dailies] Fixed daily channels.')
     autodaily_settings = server_settings.db_get_autodaily_settings(can_post=True)
     print(f'[post_all_dailies] Retrieved autodaily settings.')
