@@ -42,11 +42,11 @@ def convert_to_on_off(value: bool) -> str:
 
 def convert_to_edit_delete(value: bool) -> str:
     if value is True:
-        return 'Delete daily post on change and post new.'
+        return 'Delete daily post and post new daily on change.'
     elif value is False:
-        return 'Edit daily post on change'
+        return 'Edit daily post on change.'
     else:
-        return '<NOT SET>'
+        return 'Post new daily on change.'
 
 
 def fix_prefixes() -> bool:
