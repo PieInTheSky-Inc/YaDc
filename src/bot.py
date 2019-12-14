@@ -189,6 +189,8 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                             print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
                         except:
                             can_post = False
+                else:
+                    post_new = True
 
                 if post_new:
                     try:
