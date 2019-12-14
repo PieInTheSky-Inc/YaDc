@@ -329,8 +329,8 @@ def db_reset_use_pagination(guild_id: int) -> bool:
 
 
 def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None) -> bool:
-    (current_channel_id, current_can_post, current_latest_message_id) = db_get_autodaily_settings(guild_id)
-    if not current_channel_id or not current_can_post or not current_latest_message_id or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id:
+    (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change) = db_get_autodaily_settings(guild_id)[0]
+    if not current_channel_id or not current_can_post or not current_latest_message_id or not current_delete_on_change or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id or current_delete_on_change != delete_on_change:
         settings = {
             'dailychannelid': util.db_convert_text(channel_id),
             'dailycanpost': util.db_convert_to_boolean(can_post),
