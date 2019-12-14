@@ -1444,7 +1444,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['change'])
+@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['mode'])
 @commands.has_permissions(administrator=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
