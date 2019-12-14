@@ -622,7 +622,7 @@ def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> d
     """Convert from postgresql TIMESTAMPTZ to python datetime"""
     if db_timestamp is None:
         return default_if_none
-    result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
+    result = datetime.strptime(db_timestamp, DB_TIMESTAMP_FORMAT)
     return result
 
 def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
