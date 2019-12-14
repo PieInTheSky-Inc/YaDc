@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 # ----- Packages ------------------------------------------------------
-import datetime
+from datetime import datetime
 import json
 import os
 import psycopg2
@@ -89,7 +89,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
     file_stats = os.stat(filename)
     modify_date = file_stats.st_mtime
     utc_now = util.get_utcnow()
-    time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
+    time_diff = utc_now - datetime.fromtimestamp(modify_date)
     if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
     return (time_diff.days > max_days) or time_diff.seconds > max_seconds
