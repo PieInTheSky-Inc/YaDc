@@ -583,10 +583,13 @@ def db_get_where_string(column_name: str, column_value: object, is_text_type: bo
 
 def db_convert_boolean(value: bool) -> str:
     """Convert from python bool to postgresql BOOLEAN"""
-    if value:
+    if value is True:
         return 'TRUE'
-    else:
+    elif value is False:
         return 'FALSE'
+    else:
+        return 'NULL'
+
 
 def db_convert_text(value: object) -> str:
     """Convert from python object to postgresql TEXT"""
