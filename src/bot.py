@@ -1447,9 +1447,13 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
+            current_channel_id = server_settings.db_get_daily_channel_id(ctx.guild.id)
             if not text_channel:
                 text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
+                success = True
+                if current_channel_id != text_channel.id:
+                    success = server_settings.db_update_daily_latest_message_id(ctx.guild.id, None)
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
                     output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
