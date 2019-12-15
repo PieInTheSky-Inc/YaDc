@@ -130,7 +130,7 @@ async def post_dailies_loop():
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
         output, _ = dropship.get_dropship_text(daily_info=daily_info)
-        post_dailies_first_time(output, utc_now)
+        await post_dailies_first_time(output, utc_now)
         if has_daily_changed:
             daily.db_set_daily_info(daily_info)
             await post_all_dailies(output, utc_now)
