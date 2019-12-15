@@ -172,17 +172,17 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
     if channel_id and output:
         can_post = True
         post = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)[0]
-        text_channel = bot.get_channel(channel_id)
+        text_channel: discord.TextChannel = bot.get_channel(channel_id)
         latest_message: discord.Message = None
         if text_channel is not None:
             guild = text_channel.guild
-            try:
-                if can_post:
+            if can_post and latest_message_id:
+                try:
                     latest_message = await text_channel.fetch_message(latest_message_id)
-            except discord.NotFound:
-                pass
-            except:
-                can_post = False
+                except discord.NotFound:
+                    pass
+                except:
+                    can_post = False
 
             if can_post:
                 if latest_message and latest_message.created_at.day != utc_now.day:
