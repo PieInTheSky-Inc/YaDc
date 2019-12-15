@@ -576,6 +576,8 @@ def db_get_where_or_string(where_strings: list) -> str:
 
 def db_get_where_string(column_name: str, column_value: object, is_text_type: bool = False) -> str:
     column_name = column_name.lower()
+    if column_value is None:
+        return f'{column_name} IS NULL'
     if is_text_type:
         column_value = db_convert_text(column_value)
     return f'{column_name} = {column_value}'
