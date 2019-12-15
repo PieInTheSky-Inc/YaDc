@@ -209,7 +209,7 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, witho
     if can_post is not None:
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
     if without_latest_message_id is True:
-        wheres.append(util.db_get_where_string('dailylatestmessageid', util.db_convert_text(None)))
+        wheres.append(util.db_get_where_string('dailylatestmessageid', None))
     setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     if settings:
