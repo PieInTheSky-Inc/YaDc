@@ -59,8 +59,7 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 
 def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
     if not daily_info:
-        raw_text = core.get_latest_settings(language_key=language_key)
-        daily_info = core.xmltree_to_dict3(raw_text)
+        daily_info = core.get_latest_settings(language_key=language_key)
 
     collection_design_data = crew.__collection_designs_cache.get_data_dict3()
     char_design_data = crew.__character_designs_cache.get_data_dict3()
