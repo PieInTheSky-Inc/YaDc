@@ -593,13 +593,15 @@ def db_convert_boolean(value: bool) -> str:
 
 def db_convert_text(value: object) -> str:
     """Convert from python object to postgresql TEXT"""
-    if value:
+    if value is None:
+        result = 'NULL'
+    elif value:
         result = str(value)
         result = result.replace('\'', '\'\'')
         result = f'\'{result}\''
-        return result
     else:
-        return ''
+        result = ''
+    return result
 
 def db_convert_timestamp(datetime: datetime) -> str:
     """Convert from python datetime to postgresql TIMESTAMPTZ"""

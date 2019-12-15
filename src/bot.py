@@ -129,20 +129,31 @@ async def post_dailies_loop():
         daily_info = daily.get_daily_info()
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
+        output, _ = dropship.get_dropship_text(daily_info=daily_info)
+        post_dailies_first_time(output, utc_now)
         if has_daily_changed:
             daily.db_set_daily_info(daily_info)
-            await post_all_dailies(daily_info, utc_now)
+            await post_all_dailies(output, utc_now)
         # Wait for the next datetime being a multiple of 5 minutes
         seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_all_dailies(daily_info: dict, utc_now: datetime) -> None:
+async def post_all_dailies(output: list, utc_now: datetime) -> None:
     await fix_daily_channels()
     print(f'[post_all_dailies] Fixed daily channels.')
     autodaily_settings = server_settings.db_get_autodaily_settings(can_post=True)
     print(f'[post_all_dailies] Retrieved autodaily settings.')
-    output, _ = dropship.get_dropship_text(daily_info=daily_info)
+    await post_dailies(output, autodaily_settings, utc_now)
+
+
+async def post_dailies_first_time(output: list, utc_now: datetime) -> None:
+    autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
+    print(f'[post_dailies_first_time] Retrieved autodaily settings.')
+    await post_dailies(output, autodaily_settings, utc_now)
+
+
+async def post_dailies(output: list, autodaily_settings: list, utc_now: datetime) -> None:
     for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in autodaily_settings:
         if guild_id is not None:
             can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output, utc_now)
