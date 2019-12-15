@@ -91,13 +91,14 @@ def get_item_details_from_id_as_text(item_id: str, item_designs_data: dict = Non
 def get_item_details_from_data_as_text(item_info: dict) -> list:
     bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
     bonus_value = item_info['EnhancementValue']
-    equipment_slot = item_info['ItemSubType']
     item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
+    item_sub_type = item_info['ItemSubType']
     rarity = item_info['Rarity']
 
-    if item_type == 'Equipment' and 'Equipment' in equipment_slot:
-        slot_txt = ' ({})'.format(equipment_slot.replace('Equipment', ''))
+    slot = _get_item_slot(item_type, item_sub_type)
+    if slot:
+        slot_txt = f' ({slot})'
     else:
         slot_txt = ''
 
@@ -120,18 +121,32 @@ def get_item_details_short_from_id_as_text(item_id: str, item_designs_data: dict
 def get_item_details_short_from_data_as_text(item_info: dict) -> list:
     name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     rarity = item_info['Rarity']
-    bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+    bonus_type = item_info['EnhancementType']  # if not 'None' then print bonus_value
+    item_type = item_info['ItemType']
+    item_sub_type = item_info['ItemSubType']
     bonus_value = item_info['EnhancementValue']
-    if bonus_type == 'None':
-        bonus_txt = ''
-    else:
-        bonus_txt = f', +{bonus_value} {bonus_type}'
-    return [f'{name} ({rarity}{bonus_txt})']
+
+    slot = _get_item_slot(item_type, item_sub_type)
+    details = [rarity]
+    if slot:
+        details.append(slot)
+    if bonus_type != 'None':
+        details.append(f'+{bonus_value} {bonus_type}')
+    details_txt = ', '.join(details)
+    return [f'{name} ({details_txt})']
 
 
 def get_item_info_from_id(item_id: str) -> dict:
     item_data = __item_designs_cache.get_data_dict3()
     return item_data[item_id]
+
+
+def _get_item_slot(item_type: str, item_sub_type: str) -> str:
+    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
+        result = item_sub_type.replace('Equipment', '')
+    else:
+        result = None
+    return result
 
 
 
