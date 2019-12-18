@@ -208,9 +208,9 @@ def db_get_daily_info() -> (dict, datetime):
         return ({}, None)
 
 
-def db_set_daily_info(daily_info: dict) -> bool:
+def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
     for key, value in daily_info.items():
         setting_name = f'daily{key}'
-        result = core.db_set_setting(setting_name, value) and result
+        result = core.db_set_setting(setting_name, value, utc_now=utc_now) and result
     return result

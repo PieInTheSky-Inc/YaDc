@@ -888,7 +888,7 @@ def db_get_setting(setting_name: str) -> (object, datetime):
         return (None, None)
 
 
-def db_set_setting(setting_name: str, value: object) -> bool:
+def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
     column_name = None
     if isinstance(value, bool):
         db_value = util.db_convert_boolean(value)
@@ -907,7 +907,8 @@ def db_set_setting(setting_name: str, value: object) -> bool:
         column_name = 'settingtext'
 
     setting, _ = db_get_setting(setting_name)
-    utc_now = util.get_utcnow()
+    if utc_now is None:
+        utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
     query = ''
     if setting is None:
