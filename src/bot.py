@@ -1230,7 +1230,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
-    Retrieve the pagination setting for this server.
+    Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use this command.
     This command can only be used on Discord servers/guilds.
@@ -1342,7 +1342,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
-    Reset the pagination settings for this server to 'ON'.
+    Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
@@ -1498,7 +1498,7 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
     """
-    Sets or toggle the pagination for this server. The default is 'ON'.
+    Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
@@ -1554,6 +1554,33 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
             else:
                 output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@bot.command(name='pagination', hidden=True, aliases=['pages'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_pagination(ctx: discord.ext.commands.Context):
+    """
+    Some commands allow the user to search for a fleet, a player or other stuff. Such a search may yield more than one result. Then the bot may offer the user to select one of these results.
+
+    Pagination is a way to format the result list in way that allows the user to select one result. The pagination mode can be set individually per Discord server. There are two modes:
+    - ON
+    - OFF
+
+    If pagination is turned ON for a server, the bot will print the results on pages of 5 results. The bot will add reactions. The user can use the reactions to navigate the pages or select an item of the result list.
+    If pagination is turned OFF for a server, the bot will print the whole results list. The user can select an item from the list by typing the number in front of the respective result.
+
+    In both cases the result list will disappear after 60 seconds without user input.
+    """
+    pass
+
 
 
 
