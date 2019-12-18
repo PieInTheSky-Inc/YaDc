@@ -522,8 +522,9 @@ def dicts_equal(d1: dict, d2: dict) -> bool:
     Checks, whether the contents of two dicts are equal
     """
     if d1 and d2:
+        d2_keys = d2.keys()
         for key1, value1 in d1.items():
-            if key1 not in d2.keys():
+            if key1 not in d2_keys:
                 return False
             if d2[key1] != value1:
                 return False
