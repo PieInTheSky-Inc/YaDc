@@ -181,6 +181,17 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     return success
 
 
+def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
+    if not autodaily_settings:
+        return autodaily_settings
+    result = {}
+    for autodaily_setting in autodaily_settings:
+        guild_id = autodaily_setting[0]
+        if guild_id not in result.keys():
+            result[guild_id] = autodaily_setting
+    return list(result.values())
+
+
 def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool = True, latest_message_id: int = None) -> bool:
     success = True
     if channel_id is not None:

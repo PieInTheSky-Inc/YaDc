@@ -133,11 +133,14 @@ async def post_dailies_loop():
         if has_daily_changed:
             await fix_daily_channels()
             autodaily_settings.append(server_settings.db_get_autodaily_settings(can_post=True))
-            daily.db_set_daily_info(daily_info, utc_now)
+
         if autodaily_settings:
-            autodaily_settings = list(set(autodaily_settings))
+            autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             output, _ = dropship.get_dropship_text(daily_info=daily_info)
             await post_dailies(output, autodaily_settings, utc_now)
+
+        if has_daily_changed:
+            daily.db_set_daily_info(daily_info, utc_now)
         # Wait for the next datetime being a multiple of 5 minutes
         seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
