@@ -129,9 +129,9 @@ async def post_dailies_loop():
         daily_info = daily.get_daily_info()
         daily_info_cache, _ = daily.db_get_daily_info()
         has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
-        await fix_daily_channels()
         autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
         if has_daily_changed:
+            await fix_daily_channels()
             autodaily_settings.append(server_settings.db_get_autodaily_settings(can_post=True))
             daily.db_set_daily_info(daily_info, utc_now)
         if autodaily_settings:
