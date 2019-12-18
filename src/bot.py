@@ -132,7 +132,7 @@ async def post_dailies_loop():
         autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
         if has_daily_changed:
             await fix_daily_channels()
-            autodaily_settings.append(server_settings.db_get_autodaily_settings(can_post=True))
+            autodaily_settings.extend(server_settings.db_get_autodaily_settings(can_post=True))
 
         if autodaily_settings:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
