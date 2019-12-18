@@ -163,7 +163,7 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         key = None
         if tag_count[tag] < 1:
             continue
-        elif tag_count[tag] >= 1:
+        elif tag_count[tag] > 1:
             if tag in data.ID_NAMES_INFO.keys():
                 id_attr_names = data.ID_NAMES_INFO[tag]
                 if id_attr_names:
