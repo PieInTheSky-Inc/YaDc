@@ -212,8 +212,8 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, witho
         wheres.append(util.db_get_where_string('dailylatestmessageid', None))
     setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+    result = []
     if settings:
-        result = []
         for setting in settings:
             result.append((
                 util.db_convert_to_int(setting[0]),
@@ -222,9 +222,7 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, witho
                 util.db_convert_to_int(setting[3]),
                 util.db_convert_to_boolean(setting[4])
             ))
-        return result
-    else:
-        return [(None, None, None, None, None)]
+    return result
 
 
 def db_get_daily_channel_id(guild_id: int) -> int:
@@ -339,7 +337,13 @@ def db_reset_use_pagination(guild_id: int) -> bool:
 
 
 def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None) -> bool:
-    (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change) = db_get_autodaily_settings(guild_id)[0]
+    autodaily_settings = db_get_autodaily_settings(guild_id)
+    current_channel_id = None
+    current_can_post = None
+    current_latest_message_id = None
+    current_delete_on_change = None
+    if autodaily_settings:
+        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change) = autodaily_settings[0]
     if not current_channel_id or not current_can_post or not current_latest_message_id or not current_delete_on_change or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id or current_delete_on_change != delete_on_change:
         settings = {}
         if channel_id is not None:
