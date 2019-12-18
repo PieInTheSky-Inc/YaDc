@@ -240,7 +240,7 @@ def _get_shots_fired(volley: str, volley_delay: str) -> str:
         volley = int(volley)
         volley_delay = int(volley_delay)
         volley_delay_seconds = util.format_up_to_decimals(util.convert_ticks_to_seconds(volley_delay), 3)
-        result = f'{volley:d} (Delay: {volley_delay_seconds})'
+        result = f'{volley:d} (Delay: {volley_delay_seconds}s)'
         return result
     else:
         return ''
