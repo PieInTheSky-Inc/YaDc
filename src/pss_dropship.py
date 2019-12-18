@@ -96,7 +96,7 @@ def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
 
 
 def _get_dropship_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict) -> list:
-    result = [f'{emojis.pss_dropship_blue} **Dropship crew**']
+    result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
         hero_crew_id = raw_data['HeroCrewId']
@@ -118,7 +118,7 @@ def _get_dropship_msg_from_data_as_text(raw_data: dict, char_designs_data: dict,
 
 
 def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
-    result = [f'{emojis.pss_dropship_green} **Merchant ship**']
+    result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if raw_data:
         cargo_items = raw_data['CargoItems'].split('|')
         cargo_prices = raw_data['CargoPrices'].split('|')
