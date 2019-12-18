@@ -197,8 +197,9 @@ def get_embed_field_def(title=None, text=None, inline=True):
     return (title, text, inline)
 
 
-def dbg_prnt(text):
-    print(f'[{get_utcnow()}]: {text}')
+def dbg_prnt(text: str) -> None:
+    if settings.PRINT_DEBUG is True:
+        print(f'[{get_utcnow()}]: {text}')
 
 
 def create_posts_from_lines(lines, char_limit) -> list:

@@ -28,6 +28,7 @@ MAXIMUM_CHARACTERS = 1900
 MIN_ENTITY_NAME_LENGTH = 3
 
 PREFIX_DEFAULT = '/'
+PRINT_DEBUG = False
 PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 
