@@ -34,6 +34,7 @@ import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
 import pss_top
+import pss_training as training
 import pss_user as user
 import server_settings
 import settings
@@ -915,6 +916,14 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     """
     async with ctx.typing():
         output, _ = room.get_room_details_from_name(name)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get training infos', name='training')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
+    async with ctx.typing():
+        output, _ = training.get_training_details_from_name(name)
     await util.post_output(ctx, output)
 
 
