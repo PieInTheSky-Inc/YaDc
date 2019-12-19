@@ -67,6 +67,15 @@ def fix_prefixes() -> bool:
     return all_success
 
 
+def get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
+    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, without_latest_message_id=without_latest_message_id)
+    result = []
+    for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in db_autodaily_settings:
+        autodaily_setting = AutodailySettings(guild_id, channel_id, can_post, latest_message_id, delete_on_change)
+        result.append(autodaily_setting)
+    return result
+
+
 def get_daily_channel_mention(ctx: discord.ext.commands.Context) -> str:
     channel_id = db_get_daily_channel_id(ctx.guild.id)
     if channel_id is not None:
@@ -477,6 +486,47 @@ def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
     success = core.db_try_execute(query)
     return success
 
+
+
+
+
+
+
+
+
+
+
+# ---------- Classes ----------
+
+class AutodailySettings():
+    def __init__(self, guild_id: int, channel_id: int, can_post: bool, latest_message_id: int, delete_on_change: bool):
+        if guild_id is None or guild_id < 1:
+            raise ValueError('The parameter guild_id must neither be None nor lower than 1!')
+        self.__guild_id = guild_id
+        self.__channel_id = channel_id
+        self.__can_post = can_post
+        self.__latest_message_id = latest_message_id
+        self.__delete_on_change = delete_on_change
+
+    @property
+    def can_post(self) -> bool:
+        return self.__can_post
+
+    @property
+    def channel_id(self) -> int:
+        return self.__channel_id
+
+    @property
+    def delete_on_change(self) -> bool:
+        return self.__delete_on_change
+
+    @property
+    def guild_id(self) -> int:
+        return self.__guild_id
+
+    @property
+    def latest_message_id(self) -> int:
+        return self.__latest_message_id
 
 
 
