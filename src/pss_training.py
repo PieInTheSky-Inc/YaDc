@@ -58,6 +58,7 @@ class TrainingDetails(entity.EntityDetails):
         self.__chances: str = ' '.join(stat_chances)
         self.__cost: str = _get_cost_as_text(training_info)
         self.__duration: str = _get_duration_as_text(training_info)
+        self.__fatigue: str = _get_fatigue_as_text(training_info)
         self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'])
         self.__room_name: str = room_name
         self.__training_item_details: str = ', '.join(training_item_details)
@@ -65,9 +66,10 @@ class TrainingDetails(entity.EntityDetails):
         self.__details_long: List[Tuple[str, str]] = [
             ('Duration', self.__duration),
             ('Cost', self.__cost),
+            ('Fatigue', self.__fatigue),
             ('Training room', self.__room_name),
-            ('Consumable', self.__training_item_details),
             ('Research required', self.__required_research),
+            ('Consumable', self.__training_item_details),
             ('Results', self.__chances)
         ]
         self.__details_short: List[Tuple[str, str]] = [
@@ -98,6 +100,11 @@ class TrainingDetails(entity.EntityDetails):
     @property
     def duration(self) -> str:
         return list(self.__duration)
+
+
+    @property
+    def fatigue(self) -> str:
+        return self.__fatigue
 
 
     @property
@@ -197,6 +204,15 @@ def _get_duration_as_text(training_info: dict) -> str:
         result = util.get_formatted_duration(seconds, include_relative_indicator=False)
     else:
         result = 'Instant'
+    return result
+
+
+def _get_fatigue_as_text(training_info: dict) -> str:
+    fatigue = int(training_info['Fatigue'])
+    if fatigue > 0:
+        result = f'{fatigue}h'
+    else:
+        result = None
     return result
 
 
