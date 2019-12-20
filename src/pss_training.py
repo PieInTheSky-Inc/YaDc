@@ -48,7 +48,7 @@ class TrainingDetails(entity.EntityDetails):
         training_item_name = ', '.join(item.get_item_names_by_training_id(training_info[TRAINING_DESIGN_KEY_NAME]))
         room_name, room_short_name = _get_room_names(training_rank)
         stat_chances = _get_stat_chances(stats, training_info)
-        xp_stat = _get_stat_chance('Xp', training_info, guaranteed=True)
+        xp_stat = _get_stat_chance_display(*_get_stat_chance('Xp', training_info, guaranteed=True))
         stat_chances.append(xp_stat)
 
         self.__chances: str = ' '.join(stat_chances)
@@ -202,8 +202,8 @@ def _get_stat_chances(stat_names: list, training_info: dict) -> list:
             chances.append(stat_chance)
 
     max_chance = max([stat_chance[2] for stat_chance in chances])
-    result = [stat_chance for stat_chance in chances if stat_chance[2] == max_chance]
-    result.extend([stat_chance for stat_chance in chances if stat_chance[2] != max_chance])
+    result = [_get_stat_chance_display(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance]
+    result.extend([_get_stat_chance_display(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance])
 
     return result
 
@@ -219,6 +219,10 @@ def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = Fal
                 operator = '' if guaranteed else '\u2264'
                 return (stat_emoji, operator, stat_chance, stat_unit)
     return None
+
+
+def _get_stat_chance_display(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str) -> str:
+    return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
 
 
 def _get_room_names(rank: int) -> Tuple[str, str]:
