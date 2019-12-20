@@ -200,7 +200,7 @@ def _get_stat_chances(stat_names: list, training_info: dict) -> list:
         if chance is not None:
             chances.append(chance)
 
-    chances = sorted(chances, key=lambda chance: int(chance[2]))
+    chances = sorted(chances, key=lambda chance: int(chance[2]), reverse=True)
     result = [_get_stat_chance_display(*chance) for chance in chances]
 
     return result
