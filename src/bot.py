@@ -891,6 +891,22 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
 @bot.command(brief='Get training infos', name='training')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
+    """
+    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
+
+    Usage:
+      /training [name]
+
+    Parameters:
+      name:       A room's name or part of it. Mandatory.
+
+    Examples:
+      /training bench - Searches for trainings having 'bench' in their names and prints their details.
+
+    Notes:
+      The training yields displayed represent the upper bound of possible yields.
+      The highest yield will always be displayed on the far left.
+    """
     async with ctx.typing():
         output, _ = training.get_training_details_from_name(name)
     await util.post_output(ctx, output)
