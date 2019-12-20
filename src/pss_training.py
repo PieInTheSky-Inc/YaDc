@@ -49,6 +49,8 @@ class TrainingDetails(entity.EntityDetails):
         stats.extend(lookups.STATS_RIGHT)
         training_item_details = item.get_item_details_short_by_training_id(training_id)
         room_name, _ = _get_room_names(training_rank)
+        if room_name:
+            room_name = f'{room_name} lvl {required_room_level}'
         stat_chances = _get_stat_chances(stats, training_info)
         xp_stat = _get_stat_chance_as_text(*_get_stat_chance('Xp', training_info, guaranteed=True))
         stat_chances.append(xp_stat)
@@ -56,7 +58,7 @@ class TrainingDetails(entity.EntityDetails):
         self.__chances: str = ' '.join(stat_chances)
         self.__duration: str = duration
         self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'])
-        self.__room_name: str = f'{room_name} lvl {required_room_level}'
+        self.__room_name: str = room_name
         self.__training_item_details: str = ', '.join(training_item_details)
 
         self.__details_long: List[Tuple[str, str]] = [
@@ -177,7 +179,7 @@ def _get_duration_as_text(training_info: dict) -> str:
     if seconds > 0:
         result = util.get_formatted_duration(seconds, include_relative_indicator=False)
     else:
-        result = None
+        result = 'Instant'
     return result
 
 
