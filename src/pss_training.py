@@ -42,25 +42,28 @@ class TrainingDetails(entity.EntityDetails):
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
 
+        duration = _get_duration_as_text(int(training_info))
         stats = []
         stats.extend(lookups.STATS_LEFT)
         stats.extend(lookups.STATS_RIGHT)
-        training_item_name = ', '.join(item.get_item_names_by_training_id(training_info[TRAINING_DESIGN_KEY_NAME]))
+        training_item_name = ', '.join(item.get_item_details_short_by_training_id(training_info[TRAINING_DESIGN_KEY_NAME]))
         room_name, room_short_name = _get_room_names(training_rank)
         stat_chances = _get_stat_chances(stats, training_info)
         xp_stat = _get_stat_chance_as_text(*_get_stat_chance('Xp', training_info, guaranteed=True))
         stat_chances.append(xp_stat)
 
         self.__chances: str = ' '.join(stat_chances)
+        self.__duration: str = duration
         self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'])
         self.__room_name: str = f'{room_name} lvl {required_room_level}'
         self.__room_short_name: str = f'{room_short_name} {required_room_level}'
         self.__training_item_name: str = training_item_name
 
         self.__details_long: List[Tuple[str, str]] = [
-            ('Research required', self.__required_research),
+            ('Duration', self.__duration),
             ('Training room', self.__room_name),
             ('Consumable', self.__training_item_name),
+            ('Research required', self.__required_research),
             ('Results', self.__chances)
         ]
         self.__details_short: List[Tuple[str, str]] = [
@@ -81,6 +84,11 @@ class TrainingDetails(entity.EntityDetails):
     @property
     def details_short(self) -> List[Tuple[str, str]]:
         return list(self.__details_short)
+
+
+    @property
+    def duration(self) -> str:
+        return list(self.__duration)
 
 
     @property
@@ -168,6 +176,15 @@ def _get_training_info_as_text(training_name: str, trainings_details: List[Train
 
 
 # ---------- Helper functions ----------
+
+def _get_duration_as_text(training_info: dict) -> str:
+    seconds = int(training_info['Duration'])
+    if seconds > 0:
+        result = util.get_formatted_duration(seconds, include_relative_indicator=False)
+    else:
+        result = None
+    return result
+
 
 def _get_key_for_training_sort(training_info: dict, training_designs_data: dict) -> str:
     result = ''

@@ -185,12 +185,12 @@ def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, retur
     return result
 
 
-def get_item_names_by_training_id(training_id: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
+def get_item_details_short_by_training_id(training_id: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
     if item_design_data is None:
         item_design_data = __item_designs_cache.get_data_dict3()
 
     item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name)
-    result = [item_design_data[item_design_id][ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME] for item_design_id in item_design_ids]
+    result = [get_item_details_short_from_id_as_text(item_design_id) for item_design_id in item_design_ids]
 
     return result
 
