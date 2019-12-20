@@ -194,15 +194,21 @@ def _get_parents(training_info: dict, training_designs_data: dict) -> list:
 
 
 def _get_stat_chances(stat_names: list, training_info: dict) -> list:
-    result = []
+    chances = []
+    max_chance = 0
     for stat_name in stat_names:
         stat_chance = _get_stat_chance(stat_name, training_info)
         if stat_chance is not None:
-            result.append(stat_chance)
+            chances.append(stat_chance)
+
+    max_chance = max([stat_chance[2] for stat_chance in chances])
+    result = [stat_chance for stat_chance in chances if stat_chance[2] == max_chance]
+    result.extend([stat_chance for stat_chance in chances if stat_chance[2] != max_chance])
+
     return result
 
 
-def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = False) -> str:
+def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = False) -> (str, str, str, str):
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
         if chance_name in training_info.keys():
@@ -211,7 +217,7 @@ def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = Fal
                 stat_emoji = lookups.STAT_EMOJI_LOOKUP[stat_name]
                 stat_unit = lookups.STAT_UNITS_LOOKUP[stat_name]
                 operator = '' if guaranteed else '\u2264'
-                return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
+                return (stat_emoji, operator, stat_chance, stat_unit)
     return None
 
 
