@@ -195,15 +195,13 @@ def _get_parents(training_info: dict, training_designs_data: dict) -> list:
 
 def _get_stat_chances(stat_names: list, training_info: dict) -> list:
     chances = []
-    max_chance = 0
     for stat_name in stat_names:
-        stat_chance = _get_stat_chance(stat_name, training_info)
-        if stat_chance is not None:
-            chances.append(stat_chance)
+        chance = _get_stat_chance(stat_name, training_info)
+        if chance is not None:
+            chances.append(chance)
 
-    max_chance = max([stat_chance[2] for stat_chance in chances])
-    result = [_get_stat_chance_display(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance]
-    result.extend([_get_stat_chance_display(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance])
+    chances = sorted(chances, key=lambda chance: int(chance[2]))
+    result = [_get_stat_chance_display(*chance) for chance in chances]
 
     return result
 
