@@ -566,37 +566,6 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
     await util.post_output(ctx, output)
 
 
-@bot.group(name='test1')
-async def cmd_test1(ctx, *, args: str = None):
-    if ctx.invoked_subcommand is None:
-        if args == 'test2':
-            cmd = bot.get_command(f'test1 test2')
-            await ctx.invoke(cmd)
-        elif args and args.startswith('test2 '):
-            cmd = bot.get_command(f'test1 test2')
-            await ctx.invoke(cmd, args=str(args[6:]))
-        else:
-            await ctx.send(f'Executed command: `test1` with args `{args}`')
-
-
-@cmd_test1.group(name='test2')
-async def cmd_test1_test2(ctx, *, args: str = None):
-    if ctx.invoked_subcommand is None:
-        if args == 'past':
-            cmd = bot.get_command(f'test1 test2 past')
-            await ctx.invoke(cmd)
-        elif args and args.startswith('past '):
-            cmd = bot.get_command(f'test1 test2 past')
-            await ctx.invoke(cmd, args=str(args[6:]))
-        else:
-            await ctx.send(f'Executed command: `test1 test2` with args `{args}`')
-
-
-@cmd_test1_test2.command(name='past')
-async def cmd_test1_test2_past(ctx, *, args: str = None):
-    await ctx.send(f'Executed command: `test1 test2 past` with args `{args}`')
-
-
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
