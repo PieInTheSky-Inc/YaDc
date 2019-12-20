@@ -6,6 +6,7 @@ import discord
 from typing import Callable, List, Tuple
 
 from cache import PssCache
+import emojis
 import pss_assert
 import pss_core as core
 import pss_entity as entity
@@ -43,7 +44,6 @@ class TrainingDetails(entity.EntityDetails):
         training_rank = int(training_info['Rank'])
         training_id = training_info[TRAINING_DESIGN_KEY_NAME]
 
-        duration = _get_duration_as_text(training_info)
         stats = []
         stats.extend(lookups.STATS_LEFT)
         stats.extend(lookups.STATS_RIGHT)
@@ -56,13 +56,15 @@ class TrainingDetails(entity.EntityDetails):
         stat_chances.append(xp_stat)
 
         self.__chances: str = ' '.join(stat_chances)
-        self.__duration: str = duration
+        self.__cost: str = _get_cost_as_text(training_info)
+        self.__duration: str = _get_duration_as_text(training_info)
         self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'])
         self.__room_name: str = room_name
         self.__training_item_details: str = ', '.join(training_item_details)
 
         self.__details_long: List[Tuple[str, str]] = [
             ('Duration', self.__duration),
+            ('Cost', self.__cost),
             ('Training room', self.__room_name),
             ('Consumable', self.__training_item_details),
             ('Research required', self.__required_research),
@@ -76,6 +78,11 @@ class TrainingDetails(entity.EntityDetails):
     @property
     def chances(self) -> str:
         return self.__chances
+
+
+    @property
+    def cost(self) -> str:
+        return self.__cost
 
 
     @property
@@ -173,6 +180,16 @@ def _get_training_info_as_text(training_name: str, trainings_details: List[Train
 
 
 # ---------- Helper functions ----------
+
+def _get_cost_as_text(training_info: dict) -> str:
+    cost = int(training_info['MineralCost'])
+    if cost > 0:
+        cost_compact = util.get_reduced_number_compact(cost)
+        result = f'{cost_compact} {emojis.pss_min_big}'
+    else:
+        result = None
+    return result
+
 
 def _get_duration_as_text(training_info: dict) -> str:
     seconds = int(training_info['Duration'])
