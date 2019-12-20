@@ -41,13 +41,14 @@ class TrainingDetails(entity.EntityDetails):
 
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
+        training_id = training_info[TRAINING_DESIGN_KEY_NAME]
 
-        duration = _get_duration_as_text(int(training_info))
+        duration = _get_duration_as_text(training_info)
         stats = []
         stats.extend(lookups.STATS_LEFT)
         stats.extend(lookups.STATS_RIGHT)
-        training_item_name = ', '.join(item.get_item_details_short_by_training_id(training_info[TRAINING_DESIGN_KEY_NAME]))
-        room_name, room_short_name = _get_room_names(training_rank)
+        training_item_details = item.get_item_details_short_by_training_id(training_id)
+        room_name, _ = _get_room_names(training_rank)
         stat_chances = _get_stat_chances(stats, training_info)
         xp_stat = _get_stat_chance_as_text(*_get_stat_chance('Xp', training_info, guaranteed=True))
         stat_chances.append(xp_stat)
@@ -56,13 +57,12 @@ class TrainingDetails(entity.EntityDetails):
         self.__duration: str = duration
         self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'])
         self.__room_name: str = f'{room_name} lvl {required_room_level}'
-        self.__room_short_name: str = f'{room_short_name} {required_room_level}'
-        self.__training_item_name: str = training_item_name
+        self.__training_item_details: str = ', '.join(training_item_details)
 
         self.__details_long: List[Tuple[str, str]] = [
             ('Duration', self.__duration),
             ('Training room', self.__room_name),
-            ('Consumable', self.__training_item_name),
+            ('Consumable', self.__training_item_details),
             ('Research required', self.__required_research),
             ('Results', self.__chances)
         ]
@@ -102,13 +102,8 @@ class TrainingDetails(entity.EntityDetails):
 
 
     @property
-    def room_short_name(self) -> str:
-        return self.__room_short_name
-
-
-    @property
-    def training_item_name(self) -> str:
-        return self.__training_item_name
+    def training_item_details(self) -> str:
+        return self.__training_item_details
 
 
     def get_details_as_text_long(self) -> List[str]:

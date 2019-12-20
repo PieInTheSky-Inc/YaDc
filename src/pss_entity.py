@@ -65,7 +65,8 @@ class EntityDetails(object):
             result.append(f'_{description}_')
         if details:
             for (detail_name, detail_value) in details:
-                result.append(f'{detail_name} = {detail_value}')
+                if detail_value:
+                    result.append(f'{detail_name} = {detail_value}')
         return result
 
 
@@ -134,7 +135,7 @@ class EntityDesignsRetriever:
         return result
 
 
-    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict = None):
+    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
         if not entity_designs_data:
             entity_designs_data = self.get_data_dict3()
 

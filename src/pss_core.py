@@ -294,7 +294,7 @@ def fix_allowed_value_candidate(candidate: str) -> str:
 
 
 
-def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None) -> list:
+def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None, match_exact: bool = False) -> list:
     # data structure: {id: content}
     # fixed_data structure: {description: id}
     if not data or not property_name or not property_value:
@@ -320,8 +320,9 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     similarity_values = sorted(list(similarity_map.keys()), reverse=True)
     results = []
     for similarity_value in similarity_values:
-        entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
-        results.extend(entry_ids)
+        if not match_exact or (match_exact is True and similarity_value.is_integer()):
+            entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
+            results.extend(entry_ids)
 
     return results
 
