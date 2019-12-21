@@ -104,14 +104,12 @@ class EntityDesignDetails(object):
 
 class EntityDesignsRetriever:
     def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None):
-        self.__cache_name: str = cache_name
+        self.__cache_name: str = cache_name or ''
         self.__base_path: str = entity_design_base_path
         self.__key_name: str = entity_design_key_name
         self.__description_property_name: str = entity_design_description_property_name
         self.__sorted_key_function: Callable[[dict, dict], str] = sorted_key_function
         self.__fix_data_delegate = fix_data_delegate
-        if not self.__cache_name:
-            self.__cache_name = ''
 
         self.__cache = PssCache(
             self.__base_path,
@@ -124,11 +122,9 @@ class EntityDesignsRetriever:
         return self.__cache.get_data_dict3()
 
 
-    def get_entity_infos(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
-        if not entity_designs_data:
-            entity_designs_data = self.get_data_dict3()
-        if sorted_key_function is None:
-            sorted_key_function = self.__sorted_key_function
+    def get_entity_infos_by_name(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
+        entity_designs_data = entity_designs_data or self.get_data_dict3()
+        sorted_key_function = sorted_key_function or self.__sorted_key_function
 
         entity_design_ids = self.get_entity_design_ids_by_name(entity_name, entity_designs_data=entity_designs_data)
         entity_designs_data_keys = entity_designs_data.keys()
@@ -142,8 +138,7 @@ class EntityDesignsRetriever:
 
 
     def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
-        if not entity_designs_data:
-            entity_designs_data = self.get_data_dict3()
+        entity_designs_data = entity_designs_data or self.get_data_dict3()
 
         results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
