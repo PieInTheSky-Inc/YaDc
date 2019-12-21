@@ -898,7 +898,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
       /training [name]
 
     Parameters:
-      name:       A room's name or part of it. Mandatory.
+      name: A room's name or part of it. Mandatory.
 
     Examples:
       /training bench - Searches for trainings having 'bench' in their names and prints their details.

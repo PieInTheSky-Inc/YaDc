@@ -161,10 +161,7 @@ def _get_user_details_from_tournament_data(user_info: dict, user_data: dict) -> 
 def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
 
-    user_infos = _get_user_infos(user_name)
-    user_ids = sorted([int(user_id) for user_id in user_infos.keys() if user_id])
-    user_ids = [str(user_id) for user_id in user_ids]
-    user_infos = [user_info for user_id, user_info in user_infos.items() if user_id in user_ids]
+    user_infos = list(_get_user_infos(user_name).values())
     return user_infos
 
 

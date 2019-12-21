@@ -147,7 +147,7 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
     retrieval_date = util.get_utcnow()
     fleet_users_infos = _get_fleet_users_by_id(fleet_id)
     if fleet_users_infos:
-        fleet_info = list(fleet_users_infos.values())[0][fleet_id]
+        fleet_info = list(fleet_users_infos.values())[0]['Alliance']
     else:
         fleet_info = _get_fleet_info_by_name(fleet_name)
 
@@ -181,10 +181,7 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
 def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
 
-    fleet_infos = _get_fleet_infos_by_name(fleet_name)
-    fleet_ids = sorted([int(fleet_id) for fleet_id in fleet_infos.keys() if fleet_id])
-    fleet_ids = [str(fleet_id) for fleet_id in fleet_ids]
-    fleet_infos = [fleet_info for fleet_id, fleet_info in fleet_infos.items() if fleet_id in fleet_ids]
+    fleet_infos = list(_get_fleet_infos_by_name(fleet_name).values())
     return fleet_infos
 
 

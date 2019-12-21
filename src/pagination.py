@@ -7,6 +7,7 @@ from typing import Callable, Dict, List, Tuple
 import emojis
 import settings
 import server_settings
+import utility as util
 
 
 class Paginator():
@@ -18,6 +19,7 @@ class Paginator():
         self.__page_size = page_size
         self.__timeout = timeout
 
+        self.__is_dm_channel = ctx.channel.type == discord.ChannelType.private
         if ctx.channel.type == discord.ChannelType.text and ctx.guild and ctx.guild.id:
             bot_permissions = ctx.me.permissions_in(ctx.channel)
             if bot_permissions.add_reactions:
@@ -25,7 +27,7 @@ class Paginator():
             else:
                 self.__use_emojis = False
         else:
-            self.__use_emojis = True
+            self.__use_emojis = not self.__is_dm_channel
 
         if not self.__use_emojis:
             self.__page_size = len(self.__available_options)
@@ -75,23 +77,23 @@ class Paginator():
                 else:
                     reply = await self.__context.bot.wait_for('message', timeout=self.__timeout, check=option_selection_check)
             except asyncio.TimeoutError:
-                await self.__message.delete()
+                self.__try_delete_message()
                 return False, {}
             else:
                 if reaction and user:
                     if user != self.__context.author:
-                        await reaction.remove(user)
+                        await util.try_remove_reaction(reaction, user)
                         repost_page = False
                     else:
                         emoji = str(reaction.emoji)
                         if emoji == emojis.page_next:
-                            await reaction.remove(user)
+                            await util.try_remove_reaction(reaction, user)
                             self.__set_next_page()
                         elif emoji == emojis.page_previous:
-                            await reaction.remove(user)
+                            await util.try_remove_reaction(reaction, user)
                             self.__set_previous_page()
                         else:
-                            await self.__message.delete()
+                            await self.__try_delete_message()
                             return True, self.__current_options[emoji]
                 elif reply:
                     content = str(reply.content)
@@ -101,8 +103,8 @@ class Paginator():
                         pass
                     else:
                         if selection in self.__current_options.keys():
-                            await reply.delete()
-                            await self.__message.delete()
+                            await util.try_delete_message(reply)
+                            await self.__try_delete_message()
                             return True, self.__current_options[selection]
 
 
@@ -146,6 +148,13 @@ class Paginator():
         new_page, new_page_no = Paginator.__get_previous_page(self.__pages, self.__current_page_no)
         self.__set_page(new_page)
         self.__current_page_no = new_page_no
+
+
+    async def __try_delete_message(self) -> bool:
+        result = await util.try_delete_message(self.__message)
+        if result:
+            self.__message = None
+        return result
 
 
     @staticmethod

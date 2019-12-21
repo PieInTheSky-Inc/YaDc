@@ -536,6 +536,23 @@ def dicts_equal(d1: dict, d2: dict) -> bool:
     return True
 
 
+async def try_delete_message(message: discord.Message) -> bool:
+    try:
+        await message.delete()
+        return True
+    except discord.Forbidden:
+        return False
+
+
+async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) -> bool:
+    try:
+        await reaction.remove(user)
+        return True
+    except discord.Forbidden:
+        return False
+
+
+
 
 
 
