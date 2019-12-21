@@ -123,13 +123,18 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
         cargo_items = raw_data['CargoItems'].split('|')
         cargo_prices = raw_data['CargoPrices'].split('|')
         for i, cargo_info in enumerate(cargo_items):
-            item_id, amount = cargo_info.split('x')
+            if 'x' in cargo_info:
+                item_id, amount = cargo_info.split('x')
+            else:
+                item_id = cargo_info
+                amount = '1'
             if ':' in item_id:
                 _, item_id = item_id.split(':')
-            item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
-            currency_type, price = cargo_prices[i].split(':')
-            currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
-            result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
+            if item_id:
+                item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+                currency_type, price = cargo_prices[i].split(':')
+                currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+                result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
     else:
         result.append('-')
     return result
