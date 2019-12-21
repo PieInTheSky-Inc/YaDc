@@ -191,6 +191,52 @@ class CharDesignDetails(entity.EntityDesignDetails):
 
 
 
+class CollectionDesignDetails(entity.EntityDesignDetails):
+    def __init__(self, collection_design_info: dict, chars_designs_data: dict = None):
+        collection_crew = _get_collection_chars_designs_infos(collection_design_info)
+        collection_perk = collection_design_info['EnhancementType']
+        collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
+        min_combo = collection_design_info['MinCombo']
+        max_combo = collection_design_info['MaxCombo']
+        base_enhancement_value = collection_design_info['BaseEnhancementValue']
+        step_enhancement_value = collection_design_info['StepEnhancementValue']
+
+        self.__characters: str = ', '.join(collection_crew)
+        self.__min_max_combo = f'{min_combo}...{max_combo}'
+        self.__enhancement = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
+
+        details_long: List[Tuple[str, str]] = [
+            ('Combo Min...Max', self.__min_max_combo),
+            (collection_perk, self.__enhancement),
+            ('Characters', self.__characters)
+        ]
+        details_short: List[Tuple[str, str, bool]] = [
+        ]
+
+        super().__init__(
+            name=collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=collection_design_info['CollectionDescription'],
+            details_long=details_long,
+            details_short=details_short
+        )
+
+
+    @property
+    def characters(self) -> str:
+        return self.__characters
+
+    @property
+    def min_max_combo(self) -> str:
+        return self.__min_max_combo
+
+    @property
+    def enhancement(self) -> str:
+        return self.__enhancement
+
+
+
+
+
 
 
 
@@ -322,10 +368,11 @@ def get_collection_design_details_by_name(collection_name: str, as_embed: bool =
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
+        collection_design_details = CollectionDesignDetails(collection_design_info)
         if as_embed:
-            return _get_collection_info_as_embed(collection_design_info), True
+            return collection_design_details.get_details_as_embed(), True
         else:
-            return _get_collection_info_as_text(collection_design_info), True
+            return collection_design_details.get_details_as_text_long(), True
 
 
 def _get_collection_design_info(collection_name: str):
@@ -347,34 +394,6 @@ def _get_collection_design_id_by_name(collection_name: str, collections_designs_
         return results[0]
 
     return None
-
-
-def _get_collection_info_as_embed(collection_design_info: dict) -> discord.Embed:
-    # Use collection_info['ColorString'] for embed color
-    return None
-
-
-def _get_collection_info_as_text(collection_design_info: Dict[str, str]) -> List[str]:
-    collection_crew = _get_collection_chars_designs_infos(collection_design_info)
-    collection_perk = collection_design_info['EnhancementType']
-    if collection_perk in lookups.COLLECTION_PERK_LOOKUP.keys():
-        collection_perk = lookups.COLLECTION_PERK_LOOKUP[collection_perk]
-    description = collection_design_info['CollectionDescription']
-    min_combo = collection_design_info['MinCombo']
-    max_combo = collection_design_info['MaxCombo']
-    base_enhancement_value = collection_design_info['BaseEnhancementValue']
-    step_enhancement_value = collection_design_info['StepEnhancementValue']
-
-    characters = ', '.join(collection_crew)
-
-    lines = []
-    lines.append(f'**{collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
-    lines.append(f'_{description}_')
-    lines.append(f'Combo Min...Max = {min_combo}...{max_combo}')
-    lines.append(f'{collection_perk} = {base_enhancement_value} (Base), {step_enhancement_value} (Step)')
-    lines.append(f'Characters = {characters}')
-
-    return lines
 
 
 def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
