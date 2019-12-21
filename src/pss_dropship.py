@@ -3,7 +3,7 @@
 
 from datetime import datetime
 import discord
-from threading import Lock
+import pprint
 
 from cache import PssCache
 import emojis
@@ -66,12 +66,17 @@ def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMB
     item_design_data = item.__item_designs_cache.get_data_dict3()
     room_design_data = room.__room_designs_cache.get_data_dict3()
 
-    daily_msg = _get_daily_news_from_data_as_text(daily_info)
-    dropship_msg = _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
-    merchantship_msg = _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
-    shop_msg = _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-    sale_msg = _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-    daily_reward_msg = _get_daily_reward_from_data_as_text(daily_info, item_design_data)
+    try:
+        daily_msg = _get_daily_news_from_data_as_text(daily_info)
+        dropship_msg = _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
+        merchantship_msg = _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
+        shop_msg = _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+        sale_msg = _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+        daily_reward_msg = _get_daily_reward_from_data_as_text(daily_info, item_design_data)
+    except Exception as e:
+        print(e)
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(daily_info)
 
     lines = daily_msg
     lines.append(settings.EMPTY_LINE)
