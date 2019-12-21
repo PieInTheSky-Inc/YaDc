@@ -10,10 +10,11 @@ import pss_core as core
 
 
 class EntityDetails(object):
-    def __init__(self, name: str = None, description: str = None, details: List[Tuple[str, str]] = []):
+    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str]] = None):
         self.__name: str = name
         self.__description: str = description
-        self.__details: List[Tuple[str, str]] = details
+        self.__details_long: List[Tuple[str, str]] = details_long or []
+        self.__details_short: List[Tuple[str, str]] = details_short or []
 
 
     @property
@@ -22,8 +23,13 @@ class EntityDetails(object):
 
 
     @property
-    def details(self) -> List[Tuple[str, str]]:
-        return self.__details
+    def details_long(self) -> List[Tuple[str, str]]:
+        return list(self.__details_long)
+
+
+    @property
+    def details_short(self) -> List[Tuple[str, str]]:
+        return list(self.__details_short)
 
 
     @property
@@ -32,15 +38,15 @@ class EntityDetails(object):
 
 
     def get_details_as_embed(self) -> Embed:
-        return EntityDetails._get_details_as_embed(self.name, self.description, self.details)
+        return EntityDetails._get_details_as_embed(self.name, self.description, self.details_long)
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return EntityDetails._get_details_as_text_long(self.name, self.description, self.details)
+        return EntityDetails._get_details_as_text_long(self.name, self.description, self.details_long)
 
 
     def get_details_as_text_short(self, include_detail_names: bool = True) -> List[str]:
-        return EntityDetails._get_details_as_text_short(self.name, self.details, include_detail_names)
+        return EntityDetails._get_details_as_text_short(self.name, self.details_short, include_detail_names)
 
 
     @staticmethod

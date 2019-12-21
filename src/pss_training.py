@@ -35,11 +35,6 @@ TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
 class TrainingDetails(entity.EntityDetails):
     def __init__(self, training_info: dict):
-        super().__init__(
-            training_info[TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            training_info['TrainingDescription']
-        )
-
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
         training_id = training_info[TRAINING_DESIGN_KEY_NAME]
@@ -63,7 +58,7 @@ class TrainingDetails(entity.EntityDetails):
         self.__room_name: str = room_name
         self.__training_item_details: str = ', '.join(training_item_details)
 
-        self.__details_long: List[Tuple[str, str]] = [
+        details_long: List[Tuple[str, str]] = [
             ('Duration', self.__duration),
             ('Cost', self.__cost),
             ('Fatigue', self.__fatigue),
@@ -72,62 +67,45 @@ class TrainingDetails(entity.EntityDetails):
             ('Consumable', self.__training_item_details),
             ('Results', self.__chances)
         ]
-        self.__details_short: List[Tuple[str, str]] = [
+        details_short: List[Tuple[str, str]] = [
             (None, self.__chances)
         ]
+
+        super().__init__(
+            name=training_info[TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=training_info['TrainingDescription'],
+            details_long=details_long,
+            details_short=details_short
+        )
 
 
     @property
     def chances(self) -> str:
         return self.__chances
 
-
     @property
     def cost(self) -> str:
         return self.__cost
-
-
-    @property
-    def details_long(self) -> List[Tuple[str, str]]:
-        return list(self.__details_long)
-
-
-    @property
-    def details_short(self) -> List[Tuple[str, str]]:
-        return list(self.__details_short)
-
 
     @property
     def duration(self) -> str:
         return list(self.__duration)
 
-
     @property
     def fatigue(self) -> str:
         return self.__fatigue
-
 
     @property
     def required_research(self) -> str:
         return self.__required_research
 
-
     @property
     def room_name(self) -> str:
         return self.__room_name
 
-
     @property
     def training_item_details(self) -> str:
         return self.__training_item_details
-
-
-    def get_details_as_text_long(self) -> List[str]:
-        return entity.EntityDetails._get_details_as_text_long(super().name, super().description, self.details_long)
-
-
-    def get_details_as_text_short(self) -> List[str]:
-        return entity.EntityDetails._get_details_as_text_short(super().name, self.details_short, include_detail_names=True)
 
 
 
