@@ -139,7 +139,8 @@ async def post_dailies_loop():
         if autodaily_settings:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             output, created_output = dropship.get_dropship_text(daily_info=daily_info)
-            await post_dailies(output, autodaily_settings, utc_now)
+            if created_output:
+                await post_dailies(output, autodaily_settings, utc_now)
 
         if has_daily_changed and created_output:
             daily.db_set_daily_info(daily_info, utc_now)
