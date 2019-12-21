@@ -77,6 +77,7 @@ def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMB
         print(e)
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(daily_info)
+        return [], False
 
     lines = daily_msg
     lines.append(settings.EMPTY_LINE)
