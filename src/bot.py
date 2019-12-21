@@ -429,7 +429,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = crew.get_char_details_from_name(name, level)
+            char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
@@ -473,7 +473,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
     """
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = crew.get_char_details_from_name(crew_name, level=level)
+        output, _ = crew.get_char_design_details_by_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
@@ -564,7 +564,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
       This command will only print stats for the collection with the best matching collection_name.
     """
     async with ctx.typing():
-        output, _ = crew.get_collection_info(collection_name)
+        output, _ = crew.get_collection_design_details_by_name(collection_name)
     await util.post_output(ctx, output)
 
 

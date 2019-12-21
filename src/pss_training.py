@@ -33,7 +33,7 @@ TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
 # ---------- Classes ----------
 
-class TrainingDetails(entity.EntityDetails):
+class TrainingDetails(entity.EntityDesignDetails):
     def __init__(self, training_info: dict):
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
@@ -67,8 +67,8 @@ class TrainingDetails(entity.EntityDetails):
             ('Consumable', self.__training_item_details),
             ('Results', self.__chances)
         ]
-        details_short: List[Tuple[str, str]] = [
-            (None, self.__chances)
+        details_short: List[Tuple[str, str, bool]] = [
+            (None, self.__chances, False)
         ]
 
         super().__init__(

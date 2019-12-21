@@ -9,12 +9,12 @@ from cache import PssCache
 import pss_core as core
 
 
-class EntityDetails(object):
-    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str]] = None):
+class EntityDesignDetails(object):
+    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None):
         self.__name: str = name
         self.__description: str = description
         self.__details_long: List[Tuple[str, str]] = details_long or []
-        self.__details_short: List[Tuple[str, str]] = details_short or []
+        self.__details_short: List[Tuple[str, str, bool]] = details_short or []
 
 
     @property
@@ -28,7 +28,7 @@ class EntityDetails(object):
 
 
     @property
-    def details_short(self) -> List[Tuple[str, str]]:
+    def details_short(self) -> List[Tuple[str, str, bool]]:
         return list(self.__details_short)
 
 
@@ -38,15 +38,15 @@ class EntityDetails(object):
 
 
     def get_details_as_embed(self) -> Embed:
-        return EntityDetails._get_details_as_embed(self.name, self.description, self.details_long)
+        return EntityDesignDetails._get_details_as_embed(self.name, self.description, self.details_long)
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return EntityDetails._get_details_as_text_long(self.name, self.description, self.details_long)
+        return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long)
 
 
-    def get_details_as_text_short(self, include_detail_names: bool = True) -> List[str]:
-        return EntityDetails._get_details_as_text_short(self.name, self.details_short, include_detail_names)
+    def get_details_as_text_short(self) -> List[str]:
+        return EntityDesignDetails._get_details_as_text_short(self.name, self.details_short)
 
 
     @staticmethod
@@ -77,15 +77,15 @@ class EntityDetails(object):
 
 
     @staticmethod
-    def _get_details_as_text_short(title: str, details: List[Tuple[str,str]], include_detail_names: bool) -> List[str]:
+    def _get_details_as_text_short(title: str, details: List[Tuple[str,str]]) -> List[str]:
         result = []
         if title:
             result.append(title)
         if details:
             result_details = []
-            for (detail_name, detail_value) in details:
+            for (detail_name, detail_value, include_detail_name) in details:
                 if detail_value:
-                    if include_detail_names and detail_name:
+                    if include_detail_name and detail_name:
                         result_details.append(f'{detail_name}: {detail_value}')
                     else:
                         result_details.append(detail_value)
