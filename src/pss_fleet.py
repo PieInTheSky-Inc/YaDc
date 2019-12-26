@@ -239,7 +239,7 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info['DivisionDesignId']]
 
-    fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
+    fleet_users_infos = util.sort_entities_by(list(fleet_users_infos), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
 
     lines = [f'**{fleet_name} member stars (division {division})**']
     for i, user_info in enumerate(fleet_users_infos):
