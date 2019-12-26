@@ -336,17 +336,20 @@ def sort_entities_by(entity_infos: list, order_info: list) -> list:
         return sorted(result)
 
 
-def sort_tuples_by(data: tuple, order_info: list) -> list:
+def sort_tuples_by(data: list, order_info: list) -> list:
     """order_info is a list of tuples (element index,reverse)"""
-    result = data
-    if order_info:
-        for i in range(len(order_info), 0, -1):
-            element_index = order_info[i - 1][0]
-            reverse = convert_to_boolean(order_info[i - 1][1])
-            result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
-        return result
+    result = data or []
+    if result:
+        if order_info:
+            for i in range(len(order_info), 0, -1):
+                element_index = order_info[i - 1][0]
+                reverse = convert_to_boolean(order_info[i - 1][1])
+                result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
+            return result
+        else:
+            return sorted(result)
     else:
-        return sorted(result)
+        return result
 
 
 def convert_input_to_boolean(s: str) -> bool:
