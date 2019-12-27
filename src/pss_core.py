@@ -15,6 +15,7 @@ import urllib.request
 import xml.etree.ElementTree
 
 import data
+import pss_daily as daily
 import settings
 import utility as util
 
@@ -291,7 +292,6 @@ def fix_allowed_value_candidate(candidate: str) -> str:
     result = candidate.strip()
     result = __rx_allowed_candidate_fix_replace.sub('', result)
     return result
-
 
 
 def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None, match_exact: bool = False) -> list:
@@ -589,8 +589,11 @@ def db_update_schema_v_1_2_4_0():
     query = '\n'.join(query_lines)
     success = db_try_execute(query)
     if success:
-
-        success = db_try_set_schema_version('1.2.4.0')
+        utc_now = util.get_utcnow()
+        daily_info = daily.get_daily_info()
+        success = daily.db_set_daily_info(daily_info, utc_now)
+        if success:
+            success = db_try_set_schema_version('1.2.4.0')
     return success
 
 
