@@ -21,16 +21,13 @@ class EntityDesignDetails(object):
     def description(self) -> str:
         return self.__description
 
-
     @property
     def details_long(self) -> List[Tuple[str, str]]:
         return list(self.__details_long)
 
-
     @property
     def details_short(self) -> List[Tuple[str, str, bool]]:
         return list(self.__details_short)
-
 
     @property
     def name(self) -> str:

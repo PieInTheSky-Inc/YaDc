@@ -246,9 +246,9 @@ class CollectionDesignDetails(entity.EntityDesignDetails):
 class PrestigeDetails(entity.EntityDesignDetails):
     def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
         self.__char_design_name: str = char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        self.__count: int = len(prestige_infos)
+        self.__count: int = sum([len(prestige_partners) for prestige_partners in prestige_infos.values()])
         self.__error: str = error_message
-        self.__prestige_infos: Dict[str, List[str]]
+        self.__prestige_infos: Dict[str, List[str]] = prestige_infos
         self.__title_template: str = title_template or '**$char_design_name$** has **$count$** combinations:'
         self.__sub_title_template: str = sub_title_template or '**$char_design_name$**:'
 
@@ -263,7 +263,7 @@ class PrestigeDetails(entity.EntityDesignDetails):
 
     @property
     def error(self) -> str:
-        return len(self.__error)
+        return self.__error
 
     @property
     def prestige_infos(self) -> Dict[str, List[str]]:
@@ -273,7 +273,7 @@ class PrestigeDetails(entity.EntityDesignDetails):
     def title(self) -> str:
         result = self.__title_template
         result = result.replace('$char_design_name$', self.char_design_name)
-        result = result.replace('$count$', self.count)
+        result = result.replace('$count$', str(self.count))
         return result
 
 
@@ -313,6 +313,7 @@ class PrestigeDetails(entity.EntityDesignDetails):
 class PrestigeFromDetails(PrestigeDetails):
     def __init__(self, char_from_design_info: dict, chars_designs_data: dict = None, prestige_from_data: dict = None):
         chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        count = len(prestige_from_data)
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige combinations:'
@@ -345,6 +346,7 @@ class PrestigeFromDetails(PrestigeDetails):
 class PrestigeToDetails(PrestigeDetails):
     def __init__(self, char_to_design_info: dict, chars_designs_data: dict = None, prestige_to_data: dict = None):
         chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        count = len(prestige_to_data)
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige recipes:'
@@ -358,20 +360,14 @@ class PrestigeToDetails(PrestigeDetails):
                 prestige_recipes.setdefault(char_1_design_name, set()).add(char_2_design_name)
                 prestige_recipes.setdefault(char_2_design_name, set()).add(char_1_design_name)
 
-            prestige_recipe_ingredients: List[Tuple[str, str]] = [(char_design_name, prestige_partners) for char_design_name, prestige_partners in prestige_recipes.items()]
-            prestige_recipe_ingredients = sorted(prestige_recipe_ingredients, key=lambda t: len(t[1]), reverse=True)
-            remaining_names = set(prestige_recipes.keys())
+            prestige_recipe_ingredients: List[Tuple[str, Set[str]]] = [(char_design_name, prestige_partners) for char_design_name, prestige_partners in prestige_recipes.items()]
 
             prestige_infos: Dict[str, List[str]] = {}
-            for (char_design_name, prestige_partners) in prestige_recipe_ingredients:
-                add_to_output = char_design_name in remaining_names or len([t for t in prestige_recipe_ingredients if t[0] in remaining_names])
-                if add_to_output:
-                    prestige_infos[char_design_name] = list(prestige_partners)
-                    remaining_names.discard(char_design_name)
-                    for prestige_partner in prestige_partners:
-                        remaining_names.discard(prestige_partner)
-                if not remaining_names:
-                    break
+            while prestige_recipe_ingredients:
+                prestige_recipe_ingredients = sorted(prestige_recipe_ingredients, key=lambda t: len(t[1]), reverse=True)
+                (char_design_name, prestige_partners) = prestige_recipe_ingredients[0]
+                prestige_infos[char_design_name] = list(prestige_partners)
+                prestige_recipe_ingredients = PrestigeToDetails._update_prestige_recipe_ingredients(prestige_recipe_ingredients)
         else:
             if char_to_design_info['Rarity'] == 'Special':
                 error = 'One cannot prestige to **Special** crew.'
@@ -381,6 +377,21 @@ class PrestigeToDetails(PrestigeDetails):
                 error = 'noone'
 
         super().__init__(char_to_design_info, prestige_infos, error, template_title, template_subtitle)
+
+
+    @staticmethod
+    def _update_prestige_recipe_ingredients(prestige_recipe_ingredients: List[Tuple[str, Set[str]]]) -> List[Tuple[str, Set[str]]]:
+        result: List[Tuple[str, Set[str]]] = []
+        # Take 1st char name & prestige partners
+        # Remove that pair from the result
+        # Iterate through
+        (base_char_design_name, base_prestige_partners) = prestige_recipe_ingredients[0]
+        for (char_design_name, prestige_partners) in prestige_recipe_ingredients[1:]:
+            if base_char_design_name in prestige_partners and char_design_name in base_prestige_partners:
+                prestige_partners = [x for x in prestige_partners if x != base_char_design_name]
+            if prestige_partners:
+                result.append((char_design_name, prestige_partners))
+        return result
 
 
 
