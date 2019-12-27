@@ -106,11 +106,11 @@ def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
         common_crew_details = crew.get_char_design_details_by_id(common_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
-        common_crew_info = common_crew_details._get_details_as_text_short()
+        common_crew_info = common_crew_details.get_details_as_text_short()
 
         hero_crew_id = raw_data['HeroCrewId']
         hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
-        hero_crew_info = hero_crew_details._get_details_as_text_short()
+        hero_crew_info = hero_crew_details.get_details_as_text_short()
 
         common_crew_rarity = common_crew_details.rarity
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
@@ -161,7 +161,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     entity_details = []
     if shop_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(entity_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
-        entity_details = char_design_details._get_details_as_text_short()
+        entity_details = char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
         entity_details = item.get_item_details_short_from_id_as_text(entity_id, items_designs_data)
     elif shop_type == 'Room':
@@ -192,7 +192,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(sale_argument, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
-        entity_details = ''.join(char_design_details._get_details_as_text_short())
+        entity_details = ''.join(char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
         entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, items_designs_data))
     elif sale_type == 'Room':
