@@ -589,6 +589,7 @@ def db_update_schema_v_1_2_4_0():
     query = '\n'.join(query_lines)
     success = db_try_execute(query)
     if success:
+
         success = db_try_set_schema_version('1.2.4.0')
     return success
 

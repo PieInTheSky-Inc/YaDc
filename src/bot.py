@@ -85,7 +85,7 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
-async def on_ready():
+async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot prefix is: {COMMAND_PREFIX}')
@@ -96,7 +96,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_command_error(ctx: discord.ext.commands.Context, err):
+async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     else:
@@ -110,14 +110,14 @@ async def on_command_error(ctx: discord.ext.commands.Context, err):
 
 
 @bot.event
-async def on_guild_join(guild: discord.Guild):
+async def on_guild_join(guild: discord.Guild) -> None:
     success = server_settings.db_create_server_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not create server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
 @bot.event
-async def on_guild_remove(guild: discord.Guild):
+async def on_guild_remove(guild: discord.Guild) -> None:
     success = server_settings.db_delete_server_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not delete server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
