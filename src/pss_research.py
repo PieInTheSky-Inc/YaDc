@@ -88,6 +88,17 @@ def get_research_details_short_from_data_as_text(research_info: dict) -> list:
     return [f'**{name}**: {costs} - {duration} - LAB lvl {required_lab_level}']
 
 
+def get_research_name_from_id(research_id: str, research_designs_data: dict = None) -> str:
+    if research_id != '0':
+        if not research_designs_data:
+            research_designs_data = __research_designs_cache.get_data_dict3()
+
+        research_info = research_designs_data[research_id]
+        return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        return None
+
+
 def _get_costs_from_research_info(research_info: dict) -> (int, str):
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])

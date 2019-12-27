@@ -91,13 +91,14 @@ def get_item_details_from_id_as_text(item_id: str, item_designs_data: dict = Non
 def get_item_details_from_data_as_text(item_info: dict) -> list:
     bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
     bonus_value = item_info['EnhancementValue']
-    equipment_slot = item_info['ItemSubType']
     item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
+    item_sub_type = item_info['ItemSubType']
     rarity = item_info['Rarity']
 
-    if item_type == 'Equipment' and 'Equipment' in equipment_slot:
-        slot_txt = ' ({})'.format(equipment_slot.replace('Equipment', ''))
+    slot = _get_item_slot(item_type, item_sub_type)
+    if slot:
+        slot_txt = f' ({slot})'
     else:
         slot_txt = ''
 
@@ -120,18 +121,32 @@ def get_item_details_short_from_id_as_text(item_id: str, item_designs_data: dict
 def get_item_details_short_from_data_as_text(item_info: dict) -> list:
     name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     rarity = item_info['Rarity']
-    bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+    bonus_type = item_info['EnhancementType']  # if not 'None' then print bonus_value
+    item_type = item_info['ItemType']
+    item_sub_type = item_info['ItemSubType']
     bonus_value = item_info['EnhancementValue']
-    if bonus_type == 'None':
-        bonus_txt = ''
-    else:
-        bonus_txt = f', +{bonus_value} {bonus_type}'
-    return [f'{name} ({rarity}{bonus_txt})']
+
+    slot = _get_item_slot(item_type, item_sub_type)
+    details = [rarity]
+    if slot:
+        details.append(slot)
+    if bonus_type != 'None':
+        details.append(f'+{bonus_value} {bonus_type}')
+    details_txt = ', '.join(details)
+    return [f'{name} ({details_txt})']
 
 
 def get_item_info_from_id(item_id: str) -> dict:
     item_data = __item_designs_cache.get_data_dict3()
     return item_data[item_id]
+
+
+def _get_item_slot(item_type: str, item_sub_type: str) -> str:
+    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
+        result = item_sub_type.replace('Equipment', '')
+    else:
+        result = None
+    return result
 
 
 
@@ -142,7 +157,7 @@ def get_item_info_from_id(item_id: str) -> dict:
 def get_item_details(item_name: str, as_embed=False):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    item_infos = _get_item_infos(item_name)
+    item_infos = _get_item_infos_by_name(item_name)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -155,9 +170,7 @@ def get_item_details(item_name: str, as_embed=False):
             return _get_item_info_as_text(item_name, item_infos), True
 
 
-
-
-def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
+def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
     if item_design_data is None:
         item_design_data = __item_designs_cache.get_data_dict3()
 
@@ -168,6 +181,16 @@ def _get_item_infos(item_name: str, item_design_data: dict = None, return_best_m
         get_best_match = return_best_match or util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
             result = [result[0]]
+
+    return result
+
+
+def get_item_details_short_by_training_id(training_id: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
+    if item_design_data is None:
+        item_design_data = __item_designs_cache.get_data_dict3()
+
+    item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
+    result = [' '.join(get_item_details_short_from_id_as_text(item_design_id)) for item_design_id in item_design_ids]
 
     return result
 
@@ -212,7 +235,7 @@ def _fix_item_name(item_name) -> str:
 def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    item_infos = _get_item_infos(item_name)
+    item_infos = _get_item_infos_by_name(item_name)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -264,7 +287,7 @@ def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE_EMBED
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_design_data = __item_designs_cache.get_data_dict3()
-    item_infos = _get_item_infos(item_name, item_design_data, return_best_match=True)
+    item_infos = _get_item_infos_by_name(item_name, item_design_data, return_best_match=True)
 
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
@@ -376,7 +399,7 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
 
     item_design_data = __item_designs_cache.get_data_dict3()
     item_ids = _get_item_design_ids_from_name(item_name)
-    item_infos = _get_item_infos(item_name)
+    item_infos = _get_item_infos_by_name(item_name)
 
     if not item_ids:
         return [f'Could not find an item named **{item_name}**.'], False

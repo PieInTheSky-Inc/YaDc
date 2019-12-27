@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 
 
@@ -27,6 +28,7 @@ MAXIMUM_CHARACTERS = 1900
 MIN_ENTITY_NAME_LENGTH = 3
 
 PREFIX_DEFAULT = '/'
+PRINT_DEBUG = False
 PSS_ABOUT_FILES = ['src/data/about.txt', 'data/about.txt']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 
@@ -35,6 +37,18 @@ SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 USE_EMBEDS = False
 
-VERSION = '1.2.3.2'
+VERSION = '1.2.4.0'
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
+
+
+
+
+
+
+
+
+
+
+
+

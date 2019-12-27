@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import discord
 import os
+from typing import Dict, List, Set, Tuple
 
 from cache import PssCache
 import emojis
 import pss_assert
+import pss_entity as entity
 import pss_core as core
 import pss_lookups as lookups
 import settings
@@ -46,36 +49,410 @@ __prestige_to_cache_dict = {}
 
 
 
+
+
+
+
+
+# ---------- Classes ----------
+
+class CharDesignDetails(entity.EntityDesignDetails):
+    def __init__(self, char_design_info: dict, collections_designs_data: dict = None, level: int = None):
+        special = _get_ability_name(char_design_info)
+        equipment_slots = _convert_equipment_mask(int(char_design_info['EquipmentMask']))
+        collection_name = _get_collection_name(char_design_info, collections_designs_data)
+        walk_speed = char_design_info['WalkingSpeed']
+        run_speed = char_design_info['RunSpeed']
+
+        ability = _get_stat('SpecialAbilityArgument', level, char_design_info)
+        if special:
+            ability += f' ({special})'
+
+        self.__ability: str = ability
+        self.__collection_name: str = collection_name
+        self.__equipment_slots: str = equipment_slots
+        self.__gender: str = char_design_info['GenderType']
+        self.__level: int = level
+        self.__race: str = char_design_info['RaceType']
+        self.__rarity: str = char_design_info['Rarity']
+        self.__speed: str = f'{walk_speed}/{run_speed}'
+        self.__stat_attack: str = _get_stat('Attack', level, char_design_info)
+        self.__stat_engine: str = _get_stat('Engine', level, char_design_info)
+        self.__stat_fire_resistance: str = char_design_info['FireResistance']
+        self.__stat_hp: str = _get_stat('Hp', level, char_design_info)
+        self.__stat_pilot: str = _get_stat('Pilot', level, char_design_info)
+        self.__stat_repair: str = _get_stat('Repair', level, char_design_info)
+        self.__stat_science: str = _get_stat('Science', level, char_design_info)
+        self.__stat_weapon: str = _get_stat('Weapon', level, char_design_info)
+        self.__training_capacity: str = char_design_info['TrainingCapacity']
+
+        details_long: List[Tuple[str, str]] = [
+            ('Level', self.__level),
+            ('Rarity', self.__rarity),
+            ('Race', self.__race),
+            ('Collection', self.__collection_name),
+            ('Gender', self.__gender),
+            ('Ability', self.__ability),
+            ('HP', self.__stat_hp),
+            ('Attack', self.__stat_attack),
+            ('Repair', self.__stat_repair),
+            ('Pilot', self.__stat_pilot),
+            ('Science', self.__stat_science),
+            ('Engine', self.__stat_engine),
+            ('Weapon', self.__stat_weapon),
+            ('Walk/run speed', self.__speed),
+            ('Fire resist', self.__stat_fire_resistance),
+            ('Training cap', self.__training_capacity),
+            ('Slots', self.__equipment_slots)
+        ]
+        details_short: List[Tuple[str, str, bool]] = [
+            ('Rarity', self.__rarity, False),
+            ('Ability', self.__ability, True),
+            ('Collection', self.__collection_name, True)
+        ]
+
+        super().__init__(
+            name=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=char_design_info['CharacterDesignDescription'],
+            details_long=details_long,
+            details_short=details_short
+        )
+
+
+    @property
+    def ability(self) -> str:
+        return self.__ability
+
+    @property
+    def attack(self) -> str:
+        return self.__stat_attack
+
+    @property
+    def collection_name(self) -> str:
+        return self.__collection_name
+
+    @property
+    def engine(self) -> str:
+        return self.__stat_engine
+
+    @property
+    def equipment_slots(self) -> str:
+        return self.__equipment_slots
+
+    @property
+    def fire_resistance(self) -> str:
+        return self.__stat_fire_resistance
+
+    @property
+    def gender(self) -> str:
+        return self.__gender
+
+    @property
+    def hp(self) -> str:
+        return self.__stat_hp
+
+    @property
+    def level(self) -> int:
+        return self.__level
+
+    @property
+    def pilot(self) -> str:
+        return self.__stat_pilot
+
+    @property
+    def race(self) -> str:
+        return self.__race
+
+    @property
+    def rarity(self) -> str:
+        return self.__rarity
+
+    @property
+    def repair(self) -> str:
+        return self.__stat_repair
+
+    @property
+    def science(self) -> str:
+        return self.__stat_science
+
+    @property
+    def speed(self) -> str:
+        return self.__speed
+
+    @property
+    def training_capacity(self) -> str:
+        return self.__training_capacity
+
+    @property
+    def weapon(self) -> str:
+        return self.__stat_weapon
+
+
+
+
+
+class CollectionDesignDetails(entity.EntityDesignDetails):
+    def __init__(self, collection_design_info: dict):
+        collection_crew = _get_collection_chars_designs_infos(collection_design_info)
+        collection_perk = collection_design_info['EnhancementType']
+        collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
+        min_combo = collection_design_info['MinCombo']
+        max_combo = collection_design_info['MaxCombo']
+        base_enhancement_value = collection_design_info['BaseEnhancementValue']
+        step_enhancement_value = collection_design_info['StepEnhancementValue']
+
+        self.__characters: str = ', '.join(collection_crew)
+        self.__min_max_combo = f'{min_combo}...{max_combo}'
+        self.__enhancement = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
+
+        details_long: List[Tuple[str, str]] = [
+            ('Combo Min...Max', self.__min_max_combo),
+            (collection_perk, self.__enhancement),
+            ('Characters', self.__characters)
+        ]
+        details_short: List[Tuple[str, str, bool]] = [
+        ]
+
+        super().__init__(
+            name=collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=collection_design_info['CollectionDescription'],
+            details_long=details_long,
+            details_short=details_short
+        )
+
+
+    @property
+    def characters(self) -> str:
+        return self.__characters
+
+    @property
+    def min_max_combo(self) -> str:
+        return self.__min_max_combo
+
+    @property
+    def enhancement(self) -> str:
+        return self.__enhancement
+
+
+
+
+
+
+
+
+
+
+
+class PrestigeDetails(entity.EntityDesignDetails):
+    def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
+        self.__char_design_name: str = char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        self.__count: int = sum([len(prestige_partners) for prestige_partners in prestige_infos.values()])
+        self.__error: str = error_message
+        self.__prestige_infos: Dict[str, List[str]] = prestige_infos
+        self.__title_template: str = title_template or '**$char_design_name$** has **$count$** combinations:'
+        self.__sub_title_template: str = sub_title_template or '**$char_design_name$**:'
+
+
+    @property
+    def char_design_name(self) -> str:
+        return self.__char_design_name
+
+    @property
+    def count(self) -> int:
+        return self.__count
+
+    @property
+    def error(self) -> str:
+        return self.__error
+
+    @property
+    def prestige_infos(self) -> Dict[str, List[str]]:
+        return self.__prestige_infos
+
+    @property
+    def title(self) -> str:
+        result = self.__title_template
+        result = result.replace('$char_design_name$', self.char_design_name)
+        result = result.replace('$count$', str(self.count))
+        return result
+
+
+    def get_details_as_embed(self) -> discord.Embed:
+        return None
+
+
+    def get_details_as_text_long(self) -> List[str]:
+        result = [self.title]
+        if self.error:
+            result.append(self.error)
+        else:
+            for char_design_name in sorted(list(self.prestige_infos.keys())):
+                prestige_partners = sorted(self.prestige_infos[char_design_name])
+                result.append(self._get_sub_title(char_design_name))
+                result.append(f'> {", ".join(prestige_partners)}')
+        return result
+
+
+    def get_details_as_text_short(self) -> List[str]:
+        return self.get_details_as_text_long()
+
+
+    def _get_sub_title(self, char_design_name: str) -> str:
+        result = self.__sub_title_template.replace('$char_design_name$', char_design_name)
+        return result
+
+
+
+
+
+
+
+
+
+
+class PrestigeFromDetails(PrestigeDetails):
+    def __init__(self, char_from_design_info: dict, chars_designs_data: dict = None, prestige_from_data: dict = None):
+        chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        count = len(prestige_from_data)
+        error = None
+        prestige_infos = {}
+        template_title = '**$char_design_name$** has **$count$** prestige combinations:'
+        template_subtitle = 'To **$char_design_name$** with:'
+
+        if prestige_from_data:
+            for value in prestige_from_data.values():
+                char_info_2_name = chars_designs_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                char_info_to_name = chars_designs_data[value['ToCharacterDesignId']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                prestige_infos.setdefault(char_info_to_name, []).append(char_info_2_name)
+        else:
+            if char_from_design_info['Rarity'] == 'Special':
+                error = 'One cannot prestige **Special** crew.'
+            elif char_from_design_info['Rarity'] == 'Legendary':
+                error = 'One cannot prestige **Legendary** crew.'
+            else:
+                error = 'noone'
+
+        super().__init__(char_from_design_info, prestige_infos, error, template_title, template_subtitle)
+
+
+
+
+
+
+
+
+
+
+class PrestigeToDetails(PrestigeDetails):
+    def __init__(self, char_to_design_info: dict, chars_designs_data: dict = None, prestige_to_data: dict = None):
+        chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        count = len(prestige_to_data)
+        error = None
+        prestige_infos = {}
+        template_title = '**$char_design_name$** has **$count$** prestige recipes:'
+        template_subtitle = '**$char_design_name$** with:'
+
+        if prestige_to_data:
+            prestige_recipes: Dict[str, Set[str]] = {}
+            for value in prestige_to_data.values():
+                char_1_design_name = chars_designs_data[value['CharacterDesignId1']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                char_2_design_name = chars_designs_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                prestige_recipes.setdefault(char_1_design_name, set()).add(char_2_design_name)
+                prestige_recipes.setdefault(char_2_design_name, set()).add(char_1_design_name)
+
+            prestige_recipe_ingredients: List[Tuple[str, Set[str]]] = [(char_design_name, prestige_partners) for char_design_name, prestige_partners in prestige_recipes.items()]
+
+            prestige_infos: Dict[str, List[str]] = {}
+            while prestige_recipe_ingredients:
+                prestige_recipe_ingredients = sorted(prestige_recipe_ingredients, key=lambda t: len(t[1]), reverse=True)
+                (char_design_name, prestige_partners) = prestige_recipe_ingredients[0]
+                prestige_infos[char_design_name] = list(prestige_partners)
+                prestige_recipe_ingredients = PrestigeToDetails._update_prestige_recipe_ingredients(prestige_recipe_ingredients)
+        else:
+            if char_to_design_info['Rarity'] == 'Special':
+                error = 'One cannot prestige to **Special** crew.'
+            elif char_to_design_info['Rarity'] == 'Common':
+                error = 'One cannot prestige to **Common** crew.'
+            else:
+                error = 'noone'
+
+        super().__init__(char_to_design_info, prestige_infos, error, template_title, template_subtitle)
+
+
+    @staticmethod
+    def _update_prestige_recipe_ingredients(prestige_recipe_ingredients: List[Tuple[str, Set[str]]]) -> List[Tuple[str, Set[str]]]:
+        result: List[Tuple[str, Set[str]]] = []
+        # Take 1st char name & prestige partners
+        # Remove that pair from the result
+        # Iterate through
+        (base_char_design_name, base_prestige_partners) = prestige_recipe_ingredients[0]
+        for (char_design_name, prestige_partners) in prestige_recipe_ingredients[1:]:
+            if base_char_design_name in prestige_partners and char_design_name in base_prestige_partners:
+                prestige_partners = [x for x in prestige_partners if x != base_char_design_name]
+            if prestige_partners:
+                result.append((char_design_name, prestige_partners))
+        return result
+
+
+
+
+
+
+
+
+
+
 # ---------- Helper functions ----------
 
-def get_ability_name(char_info: dict) -> str:
-    if char_info:
-        special = char_info['SpecialAbilityType']
+def _convert_equipment_mask(equipment_mask: int) -> str:
+    result = []
+    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
+        if (equipment_mask & k) != 0:
+            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
+
+    if result:
+        return ', '.join(result)
+    else:
+        return '-'
+
+
+def _get_ability_name(char_design_info: dict) -> str:
+    if char_design_info:
+        special = char_design_info['SpecialAbilityType']
         if special in lookups.SPECIAL_ABILITIES_LOOKUP.keys():
             return lookups.SPECIAL_ABILITIES_LOOKUP[special]
     return None
 
 
-def get_collection_name(char_info: dict, collection_designs_data: dict = None) -> str:
-    if char_info:
-        if not collection_designs_data:
-            collection_designs_data = __collection_designs_cache.get_data_dict3()
-
-        collection_id = char_info[COLLECTION_DESIGN_KEY_NAME]
-        if collection_id and collection_id in collection_designs_data.keys():
-            return collection_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    return 'None'
+def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_data = __character_designs_cache.get_data_dict3()
+    chars_designs_infos = [chars_designs_data[char_id] for char_id in chars_designs_data.keys() if chars_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
+    result.sort()
+    return result
 
 
-def _get_stat(stat_name: str, level: int, char_info: dict) -> str:
+def _get_collection_name(char_design_info: dict, collections_designs_data: dict = None) -> str:
+    if char_design_info:
+        collection_id = char_design_info[COLLECTION_DESIGN_KEY_NAME]
+        if collection_id and collection_id != '0':
+            if not collections_designs_data:
+                collections_designs_data = __collection_designs_cache.get_data_dict3()
+            if collection_id in collections_designs_data.keys():
+                return collections_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return None
+
+
+def _get_stat(stat_name: str, level: int, char_design_info: dict) -> str:
     is_special_stat = stat_name.lower().startswith('specialability')
     if is_special_stat:
         max_stat_name = 'SpecialAbilityFinalArgument'
     else:
         max_stat_name = f'Final{stat_name}'
-    min_value = float(char_info[stat_name])
-    max_value = float(char_info[max_stat_name])
-    progression_type = char_info['ProgressionType']
+    min_value = float(char_design_info[stat_name])
+    max_value = float(char_design_info[max_stat_name])
+    progression_type = char_design_info['ProgressionType']
     result = _get_stat_value(min_value, max_value, level, progression_type)
     return result
 
@@ -84,10 +461,10 @@ def _get_stat_value(min_value: float, max_value: float, level: int, progression_
     if level is None or level < 1 or level > 40:
         return f'{min_value:0.1f} - {max_value:0.1f}'
     else:
-        return f'{calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
+        return f'{_calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
 
 
-def calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
+def _calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
     exponent = lookups.PROGRESSION_TYPES[progression_type]
     result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
     return result
@@ -96,144 +473,74 @@ def calculate_stat_value(min_value: float, max_value: float, level: int, progres
 
 
 
+
+
+
+
+
 # ---------- Crew info ----------
 
-def get_char_details_from_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
+def get_char_design_details_by_id(char_design_id: str, level: int, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
+    if char_design_id:
+        if chars_designs_data is None:
+            chars_designs_data = __character_designs_cache.get_data_dict3()
+
+        if char_design_id and char_design_id in chars_designs_data.keys():
+            char_design_info = chars_designs_data[char_design_id]
+            char_design_details = CharDesignDetails(char_design_info, collections_designs_data=collections_designs_data, level=level)
+            return char_design_details
+
+    return None
+
+
+def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
-    char_info = _get_char_info(char_name)
+    chars_designs_data = __character_designs_cache.get_data_dict3()
+    char_design_info = _get_char_design_info_by_name(char_name, chars_designs_data)
 
-    if char_info is None:
+    if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
+        char_design_details = CharDesignDetails(char_design_info, level=level)
         if as_embed:
-            return _get_char_info_as_embed(char_info, level), True
+            return char_design_details.get_details_as_embed(), True
         else:
-            return _get_char_info_as_text(char_info, level), True
+            return char_design_details.get_details_as_text_long(), True
 
 
 
-def _get_char_info(char_name: str) -> dict:
-    char_design_data = __character_designs_cache.get_data_dict3()
-    char_design_id = _get_char_design_id_from_name(char_name, char_design_data)
+def _get_char_design_info_by_name(char_name: str, chars_designs_data: dict = None) -> dict:
+    chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+    char_design_id = _get_char_design_id_by_name(char_name, chars_designs_data)
 
-    if char_design_id and char_design_id in char_design_data.keys():
-        return char_design_data[char_design_id]
+    if char_design_id and char_design_id in chars_designs_data.keys():
+        return chars_designs_data[char_design_id]
     else:
         return None
 
 
-def _get_char_design_id_from_name(char_name: str, char_data: dict = None) -> str:
-    if char_data is None:
-        char_data = __character_designs_cache.get_data_dict3()
+def _get_char_design_id_by_name(char_name: str, chars_designs_data: dict = None) -> str:
+    if chars_designs_data is None:
+        chars_designs_data = __character_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(char_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
+    results = core.get_ids_from_property_value(chars_designs_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
     if len(results) > 0:
         return results[0]
 
     return None
 
 
-def _get_char_info_as_embed(char_info: dict, level: int):
-    return ''
-
-
-def _get_char_info_as_text(char_info: dict, level: int, collection_designs_data: dict = None) -> list:
-    if not collection_designs_data:
-        collection_designs_data = __collection_designs_cache.get_data_dict3()
-
-    char_name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    rarity = char_info['Rarity']
-    description = char_info['CharacterDesignDescription']
-    race_type = char_info['RaceType']
-    gender = char_info['GenderType']
-    special = get_ability_name(char_info)
-    equipment_slots = _convert_equipment_mask(int(char_info['EquipmentMask']))
-    collection_name = get_collection_name(char_info, collection_designs_data)
-    ability_stat = _get_stat('SpecialAbilityArgument', level, char_info)
-    hp_stat = _get_stat('Hp', level, char_info)
-    attack_stat = _get_stat('Attack', level, char_info)
-    repair_stat = _get_stat('Repair', level, char_info)
-    pilot_stat = _get_stat('Pilot', level, char_info)
-    science_stat = _get_stat('Science', level, char_info)
-    weapon_stat = _get_stat('Weapon', level, char_info)
-    engine_stat = _get_stat('Engine', level, char_info)
-    walk_speed = char_info['WalkingSpeed']
-    run_speed = char_info['RunSpeed']
-    fire_resistance = char_info['FireResistance']
-    training_capacity = char_info['TrainingCapacity']
-    level_text = ''
-    if level is not None:
-        level_text = f' - lvl {level}'
-
-    result = [f'**{char_name}** ({rarity}){level_text}']
-    result.append(f'_{description}_')
-    result.append(f'Race = {race_type}, Collection = {collection_name}, Gender = {gender}')
-    if special:
-        result.append(f'Ability = {ability_stat} ({special})')
-    else:
-        result.append(f'Ability = -')
-    result.append(f'HP = {hp_stat}')
-    result.append(f'Attack = {attack_stat}')
-    result.append(f'Repair = {repair_stat}')
-    result.append(f'Pilot = {pilot_stat}')
-    result.append(f'Science = {science_stat}')
-    result.append(f'Engine = {engine_stat}')
-    result.append(f'Weapon = {weapon_stat}')
-    result.append(f'Walk/run speed = {walk_speed}/{run_speed}')
-    result.append(f'Fire resist = {fire_resistance}')
-    result.append(f'Training cap = {training_capacity}')
-    if equipment_slots:
-        result.append(f'Slots = {equipment_slots}')
-    else:
-        result.append(f'Slots = -')
-
+def _get_chars_designs_infos() -> list:
+    chars_designs_data = __character_designs_cache.get_data_dict3()
+    result = [chars_designs_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in chars_designs_data.keys()]
     return result
 
 
-def _convert_equipment_mask(eqpt_mask: int) -> str:
-    result = []
-    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
-        if (eqpt_mask & k) != 0:
-            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
-
-    if result:
-        return ', '.join(result)
-    else:
-        return None
 
 
-def _get_char_list() -> list:
-    char_data = __character_designs_cache.get_data_dict3()
-    result = [char_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in char_data.keys()]
-    return result
 
-
-def get_char_info_short_from_id_as_text(char_design_id: dict, char_designs_data: dict = None, collection_designs_data: dict = None) -> list:
-    if not char_designs_data:
-        char_designs_data = __character_designs_cache.get_data_dict3()
-    if not collection_designs_data:
-        collection_designs_data = __collection_designs_cache.get_data_dict3()
-
-    char_info = char_designs_data[char_design_id]
-    return get_char_info_short_from_data_as_text(char_info, collection_designs_data)
-
-
-def get_char_info_short_from_data_as_text(char_info: dict, collection_designs_data: dict = None) -> list:
-    if not collection_designs_data:
-        collection_designs_data = __collection_designs_cache.get_data_dict3()
-
-    name = char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    rarity = char_info['Rarity']
-    collection = get_collection_name(char_info, collection_designs_data)
-    ability = get_ability_name(char_info)
-    ability_stat = int(char_info['SpecialAbilityFinalArgument'])
-    ability_txt = ability
-    if ability_stat:
-        ability_txt = f'{ability} ({ability_stat})'
-    result = [f'{name} (_{rarity}_ - Ability: _{ability_txt}_ - Collection: _{collection}_)']
-    return result
 
 
 
@@ -241,88 +548,51 @@ def get_char_info_short_from_data_as_text(char_info: dict, collection_designs_da
 
 # ---------- Collection Info ----------
 
-def get_collection_info(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
+def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(collection_name)
 
-    collection_info = _get_collection_info(collection_name)
+    collection_design_info = _get_collection_design_info(collection_name)
 
-    if collection_info is None:
+    if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
+        collection_design_details = CollectionDesignDetails(collection_design_info)
         if as_embed:
-            return _get_collection_info_as_embed(collection_info), True
+            return collection_design_details.get_details_as_embed(), True
         else:
-            return _get_collection_info_as_text(collection_info), True
+            return collection_design_details.get_details_as_text_long(), True
 
 
-def _get_collection_info(collection_name: str):
-    collection_data = __collection_designs_cache.get_data_dict3()
-    collection_design_id = _get_collection_design_id_from_name(collection_name, collection_data)
+def _get_collection_design_info(collection_name: str):
+    collections_designs_data = __collection_designs_cache.get_data_dict3()
+    collection_design_id = _get_collection_design_id_by_name(collection_name, collections_designs_data)
 
-    if collection_design_id and collection_design_id in collection_data.keys():
-        return collection_data[collection_design_id]
+    if collection_design_id and collection_design_id in collections_designs_data.keys():
+        return collections_designs_data[collection_design_id]
     else:
         return None
 
 
-def _get_collection_design_id_from_name(collection_name: str, collection_data: dict = None):
-    if collection_data is None:
-        collection_data = __collection_designs_cache.get_data_dict3()
+def _get_collection_design_id_by_name(collection_name: str, collections_designs_data: dict = None):
+    if collections_designs_data is None:
+        collections_designs_data = __collection_designs_cache.get_data_dict3()
 
-    results = core.get_ids_from_property_value(collection_data, COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME, collection_name)
+    results = core.get_ids_from_property_value(collections_designs_data, COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME, collection_name)
     if len(results) > 0:
         return results[0]
 
     return None
 
 
-def _get_collection_info_as_embed(collection_info: dict):
-    # Use collection_info['ColorString'] for embed color
-    return []
-
-
-def _get_collection_info_as_text(collection_info: dict):
-    collection_crew = _get_collection_crew(collection_info)
-    collection_perk = collection_info['EnhancementType']
-    if collection_perk in lookups.COLLECTION_PERK_LOOKUP.keys():
-        collection_perk = lookups.COLLECTION_PERK_LOOKUP[collection_perk]
-    description = collection_info['CollectionDescription']
-    min_combo = collection_info['MinCombo']
-    max_combo = collection_info['MaxCombo']
-    base_enhancement_value = collection_info['BaseEnhancementValue']
-    step_enhancement_value = collection_info['StepEnhancementValue']
-
-    characters = ', '.join(collection_crew)
-
-    lines = []
-    lines.append(f'**{collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
-    lines.append(f'_{description}_')
-    lines.append(f'Combo Min...Max = {min_combo}...{max_combo}')
-    lines.append(f'{collection_perk} = {base_enhancement_value} (Base), {step_enhancement_value} (Step)')
-    lines.append(f'Characters = {characters}')
-
-    return lines
-
-
-def _get_collection_crew(collection_info):
-    #util.dbg_prnt(f'+ _get_collection_crew(collection_info[{collection_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]}])')
-    collection_id = collection_info[COLLECTION_DESIGN_KEY_NAME]
-    char_data = __character_designs_cache.get_data_dict3()
-    char_infos = [char_data[char_id] for char_id in char_data.keys() if char_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
-    result = [char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_info in char_infos]
-    result.sort()
-    return result
-
-
-def fix_collection_name(collection_name):
-    result = collection_name.lower()
-    return result
 
 
 
 
 
-# ---------- Prestige Info ----------
+
+
+
+# ---------- Prestige from Info ----------
 
 def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
@@ -338,27 +608,13 @@ def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS)
             return get_prestige_from_info_as_txt(char_name, prestige_data), True
 
 
-def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(char_name)
-
-    prestige_data = _get_prestige_to_data(char_name)
-
-    if prestige_data is None:
-        return [f'Could not find prestige paths leading to **{char_name}**'], False
-    else:
-        if as_embed:
-            return get_prestige_to_info_as_embed(char_name, prestige_data), True
-        else:
-            return get_prestige_to_info_as_txt(char_name, prestige_data), True
-
-
 def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
     return ''
 
 
 def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
     char_data = __character_designs_cache.get_data_dict3()
-    char_info_1 = _get_char_info(char_name)
+    char_info_1 = _get_char_design_info_by_name(char_name)
     found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     combination_count = len(prestige_from_data)
 
@@ -393,46 +649,8 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> l
     return lines
 
 
-def get_prestige_to_info_as_embed(char_name: str, prestige_to_data: dict):
-    return ''
-
-
-def get_prestige_to_info_as_txt(char_name: str, prestige_to_data: dict) -> list:
-    # Format: '{id1} + {id2}
-    char_data = __character_designs_cache.get_data_dict3()
-    char_info_to = _get_char_info(char_name)
-    found_char_name = char_info_to[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-
-    lines = [f'**There are {len(prestige_to_data)} ways to prestige {found_char_name} from:**']
-
-    prestige_infos = []
-    for value in prestige_to_data.values():
-        char_info_1_name = char_data[value['CharacterDesignId1']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        prestige_infos.append((char_info_1_name, char_info_2_name))
-
-    body_lines = []
-    if prestige_infos:
-        prestige_infos = util.sort_tuples_by(prestige_infos, [(0, False), (1, False)])
-        for (char_info_1_name, char_info_2_name) in prestige_infos:
-            body_lines.append(f'{char_info_1_name} + {char_info_2_name}')
-
-    if body_lines:
-        lines.extend(body_lines)
-    else:
-        if char_info_to['Rarity'] == 'Special':
-            error = 'One cannot prestige to **Special** crew.'
-        elif char_info_to['Rarity'] == 'Common':
-            error = 'One cannot prestige to **Common** crew.'
-        else:
-            error = 'noone'
-        lines.append(error)
-
-    return lines
-
-
 def _get_prestige_from_data(char_name: str) -> dict:
-    char_info = _get_char_info(char_name)
+    char_info = _get_char_design_info_by_name(char_name)
     if char_info is None:
         return None
 
@@ -444,28 +662,9 @@ def _get_prestige_from_data(char_name: str) -> dict:
     return prestige_from_cache.get_data_dict3()
 
 
-def _get_prestige_to_data(char_name: str) -> dict:
-    char_info = _get_char_info(char_name)
-    if char_info is None:
-        return None
-
-    char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    if char_design_id in __prestige_to_cache_dict.keys():
-        prestige_to_cache = __prestige_to_cache_dict[char_design_id]
-    else:
-        prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
-    return prestige_to_cache.get_data_dict3()
-
-
 def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
     cache = _create_prestige_from_cache(char_design_id)
     __prestige_from_cache_dict[char_design_id] = cache
-    return cache
-
-
-def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
-    cache = _create_prestige_to_cache(char_design_id)
-    __prestige_to_cache_dict[char_design_id] = cache
     return cache
 
 
@@ -476,11 +675,61 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
     return result
 
 
+
+
+
+
+
+
+
+
+# ---------- Prestige to Info ----------
+
+def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
+    pss_assert.valid_entity_name(char_name)
+
+    chars_designs_data = __character_designs_cache.get_data_dict3()
+    char_to_design_info = _get_char_design_info_by_name(char_name, chars_designs_data)
+    if not char_to_design_info:
+        return [f'Could not find a crew named **{char_name}**.'], False
+    else:
+        prestige_to_data = _get_prestige_to_data(char_to_design_info)
+        prestige_to_details = PrestigeToDetails(char_to_design_info, chars_designs_data=chars_designs_data, prestige_to_data=prestige_to_data)
+
+        if as_embed:
+            return prestige_to_details.get_details_as_embed(), True
+        else:
+            return prestige_to_details.get_details_as_text_long(), True
+
+
+def _get_prestige_to_data(char_design_info: dict) -> dict:
+    if not char_design_info:
+        return {}
+
+    char_design_id = char_design_info[CHARACTER_DESIGN_KEY_NAME]
+    if char_design_id in __prestige_to_cache_dict.keys():
+        prestige_to_cache = __prestige_to_cache_dict[char_design_id]
+    else:
+        prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
+    return prestige_to_cache.get_data_dict3()
+
+
+def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
+    cache = _create_prestige_to_cache(char_design_id)
+    __prestige_to_cache_dict[char_design_id] = cache
+    return cache
+
+
 def _create_prestige_to_cache(char_design_id: str) -> PssCache:
     url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
     return result
+
+
+
+
+
 
 
 
@@ -558,7 +807,7 @@ if __name__ == '__main__':
     test_crew = [('alpaco', 5)]
     for (crew_name, level) in test_crew:
         os.system('clear')
-        result = get_char_details_from_name(crew_name, level, as_embed=False)
+        result = get_char_design_details_by_name(crew_name, level, as_embed=False)
         for line in result[0]:
             print(line)
         print('')

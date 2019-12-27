@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 # ----- Packages ------------------------------------------------------
-import datetime
+from datetime import datetime
 import json
 import os
 import psycopg2
@@ -15,11 +15,17 @@ import urllib.request
 import xml.etree.ElementTree
 
 import data
+import pss_daily as daily
 import settings
 import utility as util
 
 
 DB_CONN: psycopg2.extensions.connection = None
+
+
+# ---------- Constants ----------
+
+LATEST_SETTINGS_BASE_URL = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
 
 
 # ----- Utilities --------------------------------
@@ -34,7 +40,6 @@ def get_data_from_path(path):
     base_url = get_base_url()
     url = f'{base_url}{path}'
     return get_data_from_url(url)
-
 
 
 def save_raw_text(raw_text, filename):
@@ -85,7 +90,7 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
     file_stats = os.stat(filename)
     modify_date = file_stats.st_mtime
     utc_now = util.get_utcnow()
-    time_diff = utc_now - datetime.datetime.fromtimestamp(modify_date)
+    time_diff = utc_now - datetime.fromtimestamp(modify_date)
     if verbose:
         print('Time since file {} creation: {}'.format(filename, time_diff))
     return (time_diff.days > max_days) or time_diff.seconds > max_seconds
@@ -159,7 +164,7 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         key = None
         if tag_count[tag] < 1:
             continue
-        elif tag_count[tag] >= 1:
+        elif tag_count[tag] > 1:
             if tag in data.ID_NAMES_INFO.keys():
                 id_attr_names = data.ID_NAMES_INFO[tag]
                 if id_attr_names:
@@ -289,8 +294,7 @@ def fix_allowed_value_candidate(candidate: str) -> str:
     return result
 
 
-
-def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None) -> list:
+def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None, match_exact: bool = False) -> list:
     # data structure: {id: content}
     # fixed_data structure: {description: id}
     if not data or not property_name or not property_value:
@@ -316,8 +320,9 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     similarity_values = sorted(list(similarity_map.keys()), reverse=True)
     results = []
     for similarity_value in similarity_values:
-        entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
-        results.extend(entry_ids)
+        if not match_exact or (match_exact is True and similarity_value.is_integer()):
+            entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
+            results.extend(entry_ids)
 
     return results
 
@@ -466,12 +471,20 @@ def get_real_name(search_str, lst_original):
             return None
 
 
-# ----- Get Production Server -----
-def get_production_server():
-    url = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?languageKey=en&deviceType=DeviceTypeAndroid'
+# ---------- Get Production Server ----------
+
+def get_latest_settings(language_key: str = 'en') -> dict:
+    if not language_key:
+        language_key = 'en'
+    url = f'{LATEST_SETTINGS_BASE_URL}{language_key}'
     raw_text = get_data_from_url(url)
-    d = xmltree_to_dict3(raw_text)
-    return d['ProductionServer']
+    result = xmltree_to_dict3(raw_text)
+    return result
+
+
+def get_production_server(language_key: str = 'en'):
+    latest_settings = get_latest_settings(language_key=language_key)
+    return latest_settings['ProductionServer']
 
 
 def get_base_url():
@@ -524,28 +537,64 @@ def init_db():
         ('settingtext', 'TEXT', False, False),
         ('settingtimestamp', 'TIMESTAMPTZ', False, False)
     ])
-    if success_settings:
-        success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
-
-        if success_update_1_2_2_0:
-            success_serversettings = db_try_create_table('serversettings', [
-                ('guildid', 'TEXT', True, True),
-                ('dailychannelid', 'TEXT', False, False),
-                ('dailycanpost', 'BOOLEAN', False, False),
-                ('dailylatestmessageid', 'TEXT', False, False),
-                ('usepagination', 'BOOLEAN', False, False),
-                ('prefix', 'TEXT', False, False)
-            ])
-            if success_serversettings:
-                print('[init_db] DB initialization succeeded')
-
-
-            else:
-                print('[init_db] DB initialization failed upon creating the table \'serversettings\'.')
-        else:
-            print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
-    else:
+    if not success_settings:
         print('[init_db] DB initialization failed upon creating the table \'settings\'.')
+        return
+
+    success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
+    if not success_update_1_2_2_0:
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
+        return
+
+    success_update_1_2_4_0 = db_update_schema_v_1_2_4_0()
+    if not success_update_1_2_4_0:
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
+        return
+
+    success_serversettings = db_try_create_table('serversettings', [
+        ('guildid', 'TEXT', True, True),
+        ('dailychannelid', 'TEXT', False, False),
+        ('dailycanpost', 'BOOLEAN', False, False),
+        ('dailylatestmessageid', 'TEXT', False, False),
+        ('usepagination', 'BOOLEAN', False, False),
+        ('prefix', 'TEXT', False, False)
+    ])
+    if not success_serversettings:
+        print('[init_db] DB initialization failed upon creating the table \'serversettings\'.')
+        return
+
+    print('[init_db] DB initialization succeeded')
+
+
+
+def db_update_schema_v_1_2_4_0():
+    column_definitions = [
+        ('dailydeleteonchange', 'BOOLEAN', False, False, None)
+    ]
+
+    schema_version = db_get_schema_version()
+    if schema_version:
+        compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
+        compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
+        if compare_1240 <= 0:
+            return True
+        elif compare_1220 > 0:
+            return False
+
+    query_lines = []
+    for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
+        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null, default=column_default)
+        query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
+
+    query = '\n'.join(query_lines)
+    success = db_try_execute(query)
+    if success:
+        utc_now = util.get_utcnow()
+        daily_info = daily.get_daily_info()
+        success = daily.db_set_daily_info(daily_info, utc_now)
+        if success:
+            success = db_try_set_schema_version('1.2.4.0')
+    return success
 
 
 def db_update_schema_v_1_2_2_0():
@@ -816,3 +865,61 @@ def db_try_rollback() -> None:
     else:
         print('[db_try_rollback] db is not connected')
         return False
+
+
+def db_get_setting(setting_name: str) -> (object, datetime):
+    where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
+    query = f'SELECT * FROM settings WHERE {where_string}'
+    try:
+        results = db_fetchall(query)
+    except:
+        results = []
+    if results:
+        result = results[0]
+        modify_date = result[1]
+        if result[2]:
+            return (util.db_convert_to_boolean(result[2]), modify_date)
+        elif result[3]:
+            return (util.db_convert_to_float(result[3]), modify_date)
+        elif result[4]:
+            return (util.db_convert_to_int(result[4]), modify_date)
+        elif result[5]:
+            return (str(result[5]), modify_date)
+        elif result[6]:
+            return (result[6], modify_date)
+        else:
+            return (None, modify_date)
+    else:
+        return (None, None)
+
+
+def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
+    column_name = None
+    if isinstance(value, bool):
+        db_value = util.db_convert_boolean(value)
+        column_name = 'settingboolean'
+    elif isinstance(value, int):
+        db_value = util.db_convert_to_int(value)
+        column_name = 'settingint'
+    elif isinstance(value, float):
+        db_value = util.db_convert_to_float(value)
+        column_name = 'settingfloat'
+    elif isinstance(value, datetime):
+        db_value = util.db_convert_to_datetime(value)
+        column_name = 'settingtimestamptz'
+    else:
+        db_value = util.db_convert_text(value)
+        column_name = 'settingtext'
+
+    setting, _ = db_get_setting(setting_name)
+    if utc_now is None:
+        utc_now = util.get_utcnow()
+    modify_date = util.db_convert_timestamp(utc_now)
+    query = ''
+    if setting is None:
+        query = f'INSERT INTO settings (settingname, modifydate, {column_name}) VALUES ({util.db_convert_text(setting_name)}, {modify_date}, {db_value})'
+    elif setting != value:
+        where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
+        query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
+    success = not query or db_try_execute(query)
+    return success

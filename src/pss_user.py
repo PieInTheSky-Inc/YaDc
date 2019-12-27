@@ -21,6 +21,11 @@ SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
 USER_KEY_NAME = 'Id'
 USER_DESCRIPTION_PROPERTY_NAME = 'Name'
 
+LEAGUE_BASE_PATH = f'LeagueService/ListLeagues2?accessToken='
+LEAGUE_INFO_KEY_NAME = 'LeagueId'
+LEAGUE_INFO_DESCRIPTION_PROPERTY_NAME = 'LeagueName'
+LEAGUE_INFOS_CACHE = []
+
 
 
 
@@ -31,6 +36,26 @@ USER_DESCRIPTION_PROPERTY_NAME = 'Name'
 
 
 # ---------- Helper functions ----------
+
+def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
+    battles = wins + losses + draws
+    if battles > 0:
+        result = (wins + .5 * draws) / battles
+        result *= 100
+    else:
+        result = 0.0
+    return result
+
+
+def _get_league_from_trophies(trophies: int) -> str:
+    result = '-'
+    if trophies is not None:
+        for league_info in LEAGUE_INFOS_CACHE:
+            if trophies >= league_info['MinTrophy'] and trophies <= league_info['MaxTrophy']:
+                result = league_info[LEAGUE_INFO_DESCRIPTION_PROPERTY_NAME]
+                break
+    return result
+
 
 def get_user_details_by_info(user_info: dict) -> list:
     user_id = user_info[USER_KEY_NAME]
@@ -55,7 +80,7 @@ def get_user_details_by_info(user_info: dict) -> list:
     pvp_wins = int(user_info['PVPAttackWins'])
     ship_status = ship_info['ShipStatus']
     stars = user_info['AllianceScore']
-    trophies = user_info['Trophy']
+    trophies = int(user_info['Trophy'])
     user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
     user_type = user_info['UserType']
 
@@ -79,6 +104,7 @@ def get_user_details_by_info(user_info: dict) -> list:
     created = f'{util.format_excel_datetime(created_on_date)} ({created_ago})'
     defense_win_rate = _calculate_win_rate(defense_wins, defense_losses, defense_draws)
     division = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, '-')
+    league_name = _get_league_from_trophies(trophies)
     if user_id:
         level = ship.get_ship_level(ship_info)
     else:
@@ -95,6 +121,7 @@ def get_user_details_by_info(user_info: dict) -> list:
     lines.append(f'Fleet: {fleet_name_and_rank}')
     if has_fleet:
         lines.append(f'Joined fleet: {joined}')
+    lines.append(f'League: {league_name}')
     lines.append(f'Trophies: {trophies}')
     lines.append(f'Highest trophies: {highest_trophies}')
     if has_fleet:
@@ -121,16 +148,6 @@ def _get_user_details_from_tournament_data(user_info: dict, user_data: dict) -> 
     return get_user_details_by_info(user_info)
 
 
-def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
-    battles = wins + losses + draws
-    if battles > 0:
-        result = (wins + .5 * draws) / battles
-        result *= 100
-    else:
-        result = 0.0
-    return result
-
-
 
 
 
@@ -144,10 +161,7 @@ def _calculate_win_rate(wins: int, losses: int, draws: int) -> float:
 def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
 
-    user_infos = _get_user_infos(user_name)
-    user_ids = sorted([int(user_id) for user_id in user_infos.keys() if user_id])
-    user_ids = [str(user_id) for user_id in user_ids]
-    user_infos = [user_info for user_id, user_info in user_infos.items() if user_id in user_ids]
+    user_infos = list(_get_user_infos(user_name).values())
     return user_infos
 
 
@@ -179,3 +193,25 @@ def _get_user_infos(user_name: str) -> dict:
     user_data_raw = core.get_data_from_path(path)
     user_infos = core.xmltree_to_dict3(user_data_raw)
     return user_infos
+
+
+
+
+
+
+
+
+
+
+# ---------- Initialization ----------
+
+def init():
+    league_data = core.get_data_from_path(LEAGUE_BASE_PATH)
+    league_infos = core.xmltree_to_dict3(league_data)
+    for league_info in sorted(list(league_infos.values()), key=lambda league_info: int(league_info['MinTrophy'])):
+        league_info['MinTrophy'] = int(league_info['MinTrophy'])
+        league_info['MaxTrophy'] = int(league_info['MaxTrophy'])
+        LEAGUE_INFOS_CACHE.append(league_info)
+
+
+init()

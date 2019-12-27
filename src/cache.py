@@ -13,7 +13,7 @@ import utility as util
 class PssCache:
     def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 10):
         self.__update_path: str = update_path
-        self.name: str = name
+        self.__name: str = name
         self.__obj_key_name: str = key_name
         self.__UPDATE_INTERVAL: datetime.timedelta = datetime.timedelta(minutes=update_interval)
         self.__UPDATE_INTERVAL_ORIG: int = update_interval
@@ -24,6 +24,12 @@ class PssCache:
         self.__READ_LOCK: Lock = Lock()
         self.__write_requested: bool = False
         self.__reader_count: int = 0
+
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
 
     def update_data(self, old_data=None) -> bool:
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')

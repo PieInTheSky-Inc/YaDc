@@ -147,7 +147,7 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
     retrieval_date = util.get_utcnow()
     fleet_users_infos = _get_fleet_users_by_id(fleet_id)
     if fleet_users_infos:
-        fleet_info = list(fleet_users_infos.values())[0][fleet_id]
+        fleet_info = list(fleet_users_infos.values())[0]['Alliance']
     else:
         fleet_info = _get_fleet_info_by_name(fleet_name)
 
@@ -181,10 +181,7 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
 def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
 
-    fleet_infos = _get_fleet_infos_by_name(fleet_name)
-    fleet_ids = sorted([int(fleet_id) for fleet_id in fleet_infos.keys() if fleet_id])
-    fleet_ids = [str(fleet_id) for fleet_id in fleet_ids]
-    fleet_infos = [fleet_info for fleet_id, fleet_info in fleet_infos.items() if fleet_id in fleet_ids]
+    fleet_infos = list(_get_fleet_infos_by_name(fleet_name).values())
     return fleet_infos
 
 
@@ -245,14 +242,12 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
     fleet_users_infos = util.sort_entities_by(list(fleet_users_infos), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
 
     lines = [f'**{fleet_name} member stars (division {division})**']
-    for i, user_info in enumerate(fleet_users_infos):
-        if i == 65:
-            j = 5
+    for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
         user_name = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
         if util.should_escape_entity_name(user_name):
             user_name = f'`{user_name}`'
-        lines.append(f'**{i + 1}.** {stars} {emojis.star} {user_name}')
+        lines.append(f'**{i}.** {stars} {emojis.star} {user_name}')
 
     if retrieved_date is not None:
         lines.append(util.get_historic_data_note(retrieved_date))

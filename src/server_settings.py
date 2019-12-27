@@ -40,6 +40,15 @@ def convert_to_on_off(value: bool) -> str:
         return '<NOT SET>'
 
 
+def convert_to_edit_delete(value: bool) -> str:
+    if value is True:
+        return 'Delete daily post and post new daily on change.'
+    elif value is False:
+        return 'Edit daily post on change.'
+    else:
+        return 'Post new daily on change.'
+
+
 def fix_prefixes() -> bool:
     all_prefixes = _db_get_server_settings(guild_id=None, setting_names=['guildid', 'prefix'])
     all_success = True
@@ -56,6 +65,15 @@ def fix_prefixes() -> bool:
                 if not success:
                     all_success = False
     return all_success
+
+
+def get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
+    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, without_latest_message_id=without_latest_message_id)
+    result = []
+    for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in db_autodaily_settings:
+        autodaily_setting = AutodailySettings(guild_id, channel_id, can_post, latest_message_id, delete_on_change)
+        result.append(autodaily_setting)
+    return result
 
 
 def get_daily_channel_mention(ctx: discord.ext.commands.Context) -> str:
@@ -111,6 +129,11 @@ def reset_prefix(guild_id: int) -> bool:
     return success
 
 
+def reset_daily_delete_on_change(guild_id: int) -> bool:
+    success = db_reset_daily_delete_on_change(guild_id)
+    return success
+
+
 def set_pagination(guild_id: int, switch: str) -> bool:
     if not db_get_has_settings(guild_id):
         db_create_server_settings(guild_id)
@@ -132,6 +155,23 @@ def set_prefix(guild_id: int, prefix: str) -> bool:
         db_create_server_settings(guild_id)
     success = db_update_prefix(guild_id, prefix)
     return success
+
+
+def toggle_daily_delete_on_change(guild_id: int) -> bool:
+    if not db_get_has_settings(guild_id):
+        db_create_server_settings(guild_id)
+    delete_on_change = db_get_daily_delete_on_change(guild_id)
+    if delete_on_change is True:
+        new_value = None
+    elif delete_on_change is False:
+        new_value = True
+    else:
+        new_value = False
+    success = db_update_daily_delete_on_change(guild_id, new_value)
+    if success:
+        return new_value
+    else:
+        return delete_on_change
 
 
 def toggle_use_pagination(guild_id: int) -> bool:
@@ -159,7 +199,7 @@ def toggle_use_pagination(guild_id: int) -> bool:
 # ---------- DB functions ----------
 
 def db_create_server_settings(guild_id: int) -> bool:
-    query = f'INSERT INTO serversettings (guildid) VALUES ({guild_id})'
+    query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ({guild_id}, {util.db_convert_boolean(True)})'
     success = core.db_try_execute(query)
     return success
 
@@ -169,6 +209,29 @@ def db_delete_server_settings(guild_id: int) -> bool:
     query = f'DELETE FROM serversettings WHERE {where}'
     success = core.db_try_execute(query)
     return success
+
+
+def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
+    wheres = ['dailychannelid IS NOT NULL']
+    if guild_id is not None:
+        wheres.append(util.db_get_where_string('guildid', util.db_convert_text(str(guild_id))))
+    if can_post is not None:
+        wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
+    if without_latest_message_id is True:
+        wheres.append(util.db_get_where_string('dailylatestmessageid', None))
+    setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+    result = []
+    if settings:
+        for setting in settings:
+            result.append((
+                util.db_convert_to_int(setting[0]),
+                util.db_convert_to_int(setting[1]),
+                util.db_convert_to_boolean(setting[2]),
+                util.db_convert_to_int(setting[3]),
+                util.db_convert_to_boolean(setting[4])
+            ))
+    return result
 
 
 def db_get_daily_channel_id(guild_id: int) -> int:
@@ -191,19 +254,15 @@ def db_get_daily_can_post(guild_id: int) -> bool:
         return None
 
 
-def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None) -> list:
-    wheres = ['dailychannelid IS NOT NULL']
-    if can_post is not None:
-        wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
-    setting_names = ['dailychannelid', 'dailycanpost', 'dailylatestmessageid']
-    settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+def db_get_daily_delete_on_change(guild_id: int) -> bool:
+    setting_names = ['dailydeleteonchange']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names)
     if settings:
-        result = []
         for setting in settings:
-            result.append((util.db_convert_to_int(setting[0]), util.db_convert_to_boolean(setting[1]), util.db_convert_to_int(setting[2])))
-        return result
+            result = util.db_convert_to_boolean(setting[0])
+            return result
     else:
-        return [(None, None, None)]
+        return None
 
 
 def db_get_daily_latest_message_id(guild_id: int) -> int:
@@ -244,18 +303,24 @@ def db_get_use_pagination(guild_id: int) -> bool:
         return None
 
 
-def db_reset_autodaily_settings(guild_id: int) -> bool:
+def db_reset_autodaily_channel(guild_id: int) -> bool:
     current_autodaily_settings = db_get_autodaily_settings(guild_id)
     for current_setting in current_autodaily_settings:
         if current_setting is not None:
             settings = {
                 'dailychannelid': 'NULL',
                 'dailycanpost': 'NULL',
-                'dailylatestmessageid': 'NULL'
+                'dailylatestmessageid': 'NULL',
+                'dailydeleteonchange': util.db_convert_boolean(True)
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
     return True
+
+
+def db_reset_daily_delete_on_change(guild_id: int) -> bool:
+    success = db_update_daily_delete_on_change(guild_id, False)
+    return success
 
 
 def db_reset_prefix(guild_id: int) -> bool:
@@ -280,15 +345,25 @@ def db_reset_use_pagination(guild_id: int) -> bool:
     return True
 
 
-def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None) -> bool:
-    (current_channel_id, current_can_post, current_latest_message_id) = db_get_autodaily_settings(guild_id)
-    if not current_channel_id or not current_can_post or not current_latest_message_id or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id:
-        settings = {
-            'dailychannelid': util.db_convert_text(channel_id),
-            'dailycanpost': util.db_convert_to_boolean(can_post),
-            'dailylatestmessageid': util.db_convert_text(latest_message_id)
-        }
-        success = _db_update_server_setting(guild_id, settings)
+def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None) -> bool:
+    autodaily_settings = db_get_autodaily_settings(guild_id)
+    current_channel_id = None
+    current_can_post = None
+    current_latest_message_id = None
+    current_delete_on_change = None
+    if autodaily_settings:
+        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change) = autodaily_settings[0]
+    if not current_channel_id or not current_can_post or not current_latest_message_id or not current_delete_on_change or current_channel_id != channel_id or current_can_post != can_post or current_latest_message_id != latest_message_id or current_delete_on_change != delete_on_change:
+        settings = {}
+        if channel_id is not None:
+            settings['dailychannelid'] = util.db_convert_text(channel_id)
+        if can_post is not None:
+            settings['dailycanpost'] = util.db_convert_to_boolean(can_post)
+        if latest_message_id is not None:
+            settings['dailylatestmessageid'] = util.db_convert_text(latest_message_id)
+        if delete_on_change is not None:
+            settings['dailydeleteonchange'] = util.db_convert_to_boolean(delete_on_change)
+        success = not settings or _db_update_server_setting(guild_id, settings)
         return success
     return True
 
@@ -311,6 +386,17 @@ def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
             'dailychannelid': util.db_convert_text(channel_id),
             'dailycanpost': util.convert_to_boolean(True),
             'dailylatestmessageid': 'NULL'
+        }
+        success = _db_update_server_setting(guild_id, settings)
+        return success
+    return True
+
+
+def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> bool:
+    current_daily_delete_on_change = db_get_daily_delete_on_change(guild_id)
+    if not current_daily_delete_on_change or delete_on_change != current_daily_delete_on_change:
+        settings = {
+            'dailydeleteonchange': util.db_convert_boolean(delete_on_change),
         }
         success = _db_update_server_setting(guild_id, settings)
         return success
@@ -400,6 +486,47 @@ def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
     success = core.db_try_execute(query)
     return success
 
+
+
+
+
+
+
+
+
+
+
+# ---------- Classes ----------
+
+class AutodailySettings():
+    def __init__(self, guild_id: int, channel_id: int, can_post: bool, latest_message_id: int, delete_on_change: bool):
+        if guild_id is None or guild_id < 1:
+            raise ValueError('The parameter guild_id must neither be None nor lower than 1!')
+        self.__guild_id = guild_id
+        self.__channel_id = channel_id
+        self.__can_post = can_post
+        self.__latest_message_id = latest_message_id
+        self.__delete_on_change = delete_on_change
+
+    @property
+    def can_post(self) -> bool:
+        return self.__can_post
+
+    @property
+    def channel_id(self) -> int:
+        return self.__channel_id
+
+    @property
+    def delete_on_change(self) -> bool:
+        return self.__delete_on_change
+
+    @property
+    def guild_id(self) -> int:
+        return self.__guild_id
+
+    @property
+    def latest_message_id(self) -> int:
+        return self.__latest_message_id
 
 
 

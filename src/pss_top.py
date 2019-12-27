@@ -152,7 +152,7 @@ def _get_division_stars_as_embed(division_letter: str, fleet_infos: dict):
 def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list:
     lines = [f'__**Division {division_letter.upper()}**__']
     fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
-    for i, fleet_info in enumerate(fleet_infos):
+    for i, fleet_info in enumerate(fleet_infos, 1):
         fleet_name = fleet_info['AllianceName']
         if 'Trophy' in fleet_info.keys():
             trophies = fleet_info['Trophy']
@@ -160,8 +160,7 @@ def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list
         else:
             trophy_str = ''
         stars = fleet_info['Score']
-        position = i + 1
         if util.should_escape_entity_name(fleet_name):
             fleet_name = f'`{fleet_name}`'
-        lines.append(f'**{position:d}.** {stars} {emojis.star} {fleet_name}{trophy_str}')
+        lines.append(f'**{i:d}.** {stars} {emojis.star} {fleet_name}{trophy_str}')
     return lines

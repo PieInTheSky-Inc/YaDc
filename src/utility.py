@@ -197,8 +197,9 @@ def get_embed_field_def(title=None, text=None, inline=True):
     return (title, text, inline)
 
 
-def dbg_prnt(text):
-    print(f'[{get_utcnow()}]: {text}')
+def dbg_prnt(text: str) -> None:
+    if settings.PRINT_DEBUG is True:
+        print(f'[{get_utcnow()}]: {text}')
 
 
 def create_posts_from_lines(lines, char_limit) -> list:
@@ -335,17 +336,20 @@ def sort_entities_by(entity_infos: list, order_info: list) -> list:
         return sorted(result)
 
 
-def sort_tuples_by(data: tuple, order_info: list) -> list:
+def sort_tuples_by(data: list, order_info: list) -> list:
     """order_info is a list of tuples (element index,reverse)"""
-    result = data
-    if order_info:
-        for i in range(len(order_info), 0, -1):
-            element_index = order_info[i - 1][0]
-            reverse = convert_to_boolean(order_info[i - 1][1])
-            result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
-        return result
+    result = data or []
+    if result:
+        if order_info:
+            for i in range(len(order_info), 0, -1):
+                element_index = order_info[i - 1][0]
+                reverse = convert_to_boolean(order_info[i - 1][1])
+                result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
+            return result
+        else:
+            return sorted(result)
     else:
-        return sorted(result)
+        return result
 
 
 def convert_input_to_boolean(s: str) -> bool:
@@ -419,7 +423,7 @@ def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
 
 
 def compare_versions(version_1: str, version_2: str) -> int:
-    """Compares to version strings with format x.x.x.x
+    """Compares two version strings with format x.x.x.x
 
     Returns:
     -1, if version_1 is higher than version_2
@@ -506,6 +510,51 @@ def should_escape_entity_name(entity_name: str) -> bool:
     return False
 
 
+def get_seconds_to_wait(interval_length: int, utc_now: datetime = None) -> float:
+    """
+    interval_length: length of interval to wait in minutes
+    """
+    interval_length = float(interval_length)
+    if utc_now is None:
+        utc_now = get_utcnow()
+    result = (interval_length * 60.0) - ((float(utc_now.minute) % interval_length) * 60.0) - float(utc_now.second) - float(utc_now.microsecond) / 1000000.0
+    return result
+
+
+def dicts_equal(d1: dict, d2: dict) -> bool:
+    """
+    Checks, whether the contents of two dicts are equal
+    """
+    if d1 and d2:
+        d2_keys = d2.keys()
+        for key1, value1 in d1.items():
+            if key1 not in d2_keys:
+                return False
+            if d2[key1] != value1:
+                return False
+    elif not d1 and not d2:
+        return True
+    else:
+        return False
+    return True
+
+
+async def try_delete_message(message: discord.Message) -> bool:
+    try:
+        await message.delete()
+        return True
+    except discord.Forbidden:
+        return False
+
+
+async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) -> bool:
+    try:
+        await reaction.remove(user)
+        return True
+    except discord.Forbidden:
+        return False
+
+
 
 
 
@@ -517,16 +566,19 @@ def should_escape_entity_name(entity_name: str) -> bool:
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, alter_column: bool = False) -> str:
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, default: object = None) -> str:
     column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
     is_primary_txt = ''
     not_null_txt = ''
+    default_txt = ''
     if is_primary:
         is_primary_txt = 'PRIMARY KEY'
     if not_null:
         not_null_txt = 'NOT NULL'
-    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt}'
+    if default is not None:
+        default_txt = f'DEFAULT {default}'
+    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt} {default_txt}'
     return result.strip()
 
 
@@ -546,27 +598,37 @@ def db_get_where_or_string(where_strings: list) -> str:
 
 def db_get_where_string(column_name: str, column_value: object, is_text_type: bool = False) -> str:
     column_name = column_name.lower()
+    if column_value is None:
+        return f'{column_name} IS NULL'
     if is_text_type:
         column_value = db_convert_text(column_value)
     return f'{column_name} = {column_value}'
 
 
 def db_convert_boolean(value: bool) -> str:
-    if value:
+    """Convert from python bool to postgresql BOOLEAN"""
+    if value is True:
         return 'TRUE'
-    else:
+    elif value is False:
         return 'FALSE'
+    else:
+        return 'NULL'
+
 
 def db_convert_text(value: object) -> str:
-    if value:
+    """Convert from python object to postgresql TEXT"""
+    if value is None:
+        result = 'NULL'
+    elif value:
         result = str(value)
         result = result.replace('\'', '\'\'')
         result = f'\'{result}\''
-        return result
     else:
-        return ''
+        result = ''
+    return result
 
 def db_convert_timestamp(datetime: datetime) -> str:
+    """Convert from python datetime to postgresql TIMESTAMPTZ"""
     if datetime:
         result = f'TIMESTAMPTZ \'{datetime.strftime(DB_TIMESTAMP_FORMAT)}\''
         return result
@@ -574,6 +636,7 @@ def db_convert_timestamp(datetime: datetime) -> str:
         return None
 
 def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
+    """Convert from postgresql BOOLEAN to python bool"""
     if db_boolean is None:
         return default_if_none
     if isinstance(db_boolean, bool):
@@ -585,18 +648,21 @@ def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool
         return False
 
 def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> datetime:
+    """Convert from postgresql TIMESTAMPTZ to python datetime"""
     if db_timestamp is None:
         return default_if_none
-    result = db_timestamp.strptime(DB_TIMESTAMP_FORMAT)
+    result = datetime.strptime(db_timestamp, DB_TIMESTAMP_FORMAT)
     return result
 
 def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
+    """Convert from postgresql INTEGER to python int"""
     if db_int is None:
         return default_if_none
     result = int(db_int)
     return result
 
 def db_convert_to_float(db_float: str, default_if_none: bool = None) -> float:
+    """Convert from postgresql NUMERIC to python float"""
     if db_float is None:
         return default_if_none
     result = float(db_float)

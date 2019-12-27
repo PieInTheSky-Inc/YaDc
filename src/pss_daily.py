@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from datetime import datetime
 import discord
 import os
 
@@ -8,6 +9,47 @@ import pss_core as core
 import server_settings
 import utility as util
 
+
+
+
+
+
+
+
+
+
+# ---------- Constants ----------
+
+DAILY_INFO_FIELDS = [
+    'CargoItems',
+    'CargoPrices',
+    'CommonCrewId',
+    'DailyRewardArgument',
+    'DailyItemRewards',
+    'DailyRewardType',
+    'HeroCrewId',
+    'LimitedCatalogArgument',
+    'LimitedCatalogCurrencyAmount',
+    'LimitedCatalogCurrencyType',
+    'LimitedCatalogMaxTotal',
+    'LimitedCatalogType',
+    'News',
+    'SaleArgument',
+    'SaleItemMask',
+    'SaleQuantity',
+    'SaleType'
+]
+
+
+
+
+
+
+
+
+
+
+# ---------- ----------
 
 def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
@@ -54,7 +96,7 @@ def get_valid_daily_channel_ids() -> list:
 
 
 def try_remove_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_settings(guild_id)
+    success = server_settings.db_reset_autodaily_channel(guild_id)
     if success == False:
         print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
     return success
@@ -64,7 +106,25 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
     success = update_daily_channel(guild_id, None, can_post)
     return success
 
-
+DAILY_INFO_FIELDS = [
+    'CargoItems',
+    'CargoPrices',
+    'CommonCrewId',
+    'DailyRewardArgument',
+    'DailyItemRewards',
+    'DailyRewardType',
+    'HeroCrewId',
+    'LimitedCatalogArgument',
+    'LimitedCatalogCurrencyAmount',
+    'LimitedCatalogCurrencyType',
+    'LimitedCatalogMaxTotal',
+    'LimitedCatalogType',
+    'News',
+    'SaleArgument',
+    'SaleItemMask',
+    'SaleQuantity',
+    'SaleType'
+]
 
 
 
@@ -75,15 +135,18 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
 
 # ---------- Utilities ----------
 
+def convert_to_daily_info(dropship_info: dict) -> dict:
+    result = {}
+    for field_name in DAILY_INFO_FIELDS:
+        value = None
+        if field_name in dropship_info.keys():
+            value = dropship_info[field_name]
+        result[field_name] = value
+    return result
+
+
 def delete_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_settings(guild_id)
-    return success
-
-
-def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
-    success = server_settings.db_create_server_settings(guild_id)
-    if success:
-        success = update_daily_channel(guild_id, channel_id=channel_id, can_post=True, latest_message_id=None)
+    success = server_settings.db_reset_autodaily_channel(guild_id)
     return success
 
 
@@ -105,6 +168,30 @@ def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, 
     return result
 
 
+def get_daily_info():
+    latest_settings = core.get_latest_settings()
+    result = convert_to_daily_info(latest_settings)
+    return result
+
+
+def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
+    success = server_settings.db_create_server_settings(guild_id)
+    if success:
+        success = update_daily_channel(guild_id, channel_id=channel_id, can_post=True, latest_message_id=None)
+    return success
+
+
+def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
+    if not autodaily_settings:
+        return autodaily_settings
+    result = {}
+    for autodaily_setting in autodaily_settings:
+        guild_id = autodaily_setting[0]
+        if guild_id not in result.keys():
+            result[guild_id] = autodaily_setting
+    return list(result.values())
+
+
 def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool = True, latest_message_id: int = None) -> bool:
     success = True
     if channel_id is not None:
@@ -114,3 +201,27 @@ def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool =
     if latest_message_id is not None:
         success = success and server_settings.db_update_daily_latest_message_id(guild_id, latest_message_id)
     return success
+
+
+def db_get_daily_info() -> (dict, datetime):
+    result = {}
+    modify_dates = []
+    for daily_info_field in DAILY_INFO_FIELDS:
+        setting_name = f'daily{daily_info_field}'
+        value, modify_date = core.db_get_setting(setting_name)
+        if modify_date:
+            modify_dates.append(modify_date)
+        if value:
+            result[daily_info_field] = value
+    if result and modify_dates:
+        return (result, max(modify_dates))
+    else:
+        return ({}, None)
+
+
+def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
+    result = True
+    for key, value in daily_info.items():
+        setting_name = f'daily{key}'
+        result = core.db_set_setting(setting_name, value, utc_now=utc_now) and result
+    return result

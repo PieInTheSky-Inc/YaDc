@@ -170,7 +170,23 @@ SPECIAL_ABILITIES_LOOKUP = {
     'HealRoomHp': 'Urgent Repair',
     'HealSameRoomCharacters': 'Healing Rain',
     'HealSelfHp': 'First Aid',
-    'SetFire': 'Arson'}
+    'SetFire': 'Arson'
+}
+
+
+STAT_EMOJI_LOOKUP = {
+    'Ability': emojis.pss_stat_ability,
+    'Attack': emojis.pss_stat_attack,
+    'Engine': emojis.pss_stat_engine,
+    'FireResistance': emojis.pss_stat_fireresistance,
+    'Hp': emojis.pss_stat_hp,
+    'Pilot': emojis.pss_stat_pilot,
+    'Repair': emojis.pss_stat_repair,
+    'Science': emojis.pss_stat_research,
+    'Stamina': emojis.pss_stat_stamina,
+    'Weapon': emojis.pss_stat_weapon,
+    'Xp': emojis.pss_stat_xp,
+}
 
 
 STAT_TYPES_LOOKUP = {
@@ -198,6 +214,46 @@ STAT_TYPES_LOOKUP = {
     'wpn': 'Weapon',
     'fire resistance': 'FireResistance',
     'fire': 'FireResistance',
+}
+
+
+STAT_UNITS_LOOKUP = {
+    'Ability': '%',
+    'Attack': '%',
+    'Engine': '%',
+    'FireResistance': '',
+    'Hp': '%',
+    'Pilot': '%',
+    'Repair': '%',
+    'Science': '%',
+    'Stamina': '',
+    'Weapon': '%',
+    'Xp': '',
+}
+
+
+STATS_LEFT = [
+    'Hp',
+    'Attack',
+    'Repair',
+    'Ability',
+    'Stamina'
+]
+
+
+STATS_RIGHT = [
+    'Pilot',
+    'Science',
+    'Engine',
+    'Weapon',
+    'FireResistance'
+]
+
+
+TRAINING_RANK_ROOM_LOOKUP = {
+    1: ('Gym', 'GYM'),
+    2: ('Academy', 'ACA')
+    # 100: Consumable
 }
 
 

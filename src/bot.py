@@ -34,6 +34,7 @@ import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
 import pss_top
+import pss_training as training
 import pss_user as user
 import server_settings
 import settings
@@ -84,7 +85,7 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
-async def on_ready():
+async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot prefix is: {COMMAND_PREFIX}')
@@ -95,7 +96,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_command_error(ctx: discord.ext.commands.Context, err):
+async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
     if isinstance(err, commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     else:
@@ -109,75 +110,153 @@ async def on_command_error(ctx: discord.ext.commands.Context, err):
 
 
 @bot.event
-async def on_guild_join(guild: discord.Guild):
+async def on_guild_join(guild: discord.Guild) -> None:
     success = server_settings.db_create_server_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not create server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
 @bot.event
-async def on_guild_remove(guild: discord.Guild):
+async def on_guild_remove(guild: discord.Guild) -> None:
     success = server_settings.db_delete_server_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not delete server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
 # ----- Tasks ----------------------------------------------------------
-async def post_dailies_loop():
+async def post_dailies_loop() -> None:
     while True:
-        utc_now = datetime.datetime.now(datetime.timezone.utc)
-        if utc_now.hour == 0:
-            await asyncio.sleep(59)
-        elif utc_now.hour == 1 and utc_now.minute == 0:
-            await post_all_dailies()
-            await asyncio.sleep(3600)
-        else:
-            await asyncio.sleep(3600)
+        utc_now = util.get_utcnow()
+        daily_info = daily.get_daily_info()
+        daily_info_cache, _ = daily.db_get_daily_info()
+        has_daily_changed = not util.dicts_equal(daily_info, daily_info_cache)
+        autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
+        if has_daily_changed:
+            await fix_daily_channels()
+            autodaily_settings.extend(server_settings.db_get_autodaily_settings(can_post=True))
+
+        created_output = False
+        if autodaily_settings:
+            autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
+            output, created_output = dropship.get_dropship_text(daily_info=daily_info)
+            if created_output:
+                await post_dailies(output, autodaily_settings, utc_now)
+
+        if has_daily_changed and created_output:
+            daily.db_set_daily_info(daily_info, utc_now)
+        # Wait for the next datetime being a multiple of 5 minutes
+        seconds_to_wait = util.get_seconds_to_wait(5)
+        await asyncio.sleep(seconds_to_wait)
 
 
-async def post_all_dailies():
-    fix_daily_channels()
-    channel_ids = daily.get_valid_daily_channel_ids()
-    output, _ = dropship.get_dropship_text()
-    for channel_id in channel_ids:
-        text_channel = bot.get_channel(channel_id)
-        if text_channel != None:
+async def post_all_dailies(output: list, utc_now: datetime) -> None:
+    await fix_daily_channels()
+    print(f'[post_all_dailies] Fixed daily channels.')
+    autodaily_settings = server_settings.db_get_autodaily_settings(can_post=True)
+    print(f'[post_all_dailies] Retrieved autodaily settings.')
+    await post_dailies(output, autodaily_settings, utc_now)
+
+
+async def post_dailies(output: list, autodaily_settings: list, utc_now: datetime) -> None:
+    for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in autodaily_settings:
+        if guild_id is not None:
+            can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output, utc_now)
+            server_settings.db_update_autodaily_settings(guild_id, can_post=can_post, latest_message_id=latest_message_id)
+
+
+async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list, utc_now: datetime) -> (bool, str):
+    """
+    Returns (can_post, latest_message_id)
+    """
+    if delete_on_change is None or delete_on_change is True:
+        post_new = True
+    else:
+        post_new = False
+
+    if channel_id and output:
+        can_post = True
+        post = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)[0]
+        text_channel: discord.TextChannel = bot.get_channel(channel_id)
+        latest_message: discord.Message = None
+        if text_channel is not None:
             guild = text_channel.guild
-            try:
-                if output:
-                    posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
-                    for post in posts:
-                        await text_channel.send(post)
-            except Exception as error:
-                print(f'[post_all_dailies] {error.__class__.__name__} occurred while trying to post to channel \'{text_channel.name}\' on server \'{guild.name}\': {error}')
+            if can_post and latest_message_id:
+                try:
+                    latest_message = await text_channel.fetch_message(latest_message_id)
+                except discord.NotFound:
+                    pass
+                except:
+                    can_post = False
 
-
-def fix_daily_channels():
-    rows = server_settings.db_get_autodaily_settings(None, None)
-    for row in rows:
-        if row[0]:
-            can_post = False
-            guild_id = int(row[0])
-            channel_id = int(row[1])
-            text_channel = bot.get_channel(channel_id)
-            if text_channel != None:
-                guild = bot.get_guild(guild_id)
-                if guild != None:
-                    guild_member = guild.get_member(bot.user.id)
-                    if guild_member != None:
-                        permissions = text_channel.permissions_for(guild_member)
-                        if permissions != None and permissions.send_messages == True:
-                            print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
-                            can_post = True
-                        else:
-                            print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
-                    else:
-                        print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
+            if can_post:
+                if latest_message and latest_message.created_at.day != utc_now.day:
+                    if delete_on_change is True:
+                        try:
+                            await latest_message.delete()
+                            latest_message = None
+                            print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]')
+                        except:
+                            can_post = False
+                    elif delete_on_change is False:
+                        try:
+                            await latest_message.edit(content=post)
+                            print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
+                        except:
+                            can_post = False
                 else:
-                    print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
+                    post_new = True
+
+                if post_new and can_post:
+                    try:
+                        latest_message = await text_channel.send(post)
+                        print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{channel_id}] on guild [{guild.id}]')
+                    except:
+                        can_post = False
+        else:
+            can_post = False
+
+        if latest_message:
+            return (can_post, latest_message.id)
+        else:
+            return (can_post, None)
+    else:
+        return (None, None)
+
+
+async def fix_daily_channels():
+    rows = [row for row in server_settings.db_get_autodaily_settings(None, None) if row and row[0]]
+    for row in rows:
+        can_post = False
+        guild_id = row[0]
+        channel_id = row[1]
+        try:
+            text_channel = await bot.fetch_channel(channel_id)
+        except:
+            text_channel = None
+        if text_channel is not None:
+            try:
+                guild = await bot.fetch_guild(guild_id)
+            except:
+                guild = None
+            if guild is not None:
+                try:
+                    me = await guild.fetch_member(bot.user.id)
+                except:
+                    me = None
+                if me is not None:
+                    permissions = text_channel.permissions_for(me)
+                    if permissions is not None and permissions.send_messages is True:
+                        print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
+                        can_post = True
+                    else:
+                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
+                else:
+                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
             else:
-                print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
-            daily.fix_daily_channel(guild_id, can_post)
+                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
+        else:
+            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
+        daily.fix_daily_channel(guild_id, can_post)
 
 
 # ----- General Bot Commands ----------------------------------------------------------
@@ -350,7 +429,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = crew.get_char_details_from_name(name, level)
+            char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
@@ -394,7 +473,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
     """
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = crew.get_char_details_from_name(crew_name, level=level)
+        output, _ = crew.get_char_design_details_by_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
@@ -485,39 +564,8 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
       This command will only print stats for the collection with the best matching collection_name.
     """
     async with ctx.typing():
-        output, _ = crew.get_collection_info(collection_name)
+        output, _ = crew.get_collection_design_details_by_name(collection_name)
     await util.post_output(ctx, output)
-
-
-@bot.group(name='test1')
-async def cmd_test1(ctx, *, args: str = None):
-    if ctx.invoked_subcommand is None:
-        if args == 'test2':
-            cmd = bot.get_command(f'test1 test2')
-            await ctx.invoke(cmd)
-        elif args and args.startswith('test2 '):
-            cmd = bot.get_command(f'test1 test2')
-            await ctx.invoke(cmd, args=str(args[6:]))
-        else:
-            await ctx.send(f'Executed command: `test1` with args `{args}`')
-
-
-@cmd_test1.group(name='test2')
-async def cmd_test1_test2(ctx, *, args: str = None):
-    if ctx.invoked_subcommand is None:
-        if args == 'past':
-            cmd = bot.get_command(f'test1 test2 past')
-            await ctx.invoke(cmd)
-        elif args and args.startswith('past '):
-            cmd = bot.get_command(f'test1 test2 past')
-            await ctx.invoke(cmd, args=str(args[6:]))
-        else:
-            await ctx.send(f'Executed command: `test1 test2` with args `{args}`')
-
-
-@cmd_test1_test2.command(name='past')
-async def cmd_test1_test2_past(ctx, *, args: str = None):
-    await ctx.send(f'Executed command: `test1 test2 past` with args `{args}`')
 
 
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
@@ -655,7 +703,7 @@ async def cmd_news(ctx: discord.ext.commands.Context):
 @bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily(ctx: discord.ext.commands.Context):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
@@ -669,7 +717,7 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Fix the auto-daily channels.', name='fix')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         fix_daily_channels()
@@ -679,7 +727,7 @@ async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
 @cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
@@ -687,7 +735,7 @@ async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, None)
@@ -697,7 +745,7 @@ async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, False)
@@ -707,7 +755,7 @@ async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, True)
@@ -717,7 +765,7 @@ async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     guild = ctx.guild
     channel_id = server_settings.db_get_daily_channel_id(guild.id)
@@ -730,10 +778,11 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 @cmd_autodaily.command(brief='Post a daily message on all servers\' auto-daily channels', name='postall')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
-    await post_all_dailies()
+    daily_info = daily.get_daily_info()
+    await post_all_dailies(daily_info, util.get_utcnow())
 
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
@@ -841,6 +890,30 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     await util.post_output(ctx, output)
 
 
+@bot.command(brief='Get training infos', name='training')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
+    """
+    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
+
+    Usage:
+      /training [name]
+
+    Parameters:
+      name: A room's name or part of it. Mandatory.
+
+    Examples:
+      /training bench - Searches for trainings having 'bench' in their names and prints their details.
+
+    Notes:
+      The training yields displayed represent the upper bound of possible yields.
+      The highest yield will always be displayed on the far left.
+    """
+    async with ctx.typing():
+        output, _ = training.get_training_details_from_name(name)
+    await util.post_output(ctx, output)
+
+
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_time(ctx: discord.ext.commands.Context):
@@ -896,7 +969,7 @@ async def cmd_links(ctx: discord.ext.commands.Context):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_about(ctx: discord.ext.commands.Context):
     """
-    Displays information on this bot and its authors.
+    Displays information about this bot and its authors.
 
     Usage:
       /about
@@ -1088,7 +1161,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
 
 
 @bot.group(brief='Server settings', name='settings', invoke_without_command=True)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings(ctx: discord.ext.commands.Context):
     """
@@ -1122,7 +1195,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
@@ -1149,11 +1222,11 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
-    Retrieve the pagination setting for this server.
+    Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use this command.
     This command can only be used on Discord servers/guilds.
@@ -1173,7 +1246,7 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
@@ -1204,7 +1277,7 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Reset server settings', name='reset', invoke_without_command=True)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset(ctx: discord.ext.commands.Context):
     """
@@ -1231,7 +1304,7 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
@@ -1249,7 +1322,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
+            success = server_settings.db_reset_autodaily_channel(ctx.guild.id)
             if success:
                 output = ['Successfully removed auto-daily settings for this server.']
             else:
@@ -1261,11 +1334,11 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
-    Reset the pagination settings for this server to 'ON'.
+    Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
@@ -1286,7 +1359,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
@@ -1318,7 +1391,7 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Change server settings', name='set', invoke_without_command=False)
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set(ctx: discord.ext.commands.Context):
     """
@@ -1337,10 +1410,21 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
 
 
-@cmd_settings_set.command(brief='Set auto-daily', name='autodaily', aliases=['daily'])
-@commands.has_permissions(administrator=True)
+@cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
+async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
+    """
+    Change auto-daily settings for this server.
+    """
+    if not util.is_guild_channel(ctx.channel):
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+
+
+@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
+@commands.has_permissions(manage_guild=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
@@ -1348,21 +1432,25 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
     This command can only be used on Discord servers/guilds.
 
     Usage:
-      /settings set autodaily <text_channel_mention>
-      /settings set daily <text_channel_mention>
+      /settings set autodaily channel <text_channel_mention>
+      /settings set daily ch <text_channel_mention>
 
     Parameters:
       text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will set the current channel.
 
     Examples:
-      /settings set autodaily - Sets the current channel to receive the /daily message once a day.
-      /settings set autodaily #announcements - Sets the channel #announcements to receive the /daily message once a day.
+      /settings set daily channel - Sets the current channel to receive the /daily message once a day.
+      /settings set autodaily ch #announcements - Sets the channel #announcements to receive the /daily message once a day.
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
+            current_channel_id = server_settings.db_get_daily_channel_id(ctx.guild.id)
             if not text_channel:
                 text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
+                success = True
+                if current_channel_id != text_channel.id:
+                    success = server_settings.db_update_daily_latest_message_id(ctx.guild.id, None)
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
                     output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
@@ -1376,12 +1464,37 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context, text_cha
         await util.post_output(ctx, output)
 
 
+@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['mode'])
+@commands.has_permissions(manage_guild=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
+    """
+    Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
+
+    You need the Administrator permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily changemode
+      /settings set daily change
+
+    Examples:
+      /settings set autodaily changemode - Toggles the change mode.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            result = server_settings.toggle_daily_delete_on_change(ctx.guild.id)
+            change_mode = server_settings.convert_to_edit_delete(result)
+            output = [f'Change mode on this server is set to: `{change_mode}`']
+        await util.post_output(ctx, output)
+
+
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
     """
-    Sets or toggle the pagination for this server. The default is 'ON'.
+    Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
     You need the Administrator permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
@@ -1409,7 +1522,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
 
 
 @cmd_settings_set.command(brief='Set prefix', name='prefix')
-@commands.has_permissions(administrator=True)
+@commands.has_permissions(manage_guild=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str):
     """
@@ -1437,6 +1550,33 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
             else:
                 output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@bot.command(name='pagination', hidden=True, aliases=['pages'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+async def cmd_pagination(ctx: discord.ext.commands.Context):
+    """
+    Some commands allow the user to search for a fleet, a player or other stuff. Such a search may yield more than one result. Then the bot may offer the user to select one of these results.
+
+    Pagination is a way to format the result list in way that allows the user to select one result. The pagination mode can be set individually per Discord server. There are two modes:
+    - ON
+    - OFF
+
+    If pagination is turned ON for a server, the bot will print the results on pages of 5 results. The bot will add reactions. The user can use the reactions to navigate the pages or select an item of the result list.
+    If pagination is turned OFF for a server, the bot will print the whole results list. The user can select an item from the list by typing the number in front of the respective result.
+
+    In both cases the result list will disappear after 60 seconds without user input.
+    """
+    pass
+
 
 
 
