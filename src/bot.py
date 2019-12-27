@@ -124,7 +124,7 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 
 # ----- Tasks ----------------------------------------------------------
-async def post_dailies_loop():
+async def post_dailies_loop() -> None:
     while True:
         utc_now = util.get_utcnow()
         daily_info = daily.get_daily_info()
