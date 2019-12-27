@@ -469,6 +469,19 @@ def _calculate_stat_value(min_value: float, max_value: float, level: int, progre
 
 # ---------- Crew info ----------
 
+def get_char_design_details_by_id(char_design_id: str, level: int, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
+    if char_design_id:
+        if chars_designs_data is None:
+            chars_designs_data = __character_designs_cache.get_data_dict3()
+
+        if char_design_id and char_design_id in chars_designs_data.keys():
+            char_design_info = chars_designs_data[char_design_id]
+            char_design_details = CharDesignDetails(char_design_info, collections_designs_data=collections_designs_data, level=level)
+            return char_design_details
+
+    return None
+
+
 def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)

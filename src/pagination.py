@@ -217,8 +217,8 @@ class Paginator():
     @staticmethod
     def __get_options_display(entity_infos: List[dict], short_text_function: Callable[[dict], str]) -> str:
         options = []
-        for i, entity_info in enumerate(entity_infos):
-            number = str(i + 1)
+        for i, entity_info in enumerate(entity_infos, 1):
+            number = str(i)
             short_text = short_text_function(entity_info)
             option = f'{number.rjust(2)}: {short_text}'
             options.append(option)

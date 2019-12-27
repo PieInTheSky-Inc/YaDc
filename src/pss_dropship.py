@@ -101,16 +101,18 @@ def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
     return result
 
 
-def _get_dropship_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict) -> list:
+def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict) -> list:
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
+        common_crew_details = crew.get_char_design_details_by_id(common_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        common_crew_info = common_crew_details._get_details_as_text_short()
+
         hero_crew_id = raw_data['HeroCrewId']
+        hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        hero_crew_info = hero_crew_details._get_details_as_text_short()
 
-        common_crew_info = crew.get_char_info_short_from_id_as_text(common_crew_id, char_designs_data, collection_designs_data)
-        hero_crew_info = crew.get_char_info_short_from_id_as_text(hero_crew_id, char_designs_data, collection_designs_data)
-
-        common_crew_rarity = char_designs_data[common_crew_id]['Rarity']
+        common_crew_rarity = common_crew_details.rarity
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
             common_crew_info.append(' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!')
 
@@ -146,7 +148,7 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
     return result
 
 
-def _get_shop_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> list:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = raw_data['LimitedCatalogType']
@@ -158,11 +160,12 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, col
     entity_id = raw_data['LimitedCatalogArgument']
     entity_details = []
     if shop_type == 'Character':
-        entity_details = crew.get_char_info_short_from_id_as_text(entity_id, char_designs_data, collection_designs_data)
+        char_design_details = crew.get_char_design_details_by_id(entity_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        entity_details = char_design_details._get_details_as_text_short()
     elif shop_type == 'Item':
-        entity_details = item.get_item_details_short_from_id_as_text(entity_id, item_designs_data)
+        entity_details = item.get_item_details_short_from_id_as_text(entity_id, items_designs_data)
     elif shop_type == 'Room':
-        entity_details = room.get_room_details_short_from_id_as_text(entity_id, room_designs_data)
+        entity_details = room.get_room_details_short_from_id_as_text(entity_id, rooms_designs_data)
     else:
         result.append('-')
         return result
@@ -176,7 +179,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, col
     return result
 
 
-def _get_sale_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, collection_designs_data: dict, item_designs_data: dict, room_designs_data: dict) -> list:
+def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> list:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -188,11 +191,12 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, char_designs_data: dict, col
     sale_type = raw_data['SaleType']
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
-        entity_details = ''.join(crew.get_char_info_short_from_id_as_text(sale_argument, char_designs_data, collection_designs_data))
+        char_design_details = crew.get_char_design_details_by_id(sale_argument, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        entity_details = ''.join(char_design_details._get_details_as_text_short())
     elif sale_type == 'Item':
-        entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, item_designs_data))
+        entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, items_designs_data))
     elif sale_type == 'Room':
-        entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, room_designs_data))
+        entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, rooms_designs_data))
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
     else: # Print debugging info
