@@ -164,3 +164,7 @@ class EntityDesignsRetriever:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
+
+
+    def update_cache(self) -> None:
+        self.__cache.update_data()

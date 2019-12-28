@@ -1090,8 +1090,8 @@ async def cmd_tournament_next(ctx: discord.ext.commands.Context):
 async def cmd_updatecache(ctx: discord.ext.commands.Context):
     """This command is to be used to update all caches manually."""
     async with ctx.typing():
-        crew.__character_designs_cache.update_data()
-        crew.__collection_designs_cache.update_data()
+        crew.character_designs_retriever.update_cache()
+        crew.collection_designs_retriever.update_cache()
         prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
         for prestige_to_cache in prestige_to_caches:
             prestige_to_cache.update_data()
@@ -1101,6 +1101,7 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
         item.__item_designs_cache.update_data()
         research.__research_designs_cache.update_data()
         room.__room_designs_cache.update_data()
+        training.training_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
 
 

@@ -32,16 +32,6 @@ __PRESTIGE_TO_BASE_PATH = f'CharacterService/PrestigeCharacterTo?languagekey=en&
 
 # ---------- Initilization ----------
 
-__character_designs_cache = PssCache(
-    CHARACTER_DESIGN_BASE_PATH,
-    'CharacterDesigns',
-    CHARACTER_DESIGN_KEY_NAME)
-
-__collection_designs_cache = PssCache(
-    COLLECTION_DESIGN_BASE_PATH,
-    'CollectionDesigns',
-    COLLECTION_DESIGN_KEY_NAME)
-
 __prestige_from_cache_dict = {}
 __prestige_to_cache_dict = {}
 
@@ -317,7 +307,7 @@ class PrestigeDetails(entity.EntityDesignDetails):
 
 class PrestigeFromDetails(PrestigeDetails):
     def __init__(self, char_from_design_info: dict, chars_designs_data: dict = None, prestige_from_data: dict = None):
-        chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        chars_designs_data = chars_designs_data or character_designs_retriever.get_data_dict3()
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige combinations:'
@@ -349,7 +339,7 @@ class PrestigeFromDetails(PrestigeDetails):
 
 class PrestigeToDetails(PrestigeDetails):
     def __init__(self, char_to_design_info: dict, chars_designs_data: dict = None, prestige_to_data: dict = None):
-        chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
+        chars_designs_data = chars_designs_data or character_designs_retriever.get_data_dict3()
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige recipes:'
@@ -429,7 +419,7 @@ def _get_ability_name(char_design_info: dict) -> str:
 
 def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
     collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
-    chars_designs_data = __character_designs_cache.get_data_dict3()
+    chars_designs_data = character_designs_retriever.get_data_dict3()
     chars_designs_infos = [chars_designs_data[char_id] for char_id in chars_designs_data.keys() if chars_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
     result.sort()
@@ -440,10 +430,8 @@ def _get_collection_name(char_design_info: dict, collections_designs_data: dict 
     if char_design_info:
         collection_id = char_design_info[COLLECTION_DESIGN_KEY_NAME]
         if collection_id and collection_id != '0':
-            if not collections_designs_data:
-                collections_designs_data = __collection_designs_cache.get_data_dict3()
-            if collection_id in collections_designs_data.keys():
-                return collections_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            collection_design_info = collection_designs_retriever.get_entity_design_info_by_id(collection_id)
+            return collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return None
 
 
@@ -486,7 +474,7 @@ def _calculate_stat_value(min_value: float, max_value: float, level: int, progre
 def get_char_design_details_by_id(char_design_id: str, level: int, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
     if char_design_id:
         if chars_designs_data is None:
-            chars_designs_data = __character_designs_cache.get_data_dict3()
+            chars_designs_data = character_designs_retriever.get_data_dict3()
 
         if char_design_id and char_design_id in chars_designs_data.keys():
             char_design_info = chars_designs_data[char_design_id]

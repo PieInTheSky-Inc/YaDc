@@ -61,8 +61,8 @@ def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMB
     if not daily_info:
         daily_info = core.get_latest_settings(language_key=language_key)
 
-    collection_design_data = crew.__collection_designs_cache.get_data_dict3()
-    char_design_data = crew.__character_designs_cache.get_data_dict3()
+    collection_design_data = crew.collection_designs_retriever.get_data_dict3()
+    char_design_data = crew.character_designs_retriever.get_data_dict3()
     item_design_data = item.__item_designs_cache.get_data_dict3()
     room_design_data = room.__room_designs_cache.get_data_dict3()
 
