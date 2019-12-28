@@ -37,7 +37,7 @@ SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 USE_EMBEDS = False
 
-VERSION = '1.2.4.3'
+VERSION = '1.2.4.4'
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
 
