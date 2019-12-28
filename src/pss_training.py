@@ -274,4 +274,3 @@ training_designs_retriever = entity.EntityDesignsRetriever(
     cache_name='TrainingDesigns',
     sorted_key_function=_get_key_for_training_sort
 )
-f = 5
