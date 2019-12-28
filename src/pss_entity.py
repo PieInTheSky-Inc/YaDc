@@ -103,7 +103,7 @@ class EntityDesignsRetriever:
     def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None):
         self.__cache_name: str = cache_name or ''
         self.__base_path: str = entity_design_base_path
-        self.__key_name: str = entity_design_key_name
+        self.__key_name: str = entity_design_key_name or None
         self.__description_property_name: str = entity_design_description_property_name
         self.__sorted_key_function: Callable[[dict, dict], str] = sorted_key_function
         self.__fix_data_delegate: Callable[[str], str] = fix_data_delegate

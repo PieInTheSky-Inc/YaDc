@@ -525,7 +525,7 @@ def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool =
 def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(collection_name)
 
-    collection_design_info = _get_collection_design_info(collection_name)
+    collection_design_info = collection_designs_retriever.get_entity_design_info_by_name(collection_name)
 
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
@@ -535,27 +535,6 @@ def get_collection_design_details_by_name(collection_name: str, as_embed: bool =
             return collection_design_details.get_details_as_embed(), True
         else:
             return collection_design_details.get_details_as_text_long(), True
-
-
-def _get_collection_design_info(collection_name: str):
-    collections_designs_data = __collection_designs_cache.get_data_dict3()
-    collection_design_id = _get_collection_design_id_by_name(collection_name, collections_designs_data)
-
-    if collection_design_id and collection_design_id in collections_designs_data.keys():
-        return collections_designs_data[collection_design_id]
-    else:
-        return None
-
-
-def _get_collection_design_id_by_name(collection_name: str, collections_designs_data: dict = None):
-    if collections_designs_data is None:
-        collections_designs_data = __collection_designs_cache.get_data_dict3()
-
-    results = core.get_ids_from_property_value(collections_designs_data, COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME, collection_name)
-    if len(results) > 0:
-        return results[0]
-
-    return None
 
 
 
@@ -736,6 +715,13 @@ character_designs_retriever = entity.EntityDesignsRetriever(
     CHARACTER_DESIGN_KEY_NAME,
     CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='CharacterDesigns'
+)
+
+collection_designs_retriever = entity.EntityDesignsRetriever(
+    COLLECTION_DESIGN_BASE_PATH,
+    COLLECTION_DESIGN_KEY_NAME,
+    COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='CollectionDesigns'
 )
 
 
