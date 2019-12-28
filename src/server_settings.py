@@ -135,8 +135,7 @@ def reset_daily_delete_on_change(guild_id: int) -> bool:
 
 
 def set_pagination(guild_id: int, switch: str) -> bool:
-    if not db_get_has_settings(guild_id):
-        db_create_server_settings(guild_id)
+    db_create_server_settings(guild_id)
 
     if switch is None:
         return toggle_use_pagination(guild_id)
@@ -151,15 +150,13 @@ def set_pagination(guild_id: int, switch: str) -> bool:
 
 
 def set_prefix(guild_id: int, prefix: str) -> bool:
-    if not db_get_has_settings(guild_id):
-        db_create_server_settings(guild_id)
+    db_create_server_settings(guild_id)
     success = db_update_prefix(guild_id, prefix)
     return success
 
 
 def toggle_daily_delete_on_change(guild_id: int) -> bool:
-    if not db_get_has_settings(guild_id):
-        db_create_server_settings(guild_id)
+    db_create_server_settings(guild_id)
     delete_on_change = db_get_daily_delete_on_change(guild_id)
     if delete_on_change is True:
         new_value = None
@@ -175,8 +172,7 @@ def toggle_daily_delete_on_change(guild_id: int) -> bool:
 
 
 def toggle_use_pagination(guild_id: int) -> bool:
-    if not db_get_has_settings(guild_id):
-        db_create_server_settings(guild_id)
+    db_create_server_settings(guild_id)
     use_pagination = db_get_use_pagination(guild_id)
     success = db_update_use_pagination(guild_id, not use_pagination)
     if success:
@@ -199,9 +195,12 @@ def toggle_use_pagination(guild_id: int) -> bool:
 # ---------- DB functions ----------
 
 def db_create_server_settings(guild_id: int) -> bool:
-    query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ({guild_id}, {util.db_convert_boolean(True)})'
-    success = core.db_try_execute(query)
-    return success
+    if db_get_has_settings(guild_id):
+        return True
+    else:
+        query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ({guild_id}, {util.db_convert_boolean(True)})'
+        success = core.db_try_execute(query)
+        return success
 
 
 def db_delete_server_settings(guild_id: int) -> bool:
