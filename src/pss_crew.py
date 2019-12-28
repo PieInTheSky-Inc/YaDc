@@ -313,7 +313,6 @@ class PrestigeDetails(entity.EntityDesignDetails):
 class PrestigeFromDetails(PrestigeDetails):
     def __init__(self, char_from_design_info: dict, chars_designs_data: dict = None, prestige_from_data: dict = None):
         chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
-        count = len(prestige_from_data)
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige combinations:'
@@ -346,7 +345,6 @@ class PrestigeFromDetails(PrestigeDetails):
 class PrestigeToDetails(PrestigeDetails):
     def __init__(self, char_to_design_info: dict, chars_designs_data: dict = None, prestige_to_data: dict = None):
         chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
-        count = len(prestige_to_data)
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige recipes:'
