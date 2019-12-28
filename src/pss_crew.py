@@ -191,6 +191,11 @@ class CharDesignDetails(entity.EntityDesignDetails):
 
 
 
+
+
+
+
+
 class CollectionDesignDetails(entity.EntityDesignDetails):
     def __init__(self, collection_design_info: dict):
         collection_crew = _get_collection_chars_designs_infos(collection_design_info)
@@ -495,8 +500,7 @@ def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool =
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
-    chars_designs_data = __character_designs_cache.get_data_dict3()
-    char_design_info = _get_char_design_info_by_name(char_name, chars_designs_data)
+    char_design_info = character_designs_retriever.get_entity_info_by_name(char_name)
 
     if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
@@ -612,8 +616,8 @@ def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
 
 def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
     char_data = __character_designs_cache.get_data_dict3()
-    char_info_1 = _get_char_design_info_by_name(char_name)
-    found_char_name = char_info_1[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    char_1_design_info = character_designs_retriever.get_entity_info_by_name(char_name)
+    found_char_name = char_1_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     combination_count = len(prestige_from_data)
 
     lines = [f'**{found_char_name}** has **{combination_count}** prestige combinations:']
@@ -636,9 +640,9 @@ def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> l
     if body_lines:
         lines.extend(body_lines)
     else:
-        if char_info_1['Rarity'] == 'Special':
+        if char_1_design_info['Rarity'] == 'Special':
             error = 'One cannot prestige **Special** crew.'
-        elif char_info_1['Rarity'] == 'Legendary':
+        elif char_1_design_info['Rarity'] == 'Legendary':
             error = 'One cannot prestige **Legendary** crew.'
         else:
             error = 'noone'
@@ -780,6 +784,24 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
     result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas_big}.')
 
     return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Initilization ----------
+
+character_designs_retriever = entity.EntityDesignsRetriever(
+    CHARACTER_DESIGN_BASE_PATH,
+    CHARACTER_DESIGN_KEY_NAME,
+    CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='CharacterDesigns'
+)
 
 
 
