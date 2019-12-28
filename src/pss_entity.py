@@ -2,8 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 from abc import ABC, abstractstaticmethod
-from discord import Embed
-from typing import Callable, List, Tuple
+import discord
+from typing import Callable, Dict, List, Tuple
 
 from cache import PssCache
 import pss_core as core
@@ -34,7 +34,7 @@ class EntityDesignDetails(object):
         return self.__name
 
 
-    def get_details_as_embed(self) -> Embed:
+    def get_details_as_embed(self) -> discord.Embed:
         return EntityDesignDetails._get_details_as_embed(self.name, self.description, self.details_long)
 
 
@@ -47,8 +47,8 @@ class EntityDesignDetails(object):
 
 
     @staticmethod
-    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]]) -> Embed:
-        result = Embed()
+    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]]) -> discord.Embed:
+        result = discord.Embed()
         if title:
             result.title = title
         if description:
@@ -106,7 +106,7 @@ class EntityDesignsRetriever:
         self.__key_name: str = entity_design_key_name
         self.__description_property_name: str = entity_design_description_property_name
         self.__sorted_key_function: Callable[[dict, dict], str] = sorted_key_function
-        self.__fix_data_delegate = fix_data_delegate
+        self.__fix_data_delegate: Callable[[str], str] = fix_data_delegate
 
         self.__cache = PssCache(
             self.__base_path,
@@ -115,11 +115,19 @@ class EntityDesignsRetriever:
         )
 
 
-    def get_data_dict3(self) -> dict:
+    def get_data_dict3(self) -> Dict[str, Dict[str, object]]:
         return self.__cache.get_data_dict3()
 
 
-    def get_entity_info_by_name(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
+    def get_entity_design_info_by_id(self, entity_design_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> Dict[str, object]:
+        entity_designs_data = entity_designs_data or self.get_data_dict3()
+        if entity_design_id in entity_designs_data.keys():
+            return entity_designs_data[entity_design_id]
+        else:
+            return None
+
+
+    def get_entity_design_info_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> Dict[str, object]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         entity_design_id = self.get_entity_design_id_by_name(entity_name, entity_designs_data=entity_designs_data)
 
@@ -129,7 +137,7 @@ class EntityDesignsRetriever:
             return None
 
 
-    def get_entity_infos_by_name(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
+    def get_entity_design_infos_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         sorted_key_function = sorted_key_function or self.__sorted_key_function
 
@@ -144,7 +152,7 @@ class EntityDesignsRetriever:
         return result
 
 
-    def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
+    def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> str:
         results = self.get_entity_design_ids_by_name(entity_name, entity_designs_data)
         if len(results) > 0:
             return results[0]
@@ -152,7 +160,7 @@ class EntityDesignsRetriever:
             return None
 
 
-    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
+    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> List[str]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results

@@ -500,7 +500,7 @@ def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool =
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
-    char_design_info = character_designs_retriever.get_entity_info_by_name(char_name)
+    char_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name)
 
     if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
@@ -616,7 +616,7 @@ def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
 
 def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
     char_data = __character_designs_cache.get_data_dict3()
-    char_1_design_info = character_designs_retriever.get_entity_info_by_name(char_name)
+    char_1_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name)
     found_char_name = char_1_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     combination_count = len(prestige_from_data)
 
