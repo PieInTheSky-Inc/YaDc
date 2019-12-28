@@ -77,7 +77,7 @@ class Paginator():
                 else:
                     reply = await self.__context.bot.wait_for('message', timeout=self.__timeout, check=option_selection_check)
             except asyncio.TimeoutError:
-                self.__try_delete_message()
+                await self.__try_delete_message()
                 return False, {}
             else:
                 if reaction and user:
