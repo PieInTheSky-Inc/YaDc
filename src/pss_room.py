@@ -123,7 +123,10 @@ def _get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: st
         reload_seconds = util.convert_ticks_to_seconds(reload_time)
         max_power = int(max_power)
         volley = int(volley)
-        volley_delay = int(volley_delay)
+        if volley_delay:
+            volley_delay = int(volley_delay)
+        else:
+            volley_delay = 0
         volley_duration_seconds = util.convert_ticks_to_seconds((volley - 1) * volley_delay)
         reload_seconds += volley_duration_seconds
         full_volley_dmg = dmg * float(volley)
