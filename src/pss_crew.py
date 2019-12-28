@@ -513,34 +513,6 @@ def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool =
 
 
 
-def _get_char_design_info_by_name(char_name: str, chars_designs_data: dict = None) -> dict:
-    chars_designs_data = chars_designs_data or __character_designs_cache.get_data_dict3()
-    char_design_id = _get_char_design_id_by_name(char_name, chars_designs_data)
-
-    if char_design_id and char_design_id in chars_designs_data.keys():
-        return chars_designs_data[char_design_id]
-    else:
-        return None
-
-
-def _get_char_design_id_by_name(char_name: str, chars_designs_data: dict = None) -> str:
-    if chars_designs_data is None:
-        chars_designs_data = __character_designs_cache.get_data_dict3()
-
-    results = core.get_ids_from_property_value(chars_designs_data, CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME, char_name)
-    if len(results) > 0:
-        return results[0]
-
-    return None
-
-
-def _get_chars_designs_infos() -> list:
-    chars_designs_data = __character_designs_cache.get_data_dict3()
-    result = [chars_designs_data[key][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for key in chars_designs_data.keys()]
-    return result
-
-
-
 
 
 
@@ -599,64 +571,26 @@ def _get_collection_design_id_by_name(collection_name: str, collections_designs_
 def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
-    prestige_data = _get_prestige_from_data(char_name)
+    chars_designs_data = character_designs_retriever.get_data_dict3()
+    char_from_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name, entity_designs_data=chars_designs_data)
 
-    if prestige_data is None:
-        return [f'Could not find prestige paths requiring **{char_name}**'], False
+    if not char_from_design_info:
+        return [f'Could not find a crew named **{char_name}**.'], False
     else:
+        prestige_from_data = _get_prestige_from_data(char_from_design_info)
+        prestige_from_details = PrestigeFromDetails(char_from_design_info, chars_designs_data=chars_designs_data, prestige_from_data=prestige_from_data)
+
         if as_embed:
-            return get_prestige_from_info_as_embed(char_name, prestige_data), True
+            return prestige_from_details.get_details_as_embed(), True
         else:
-            return get_prestige_from_info_as_txt(char_name, prestige_data), True
+            return prestige_from_details.get_details_as_text_long(), True
 
 
-def get_prestige_from_info_as_embed(char_name: str, prestige_from_data: dict):
-    return ''
+def _get_prestige_from_data(char_design_info: dict) -> dict:
+    if not char_design_info:
+        return {}
 
-
-def get_prestige_from_info_as_txt(char_name: str, prestige_from_data: dict) -> list:
-    char_data = __character_designs_cache.get_data_dict3()
-    char_1_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name)
-    found_char_name = char_1_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    combination_count = len(prestige_from_data)
-
-    lines = [f'**{found_char_name}** has **{combination_count}** prestige combinations:']
-
-    prestige_targets = {}
-    for value in prestige_from_data.values():
-        char_info_2_name = char_data[value['CharacterDesignId2']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        char_info_to_name = char_data[value['ToCharacterDesignId']][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-
-        if char_info_to_name not in prestige_targets.keys():
-            prestige_targets[char_info_to_name] = []
-        prestige_targets[char_info_to_name].append(char_info_2_name)
-
-    body_lines = []
-    for prestige_target in sorted(list(prestige_targets.keys())):
-        prestige_partners = sorted(prestige_targets[prestige_target])
-        body_lines.append(f'**{prestige_target}** with:')
-        body_lines.append(f'> {", ".join(prestige_partners)}')
-
-    if body_lines:
-        lines.extend(body_lines)
-    else:
-        if char_1_design_info['Rarity'] == 'Special':
-            error = 'One cannot prestige **Special** crew.'
-        elif char_1_design_info['Rarity'] == 'Legendary':
-            error = 'One cannot prestige **Legendary** crew.'
-        else:
-            error = 'noone'
-        lines.append(error)
-
-    return lines
-
-
-def _get_prestige_from_data(char_name: str) -> dict:
-    char_info = _get_char_design_info_by_name(char_name)
-    if char_info is None:
-        return None
-
-    char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
+    char_design_id = char_design_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in __prestige_from_cache_dict.keys():
         prestige_from_cache = __prestige_from_cache_dict[char_design_id]
     else:
@@ -690,8 +624,9 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
 def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
-    chars_designs_data = __character_designs_cache.get_data_dict3()
-    char_to_design_info = _get_char_design_info_by_name(char_name, chars_designs_data)
+    chars_designs_data = character_designs_retriever.get_data_dict3()
+    char_to_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name, entity_designs_data=chars_designs_data)
+
     if not char_to_design_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
