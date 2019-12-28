@@ -144,11 +144,7 @@ async def post_dailies_loop() -> None:
 
         if has_daily_changed and created_output:
             daily.db_set_daily_info(daily_info, utc_now)
-        # Wait for the next datetime being a multiple of 5 minutes
-        if has_daily_changed:
-            seconds_to_wait = util.get_seconds_to_wait(1)
-        else:
-            seconds_to_wait = util.get_seconds_to_wait(5)
+        seconds_to_wait = util.get_seconds_to_wait(1)
         await asyncio.sleep(seconds_to_wait)
 
 
