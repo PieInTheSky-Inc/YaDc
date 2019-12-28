@@ -119,6 +119,16 @@ class EntityDesignsRetriever:
         return self.__cache.get_data_dict3()
 
 
+    def get_entity_info_by_name(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
+        entity_designs_data = entity_designs_data or self.get_data_dict3()
+        entity_design_id = self.get_entity_design_id_by_name(entity_name, entity_designs_data=entity_designs_data)
+
+        if entity_design_id and entity_design_id in entity_designs_data.keys():
+            return entity_designs_data[entity_design_id]
+        else:
+            return None
+
+
     def get_entity_infos_by_name(self, entity_name: str, entity_designs_data: dict = None, sorted_key_function: Callable[[dict, dict], str] = None):
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         sorted_key_function = sorted_key_function or self.__sorted_key_function
@@ -134,8 +144,15 @@ class EntityDesignsRetriever:
         return result
 
 
+    def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
+        results = self.get_entity_design_ids_by_name(entity_name, entity_designs_data)
+        if len(results) > 0:
+            return results[0]
+        else:
+            return None
+
+
     def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict = None) -> list:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
-
         results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
