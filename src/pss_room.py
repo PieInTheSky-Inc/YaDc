@@ -119,8 +119,8 @@ def _get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: st
     """Returns base dps and dps per power"""
     if dmg:
         dmg = float(dmg)
-        reload_time = float(reload_time)
-        reload_seconds = util.convert_ticks_to_seconds(int(reload_time))
+        reload_time = int(reload_time)
+        reload_seconds = util.convert_ticks_to_seconds(reload_time)
         max_power = int(max_power)
         volley = int(volley)
         volley_duration_seconds = util.convert_ticks_to_seconds((volley - 1) * volley_delay)
