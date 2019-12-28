@@ -145,7 +145,10 @@ async def post_dailies_loop() -> None:
         if has_daily_changed and created_output:
             daily.db_set_daily_info(daily_info, utc_now)
         # Wait for the next datetime being a multiple of 5 minutes
-        seconds_to_wait = util.get_seconds_to_wait(5)
+        if has_daily_changed:
+            seconds_to_wait = util.get_seconds_to_wait(1)
+        else:
+            seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
 
 
@@ -184,24 +187,40 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                 try:
                     latest_message = await text_channel.fetch_message(latest_message_id)
                 except discord.NotFound:
-                    pass
-                except:
+                    print(f'[post_autodaily] could not find latest message [{latest_message_id}]')
+                except Exception as err:
+                    print(f'[post_autodaily] could not fetch message [{latest_message_id}]: {err}')
                     can_post = False
 
             if can_post:
-                if latest_message and latest_message.created_at.day != utc_now.day:
+                if latest_message and latest_message.created_at.day == utc_now.day:
                     if delete_on_change is True:
                         try:
                             await latest_message.delete()
                             latest_message = None
                             print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]')
-                        except:
+                        except discord.NotFound:
+                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the message could not be found')
                             can_post = False
+                        except discord.Forbidden:
+                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
+                            can_post = False
+                        except Exception as err:
+                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: {err}')
+                            can_post = False
+
                     elif delete_on_change is False:
                         try:
                             await latest_message.edit(content=post)
                             print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
-                        except:
+                        except discord.NotFound:
+                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the message could not be found')
+                            can_post = False
+                        except discord.Forbidden:
+                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
+                            can_post = False
+                        except Exception as err:
+                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: {err}')
                             can_post = False
                 else:
                     post_new = True
@@ -210,7 +229,11 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
                     try:
                         latest_message = await text_channel.send(post)
                         print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{channel_id}] on guild [{guild.id}]')
-                    except:
+                    except discord.Forbidden:
+                        print(f'[post_autodaily] could not post a message in channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
+                        can_post = False
+                    except Exception as err:
+                        print(f'[post_autodaily] could not post a message in channel [{channel_id}] on guild [{guild.id}]: {err}')
                         can_post = False
         else:
             can_post = False
