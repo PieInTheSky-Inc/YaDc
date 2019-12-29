@@ -4,6 +4,7 @@
 from datetime import datetime
 import discord
 import os
+import random
 
 import pss_core as core
 import server_settings
@@ -106,25 +107,29 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
     success = update_daily_channel(guild_id, None, can_post)
     return success
 
-DAILY_INFO_FIELDS = [
-    'CargoItems',
-    'CargoPrices',
-    'CommonCrewId',
-    'DailyRewardArgument',
-    'DailyItemRewards',
-    'DailyRewardType',
-    'HeroCrewId',
-    'LimitedCatalogArgument',
-    'LimitedCatalogCurrencyAmount',
-    'LimitedCatalogCurrencyType',
-    'LimitedCatalogMaxTotal',
-    'LimitedCatalogType',
-    'News',
-    'SaleArgument',
-    'SaleItemMask',
-    'SaleQuantity',
-    'SaleType'
-]
+
+def has_daily_changed(daily_info: dict, retrieved_date: datetime) -> bool:
+    fields_to_check = [
+        'News',
+        'LimitedCatalogArgument',
+        'LimitedCatalogCurrencyAmount',
+        'LimitedCatalogCurrencyType',
+        'LimitedCatalogMaxTotal',
+        'LimitedCatalogType',
+        'SaleArgument',
+        'SaleItemMask',
+        'SaleQuantity',
+        'SaleType'
+    ]
+    daily_info_cache, cache_modify_date = db_get_daily_info()
+    if retrieved_date.day > cache_modify_date.day:
+        for daily_info_field in fields_to_check:
+            if daily_info[daily_info_field] != daily_info_cache[daily_info_field]:
+                return True
+    else:
+        return not util.dicts_equal(daily_info, daily_info_cache)
+
+
 
 
 
@@ -174,6 +179,10 @@ def get_daily_info():
     return result
 
 
+def get_daily_info_setting_name(field_name: str) -> str:
+    return f'daily{field_name}'
+
+
 def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     success = server_settings.db_create_server_settings(guild_id)
     if success:
@@ -207,7 +216,7 @@ def db_get_daily_info() -> (dict, datetime):
     result = {}
     modify_dates = []
     for daily_info_field in DAILY_INFO_FIELDS:
-        setting_name = f'daily{daily_info_field}'
+        setting_name = get_daily_info_setting_name(daily_info_field)
         value, modify_date = core.db_get_setting(setting_name)
         if modify_date:
             modify_dates.append(modify_date)
@@ -222,6 +231,71 @@ def db_get_daily_info() -> (dict, datetime):
 def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
     for key, value in daily_info.items():
-        setting_name = f'daily{key}'
+        setting_name = get_daily_info_setting_name(key)
         result = core.db_set_setting(setting_name, value, utc_now=utc_now) and result
     return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Mocks ----------
+
+def mock_get_daily_info():
+    utc_now = util.get_utcnow()
+    if utc_now.hour < 1:
+        return __mock_get_daily_info_1()
+    elif utc_now.hour < 2:
+        return __mock_get_daily_info_2()
+    else:
+        return __mock_get_daily_info_1()
+
+
+def __mock_get_daily_info_1():
+    result = {
+        'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
+        'CargoPrices': f'starbux:{random.randint(0, 10)}',
+        'CommonCrewId': f'{random.randint(0, 200)}',
+        'DailyItemRewards': f'{random.randint(0, 200)}x1|{random.randint(0, 200)}x1',
+        'DailyRewardArgument': f'{random.randint(0, 20)}',
+        'DailyRewardType': 'Starbux',
+        'HeroCrewId': f'{random.randint(0, 200)}',
+        'LimitedCatalogArgument': '183',
+        'LimitedCatalogCurrencyAmount': '650',
+        'LimitedCatalogCurrencyType': 'Starbux',
+        'LimitedCatalogMaxTotal': '100',
+        'LimitedCatalogType': 'Item',
+        'News': '...',
+        'SaleArgument': '344',
+        'SaleItemMask': '2',
+        'SaleType': 'Character'
+    }
+    return result
+
+
+def __mock_get_daily_info_2():
+    result = {
+        'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
+        'CargoPrices': f'starbux:{random.randint(0, 10)}',
+        'CommonCrewId': f'{random.randint(0, 200)}',
+        'DailyItemRewards': f'{random.randint(0, 200)}x1|{random.randint(0, 200)}x1',
+        'DailyRewardArgument': f'{random.randint(0, 20)}',
+        'DailyRewardType': 'Starbux',
+        'HeroCrewId': f'{random.randint(0, 200)}',
+        'LimitedCatalogArgument': f'{random.randint(0, 200)}',
+        'LimitedCatalogCurrencyAmount': f'{random.randint(0, 20000)}',
+        'LimitedCatalogCurrencyType': 'Starbux',
+        'LimitedCatalogMaxTotal': '100',
+        'LimitedCatalogType': random.choice(['Item', 'Character']),
+        'News': '...',
+        'SaleArgument': f'{random.randint(0, 200)}',
+        'SaleItemMask': f'{random.randint(1, 31)}',
+        'SaleType': random.choice(['Item', 'Character'])
+    }
+    return result
+
