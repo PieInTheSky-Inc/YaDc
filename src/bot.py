@@ -1116,7 +1116,8 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
       fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
 
     Examples:
-      /fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection prints fleet details and posts the spreadsheet."""
+      /fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'.Upon selection prints fleet details and posts the spreadsheet.
+    """
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
@@ -1156,7 +1157,8 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
       player_name: The (beginning of the) name of the player to search for. Mandatory.
 
     Examples:
-      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details."""
+      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
+    """
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
