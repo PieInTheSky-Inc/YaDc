@@ -1118,6 +1118,9 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     Examples:
       /fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection prints fleet details and posts the spreadsheet."""
     async with ctx.typing():
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            fleet_name = exact_name
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
 
     if fleet_infos:
@@ -1143,7 +1146,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
     """
-    Get details on a payer. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
+    Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
     Usage:
       /player [player_name]
@@ -1155,6 +1158,9 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
     Examples:
       /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details."""
     async with ctx.typing():
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            player_name = exact_name
         user_infos = user.get_user_details_by_name(player_name)
 
     if user_infos:
