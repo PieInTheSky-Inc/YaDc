@@ -127,7 +127,7 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 async def post_dailies_loop() -> None:
     while True:
         utc_now = util.get_utcnow()
-        daily_info = daily.get_daily_info()
+        daily_info = daily.mock_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
         autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
         if has_daily_changed:

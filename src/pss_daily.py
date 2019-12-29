@@ -249,9 +249,10 @@ def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
 def mock_get_daily_info():
     utc_now = util.get_utcnow()
     if utc_now.hour < 1:
-        return __mock_get_daily_info_1()
-    elif utc_now.hour < 2:
-        return __mock_get_daily_info_2()
+        if utc_now.minute < 20:
+            return __mock_get_daily_info_1()
+        else:
+            return __mock_get_daily_info_2()
     else:
         return __mock_get_daily_info_1()
 
