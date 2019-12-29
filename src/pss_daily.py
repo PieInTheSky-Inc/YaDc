@@ -274,6 +274,7 @@ def __mock_get_daily_info_1():
         'News': '...',
         'SaleArgument': '344',
         'SaleItemMask': '2',
+        'SaleQuantity': '1',
         'SaleType': 'Character'
     }
     return result
@@ -296,6 +297,7 @@ def __mock_get_daily_info_2():
         'News': '...',
         'SaleArgument': f'{random.randint(0, 200)}',
         'SaleItemMask': f'{random.randint(1, 31)}',
+        'SaleQuantity': f'{random.randint(1, 31)}',
         'SaleType': random.choice(['Item', 'Character'])
     }
     return result

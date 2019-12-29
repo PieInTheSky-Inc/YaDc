@@ -1240,9 +1240,16 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            channel_name = server_settings.get_daily_channel_mention(ctx)
-            if channel_name:
-                output = [f'The daily announcement will be auto-posted at 1 am UTC in channel {channel_name}.']
+            (_, channel_id, _, _, delete_on_change) = server_settings.db_get_autodaily_settings(guild_id=ctx.guild.id)[0]
+            channel = await bot.fetch_channel(channel_id)
+            channel_mention = channel.mention
+            change_mode = server_settings.convert_to_edit_delete(delete_on_change)
+            output = []
+            if channel_mention:
+                output = [
+                    f'The daily announcement will be auto-posted in channel: {channel_mention}',
+                    f'Change mode on this server is set to: `{change_mode}`'
+                ]
             else:
                 output = ['Auto-posting of the daily announcement is not configured for this server!']
         await util.post_output(ctx, output)
