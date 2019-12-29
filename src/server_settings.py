@@ -6,6 +6,7 @@ import settings
 import utility as util
 
 
+# ---------- Constants ----------
 
 _VALID_PAGINATION_SWITCH_VALUES = {
     'on': True,
@@ -18,6 +19,56 @@ _VALID_PAGINATION_SWITCH_VALUES = {
     'no': False
 }
 
+
+
+
+
+
+
+
+
+
+# ---------- Classes ----------
+
+class AutoDailySettings():
+    def __init__(self, guild_id: int, channel_id: int, can_post: bool, latest_message_id: int, delete_on_change: bool):
+        self.__channel_id: int = channel_id or None
+        self.__can_post: bool = can_post
+        self.__delete_on_change: bool = delete_on_change
+        self.__guild_id: int = guild_id or None
+        self.__latest_message_id: int = latest_message_id or None
+
+
+    @property
+    def channel_id(self) -> int:
+        return self.__channel_id
+
+    @property
+    def can_post(self) -> bool:
+        return self.__can_post
+
+    @property
+    def delete_on_change(self) -> bool:
+        return self.__delete_on_change
+
+    @property
+    def guild_id(self) -> int:
+        return self.__guild_id
+
+    @property
+    def latest_message_id(self) -> int:
+        return self.__latest_message_id
+
+
+
+
+
+
+
+
+
+
+# ---------- Functions ----------
 
 def convert_from_on_off(switch: str) -> bool:
     if switch is None:
