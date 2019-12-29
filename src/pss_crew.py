@@ -212,7 +212,8 @@ class CollectionDesignDetails(entity.EntityDesignDetails):
             name=collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME],
             description=collection_design_info['CollectionDescription'],
             details_long=details_long,
-            details_short=details_short
+            details_short=details_short,
+            hyperlink='https://pixelstarships.fandom.com/wiki/Category:Crew_Collections'
         )
 
 
