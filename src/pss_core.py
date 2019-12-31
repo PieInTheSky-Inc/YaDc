@@ -526,6 +526,14 @@ def read_about_file():
     return txt
 
 
+
+
+
+
+
+
+
+
 # ---------- DataBase ----------
 def init_db():
     success_settings = db_try_create_table('settings', [
