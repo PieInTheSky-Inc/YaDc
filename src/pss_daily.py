@@ -5,6 +5,7 @@ from datetime import datetime
 import discord
 import os
 import random
+from typing import Dict, List, Tuple
 
 import pss_core as core
 import server_settings
@@ -35,6 +36,18 @@ DAILY_INFO_FIELDS = [
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
     'News',
+    'SaleArgument',
+    'SaleItemMask',
+    'SaleQuantity',
+    'SaleType'
+]
+
+DAILY_INFO_FIELDS_TO_CHECK = [
+    'LimitedCatalogArgument',
+    'LimitedCatalogCurrencyAmount',
+    'LimitedCatalogCurrencyType',
+    'LimitedCatalogMaxTotal',
+    'LimitedCatalogType',
     'SaleArgument',
     'SaleItemMask',
     'SaleQuantity',
@@ -78,7 +91,7 @@ def get_daily_channel_id(guild_id: int) -> int:
         return int(result)
 
 
-def get_all_daily_channel_ids() -> list:
+def get_all_daily_channel_ids() -> List[int]:
     rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
     if len(rows) == 0:
         return []
@@ -87,7 +100,7 @@ def get_all_daily_channel_ids() -> list:
         return results
 
 
-def get_valid_daily_channel_ids() -> list:
+def get_valid_daily_channel_ids() -> List[int]:
     rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=True)
     if len(rows) == 0:
         return []
@@ -108,26 +121,23 @@ def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
     return success
 
 
-def has_daily_changed(daily_info: dict, retrieved_date: datetime) -> bool:
-    fields_to_check = [
-        'News',
-        'LimitedCatalogArgument',
-        'LimitedCatalogCurrencyAmount',
-        'LimitedCatalogCurrencyType',
-        'LimitedCatalogMaxTotal',
-        'LimitedCatalogType',
-        'SaleArgument',
-        'SaleItemMask',
-        'SaleQuantity',
-        'SaleType'
-    ]
-    daily_info_cache, cache_modify_date = db_get_daily_info()
-    if retrieved_date.day > cache_modify_date.day:
-        for daily_info_field in fields_to_check:
-            if daily_info[daily_info_field] != daily_info_cache[daily_info_field]:
+def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime) -> bool:
+    if retrieved_date.hour >= 23:
+        return False
+
+    db_daily_info, db_modify_date = db_get_daily_info()
+
+    if retrieved_date.day > db_modify_date.day:
+        for daily_info_field in DAILY_INFO_FIELDS_TO_CHECK:
+            if daily_info[daily_info_field] != db_daily_info[daily_info_field]:
                 return True
+        return False
     else:
-        return not util.dicts_equal(daily_info, daily_info_cache)
+        daily_info = daily_info.copy()
+        daily_info.pop('News', None)
+        db_daily_info = db_daily_info.copy()
+        db_daily_info.pop('News', None)
+        return not util.dicts_equal(daily_info, db_daily_info)
 
 
 

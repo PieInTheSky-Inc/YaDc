@@ -141,9 +141,12 @@ async def post_dailies_loop() -> None:
             if created_output:
                 await post_dailies(output, autodaily_settings, utc_now)
 
-        if has_daily_changed and created_output:
-            daily.db_set_daily_info(daily_info, utc_now)
-        seconds_to_wait = util.get_seconds_to_wait(1)
+        if has_daily_changed:
+            seconds_to_wait = 300
+            if created_output:
+                daily.db_set_daily_info(daily_info, utc_now)
+        else:
+            seconds_to_wait = util.get_seconds_to_wait(1)
         await asyncio.sleep(seconds_to_wait)
 
 
@@ -652,6 +655,9 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
       If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
     async with ctx.typing():
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            fleet_name = exact_name
         is_tourney_running = tourney.is_tourney_running()
         (fleet_data, user_data, data_date) = tournament_data.get_data()
         fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
@@ -1239,19 +1245,21 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
       /settings autodaily - Prints the auto-daily setting for the current Discord server/guild.
     """
     if util.is_guild_channel(ctx.channel):
+        output = []
         async with ctx.typing():
-            (_, channel_id, _, _, delete_on_change) = server_settings.db_get_autodaily_settings(guild_id=ctx.guild.id)[0]
-            channel = await bot.fetch_channel(channel_id)
-            channel_mention = channel.mention
-            change_mode = server_settings.convert_to_edit_delete(delete_on_change)
-            output = []
-            if channel_mention:
-                output = [
-                    f'The daily announcement will be auto-posted in channel: {channel_mention}',
-                    f'Change mode on this server is set to: `{change_mode}`'
-                ]
+            autodaily_settings = server_settings.db_get_autodaily_settings(guild_id=ctx.guild.id)
+            if autodaily_settings:
+                (_, channel_id, _, _, delete_on_change) = autodaily_settings[0]
+                channel = await bot.fetch_channel(channel_id)
+                change_mode = server_settings.convert_to_edit_delete(delete_on_change)
+                if channel:
+                    channel_mention = channel.mention or 'None'
+                else:
+                    channel_mention = 'None'
+                output.append(f'The daily announcement will be auto-posted in channel: {channel_mention}')
+                output.append(f'Change mode on this server is set to: `{change_mode}`')
             else:
-                output = ['Auto-posting of the daily announcement is not configured for this server!']
+                output.append('Auto-posting of the daily announcement is not configured for this server!')
         await util.post_output(ctx, output)
 
 
