@@ -535,6 +535,7 @@ def read_about_file():
 
 
 # ---------- DataBase ----------
+
 def init_db():
     success_settings = db_try_create_table('settings', [
         ('settingname', 'TEXT', True, True),
