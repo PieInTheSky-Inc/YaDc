@@ -1213,17 +1213,17 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
     if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
     elif ctx.invoked_subcommand is None:
-        autodaily_channel_mention = server_settings.get_daily_channel_mention(ctx)
-        if autodaily_channel_mention is None:
-            autodaily_channel_mention = '<not set>'
+        output = [f'**```Server settings for {ctx.guild.name}```**']
+
+        autodaily_settings = server_settings.get_autodaily_settings(ctx.guild.id)
+        if autodaily_settings:
+            output.extend(autodaily_settings[0].get_pretty_settings(ctx))
         use_pagination = server_settings.get_pagination_mode(ctx.guild.id)
         prefix = server_settings.get_prefix_or_default(ctx.guild.id)
-        output = [
-            f'**```Server settings for {ctx.guild.name}```**' +
-            f'Auto-daily channel = {autodaily_channel_mention}',
+        output.extend([
             f'Pagination = `{use_pagination}`',
             f'Prefix = `{prefix}`'
-        ]
+        ])
         await util.post_output(ctx, output)
 
 
@@ -1247,19 +1247,11 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.db_get_autodaily_settings(guild_id=ctx.guild.id)
+            autodaily_settings = server_settings.get_autodaily_settings(ctx.guild.id)
             if autodaily_settings:
-                (_, channel_id, _, _, delete_on_change) = autodaily_settings[0]
-                channel = await bot.fetch_channel(channel_id)
-                change_mode = server_settings.convert_to_edit_delete(delete_on_change)
-                if channel:
-                    channel_mention = channel.mention or 'None'
-                else:
-                    channel_mention = 'None'
-                output.append(f'The daily announcement will be auto-posted in channel: {channel_mention}')
-                output.append(f'Change mode on this server is set to: `{change_mode}`')
+                output.extend(autodaily_settings[0].get_pretty_settings(ctx))
             else:
-                output.append('Auto-posting of the daily announcement is not configured for this server!')
+                output.append('Auto-posting of the daily announcement is not configured for this server.')
         await util.post_output(ctx, output)
 
 

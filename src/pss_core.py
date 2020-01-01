@@ -566,13 +566,44 @@ def init_db():
         ('dailycanpost', 'BOOLEAN', False, False),
         ('dailylatestmessageid', 'TEXT', False, False),
         ('usepagination', 'BOOLEAN', False, False),
-        ('prefix', 'TEXT', False, False)
+        ('prefix', 'TEXT', False, False),
+        ('dailydeleteonchange', 'BOOLEAN', False, False),
+        ('dailynotifyid', 'TEXT', False, False),
+        ('dailynotifytype', 'TEXT', False, False)
     ])
     if not success_serversettings:
         print('[init_db] DB initialization failed upon creating the table \'serversettings\'.')
         return
 
     print('[init_db] DB initialization succeeded')
+
+
+
+def db_update_schema_v_1_2_5_0():
+    column_definitions = [
+        ('dailynotifyid', 'TEXT', False, False),
+        ('dailynotifytype', 'TEXT', False, False)
+    ]
+
+    schema_version = db_get_schema_version()
+    if schema_version:
+        compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
+        compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
+        if compare_1250 <= 0:
+            return True
+        elif compare_1240 > 0:
+            return False
+
+    query_lines = []
+    for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
+        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null, default=column_default)
+        query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
+
+    query = '\n'.join(query_lines)
+    success = db_try_execute(query)
+    if success:
+        success = db_try_set_schema_version('1.2.5.0')
+    return success
 
 
 
