@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from discord.ext import commands
 from dateutil.relativedelta import relativedelta
 
 import asyncio
@@ -77,9 +76,9 @@ logging.basicConfig(
     datefmt = '%Y%m%d %H:%M:%S',
     format = '{asctime} [{levelname:<8}] {name}: {message}')
 
-bot = commands.Bot(command_prefix=COMMAND_PREFIX,
-                   description='This is a Discord Bot for Pixel Starships',
-                   activity=ACTIVITY)
+bot = discord.ext.commands.Bot(command_prefix=COMMAND_PREFIX,
+                               description='This is a Discord Bot for Pixel Starships',
+                               activity=ACTIVITY)
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
 
@@ -98,13 +97,13 @@ async def on_ready() -> None:
 
 @bot.event
 async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
-    if isinstance(err, commands.CommandOnCooldown):
+    if isinstance(err, discord.ext.commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     else:
         logging.getLogger().error(err, exc_info=True)
         if isinstance(err, pss_exception.Error):
             await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
-        elif isinstance(err, commands.CheckFailure):
+        elif isinstance(err, discord.ext.commands.CheckFailure):
             await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
         else:
             await ctx.send(f'Error: {err}')
@@ -307,7 +306,7 @@ async def cmd_ping(ctx: discord.ext.commands.Context):
 # ---------- PSS Bot Commands ----------
 
 @bot.command(brief='Get prestige combos of crew', name='prestige')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_prestige(ctx: discord.ext.commands.Context, *, crew_name: str):
     """
     Get the prestige combinations of the crew specified.
@@ -330,7 +329,7 @@ async def cmd_prestige(ctx: discord.ext.commands.Context, *, crew_name: str):
 
 
 @bot.command(brief='Get character recipes', name='recipe')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_recipe(ctx: discord.ext.commands.Context, *, crew_name: str):
     """
     Get the prestige recipes of the crew specified.
@@ -353,7 +352,7 @@ async def cmd_recipe(ctx: discord.ext.commands.Context, *, crew_name: str):
 
 
 @bot.command(brief='Get item ingredients', name='ingredients', aliases=['ing'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
     """
     Get the ingredients for an item to be crafted with their estimated crafting costs.
@@ -377,7 +376,7 @@ async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
 
 
 @bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_craft(ctx: discord.ext.commands.Context, *, item_name: str):
     """
     Get the items a specified item can be crafted into.
@@ -402,7 +401,7 @@ async def cmd_craft(ctx: discord.ext.commands.Context, *, item_name: str):
 
 
 @bot.command(brief='Get item\'s market prices and fair prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
     """
     Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
@@ -428,7 +427,7 @@ async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
 
 
 @bot.command(brief='Get item/crew stats', name='stats')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, name: str = None):
     """
     Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
@@ -474,7 +473,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
 
 
 @bot.command(brief='Get character stats', name='char', aliases=['crew'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew_name: str = None):
     """
     Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
@@ -500,7 +499,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
 
 
 @bot.command(brief='Get item stats', name='item')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
     """
     Get the stats of any item matching the given item_name.
@@ -523,7 +522,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
 
 
 @bot.command(brief='Get best items for a slot', name='best')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
     """
     Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
@@ -545,7 +544,7 @@ async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
 
 
 @bot.command(brief='Get research data', name='research')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str):
     """
     Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
@@ -568,7 +567,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str)
 
 
 @bot.command(brief='Get collections', name='collection', aliases=['coll'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: str):
     """
     Get the details on a specific collection.
@@ -591,7 +590,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
 
 
 @bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     """
     Get stars earned by each fleet during the current final tournament week.
@@ -637,7 +636,7 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
 
 
 @cmd_stars.group(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
     Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
@@ -690,7 +689,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
 
 
 @bot.command(brief='Show the dailies', name='daily')
-@commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN*2, type=discord.ext.commands.BucketType.user)
 async def cmd_daily(ctx: discord.ext.commands.Context):
     """
     Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
@@ -708,7 +707,7 @@ async def cmd_daily(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Show the news', name='news')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_news(ctx: discord.ext.commands.Context):
     """
     Prints all news in ascending order.
@@ -726,9 +725,9 @@ async def cmd_news(ctx: discord.ext.commands.Context):
 
 
 @bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily(ctx: discord.ext.commands.Context):
     """
     This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
@@ -740,9 +739,9 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily.command(brief='Fix the auto-daily channels.', name='fix')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         fix_daily_channels()
@@ -750,17 +749,17 @@ async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
 
 @cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, None)
@@ -768,9 +767,9 @@ async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, False)
@@ -778,9 +777,9 @@ async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         output = daily.get_daily_channels(ctx, None, True)
@@ -788,9 +787,9 @@ async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     guild = ctx.guild
     channel_id = server_settings.db_get_daily_channel_id(guild.id)
@@ -801,9 +800,9 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 
 
 @cmd_autodaily.command(brief='Post a daily message on all servers\' auto-daily channels', name='postall')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-@commands.has_permissions(manage_guild=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
     await util.try_delete_original_message(ctx)
     daily_info = daily.get_daily_info()
@@ -811,7 +810,7 @@ async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level: int = None):
     """
     Shows the cost for a crew to reach a certain level.
@@ -833,7 +832,7 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
 
 
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_top(ctx: discord.ext.commands.Context, count: int = 100):
     """
     Prints either top fleets or captains. Prints top 100 fleets by default.
@@ -891,7 +890,7 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
 
 
 @bot.command(brief='Get room infos', name='room')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
     """
     Get detailed information on a room. If more than 2 results are found, details will be omitted.
@@ -916,7 +915,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
 
 
 @bot.command(brief='Get training infos', name='training')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
     """
     Get detailed information on a training. If more than 2 results are found, some details will be omitted.
@@ -940,7 +939,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
 
 
 @bot.command(brief='Get PSS stardate & Melbourne time', name='time')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_time(ctx: discord.ext.commands.Context):
     """
     Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
@@ -974,7 +973,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Show links', name='links')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_links(ctx: discord.ext.commands.Context):
     """
     Shows the links for useful sites regarding Pixel Starships.
@@ -991,7 +990,7 @@ async def cmd_links(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Display info on this bot', name='about', aliases=['info'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_about(ctx: discord.ext.commands.Context):
     """
     Displays information about this bot and its authors.
@@ -1012,7 +1011,7 @@ async def cmd_about(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Get an invite link', name='invite')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_invite(ctx: discord.ext.commands.Context):
     """
     Produces an invite link and sends it via DM.
@@ -1029,7 +1028,7 @@ async def cmd_invite(ctx: discord.ext.commands.Context):
 
 
 @bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
-@commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE*10, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_tournament(ctx: discord.ext.commands.Context):
     """
     Get information about the starting time of the tournament.
@@ -1087,8 +1086,8 @@ async def cmd_tournament_next(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=1, per=1, type=discord.ext.commands.BucketType.user)
 async def cmd_updatecache(ctx: discord.ext.commands.Context):
     """This command is to be used to update all caches manually."""
     async with ctx.typing():
@@ -1109,7 +1108,7 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
     Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
@@ -1150,7 +1149,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
 
 
 @bot.command(brief='Get infos on a player', name='player', aliases=['user'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
     """
     Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
@@ -1195,8 +1194,8 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
 
 
 @bot.group(brief='Server settings', name='settings', invoke_without_command=True)
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings(ctx: discord.ext.commands.Context):
     """
     Retrieve settings for this Discord server/guild.
@@ -1229,8 +1228,8 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
     Retrieve the auto-daily setting for this server.
@@ -1257,8 +1256,8 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
     Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
@@ -1281,8 +1280,8 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
     Retrieve the prefix setting for this server.
@@ -1312,8 +1311,8 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Reset server settings', name='reset', invoke_without_command=True)
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset(ctx: discord.ext.commands.Context):
     """
     Reset settings for this server.
@@ -1339,8 +1338,8 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
     Reset the auto-daily settings for this server.
@@ -1369,8 +1368,8 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
     Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -1394,8 +1393,8 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
     Reset the prefix settings for this server to '/'.
@@ -1426,8 +1425,8 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings.group(brief='Change server settings', name='set', invoke_without_command=False)
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set(ctx: discord.ext.commands.Context):
     """
     Sets settings for this server.
@@ -1446,8 +1445,8 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
     """
     Change auto-daily settings for this server.
@@ -1457,8 +1456,8 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
@@ -1500,8 +1499,8 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['mode'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
     """
     Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
@@ -1525,8 +1524,8 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
 
 
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch: str = None):
     """
     Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -1557,8 +1556,8 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
 
 
 @cmd_settings_set.command(brief='Set prefix', name='prefix')
-@commands.has_permissions(manage_guild=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str):
     """
     Set the prefix for this server. The default is '/'.
@@ -1596,7 +1595,7 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
 
 
 @bot.command(name='pagination', hidden=True, aliases=['pages'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.channel)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.channel)
 async def cmd_pagination(ctx: discord.ext.commands.Context):
     """
     Some commands allow the user to search for a fleet, a player or other stuff. Such a search may yield more than one result. Then the bot may offer the user to select one of these results.
@@ -1623,8 +1622,8 @@ async def cmd_pagination(ctx: discord.ext.commands.Context):
 
 
 @bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
     print(f'+ called command test(ctx: discord.ext.commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
