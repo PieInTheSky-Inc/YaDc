@@ -110,7 +110,7 @@ def get_valid_daily_channel_ids() -> List[int]:
 
 
 def try_remove_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_channel(guild_id)
+    success = server_settings.db_reset_autodaily_settings(guild_id)
     if success == False:
         print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
     return success
@@ -161,7 +161,7 @@ def convert_to_daily_info(dropship_info: dict) -> dict:
 
 
 def delete_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_channel(guild_id)
+    success = server_settings.db_reset_autodaily_settings(guild_id)
     return success
 
 

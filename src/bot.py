@@ -15,7 +15,7 @@ import pytz
 import re
 import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import emojis
 import gdrive
@@ -159,7 +159,7 @@ async def post_all_dailies(output: List[str], utc_now: datetime) -> None:
 async def post_dailies(output: List[str], autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime) -> None:
     for autodaily_setting in autodaily_settings:
         if autodaily_setting.guild.id is not None:
-            can_post, latest_message_id = await post_autodaily(autodaily_setting.channel_id, autodaily_setting.latest_message_id, autodaily_setting.delete_on_change, output, utc_now)
+            can_post, latest_message_id = await post_autodaily(autodaily_setting.channel.id, autodaily_setting.latest_message_id, autodaily_setting.delete_on_change, output, utc_now)
             server_settings.db_update_autodaily_settings(autodaily_setting.guild.id, can_post=can_post, latest_message_id=latest_message_id)
 
 
@@ -243,20 +243,14 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
 
 
 async def fix_daily_channels():
-    rows = [row for row in server_settings.db_get_autodaily_settings(None, None) if row and row[0]]
-    for row in rows:
+    autodaily_settings = [setting for setting in server_settings.get_autodaily_settings(bot, guild_id=None, can_post=None)]
+    for autodaily_setting in autodaily_settings:
         can_post = False
-        guild_id = row[0]
-        channel_id = row[1]
-        try:
-            text_channel = await bot.fetch_channel(channel_id)
-        except:
-            text_channel = None
+        guild_id = autodaily_setting.guild_id
+        channel_id = autodaily_setting.channel_id
+        text_channel = autodaily_setting.channel
         if text_channel is not None:
-            try:
-                guild = await bot.fetch_guild(guild_id)
-            except:
-                guild = None
+            guild = autodaily_setting.guild
             if guild is not None:
                 try:
                     me = await guild.fetch_member(bot.user.id)
@@ -1199,7 +1193,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
     Retrieve settings for this Discord server/guild.
     Set settings for this server using the subcommands 'set' and 'reset'.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1232,7 +1226,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
     Retrieve the auto-daily setting for this server.
 
-    You need the Administrator permission to use this command.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1245,9 +1239,9 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(ctx.guild.id)
+            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             if autodaily_settings:
-                output.extend(autodaily_settings[0].get_pretty_settings(ctx))
+                output.extend(autodaily_settings[0].get_pretty_settings())
             else:
                 output.append('Auto-posting of the daily announcement is not configured for this server.')
         await util.post_output(ctx, output)
@@ -1260,7 +1254,7 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
     Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
 
-    You need the Administrator permission to use this command.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1284,7 +1278,7 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
     Retrieve the prefix setting for this server.
 
-    You need the Administrator permission to use this command.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1315,7 +1309,7 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
     """
     Reset settings for this server.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1335,14 +1329,44 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
         await ctx.invoke(reset_prefix)
 
 
-@cmd_settings_reset.command(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
+@cmd_settings_reset.group(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
     Reset the auto-daily settings for this server.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily
+      /settings reset daily
+
+    Examples:
+      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
+            if success:
+                output = ['Successfully removed auto-daily settings for this server.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset_autodaily.group(brief='Reset auto-daily channel', name='channel', aliases=['ch'])
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context):
+    """
+    Reset the auto-daily settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1365,6 +1389,36 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_reset_autodaily.command(brief='Reset auto-daily notify settings', name='notify')
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context):
+    """
+    Reset the auto-daily settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily
+      /settings reset daily
+
+    Examples:
+      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            success = server_settings.db_reset_autodaily_notify(ctx.guild.id)
+            if success:
+                output = ['Successfully removed auto-daily notification settings for this server.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
 @cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -1372,7 +1426,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
     Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1397,7 +1451,7 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
     Reset the prefix settings for this server to '/'.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1429,7 +1483,7 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
     """
     Sets settings for this server.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use any of these commands.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1448,6 +1502,9 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
     """
     Change auto-daily settings for this server.
+
+    You need the 'Manage Server' permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
     """
     if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
@@ -1460,7 +1517,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
     """
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1468,7 +1525,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
       /settings set daily ch <text_channel_mention>
 
     Parameters:
-      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will set the current channel.
+      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will try to set the current channel.
 
     Examples:
       /settings set daily channel - Sets the current channel to receive the /daily message once a day.
@@ -1476,12 +1533,12 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            current_channel_id = server_settings.db_get_daily_channel_id(ctx.guild.id)
+            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
             if not text_channel:
                 text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
                 success = True
-                if current_channel_id != text_channel.id:
+                if autodaily_settings.channel_id != text_channel.id:
                     success = server_settings.db_update_daily_latest_message_id(ctx.guild.id, None)
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
@@ -1496,14 +1553,14 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='changemode', aliases=['mode'])
+@cmd_settings_set_autodaily.command(brief='Set auto-daily repost mode', name='changemode', aliases=['mode'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
     """
     Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1521,6 +1578,41 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_set_autodaily.command(brief='Set auto-daily notify settings', name='notify')
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_set_autodaily_notify(ctx: discord.ext.commands.Context, *, mention: Union[discord.Role, discord.Member]):
+    """
+    Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily notify <member/role mention>
+      /settings set daily notify <member/role mention>
+
+    Examples:
+      /settings set autodaily notify @notify - Sets the role 'notify' to be notified on changes.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            if isinstance(mention, discord.Role):
+                role: discord.Role = mention
+                notify_id = role.id
+                notify_type = server_settings.AutoDailyNotifyType.ROLE
+            elif isinstance(mention, discord.Member):
+                member: discord.Member = mention
+                notify_id = member.id
+                notify_type = server_settings.AutoDailyNotifyType.USER
+            else:
+                raise Exception('You need to specify a user or a role!')
+            server_settings.set_autodaily_notify(ctx.guild.id, notify_id, notify_type)
+            result = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
+            output = [f'Notify on auto-daily changes: `{result._get_pretty_notify_settings()}`']
+        await util.post_output(ctx, output)
+
+
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -1528,7 +1620,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
     """
     Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
@@ -1560,7 +1652,7 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
     """
     Set the prefix for this server. The default is '/'.
 
-    You need the Administrator permission to use any of these commands.
+    You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
