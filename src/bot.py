@@ -87,7 +87,6 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
-    print(f'Bot prefix is: {COMMAND_PREFIX}')
     print(f'Bot version is: {settings.VERSION}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     core.init_db()
