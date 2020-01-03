@@ -68,6 +68,14 @@ tournament_data = gdrive.TourneyData(
 )
 
 
+
+
+
+
+
+
+
+
 # ----- Bot Setup -------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -80,6 +88,14 @@ bot = discord.ext.commands.Bot(command_prefix=COMMAND_PREFIX,
                                activity=ACTIVITY)
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
+
+
+
+
+
+
+
+
 
 
 # ----- Bot Events ------------------------------------------------------------
@@ -119,6 +135,14 @@ async def on_guild_remove(guild: discord.Guild) -> None:
     success = server_settings.db_delete_server_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not delete server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
+
+
+
+
+
+
+
+
 
 
 # ----- Tasks ----------------------------------------------------------
@@ -242,7 +266,7 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
         return (None, None)
 
 
-async def fix_daily_channels():
+async def fix_daily_channels() -> None:
     autodaily_settings = [setting for setting in server_settings.get_autodaily_settings(bot, guild_id=None, can_post=None)]
     for autodaily_setting in autodaily_settings:
         can_post = False
@@ -270,6 +294,29 @@ async def fix_daily_channels():
         else:
             print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
         daily.fix_daily_channel(guild_id, can_post)
+
+
+async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member, discord.Role], notify_type: server_settings.AutoDailyNotifyType) -> None:
+    message = f'The auto-daily has been reposted on Discord server \'{guild.name}\''
+    if notify_type == server_settings.AutoDailyNotifyType.USER:
+        member: discord.Member = notify
+        if guild.id == member.guild.id:
+            await member.send(content=message)
+    elif notify_type == server_settings.AutoDailyNotifyType.ROLE:
+        role: discord.Role = notify
+        if guild.id == role.guild.id:
+            member: discord.Member = None
+            for member in role.members:
+                await member.send(content=message)
+
+
+
+
+
+
+
+
+
 
 
 # ----- General Bot Commands ----------------------------------------------------------
