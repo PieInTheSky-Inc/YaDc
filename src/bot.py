@@ -3,10 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from dateutil.relativedelta import relativedelta
-
 import asyncio
 import datetime
+import dateutil
 import discord
 import holidays
 import logging
@@ -966,7 +965,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
         if mel_time in aus_holidays:
             str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
 
-        first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + relativedelta(months=1, days=0)
+        first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + datetime.timedelta(months=1, days=0)
         td = first_day_of_next_month - now
         str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
     await ctx.send(str_time)
