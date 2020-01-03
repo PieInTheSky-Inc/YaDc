@@ -17,6 +17,7 @@ import pytz
 import re
 import sys
 import time
+from typing import Dict, List, Tuple
 
 import emojis
 import gdrive
@@ -129,10 +130,10 @@ async def post_dailies_loop() -> None:
         utc_now = util.get_utcnow()
         daily_info = daily.get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
-        autodaily_settings = server_settings.db_get_autodaily_settings(without_latest_message_id=True)
+        autodaily_settings = server_settings.get_autodaily_settings(bot, without_latest_message_id=True)
         if has_daily_changed:
             await fix_daily_channels()
-            autodaily_settings.extend(server_settings.db_get_autodaily_settings(can_post=True))
+            autodaily_settings.extend(server_settings.get_autodaily_settings(bot, can_post=True))
 
         created_output = False
         if autodaily_settings:
@@ -150,19 +151,19 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_all_dailies(output: list, utc_now: datetime) -> None:
+async def post_all_dailies(output: List[str], utc_now: datetime) -> None:
     await fix_daily_channels()
     print(f'[post_all_dailies] Fixed daily channels.')
-    autodaily_settings = server_settings.db_get_autodaily_settings(can_post=True)
+    autodaily_settings = server_settings.get_autodaily_settings(bot, can_post=True)
     print(f'[post_all_dailies] Retrieved autodaily settings.')
     await post_dailies(output, autodaily_settings, utc_now)
 
 
-async def post_dailies(output: list, autodaily_settings: list, utc_now: datetime) -> None:
-    for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in autodaily_settings:
-        if guild_id is not None:
-            can_post, latest_message_id = await post_autodaily(channel_id, latest_message_id, delete_on_change, output, utc_now)
-            server_settings.db_update_autodaily_settings(guild_id, can_post=can_post, latest_message_id=latest_message_id)
+async def post_dailies(output: List[str], autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime) -> None:
+    for autodaily_setting in autodaily_settings:
+        if autodaily_setting.guild.id is not None:
+            can_post, latest_message_id = await post_autodaily(autodaily_setting.channel_id, autodaily_setting.latest_message_id, autodaily_setting.delete_on_change, output, utc_now)
+            server_settings.db_update_autodaily_settings(autodaily_setting.guild.id, can_post=can_post, latest_message_id=latest_message_id)
 
 
 async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list, utc_now: datetime) -> (bool, str):

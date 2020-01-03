@@ -41,23 +41,29 @@ class AutoDailyNotifyType(IntEnum):
 
 
 class AutoDailySettings():
-    def __init__(self, ctx: discord.ext.commands.Context):
-        autodaily_settings = db_get_autodaily_settings(guild_id=ctx.guild.id)
+    def __init__(self, bot: discord.ext.commands.Bot, guild_id: int):
+        if guild_id is None or bot is None:
+            raise Exception('No parameters given. You need to specify both parameters \'bot\' and \'guild_id\'.')
+        autodaily_settings = db_get_autodaily_settings(guild_id=guild_id)
         if not autodaily_settings:
-            db_create_server_settings(ctx.guild.id)
-            autodaily_settings = db_get_autodaily_settings(guild_id=ctx.guild.id)
+            db_create_server_settings(guild_id)
+            autodaily_settings = db_get_autodaily_settings(guild_id=guild_id)
         if not autodaily_settings:
             raise Exception('No autodaily settings found')
-        guild_id, channel_id, can_post, latest_message_id, delete_on_change, notify_id, notify_type = autodaily_settings[0]
+        _, channel_id, can_post, latest_message_id, delete_on_change, notify_id, notify_type = autodaily_settings[0]
         self.__can_post: bool = can_post
         self.__channel_id: int = channel_id or None
-        self.__context: discord.ext.commands.Context = ctx
+        self.__bot: discord.ext.commands.Bot = bot
         self.__delete_on_change: bool = delete_on_change
-        self.__guild_id: int = guild_id or None
+        self.__guild: discord.Guild = bot.get_guild(guild_id)
         self.__latest_message_id: int = latest_message_id or None
         self.__notify_id: int = notify_id or None
         self.__notify_type: AutoDailyNotifyType = notify_type or None
 
+
+    @property
+    def bot(self) -> discord.ext.commands.Bot:
+        return self.__bot
 
     @property
     def can_post(self) -> bool:
@@ -68,16 +74,12 @@ class AutoDailySettings():
         return self.__channel_id
 
     @property
-    def context(self) -> discord.ext.commands.Context:
-        return self.__context
-
-    @property
     def delete_on_change(self) -> bool:
         return self.__delete_on_change
 
     @property
-    def guild_id(self) -> int:
-        return self.__guild_id
+    def guild(self) -> discord.Guild:
+        return self.__guild
 
     @property
     def latest_message_id(self) -> int:
@@ -106,7 +108,7 @@ class AutoDailySettings():
 
     def _get_pretty_channel_mention(self) -> str:
         if self.channel_id is not None:
-            text_channel = self.context.bot.get_channel(self.channel_id)
+            text_channel = self.bot.get_channel(self.channel_id)
             if text_channel:
                 channel_name = text_channel.mention
             else:
@@ -118,7 +120,7 @@ class AutoDailySettings():
 
     def _get_pretty_channel_name(self) -> str:
         if self.channel_id is not None:
-            text_channel = self.context.bot.get_channel(self.channel_id)
+            text_channel = self.bot.get_channel(self.channel_id)
             if text_channel:
                 channel_name = text_channel.name
             else:
@@ -138,11 +140,11 @@ class AutoDailySettings():
             type_str = ''
             name = ''
             if self.notify_type == AutoDailyNotifyType.USER:
-                member: discord.Member = self.context.guild.get_member(self.notify_id)
+                member: discord.Member = self.guild.get_member(self.notify_id)
                 name = f'{member.nick} ({member.name})'
                 type_str = 'user'
             elif self.notify_type == AutoDailyNotifyType.ROLE:
-                role: discord.Role = self.context.guild.get_role(self.notify_id)
+                role: discord.Role = self.guild.get_role(self.notify_id)
                 name = role.name
                 type_str = 'role'
 
@@ -230,11 +232,12 @@ def fix_prefixes() -> bool:
     return all_success
 
 
-def get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
-    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, without_latest_message_id=without_latest_message_id)
+def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
+    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, without_latest_message_id=without_latest_message_id, only_guild_ids=True)
     result = []
-    for (guild_id, channel_id, can_post, latest_message_id, delete_on_change) in db_autodaily_settings:
-        autodaily_setting = AutodailySettings(guild_id, channel_id, can_post, latest_message_id, delete_on_change)
+    for db_autodaily_setting in db_autodaily_settings:
+        guild_id = db_autodaily_setting[0]
+        autodaily_setting = AutoDailySettings(bot, guild_id)
         result.append(autodaily_setting)
     return result
 
@@ -396,7 +399,7 @@ def db_delete_server_settings(guild_id: int) -> bool:
     return success
 
 
-def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> list:
+def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False, only_guild_ids: bool = False) -> list:
     wheres = ['dailychannelid IS NOT NULL']
     if guild_id is not None:
         wheres.append(util.db_get_where_string('guildid', util.db_convert_text(str(guild_id))))
@@ -404,18 +407,24 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, witho
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
     if without_latest_message_id is True:
         wheres.append(util.db_get_where_string('dailylatestmessageid', None))
-    setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange', 'dailynotify']
+    if only_guild_ids:
+        setting_names = ['guildid']
+    else:
+        setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange', 'dailynotifyid', 'dailynotifytype']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
-    if settings:
-        for setting in settings:
+    for setting in settings:
+        if only_guild_ids:
+            result.append(util.db_convert_to_int(setting[0]), None, None, None, None, None, None)
+        else:
             result.append((
                 util.db_convert_to_int(setting[0]),
                 util.db_convert_to_int(setting[1]),
                 util.db_convert_to_boolean(setting[2]),
                 util.db_convert_to_int(setting[3]),
                 util.db_convert_to_boolean(setting[4]),
-                convert_to_autodaily_notify_type(setting[5])
+                util.db_convert_to_int(setting[5]),
+                convert_to_autodaily_notify_type(setting[6])
             ))
     return result
 
@@ -704,48 +713,6 @@ def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
     query = f'UPDATE serversettings SET {set_string} WHERE {where}'
     success = core.db_try_execute(query)
     return success
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Classes ----------
-
-class AutodailySettings():
-    def __init__(self, guild_id: int, channel_id: int, can_post: bool, latest_message_id: int, delete_on_change: bool):
-        if guild_id is None or guild_id < 1:
-            raise ValueError('The parameter guild_id must neither be None nor lower than 1!')
-        self.__guild_id = guild_id
-        self.__channel_id = channel_id
-        self.__can_post = can_post
-        self.__latest_message_id = latest_message_id
-        self.__delete_on_change = delete_on_change
-
-    @property
-    def can_post(self) -> bool:
-        return self.__can_post
-
-    @property
-    def channel_id(self) -> int:
-        return self.__channel_id
-
-    @property
-    def delete_on_change(self) -> bool:
-        return self.__delete_on_change
-
-    @property
-    def guild_id(self) -> int:
-        return self.__guild_id
-
-    @property
-    def latest_message_id(self) -> int:
-        return self.__latest_message_id
 
 
 

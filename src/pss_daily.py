@@ -200,14 +200,13 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     return success
 
 
-def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
+def remove_duplicate_autodaily_settings(autodaily_settings: List[server_settings.AutoDailySettings]) -> list:
     if not autodaily_settings:
         return autodaily_settings
     result = {}
     for autodaily_setting in autodaily_settings:
-        guild_id = autodaily_setting[0]
-        if guild_id not in result.keys():
-            result[guild_id] = autodaily_setting
+        if autodaily_setting.guild.id not in result.keys():
+            result[autodaily_setting.guild.id] = autodaily_setting
     return list(result.values())
 
 
