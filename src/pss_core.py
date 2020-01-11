@@ -560,6 +560,11 @@ def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
         return
 
+    success_update_1_2_5_0 = db_update_schema_v_1_2_5_0()
+    if not success_update_1_2_5_0:
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.5.0.')
+        return
+
     success_serversettings = db_try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -595,9 +600,9 @@ def db_update_schema_v_1_2_5_0():
             return False
 
     query_lines = []
-    for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
-        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null, default=column_default)
-        query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
+    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
+        query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
     success = db_try_execute(query)

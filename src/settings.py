@@ -1,7 +1,7 @@
 import os
 
 
-DATABASE_URL = os.environ['DATABASE_URL']
+DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
 DEFAULT_USE_EMOJI_PAGINATOR = True

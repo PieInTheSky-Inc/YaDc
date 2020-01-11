@@ -7,6 +7,7 @@ import asyncio
 import datetime
 import dateutil
 import discord
+from discord.ext import commands
 import holidays
 import logging
 import math
@@ -20,6 +21,10 @@ from typing import Dict, List, Tuple, Union
 import emojis
 import gdrive
 import pagination
+import server_settings
+import settings
+import utility as util
+
 import pss_assert
 import pss_core as core
 import pss_crew as crew
@@ -35,9 +40,6 @@ import pss_tournament as tourney
 import pss_top
 import pss_training as training
 import pss_user as user
-import server_settings
-import settings
-import utility as util
 
 
 
@@ -151,9 +153,9 @@ async def post_dailies_loop() -> None:
         utc_now = util.get_utcnow()
         daily_info = daily.get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
+        await fix_daily_channels()
         autodaily_settings = server_settings.get_autodaily_settings(bot, without_latest_message_id=True)
         if has_daily_changed:
-            await fix_daily_channels()
             autodaily_settings.extend(server_settings.get_autodaily_settings(bot, can_post=True))
 
         created_output = False
@@ -181,10 +183,11 @@ async def post_all_dailies(output: List[str], utc_now: datetime) -> None:
 
 
 async def post_dailies(output: List[str], autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime) -> None:
-    for autodaily_setting in autodaily_settings:
-        if autodaily_setting.guild.id is not None:
-            can_post, latest_message_id = await post_autodaily(autodaily_setting.channel.id, autodaily_setting.latest_message_id, autodaily_setting.delete_on_change, output, utc_now)
-            server_settings.db_update_autodaily_settings(autodaily_setting.guild.id, can_post=can_post, latest_message_id=latest_message_id)
+    for settings in autodaily_settings:
+        if settings.guild.id is not None and settings.channel_id is not None:
+            can_post, latest_message_id = await post_autodaily(settings.channel.id, settings.latest_message_id, settings.delete_on_change, output, utc_now)
+            await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
+            server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id)
 
 
 async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list, utc_now: datetime) -> (bool, str):
@@ -267,47 +270,50 @@ async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_chan
 
 
 async def fix_daily_channels() -> None:
-    autodaily_settings = [setting for setting in server_settings.get_autodaily_settings(bot, guild_id=None, can_post=None)]
-    for autodaily_setting in autodaily_settings:
+    autodaily_settings = [settings for settings in server_settings.get_autodaily_settings(bot, guild_id=None, can_post=None) if settings.channel_id is not None]
+    for settings in autodaily_settings:
         can_post = False
-        guild_id = autodaily_setting.guild_id
-        channel_id = autodaily_setting.channel_id
-        text_channel = autodaily_setting.channel
-        if text_channel is not None:
-            guild = autodaily_setting.guild
-            if guild is not None:
+        has_latest_message = False
+        if settings.channel is not None:
+            if settings.guild is not None:
                 try:
-                    me = await guild.fetch_member(bot.user.id)
+                    me = await settings.guild.fetch_member(bot.user.id)
                 except:
                     me = None
                 if me is not None:
-                    permissions = text_channel.permissions_for(me)
+                    permissions = settings.channel.permissions_for(me)
                     if permissions is not None and permissions.send_messages is True:
-                        print(f'[fix_daily_channels] bot can post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
                         can_post = True
                     else:
-                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{text_channel.name}\' (id: {channel_id}) on server \'{guild.name}\' (id: {guild_id})')
+                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{settings.channel.name}\' (id: {settings.channel_id}) on server \'{settings.guild.name}\' (id: {settings.guild_id})')
                 else:
-                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {guild.name} (id: {guild_id})')
+                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {settings.guild.name} (id: {settings.guild_id})')
             else:
-                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{text_channel.name}\' (id: {channel_id}) with id: {guild_id}')
+                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{settings.channel.name}\' (id: {settings.channel_id}) with id: {settings.guild_id}')
+
+            if settings.latest_message_id is not None:
+                try:
+                    _ = await settings.channel.fetch_message(settings.latest_message_id)
+                    has_latest_message = True
+                except:
+                    pass
         else:
-            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {channel_id}')
-        daily.fix_daily_channel(guild_id, can_post)
+            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {settings.channel_id}')
+        daily.fix_daily_channel(settings.guild_id, can_post, has_latest_message)
 
 
 async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member, discord.Role], notify_type: server_settings.AutoDailyNotifyType) -> None:
-    message = f'The auto-daily has been reposted on Discord server \'{guild.name}\''
-    if notify_type == server_settings.AutoDailyNotifyType.USER:
-        member: discord.Member = notify
-        if guild.id == member.guild.id:
+    if guild is not None and notify is not None and notify_type is not None:
+        message = f'The auto-daily has been reposted on Discord server \'{guild.name}\''
+        members = []
+        if notify_type == server_settings.AutoDailyNotifyType.USER:
+            if guild.id == notify.guild.id:
+                members.append(notify)
+        elif notify_type == server_settings.AutoDailyNotifyType.ROLE:
+            if guild.id == notify.guild.id:
+                members = notify.members
+        for member in members:
             await member.send(content=message)
-    elif notify_type == server_settings.AutoDailyNotifyType.ROLE:
-        role: discord.Role = notify
-        if guild.id == role.guild.id:
-            member: discord.Member = None
-            for member in role.members:
-                await member.send(content=message)
 
 
 
@@ -1254,9 +1260,9 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
     elif ctx.invoked_subcommand is None:
         output = [f'**```Server settings for {ctx.guild.name}```**']
 
-        autodaily_settings = server_settings.get_autodaily_settings(ctx.guild.id)
+        autodaily_settings = server_settings.get_autodaily_settings(bot, ctx.guild.id)
         if autodaily_settings:
-            output.extend(autodaily_settings[0].get_pretty_settings(ctx))
+            output.extend(autodaily_settings[0].get_pretty_settings())
         use_pagination = server_settings.get_pagination_mode(ctx.guild.id)
         prefix = server_settings.get_prefix_or_default(ctx.guild.id)
         output.extend([
@@ -1266,7 +1272,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings.command(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
+@cmd_settings.group(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
@@ -1281,16 +1287,88 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
       /settings daily
 
     Examples:
-      /settings autodaily - Prints the auto-daily setting for the current Discord server/guild.
+      /settings autodaily - Prints all auto-daily settings for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
+        output = []
+        async with ctx.typing():
+            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            output = autodaily_settings[0].get_pretty_settings()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily channel', name='channel', aliases=['ch'])
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_get_autodaily_channel(ctx: discord.ext.commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily channel
+      /settings daily ch
+
+    Examples:
+      /settings autodaily ch - Prints the auto-daily channel settings for the current Discord server/guild.
     """
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
             autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
-            if autodaily_settings:
-                output.extend(autodaily_settings[0].get_pretty_settings())
-            else:
-                output.append('Auto-posting of the daily announcement is not configured for this server.')
+            output = autodaily_settings[0].get_pretty_setting_channel()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily mode', name='changemode', aliases=['mode'])
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_get_autodaily_mode(ctx: discord.ext.commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily changemode
+      /settings daily mode
+
+    Examples:
+      /settings autodaily mode - Prints the auto-daily change mode settings for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            output = autodaily_settings[0].get_pretty_setting_changemode()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily notify', name='notify')
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_get_autodaily_notify(ctx: discord.ext.commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily notify
+      /settings daily notify
+
+    Examples:
+      /settings autodaily notify - Prints the auto-daily notification settings for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            output = autodaily_settings[0].get_pretty_setting_notify()
         await util.post_output(ctx, output)
 
 
@@ -1393,11 +1471,11 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     Examples:
       /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
     """
-    if util.is_guild_channel(ctx.channel):
+    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
             if success:
-                output = ['Successfully removed auto-daily settings for this server.']
+                output = ['Successfully removed all auto-daily settings for this server.']
             else:
                 output = [
                     'An error ocurred while trying to remove the auto-daily settings for this server.',
@@ -1406,58 +1484,88 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.group(brief='Reset auto-daily channel', name='channel', aliases=['ch'])
+@cmd_settings_reset_autodaily.command(brief='Reset auto-daily channel', name='channel', aliases=['ch'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context):
     """
-    Reset the auto-daily settings for this server.
+    Reset the auto-daily channel settings for this server.
 
     You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
-      /settings reset autodaily
-      /settings reset daily
+      /settings reset autodaily channel
+      /settings reset daily ch
 
     Examples:
-      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+      /settings reset autodaily - Removes the auto-daily channel settings for the current Discord server/guild.
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_channel(ctx.guild.id)
             if success:
-                output = ['Successfully removed auto-daily settings for this server.']
+                output = ['Successfully removed the auto-daily channel.']
             else:
                 output = [
-                    'An error ocurred while trying to remove the auto-daily settings for this server.',
+                    'An error ocurred while trying to remove the auto-daily channel setting for this server.',
                     'Please try again or contact the bot\'s author.'
                 ]
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily notify settings', name='notify')
+@cmd_settings_reset_autodaily.command(brief='Reset auto-daily change mode', name='changemode', aliases=['mode'])
 @discord.ext.commands.has_permissions(manage_guild=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context):
+async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
     """
-    Reset the auto-daily settings for this server.
+    Reset the auto-daily change mode settings for this server.
 
     You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
 
     Usage:
-      /settings reset autodaily
-      /settings reset daily
+      /settings reset autodaily changemode
+      /settings reset daily mode
 
     Examples:
-      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+      /settings reset autodaily mode - Resets the change mode for auto-daily changes for the current Discord server/guild.
+    """
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            success = server_settings.reset_daily_delete_on_change(ctx.guild.id)
+            if success:
+                output = ['Successfully reset the auto-daily change mode.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset_autodaily.command(brief='Reset auto-daily notifications', name='notify')
+@discord.ext.commands.has_permissions(manage_guild=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context):
+    """
+    Reset the auto-daily notification settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily notify
+      /settings reset daily notify
+
+    Examples:
+      /settings reset autodaily notify - Turns off notifications on auto-daily changes for the current Discord server/guild.
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             success = server_settings.db_reset_autodaily_notify(ctx.guild.id)
             if success:
-                output = ['Successfully removed auto-daily notification settings for this server.']
+                output = ['Successfully reset the auto-daily notifications.']
             else:
                 output = [
                     'An error ocurred while trying to remove the auto-daily notification settings for this server.',
@@ -1485,10 +1593,15 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            _ = server_settings.db_reset_use_pagination(ctx.guild.id)
-            use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
-            output = [f'Pagination on this server is: `{use_pagination_mode}`']
-        await util.post_output(ctx, output)
+            success = server_settings.db_reset_use_pagination(ctx.guild.id)
+        if success:
+            await ctx.invoke(bot.get_command(f'settings pagination'))
+        else:
+            output = [
+                'An error ocurred while trying to reset the pagination settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
 
 
 @cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
@@ -1509,10 +1622,17 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            _ = server_settings.reset_prefix(ctx.guild.id)
-            prefix = server_settings.get_prefix_or_default(ctx.guild.id)
-            output = [f'Prefix for this server has been reset to: `{prefix}`']
-        await util.post_output(ctx, output)
+            success = server_settings.reset_prefix(ctx.guild.id)
+        if success:
+            output = ['Successfully reset the prefix for this server.']
+            await util.post_output(ctx, output)
+            await ctx.invoke(bot.get_command(f'settings prefix'))
+        else:
+            output = [
+                'An error ocurred while trying to reset the prefix settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
 
 
 

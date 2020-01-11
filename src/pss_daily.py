@@ -3,6 +3,7 @@
 
 from datetime import datetime
 import discord
+from discord.ext import commands
 import os
 import random
 from typing import Dict, List, Tuple
@@ -116,8 +117,10 @@ def try_remove_daily_channel(guild_id: int) -> bool:
     return success
 
 
-def fix_daily_channel(guild_id: int, can_post: bool) -> bool:
+def fix_daily_channel(guild_id: int, can_post: bool, has_latest_message: bool = None) -> bool:
     success = update_daily_channel(guild_id, None, can_post)
+    if success and has_latest_message is False:
+        success = server_settings.db_reset_autodaily_latest_message_id(guild_id)
     return success
 
 
@@ -200,7 +203,7 @@ def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     return success
 
 
-def remove_duplicate_autodaily_settings(autodaily_settings: List[server_settings.AutoDailySettings]) -> list:
+def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
     if not autodaily_settings:
         return autodaily_settings
     result = {}
