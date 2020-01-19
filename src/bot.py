@@ -471,7 +471,7 @@ async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item/crew stats', name='stats')
+@bot.command(brief='Get item/crew stats', name='stats', aliases=['stat'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, name: str = None):
     """
