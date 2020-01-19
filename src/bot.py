@@ -1067,9 +1067,13 @@ async def cmd_invite(ctx: discord.ext.commands.Context):
     Examples:
       /invite - Produces an invite link and sends it via DM.
     """
-    nick = ctx.guild.me.nick
+    if ctx.guild is None:
+        nick = bot.user.display_name
+    else:
+        nick = ctx.guild.me.display_name
     await ctx.author.send(f'Invite {nick} to your server: http://bit.ly/invite-pss-statistics')
-    await ctx.send('Sent invite link via DM.')
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
 
 
 @bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
