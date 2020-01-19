@@ -1,8 +1,7 @@
-from datetime import datetime
 import os
 
 
-DATABASE_URL = os.environ['DATABASE_URL']
+DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
 DEFAULT_USE_EMOJI_PAGINATOR = True
@@ -14,7 +13,7 @@ EXCEL_COLUMN_FORMAT_NUMBER = '0'
 
 GDRIVE_CLIENT_EMAIL = str(os.environ.get('GDRIVE_SERVICE_CLIENT_EMAIL'))
 GDRIVE_CLIENT_ID = str(os.environ.get('GDRIVE_SERVICE_CLIENT_ID'))
-GDRIVE_FOLDER_ID = str(os.environ.get('GDRIVE_FOLDER_ID'))
+GDRIVE_FOLDER_ID = '10wOZgAQk_0St2Y_jC3UW497LVpBNxWmP'
 GDRIVE_PRIVATE_KEY_ID = str(os.environ.get('GDRIVE_SERVICE_PRIVATE_KEY_ID'))
 GDRIVE_PRIVATE_KEY = str(os.environ.get('GDRIVE_SERVICE_PRIVATE_KEY'))
 GDRIVE_PROJECT_ID = str(os.environ.get('GDRIVE_SERVICE_PROJECT_ID'))
@@ -37,7 +36,7 @@ SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 USE_EMBEDS = False
 
-VERSION = '1.2.4.7'
+VERSION = '1.2.5.0'
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
 

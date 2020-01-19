@@ -10,11 +10,12 @@ import pss_core as core
 
 
 class EntityDesignDetails(object):
-    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None):
-        self.__name: str = name
-        self.__description: str = description
+    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None):
+        self.__name: str = name or None
+        self.__description: str = description or None
         self.__details_long: List[Tuple[str, str]] = details_long or []
         self.__details_short: List[Tuple[str, str, bool]] = details_short or []
+        self.__hyperlink: str = hyperlink or None
 
 
     @property
@@ -30,16 +31,20 @@ class EntityDesignDetails(object):
         return list(self.__details_short)
 
     @property
+    def link(self) -> str:
+        return self.__hyperlink
+
+    @property
     def name(self) -> str:
         return self.__name
 
 
     def get_details_as_embed(self) -> discord.Embed:
-        return EntityDesignDetails._get_details_as_embed(self.name, self.description, self.details_long)
+        return EntityDesignDetails._get_details_as_embed(self.name, self.description, self.details_long, self.link)
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long)
+        return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long, self.link)
 
 
     def get_details_as_text_short(self) -> List[str]:
@@ -47,7 +52,7 @@ class EntityDesignDetails(object):
 
 
     @staticmethod
-    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]]) -> discord.Embed:
+    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]], link: str) -> discord.Embed:
         result = discord.Embed()
         if title:
             result.title = title
@@ -56,11 +61,13 @@ class EntityDesignDetails(object):
         if details:
             for (detail_name, detail_value) in details:
                 result.add_field(name=detail_name, value=detail_value)
+        if link:
+            result.set_footer(text=link)
         return result
 
 
     @staticmethod
-    def _get_details_as_text_long(title: str, description: str, details: List[Tuple[str,str]]) -> List[str]:
+    def _get_details_as_text_long(title: str, description: str, details: List[Tuple[str,str]], link: str) -> List[str]:
         result = []
         if title:
             result.append(f'**{title}**')
@@ -70,6 +77,8 @@ class EntityDesignDetails(object):
             for (detail_name, detail_value) in details:
                 if detail_value:
                     result.append(f'{detail_name} = {detail_value}')
+        if link:
+            result.append(f'<{link}>')
         return result
 
 
