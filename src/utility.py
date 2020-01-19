@@ -558,7 +558,7 @@ async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) ->
 
 def get_exact_args(ctx: discord.ext.commands.Context) -> str:
     try:
-        command = f'{ctx.prefix}{ctx.invoked_with} '
+        command = f'{ctx.prefix}{ctx.command.qualified_name} '
         args = str(ctx.message.content[len(command):])
         return args
     except:

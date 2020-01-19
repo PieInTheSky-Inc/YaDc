@@ -634,7 +634,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Division stars (works only during tournament finals)', name='stars', invoke_without_command=True)
+@bot.group(brief='Division stars', name='stars', invoke_without_command=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     """
@@ -680,7 +680,7 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
             await util.post_output(ctx, output)
 
 
-@cmd_stars.group(brief='Fleet stars (works only during tournament finals)', name='fleet', aliases=['alliance'])
+@cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
