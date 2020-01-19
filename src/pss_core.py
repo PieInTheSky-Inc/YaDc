@@ -514,16 +514,16 @@ def read_links_file():
     return result
 
 
-def read_about_file():
-    txt = ''
+def read_about_file() -> dict:
+    result = {}
     for pss_about_file in settings.PSS_ABOUT_FILES:
         try:
             with open(pss_about_file) as f:
-                txt = f.read()
+                result = json.load(f)
             break
         except:
             pass
-    return txt
+    return result
 
 
 

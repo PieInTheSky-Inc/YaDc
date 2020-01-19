@@ -1048,11 +1048,29 @@ async def cmd_about(ctx: discord.ext.commands.Context):
       /about - Displays information on this bot and its authors.
     """
     async with ctx.typing():
-        output = [
-            core.read_about_file(),
-            f'v{settings.VERSION}'
-        ]
-    await util.post_output(ctx, output)
+        if ctx.guild is None:
+            nick = bot.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        pfp_url = bot.user.avatar_url
+        about_info = core.read_about_file()
+        title = f'About {nick}'
+        description = about_info['description']
+        footer = f'Serving {len(bot.users)} users on {len(bot.guilds)} guilds.'
+        version = f'v{settings.VERSION}'
+        support_link = about_info['support']
+        authors = ', '.join(about_info['authors'])
+        pfp_author = about_info['pfp']
+        color = util.get_bot_member_colour(bot, ctx.guild)
+
+        embed = discord.Embed(title=title, type='rich', color=color, description=description)
+        embed.add_field(name="version", value=version)
+        embed.add_field(name="authors", value=authors)
+        embed.add_field(name="profile pic by", value=pfp_author)
+        embed.add_field(name="support", value=support_link)
+        embed.set_footer(text=footer)
+        embed.set_thumbnail(url=pfp_url)
+    await ctx.send(embed=embed)
 
 
 @bot.command(brief='Get an invite link', name='invite')
