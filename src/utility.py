@@ -550,7 +550,17 @@ async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) ->
 
 def get_exact_args(ctx: discord.ext.commands.Context) -> str:
     try:
-        command = f'{ctx.prefix}{ctx.command.qualified_name} '
+        if ctx.command.full_parent_name:
+            parent_command = f'{ctx.command.full_parent_name} '
+        else:
+            parent_command = ''
+        full_parent_command = f'{ctx.prefix}{parent_command}'
+        command = f'{full_parent_command}{ctx.command.name} '
+        if not ctx.message.content.startswith(command):
+            for alias in ctx.command.aliases:
+                command = f'{full_parent_command}{alias} '
+                if ctx.message.content.startswith(command):
+                    break
         args = str(ctx.message.content[len(command):])
         return args
     except:
