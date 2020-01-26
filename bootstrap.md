@@ -22,8 +22,8 @@ And here's the checklist of the actual bootstrapping steps, with each step linki
 * [Fork and clone the GitHub repository](#fork-and-clone-the-github-repository)
 * [Create and configure a Heroku Application](#create-and-configure-a-Heroku-Application)
 * [Deploy the code into the Heroku Application container](#deploy-the-code-into-the-heroku-application-container)
-* [Start/stop the bot](#start/stop-the-bot)
-* [Configure the fleet's Discord server](#configure-the-fleet's-discord-server)
+* [Start/stop the bot](#startstop-the-bot)
+* [Configure the fleet's Discord server](#configure-the-fleets-discord-server)
 
 
 ## References
