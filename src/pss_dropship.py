@@ -34,9 +34,9 @@ DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAnd
 
 def _convert_sale_item_mask(sale_item_mask: int) -> str:
     result = []
-    for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
+    for flag in lookups.IAP_OPTIONS_MASK_LOOKUP.keys():
         if (sale_item_mask & flag) != 0:
-            item, value = lookups.SALE_ITEM_MASK_LOOKUP[flag]
+            item, value = lookups.IAP_OPTIONS_MASK_LOOKUP[flag]
             result.append(f'_{item}_ ({value})')
     if result:
         if len(result) > 1:
@@ -183,8 +183,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
-    sale_item_mask = raw_data['SaleItemMask']
-    sale_items = _convert_sale_item_mask(int(sale_item_mask))
+    sale_items = core.convert_iap_options_mask(int(raw_data['SaleItemMask']))
     sale_quantity = raw_data['SaleQuantity']
     result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 

@@ -9,13 +9,14 @@ import psycopg2
 from psycopg2 import errors as db_error
 import re
 import sys
-from typing import Callable
+from typing import Callable, Dict, List
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
 import data
 import pss_daily as daily
+import pss_lookups as lookups
 import settings
 import utility as util
 
@@ -430,6 +431,21 @@ def group_data_dict(data: dict, by_key, ignore_case: bool = False):
         return result
     else:
         return data
+
+
+def convert_iap_options_mask(iap_options_mask: int) -> str:
+    result = []
+    for flag in lookups.IAP_OPTIONS_MASK_LOOKUP.keys():
+        if (iap_options_mask & flag) != 0:
+            item, value = lookups.IAP_OPTIONS_MASK_LOOKUP[flag]
+            result.append(f'_{item}_ ({value})')
+    if result:
+        if len(result) > 1:
+            return f'{", ".join(result[:-1])} or {result[-1]}'
+        else:
+            return result[0]
+    else:
+        return ''
 
 
 # ----- Display -----

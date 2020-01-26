@@ -150,12 +150,18 @@ REDUCE_TOKENS_LOOKUP = {
 }
 
 
-SALE_ITEM_MASK_LOOKUP = {
+IAP_OPTIONS_MASK_LOOKUP = {
     1: ('Clip', 500),
     2: ('Roll', 1200),
     4: ('Stash', 2500),
     8: ('Case', 6500),
     16: ('Vault', 14000)
+}
+
+
+PROMO_REQUIREMENT_TYPE_LOOKUP = {
+    'shipLevel': 'ship lvl',
+    'purchaseRewardPoints': f'{emojis.pss_dove} purchased'
 }
 
 
