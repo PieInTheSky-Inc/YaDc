@@ -998,8 +998,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         now = datetime.datetime.now()
         today = datetime.date(now.year, now.month, now.day)
-        pss_start = datetime.date(year=2016, month=1, day=6)
-        pss_stardate = (today - pss_start).days
+        pss_stardate = (today - settings.PSS_START_DATE).days
         str_time = 'Today is Stardate {}\n'.format(pss_stardate)
 
         mel_tz = pytz.timezone('Australia/Melbourne')
