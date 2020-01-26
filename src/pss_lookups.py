@@ -208,6 +208,7 @@ STAT_TYPES_LOOKUP = {
     'stamina': 'Stamina',
     'stam': 'Stamina',
     'stm': 'Stamina',
+    'sta': 'Stamina',
     'engine': 'Engine',
     'eng': 'Engine',
     'weapon': 'Weapon',

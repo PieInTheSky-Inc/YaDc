@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 import calendar
 import discord
+from discord.ext import commands
 import requests
 import jellyfish
 import json
@@ -496,16 +497,8 @@ def should_escape_entity_name(entity_name: str) -> bool:
     if entity_name:
         if entity_name != entity_name.strip():
             return True
-        if '~~' in entity_name:
-            return True
-        for markdown in ['_', '*']:
-            if entity_name.startswith(markdown):
-                return True
-            if entity_name.endswith(markdown):
-                return True
-            if f'{markdown} ' in entity_name:
-                return True
-            if f' {markdown}' in entity_name:
+        for markdown in ['_', '*', '~~']:
+            if markdown in entity_name:
                 return True
     return False
 
@@ -555,9 +548,19 @@ async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) ->
         return False
 
 
-def get_exact_args(ctx: discord.ext.commands.Context) -> list:
+def get_exact_args(ctx: discord.ext.commands.Context) -> str:
     try:
-        command = f'{ctx.prefix}{ctx.invoked_with} '
+        if ctx.command.full_parent_name:
+            parent_command = f'{ctx.command.full_parent_name} '
+        else:
+            parent_command = ''
+        full_parent_command = f'{ctx.prefix}{parent_command}'
+        command = f'{full_parent_command}{ctx.command.name} '
+        if not ctx.message.content.startswith(command):
+            for alias in ctx.command.aliases:
+                command = f'{full_parent_command}{alias} '
+                if ctx.message.content.startswith(command):
+                    break
         args = str(ctx.message.content[len(command):])
         return args
     except:

@@ -1,9 +1,0 @@
-**PSS Statistics bot for Discord**
-This bot is based on the Discord bot _Dolores_ by jzx3.
-It has been modified heavily to provide more functionality and response faster
-than before.
-
-Join support server: https://discordapp.com/invite/kKguSec
-
-Authors: The worst., jzx3
-Profile pic by: Skepster
