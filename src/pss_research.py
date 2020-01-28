@@ -313,5 +313,5 @@ research_designs_retriever = entity.EntityDesignsRetriever(
     RESEARCH_DESIGN_BASE_PATH,
     RESEARCH_DESIGN_KEY_NAME,
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,
-    cache_name='ReearchDesigns'
+    cache_name='ResearchDesigns'
 )
