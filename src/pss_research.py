@@ -235,7 +235,7 @@ def get_research_design_details_by_id(research_design_id: str, research_designs_
     return None
 
 
-def get_research_info_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], discord.Embed]:
+def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     pss_assert.valid_entity_name(research_name)
 
     research_designs_details = research_designs_retriever.get_entity_design_infos_by_name(research_name, sorted_key_function=_get_key_for_research_sort)
@@ -244,9 +244,9 @@ def get_research_info_by_name(research_name: str, as_embed: bool = settings.USE_
         return [f'Could not find a research named **{research_name}**.'], False
     else:
         if as_embed:
-            return _get_research_info_as_embed(research_designs_details), True
+            return _get_research_infos_as_embed(research_designs_details), True
         else:
-            return _get_research_info_as_text(research_name, research_designs_details), True
+            return _get_research_infos_as_text(research_name, research_designs_details), True
 
 
 def _get_research_infos(research_name: str, research_designs_data: dict = None):
@@ -267,11 +267,12 @@ def _get_research_design_ids_from_name(research_name: str, research_designs_data
     return results
 
 
-def _get_research_info_as_embed(research_designs_details: List[ResearchDesignDetails]) -> discord.Embed:
-    return None
+def _get_research_infos_as_embed(research_designs_details: List[ResearchDesignDetails]) -> List[discord.Embed]:
+    result = [research_design_details.get_details_as_embed() for research_design_details in research_designs_details]
+    return result
 
 
-def _get_research_info_as_text(research_name: str, research_designs_details: List[ResearchDesignDetails]) -> List[str]:
+def _get_research_infos_as_text(research_name: str, research_designs_details: List[ResearchDesignDetails]) -> List[str]:
     lines = [f'Research stats for **{research_name}**']
 
     research_infos_count = len(research_designs_details)

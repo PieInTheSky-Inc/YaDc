@@ -607,7 +607,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str)
       This command will print information for all researches matching the specified name.
     """
     async with ctx.typing():
-        output, _ = research.get_research_info_by_name(research_name)
+        output, _ = research.get_research_infos_by_name(research_name)
     await util.post_output(ctx, output)
 
 
