@@ -472,7 +472,7 @@ def _calculate_stat_value(min_value: float, max_value: float, level: int, progre
 
 # ---------- Crew info ----------
 
-def get_char_design_details_by_id(char_design_id: str, level: int, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
+def get_char_design_details_by_id(char_design_id: str, level: int = None, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
     if char_design_id:
         if chars_designs_data is None:
             chars_designs_data = character_designs_retriever.get_data_dict3()
