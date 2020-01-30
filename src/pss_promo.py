@@ -324,7 +324,7 @@ def get_promotion_design_details_by_id(promotion_design_id: str, promotions_desi
     return None
 
 
-def get_promotion_design_details_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
+def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
     promotion_design_infos = promotion_designs_retriever.get_entity_design_infos_by_name(promotion_name)
@@ -401,7 +401,7 @@ if __name__ == '__main__':
     test_promotions = ['alpaco']
     for promotion_name in test_promotions:
         os.system('clear')
-        result = get_promotion_design_details_by_name(promotion_name, as_embed=False)
+        result = get_promotions_designs_info_by_name(promotion_name, as_embed=False)
         for line in result[0]:
             print(line)
         print('')
