@@ -565,7 +565,7 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_design_details_from_id(room_design_id: str, room_designs_data: dict = None) -> RoomDesignDetails:
+def get_room_design_details_by_id(room_design_id: str, room_designs_data: dict = None) -> RoomDesignDetails:
     if not room_designs_data:
         room_designs_data = __room_designs_retriever.get_data_dict3()
 
