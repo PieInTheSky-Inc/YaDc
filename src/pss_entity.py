@@ -117,6 +117,40 @@ class EntityDesignDetails(object):
 
 
 
+class EntityDesignDetailsCollection():
+    def __init__(self, entity_ids: List[str], big_set_threshold: int = 3):
+        entities_designs_data = None
+        self.__entities_designs_details: List[EntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
+        self.__big_set_threshold: int = big_set_threshold
+        pass
+
+
+    def get_entity_details_as_embed(self) -> List[discord.Embed]:
+        return []
+
+
+    def get_entity_details_as_text(self) -> List[str]:
+        result = []
+        set_size = len(self.__entities_designs_details)
+        entity_design_details: EntityDesignDetails
+        for i, entity_design_details in enumerate(self.__entities_designs_details, start=1):
+            if set_size > self.__big_set_threshold:
+                result.extend(entity_design_details.get_details_as_text_short())
+            else:
+                result.extend(entity_design_details.get_details_as_text_long())
+                if i < set_size:
+                    result.append(settings.EMPTY_LINE)
+        return result
+
+
+
+
+
+
+
+
+
+
 class EntityDesignsRetriever:
     def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None, cache_update_interval: int = 10):
         self.__cache_name: str = cache_name or ''
@@ -156,11 +190,11 @@ class EntityDesignsRetriever:
             return None
 
 
-    def get_entity_design_infos_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
+    def get_entities_designs_infos_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         sorted_key_function = sorted_key_function or self.__sorted_key_function
 
-        entity_design_ids = self.get_entity_design_ids_by_name(entity_name, entity_designs_data=entity_designs_data)
+        entity_design_ids = self.get_entities_designs_ids_by_name(entity_name, entity_designs_data=entity_designs_data)
         entity_designs_data_keys = entity_designs_data.keys()
         result = [entity_designs_data[entity_design_id] for entity_design_id in entity_design_ids if entity_design_id in entity_designs_data_keys]
         if sorted_key_function is not None:
@@ -172,14 +206,14 @@ class EntityDesignsRetriever:
 
 
     def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> str:
-        results = self.get_entity_design_ids_by_name(entity_name, entity_designs_data)
+        results = self.get_entities_designs_ids_by_name(entity_name, entity_designs_data)
         if len(results) > 0:
             return results[0]
         else:
             return None
 
 
-    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> List[str]:
+    def get_entities_designs_ids_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> List[str]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
@@ -187,37 +221,3 @@ class EntityDesignsRetriever:
 
     def update_cache(self) -> None:
         self.__cache.update_data()
-
-
-
-
-
-
-
-
-
-
-class EntityDesignDetailsCollection():
-    def __init__(self, entity_designs_retriever: EntityDesignsRetriever, entity_ids: List[str], big_set_threshold: int = 3):
-        entities_designs_data = entity_designs_retriever.get_data_dict3()
-        self.__entities_designs_details: List[EntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
-        self.__big_set_threshold: int = big_set_threshold
-        pass
-
-
-    def get_entity_details_as_embed(self) -> List[discord.Embed]:
-        return []
-
-
-    def get_entity_details_as_text(self) -> List[str]:
-        result = []
-        set_size = len(self.__entities_designs_details)
-        entity_design_details: EntityDesignDetails
-        for i, entity_design_details in enumerate(self.__entities_designs_details, start=1):
-            if set_size > self.__big_set_threshold:
-                result.extend(entity_design_details.get_details_as_text_short())
-            else:
-                result.extend(entity_design_details.get_details_as_text_long())
-                if i < set_size:
-                    result.append(settings.EMPTY_LINE)
-        return result

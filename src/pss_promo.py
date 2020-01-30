@@ -324,10 +324,15 @@ def get_promotion_design_details_by_id(promotion_design_id: str, promotions_desi
     return None
 
 
+def get_promotions_designs_details_by_name(promotion_name: str) -> entity.EntityDesignDetailsCollection:
+    pss_assert.valid_entity_name(promotion_name, 'promotion_name')
+
+
+
 def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
-    promotion_design_infos = promotion_designs_retriever.get_entity_design_infos_by_name(promotion_name)
+    promotion_design_infos = promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
     promotions_designs_details = [PromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
 
     if not promotions_designs_details:

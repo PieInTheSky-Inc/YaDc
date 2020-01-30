@@ -238,7 +238,7 @@ def get_research_design_details_by_id(research_design_id: str, research_designs_
 def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     pss_assert.valid_entity_name(research_name)
 
-    research_designs_details = research_designs_retriever.get_entity_design_infos_by_name(research_name, sorted_key_function=_get_key_for_research_sort)
+    research_designs_details = research_designs_retriever.get_entities_designs_infos_by_name(research_name, sorted_key_function=_get_key_for_research_sort)
 
     if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
