@@ -7,6 +7,15 @@ from typing import Callable, Dict, List, Tuple
 
 from cache import PssCache
 import pss_core as core
+import settings
+
+
+
+
+
+
+
+
 
 
 class EntityDesignDetails(object):
@@ -178,3 +187,37 @@ class EntityDesignsRetriever:
 
     def update_cache(self) -> None:
         self.__cache.update_data()
+
+
+
+
+
+
+
+
+
+
+class EntityDesignDetailsCollection():
+    def __init__(self, entity_designs_retriever: EntityDesignsRetriever, entity_ids: List[str], big_set_threshold: int = 3):
+        entities_designs_data = entity_designs_retriever.get_data_dict3()
+        self.__entities_designs_details: List[EntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
+        self.__big_set_threshold: int = big_set_threshold
+        pass
+
+
+    def get_entity_details_as_embed(self) -> List[discord.Embed]:
+        return []
+
+
+    def get_entity_details_as_text(self) -> List[str]:
+        result = []
+        set_size = len(self.__entities_designs_details)
+        entity_design_details: EntityDesignDetails
+        for i, entity_design_details in enumerate(self.__entities_designs_details, start=1):
+            if set_size > self.__big_set_threshold:
+                result.extend(entity_design_details.get_details_as_text_short())
+            else:
+                result.extend(entity_design_details.get_details_as_text_long())
+                if i < set_size:
+                    result.append(settings.EMPTY_LINE)
+        return result
