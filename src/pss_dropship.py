@@ -64,7 +64,7 @@ def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMB
     collection_design_data = crew.collection_designs_retriever.get_data_dict3()
     char_design_data = crew.character_designs_retriever.get_data_dict3()
     item_design_data = item.items_designs_retriever.get_data_dict3()
-    room_design_data = room.__room_designs_retriever.get_data_dict3()
+    room_design_data = room.rooms_designs_retriever.get_data_dict3()
 
     try:
         daily_msg = _get_daily_news_from_data_as_text(daily_info)
