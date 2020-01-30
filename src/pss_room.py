@@ -30,6 +30,13 @@ class RoomDesignDetails(entity.EntityDesignDetails):
     def __init__(self, room_info: dict):
         self.__room_info: Dict[str, object] = room_info
 
+        super().__init__(
+            name=room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=room_info['RoomDescription'],
+            details_long=[],
+            details_short=[]
+        )
+
 
     def get_details_as_embed(self) -> discord.Embed:
         return None
