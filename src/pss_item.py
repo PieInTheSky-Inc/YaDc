@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import discord
 import os
 import re
+from typing import Callable, Dict, List, Tuple
 
 import pss_assert
 from cache import PssCache
 import pss_core as core
+import pss_entity as entity
 import pss_lookups as lookups
 import settings
 import utility as util
@@ -24,12 +27,55 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
 
 
+
+
+
+
+
+
+
+# ---------- Classes ----------
+
+class ItemDesignDetails(entity.EntityDesignDetails):
+    def __init__(self, item_info: dict, items_designs_data: dict = None):
+        self.__item_info: Dict[str, object] = item_info
+
+        super().__init__(
+            name=item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=item_info['ItemDesignDescription'],
+            details_long=[],
+            details_short=[]
+        )
+
+
+    def get_details_as_embed(self) -> discord.Embed:
+        return None
+
+
+    def get_details_as_text_long(self) -> List[str]:
+        return get_item_details_from_data_as_text(self.__item_info)
+
+
+    def get_details_as_text_short(self) -> List[str]:
+        return get_item_details_short_from_data_as_text(self.__item_info)
+
+
+
+
+
+
+
+
+
+
 # ---------- Initilization ----------
 
-__item_designs_cache = PssCache(
+__items_designs_retriever = entity.EntityDesignsRetriever(
     ITEM_DESIGN_BASE_PATH,
-    'ItemDesigns',
-    ITEM_DESIGN_KEY_NAME)
+    ITEM_DESIGN_KEY_NAME,
+    ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    'ItemsDesigns'
+)
 
 
 NOT_ALLOWED_ITEM_NAMES = [
@@ -45,7 +91,7 @@ NOT_ALLOWED_ITEM_NAMES = [
 
 def __get_allowed_item_names():
     result = []
-    item_designs_data = __item_designs_cache.get_data_dict3()
+    item_designs_data = __items_designs_retriever.get_data_dict3()
     for item_design_data in item_designs_data.values():
         if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
             item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -82,7 +128,7 @@ __allowed_item_names = sorted(__get_allowed_item_names())
 
 def get_item_details_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
     if not item_designs_data:
-        item_designs_data = __item_designs_cache.get_data_dict3()
+        item_designs_data = __items_designs_retriever.get_data_dict3()
 
     item_info = item_designs_data[item_id]
     return get_item_details_from_data_as_text(item_info)
@@ -112,7 +158,7 @@ def get_item_details_from_data_as_text(item_info: dict) -> list:
 
 def get_item_details_short_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
     if not item_designs_data:
-        item_designs_data = __item_designs_cache.get_data_dict3()
+        item_designs_data = __items_designs_retriever.get_data_dict3()
 
     item_info = item_designs_data[item_id]
     return get_item_details_short_from_data_as_text(item_info)
@@ -137,7 +183,7 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
 
 
 def get_item_info_from_id(item_id: str) -> dict:
-    item_data = __item_designs_cache.get_data_dict3()
+    item_data = __items_designs_retriever.get_data_dict3()
     return item_data[item_id]
 
 
@@ -153,6 +199,16 @@ def _get_item_slot(item_type: str, item_sub_type: str) -> str:
 
 
 # ---------- Item info ----------
+
+def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[str, object]) -> ItemDesignDetails:
+    if not items_designs_data:
+        items_designs_data = __items_designs_retriever.get_data_dict3()
+
+    if item_design_id and item_design_id in items_designs_data.keys():
+        return ItemDesignDetails(items_designs_data[item_design_id])
+    else:
+        return None
+
 
 def get_item_details(item_name: str, as_embed=False):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
@@ -172,7 +228,7 @@ def get_item_details(item_name: str, as_embed=False):
 
 def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
     if item_design_data is None:
-        item_design_data = __item_designs_cache.get_data_dict3()
+        item_design_data = __items_designs_retriever.get_data_dict3()
 
     item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data)
     result = [item_design_data[item_design_id] for item_design_id in item_design_ids if item_design_id in item_design_data.keys()]
@@ -187,7 +243,7 @@ def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, retur
 
 def get_item_details_short_by_training_id(training_id: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
     if item_design_data is None:
-        item_design_data = __item_designs_cache.get_data_dict3()
+        item_design_data = __items_designs_retriever.get_data_dict3()
 
     item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
     result = [' '.join(get_item_details_short_from_id_as_text(item_design_id)) for item_design_id in item_design_ids]
@@ -197,7 +253,7 @@ def get_item_details_short_by_training_id(training_id: str, item_design_data: di
 
 def _get_item_design_ids_from_name(item_name: str, item_data: dict = None) -> list:
     if item_data is None:
-        item_data = __item_designs_cache.get_data_dict3()
+        item_data = __items_designs_retriever.get_data_dict3()
 
     results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name)
     return results
@@ -286,7 +342,7 @@ def _get_item_price_as_text(item_name, item_infos) -> str:
 def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    item_design_data = __item_designs_cache.get_data_dict3()
+    item_design_data = __items_designs_retriever.get_data_dict3()
     item_infos = _get_item_infos_by_name(item_name, item_design_data, return_best_match=True)
 
     if not item_infos:
@@ -397,7 +453,7 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
 def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
-    item_design_data = __item_designs_cache.get_data_dict3()
+    item_design_data = __items_designs_retriever.get_data_dict3()
     item_ids = _get_item_design_ids_from_name(item_name)
     item_infos = _get_item_infos_by_name(item_name)
 
@@ -466,7 +522,7 @@ def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
 
     any_slot = slot == 'all' or slot == 'any'
 
-    item_design_data = __item_designs_cache.get_data_dict3()
+    item_design_data = __items_designs_retriever.get_data_dict3()
     if any_slot:
         slot_filter = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
     else:
