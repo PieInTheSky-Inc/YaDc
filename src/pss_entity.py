@@ -109,7 +109,7 @@ class EntityDesignDetails(object):
 
 
 class EntityDesignsRetriever:
-    def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None):
+    def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None, cache_update_interval: int = 10):
         self.__cache_name: str = cache_name or ''
         self.__base_path: str = entity_design_base_path
         self.__key_name: str = entity_design_key_name or None
@@ -120,7 +120,8 @@ class EntityDesignsRetriever:
         self.__cache = PssCache(
             self.__base_path,
             self.__cache_name,
-            key_name=self.__key_name
+            key_name=self.__key_name,
+            update_interval=cache_update_interval
         )
 
 
