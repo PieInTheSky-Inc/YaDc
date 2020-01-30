@@ -2,12 +2,12 @@
 # -*- coding: UTF-8 -*-
 
 import calendar
-import typing
+from typing import Dict, List, Tuple
 
 import emojis
 
 
-ALLIANCE_MEMBERSHIP = {
+ALLIANCE_MEMBERSHIP: Dict[str, str] = {
     'Candidate': 'Candidate',
     'Ensign': 'Ensign',
     'Major': 'Major',
@@ -18,7 +18,7 @@ ALLIANCE_MEMBERSHIP = {
 }
 
 
-COLLECTION_PERK_LOOKUP = {
+COLLECTION_PERK_LOOKUP: Dict[str, str] = {
     'BloodThirstSkill': 'Vampirism',
     'EmpSkill': 'EMP Discharge',
     'FreezeAttackSkill': 'Cryo Field',
@@ -29,7 +29,7 @@ COLLECTION_PERK_LOOKUP = {
 }
 
 
-CURRENCY_EMOJI_LOOKUP = {
+CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
     'starbux': emojis.pss_bux,
     'gas': emojis.pss_gas_big,
     'mineral': emojis.pss_min_big,
@@ -40,7 +40,7 @@ CURRENCY_EMOJI_LOOKUP = {
 }
 
 
-DMG_TYPES = [
+DMG_TYPES: List[str] = [
     'SystemDamage',
     'CharacterDamage',
     'ShieldDamage',
@@ -49,7 +49,7 @@ DMG_TYPES = [
 ]
 
 
-DIVISION_CHAR_TO_DESIGN_ID = {
+DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
     '-': '0',
     'A': '1',
     'B': '2',
@@ -58,10 +58,10 @@ DIVISION_CHAR_TO_DESIGN_ID = {
 }
 
 
-DIVISION_DESIGN_ID_TO_CHAR = dict([(value, key) for key, value in DIVISION_CHAR_TO_DESIGN_ID.items()])
+DIVISION_DESIGN_ID_TO_CHAR: Dict[str, str] = dict([(value, key) for key, value in DIVISION_CHAR_TO_DESIGN_ID.items()])
 
 
-EQUIPMENT_MASK_LOOKUP = {
+EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {
     1: 'head',
     2: 'body',
     4: 'leg',
@@ -71,7 +71,7 @@ EQUIPMENT_MASK_LOOKUP = {
 }
 
 
-EQUIPMENT_SLOTS_LOOKUP = {
+EQUIPMENT_SLOTS_LOOKUP: Dict[str, str] = {
     'head': 'EquipmentHead',
     'hat': 'EquipmentHead',
     'helm': 'EquipmentHead',
@@ -92,7 +92,7 @@ EQUIPMENT_SLOTS_LOOKUP = {
 }
 
 
-GAS_COSTS_LEGENDARY_LOOKUP = [
+GAS_COSTS_LEGENDARY_LOOKUP: List[int] = [
     0, 130000, 162500, 195000, 227500,
     260000, 292500, 325000, 357500, 390000,
     422500, 455000, 487500, 520000, 552500,
@@ -103,7 +103,7 @@ GAS_COSTS_LEGENDARY_LOOKUP = [
     1235000, 1267500, 1300000, 1332500, 1365000]
 
 
-GAS_COSTS_LOOKUP = [
+GAS_COSTS_LOOKUP: List[int] = [
     0, 0, 17, 33, 65,
     130, 325, 650, 1300, 3200,
     6500, 9700, 13000, 19500, 26000,
@@ -114,7 +114,7 @@ GAS_COSTS_LOOKUP = [
     507000, 552000, 604000, 650000, 715000]
 
 
-GRID_TYPE_MASK_LOOKUP = {
+GRID_TYPE_MASK_LOOKUP: Dict[int, str] = {
     1: 'A',
     2: 'B'
 }
@@ -124,14 +124,14 @@ MONTH_NAME_TO_NUMBER = dict({calendar.month_name[number]: number for number in r
 MONTH_SHORT_NAME_TO_NUMBER = dict({calendar.month_abbr[number]: number for number in range(1, 13)})
 
 
-PROGRESSION_TYPES = {
+PROGRESSION_TYPES: Dict[str, float] = {
     'Linear': 1.0,
     'EaseIn': 2.0,
     'EaseOut': 0.5
 }
 
 
-RARITY_ORDER_LOOKUP = {
+RARITY_ORDER_LOOKUP: Dict[str, int] = {
     'Common': 70,
     'Elite': 60,
     'Unique': 50,
@@ -142,7 +142,7 @@ RARITY_ORDER_LOOKUP = {
 }
 
 
-REDUCE_TOKENS_LOOKUP = {
+REDUCE_TOKENS_LOOKUP: Dict[int, str] = {
     0: '',
     1: 'k',
     2: 'm',
@@ -150,7 +150,7 @@ REDUCE_TOKENS_LOOKUP = {
 }
 
 
-IAP_OPTIONS_MASK_LOOKUP = {
+IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
     1: ('Clip', 500),
     2: ('Roll', 1200),
     4: ('Stash', 2500),
@@ -159,13 +159,15 @@ IAP_OPTIONS_MASK_LOOKUP = {
 }
 
 
-PROMO_REQUIREMENT_TYPE_LOOKUP = {
-    'shipLevel': 'ship lvl',
-    'purchaseRewardPoints': f'{emojis.pss_dove} purchased'
+PROMO_REQUIREMENT_TYPE_LOOKUP: Dict[Dict[str, str]] = {
+    'en': {
+        'shipLevel': 'ship lvl',
+        'purchaseRewardPoints': f'{emojis.pss_dove} purchased'
+    }
 }
 
 
-SPECIAL_ABILITIES_LOOKUP = {
+SPECIAL_ABILITIES_LOOKUP: Dict[str, str] = {
     'AddReload': 'Rush Command',
     'DamageToCurrentEnemy': 'Critical Strike',
     'DamageToRoom': 'Ultra Dismantle',
@@ -180,7 +182,7 @@ SPECIAL_ABILITIES_LOOKUP = {
 }
 
 
-STAT_EMOJI_LOOKUP = {
+STAT_EMOJI_LOOKUP: Dict[str, str] = {
     'Ability': emojis.pss_stat_ability,
     'Attack': emojis.pss_stat_attack,
     'Engine': emojis.pss_stat_engine,
@@ -195,7 +197,7 @@ STAT_EMOJI_LOOKUP = {
 }
 
 
-STAT_TYPES_LOOKUP = {
+STAT_TYPES_LOOKUP: Dict[str, str] = {
     'hp': 'HP',
     'health': 'HP',
     'attack': 'Attack',
@@ -223,7 +225,7 @@ STAT_TYPES_LOOKUP = {
 }
 
 
-STAT_UNITS_LOOKUP = {
+STAT_UNITS_LOOKUP: Dict[str, str] = {
     'Ability': '%',
     'Attack': '%',
     'Engine': '%',
@@ -234,11 +236,11 @@ STAT_UNITS_LOOKUP = {
     'Science': '%',
     'Stamina': '',
     'Weapon': '%',
-    'Xp': '',
+    'Xp': ''
 }
 
 
-STATS_LEFT = [
+STATS_LEFT: List[str] = [
     'Hp',
     'Attack',
     'Repair',
@@ -247,7 +249,7 @@ STATS_LEFT = [
 ]
 
 
-STATS_RIGHT = [
+STATS_RIGHT: List[str] = [
     'Pilot',
     'Science',
     'Engine',
@@ -256,21 +258,21 @@ STATS_RIGHT = [
 ]
 
 
-TRAINING_RANK_ROOM_LOOKUP = {
+TRAINING_RANK_ROOM_LOOKUP: Dict[int, Tuple[str, str]] = {
     1: ('Gym', 'GYM'),
     2: ('Academy', 'ACA')
     # 100: Consumable
 }
 
 
-USER_STATUS = {
+USER_STATUS: Dict[str, str] = {
     'Attacking': 'Attacking',
     'Defending': 'Defending / Immunity',
     'Offline': 'Offline'
 }
 
 
-USER_TYPE = {
+USER_TYPE: Dict[str, str] = {
     'Administrator': 'Administrator',
     'Backer': 'Backer',
     'Banned': 'Banned',
@@ -284,7 +286,7 @@ USER_TYPE = {
 }
 
 
-XP_COSTS_LEGENDARY_LOOKUP = [
+XP_COSTS_LEGENDARY_LOOKUP: List[int] = [
     0, 0, 810, 1350, 1890,
     2430, 3060, 3690, 4320, 4950,
     5580, 6360, 7090, 7840, 8610,
@@ -295,7 +297,7 @@ XP_COSTS_LEGENDARY_LOOKUP = [
     29400, 30610, 31840, 33090, 34360]
 
 
-XP_COSTS_LOOKUP = [
+XP_COSTS_LOOKUP: List[int] = [
     0, 90, 270, 450, 630,
     810, 1020, 1230, 1440, 1650,
     1860, 2130, 2400, 2670, 2940,
