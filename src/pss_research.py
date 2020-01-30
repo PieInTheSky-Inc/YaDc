@@ -48,9 +48,9 @@ __research_designs_cache = PssCache(
 # ---------- Classes ----------
 
 class ResearchDesignDetails(entity.EntityDesignDetails):
-    def __init__(self, research_info: dict, research_designs_data: dict = None):
-        if not research_designs_data:
-            research_designs_data = __research_designs_cache.get_data_dict3()
+    def __init__(self, research_info: dict, researches_designs_data: dict = None):
+        if not researches_designs_data:
+            researches_designs_data = __research_designs_cache.get_data_dict3()
 
         self.__cost: str = _get_costs_from_research_info(research_info)
         self.__research_time_seconds: int = int(research_info['ResearchTime'])
@@ -60,7 +60,7 @@ class ResearchDesignDetails(entity.EntityDesignDetails):
         self.__research_timedelta: timedelta = timedelta(seconds=self.__research_time_seconds)
         self.__duration: int = util.get_formatted_timedelta(self.__research_timedelta, include_relative_indicator=False)
         if self.__required_research_design_id != '0':
-            self.__required_research_name = research_designs_data[self.__required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            self.__required_research_name = researches_designs_data[self.__required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
         else:
             self.__required_research_name = None
 
@@ -119,7 +119,7 @@ def get_research_details_from_id_as_text(research_id: str, research_designs_data
     if not research_designs_data:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    research_design_details = ResearchDesignDetails(research_id, research_designs_data=research_designs_data)
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
     return research_design_details.get_details_as_text_long()
 
 
@@ -155,7 +155,7 @@ def get_research_details_short_from_id_as_text(research_id: str, research_design
     if not research_designs_data:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    research_design_details = ResearchDesignDetails(research_id, research_designs_data=research_designs_data)
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
     return research_design_details.get_details_as_text_short()
 
 
@@ -229,7 +229,7 @@ def get_research_design_details_by_id(research_design_id: str, research_designs_
 
         if research_design_id and research_design_id in research_designs_data.keys():
             char_design_info = research_designs_data[research_design_id]
-            char_design_details = ResearchDesignDetails(char_design_info, research_designs_data=research_designs_data)
+            char_design_details = ResearchDesignDetails(char_design_info, researches_designs_data=research_designs_data)
             return char_design_details
 
     return None
