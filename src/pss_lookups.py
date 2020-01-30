@@ -159,7 +159,7 @@ IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
 }
 
 
-PROMO_REQUIREMENT_TYPE_LOOKUP: Dict[Dict[str, str]] = {
+PROMO_REQUIREMENT_TYPE_LOOKUP: Dict[str, Dict[str, str]] = {
     'en': {
         'shipLevel': 'ship lvl',
         'purchaseRewardPoints': f'{emojis.pss_dove} purchased'
