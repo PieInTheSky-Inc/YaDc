@@ -1304,6 +1304,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
             f'Pagination = `{use_pagination}`',
             f'Prefix = `{prefix}`'
         ])
+        output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1312,11 +1313,13 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Retrieve the auto-daily setting for this server.
 
     You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
-82
+
     Usage:
       /settings autodaily
       /settings daily
@@ -1329,6 +1332,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_settings()
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1337,6 +1341,8 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily_channel(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Retrieve the auto-daily setting for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1354,6 +1360,7 @@ async def cmd_settings_get_autodaily_channel(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_channel()
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1362,6 +1369,8 @@ async def cmd_settings_get_autodaily_channel(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily_mode(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Retrieve the auto-daily setting for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1379,6 +1388,7 @@ async def cmd_settings_get_autodaily_mode(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_changemode()
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1387,6 +1397,8 @@ async def cmd_settings_get_autodaily_mode(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_get_autodaily_notify(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Retrieve the auto-daily setting for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1404,6 +1416,7 @@ async def cmd_settings_get_autodaily_notify(ctx: discord.ext.commands.Context):
         async with ctx.typing():
             autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_notify()
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1494,6 +1507,8 @@ async def cmd_settings_reset(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Reset the auto-daily settings for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1516,6 +1531,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
                     'An error ocurred while trying to remove the auto-daily settings for this server.',
                     'Please try again or contact the bot\'s author.'
                 ]
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1524,6 +1540,8 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Reset the auto-daily channel settings for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1546,6 +1564,7 @@ async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context
                     'An error ocurred while trying to remove the auto-daily channel setting for this server.',
                     'Please try again or contact the bot\'s author.'
                 ]
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1554,6 +1573,8 @@ async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Reset the auto-daily change mode settings for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1576,6 +1597,7 @@ async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
                     'An error ocurred while trying to remove the auto-daily notification settings for this server.',
                     'Please try again or contact the bot\'s author.'
                 ]
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1584,6 +1606,8 @@ async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Reset the auto-daily notification settings for this server.
 
     You need the 'Manage Server' permission to use this command.
@@ -1606,6 +1630,7 @@ async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context)
                     'An error ocurred while trying to remove the auto-daily notification settings for this server.',
                     'Please try again or contact the bot\'s author.'
                 ]
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1703,6 +1728,8 @@ async def cmd_settings_set(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Change auto-daily settings for this server.
 
     You need the 'Manage Server' permission to use any of these commands.
@@ -1717,6 +1744,8 @@ async def cmd_settings_set_autodaily(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, text_channel: discord.TextChannel = None):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
     You need the 'Manage Server' permission to use this command.
@@ -1752,6 +1781,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                     ]
             else:
                 output = ['You need to provide a text channel on a server!']
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1760,6 +1790,8 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
 
     You need the 'Manage Server' permission to use this command.
@@ -1777,6 +1809,7 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
             result = server_settings.toggle_daily_delete_on_change(ctx.guild.id)
             change_mode = server_settings.convert_to_edit_delete(result)
             output = [f'Change mode on this server is set to: `{change_mode}`']
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
@@ -1785,6 +1818,8 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_settings_set_autodaily_notify(ctx: discord.ext.commands.Context, *, mention: Union[discord.Role, discord.Member]):
     """
+    +++ THIS FEATURE HAS BEEN DISABLED TEMPORARILY +++
+
     Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role.
 
     You need the 'Manage Server' permission to use this command.
@@ -1812,6 +1847,7 @@ async def cmd_settings_set_autodaily_notify(ctx: discord.ext.commands.Context, *
             server_settings.set_autodaily_notify(ctx.guild.id, notify_id, notify_type)
             result = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
             output = [f'Notify on auto-daily changes: `{result._get_pretty_notify_settings()}`']
+            output.append(f'THE AUTODAILY FEATURE HAS BEEN DISABLED TEMPORARILY.')
         await util.post_output(ctx, output)
 
 
