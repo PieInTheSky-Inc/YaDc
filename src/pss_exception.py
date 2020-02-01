@@ -1,4 +1,5 @@
 import discord.ext.commands as commands
+from typing import List
 
 import settings
 
@@ -19,18 +20,12 @@ class Error(commands.CommandError):
 
 class InvalidParameter(Error):
     """Exception raised for invalid parameters."""
-    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, valid_values: list = None):
-        if parameter_name:
-            self.__parameter_name = parameter_name
-        else:
-            self.__parameter_name = '<unknown>'
-        if invalid_value:
-            self.__invalid_value = invalid_value
-        else:
-            self.__invalid_value = '<unknown>'
-        self.__min_length = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
-        self.__valid_values = valid_values or []
-        self.__add_validity_hint = self.__min_length > 1 or self.__valid_values
+    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: List[str] = None):
+        self.__parameter_name: str = parameter_name or '<unknown>'
+        self.__invalid_value: str = invalid_value or '<unknown>'
+        self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
+        self.__valid_values: List[str] = valid_values or []
+        self.__add_validity_hint: bool = min_length is not None or self.__valid_values
         self.msg = self.__get_message()
 
 
