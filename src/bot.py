@@ -10,12 +10,14 @@ import discord
 from discord.ext import commands
 import holidays
 import logging
+import json
 import math
 import os
 import pytz
 import re
 import sys
 import time
+from threading import Lock
 from typing import Dict, List, Tuple, Union
 
 import emojis
@@ -91,7 +93,7 @@ bot = discord.ext.commands.Bot(command_prefix=COMMAND_PREFIX,
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
 
-
+DAILY_LOOP_LOCK = Lock()
 
 
 
@@ -108,7 +110,7 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     core.init_db()
-    bot.loop.create_task(post_dailies_loop())
+    #bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
@@ -150,20 +152,28 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop() -> None:
     while True:
-        utc_now = util.get_utcnow()
-        daily_info = daily.get_daily_info()
-        has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
-        await fix_daily_channels()
-        autodaily_settings = server_settings.get_autodaily_settings(bot, without_latest_message_id=True)
-        if has_daily_changed:
-            autodaily_settings.extend(server_settings.get_autodaily_settings(bot, can_post=True))
+        has_daily_changed = False
+        if not DAILY_LOOP_LOCK.locked():
+            DAILY_LOOP_LOCK.acquire()
 
-        created_output = False
-        if autodaily_settings:
-            autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
-            output, created_output = dropship.get_dropship_text(daily_info=daily_info)
-            if created_output:
-                await post_dailies(output, autodaily_settings, utc_now)
+            utc_now = util.get_utcnow()
+            daily_info = daily.get_daily_info()
+            has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
+            if has_daily_changed:
+                print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
+                await fix_daily_channels()
+            autodaily_settings = server_settings.get_autodaily_settings(bot, without_latest_message_id=True)
+            if has_daily_changed:
+                autodaily_settings.extend(server_settings.get_autodaily_settings(bot, can_post=True))
+
+            created_output = False
+            if autodaily_settings:
+                autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
+                output, created_output = dropship.get_dropship_text(daily_info=daily_info)
+                if created_output:
+                    await post_dailies(output, autodaily_settings, utc_now)
+
+            DAILY_LOOP_LOCK.release()
 
         if has_daily_changed:
             seconds_to_wait = 300
@@ -1306,7 +1316,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
 
     You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
-
+82
     Usage:
       /settings autodaily
       /settings daily
