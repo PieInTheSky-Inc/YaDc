@@ -36,6 +36,7 @@ GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
 
 GPAT = str(os.environ['GPAT'])
 
+LATEST_SETTINGS_BASE_URL = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
 
 MAXIMUM_CHARACTERS = 1900
 MIN_ENTITY_NAME_LENGTH = 3

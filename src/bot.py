@@ -721,7 +721,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if fleet_info:
             async with ctx.typing():
                 if is_tourney_running:
-                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info).values()
+                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
                     output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
@@ -1010,7 +1010,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
         if mel_time in aus_holidays:
             str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
 
-        first_day_of_next_month = datetime.datetime(now.year, now.month, 1) + datetime.timedelta(months=1, days=0)
+        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
         td = first_day_of_next_month - now
         str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
     await ctx.send(str_time)
