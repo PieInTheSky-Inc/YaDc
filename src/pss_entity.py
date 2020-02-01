@@ -172,6 +172,10 @@ class EntityDesignsRetriever:
         return self.__cache.get_data_dict3()
 
 
+    def get_entity_design_details_by_id(self, entity_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> EntityDesignDetails:
+        pass
+
+
     def get_entity_design_info_by_id(self, entity_design_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> Dict[str, object]:
         entity_designs_data = entity_designs_data or self.get_data_dict3()
         if entity_design_id in entity_designs_data.keys():
