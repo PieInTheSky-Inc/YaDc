@@ -721,7 +721,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if fleet_info:
             async with ctx.typing():
                 if is_tourney_running:
-                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info).values()
+                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
                     output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
