@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractstaticmethod
 import discord
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from cache import PssCache
 import pss_core as core
@@ -19,45 +19,50 @@ import settings
 
 
 class EntityDesignDetails(object):
-    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None):
-        self.__name: str = name or None
-        self.__description: str = description or None
-        self.__details_long: List[Tuple[str, str]] = details_long or []
-        self.__details_short: List[Tuple[str, str, bool]] = details_short or []
-        self.__hyperlink: str = hyperlink or None
+    def __init__(self, entity_design_info: Dict[str, object], name_property_name: str, description_property_name: str, properties_long_text: List[Dict[str, object]], properties_short_text: List[Dict[str, object]], properties_embed: List[Dict[str, object]], entities_designs_data: Optional[Dict[str, Dict[str, object]]] = None):
+        self.__entity_design_info: Dict[str, object] = entity_design_info
+        self.__name_property_name: str = name_property_name
+        self.__description_property_name: str = description_property_name
+        self.__properties_long_text: List[Dict[str, object]] = properties_long_text
+        self.__properties_short_text: List[Dict[str, object]] = properties_short_text
+        self.__properties_embed: List[Dict[str, object]] = properties_embed
+
+
+    #def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None):
+    #    self.__name: str = name or None
+    #    self.__description: str = description or None
+    #    self.__details_long: List[Tuple[str, str]] = details_long or []
+    #    self.__details_short: List[Tuple[str, str, bool]] = details_short or []
+    #    self.__hyperlink: str = hyperlink or None
 
 
     @property
     def description(self) -> str:
-        return self.__description
-
-    @property
-    def details_long(self) -> List[Tuple[str, str]]:
-        return list(self.__details_long)
-
-    @property
-    def details_short(self) -> List[Tuple[str, str, bool]]:
-        return list(self.__details_short)
-
-    @property
-    def link(self) -> str:
-        return self.__hyperlink
+        return self.__entity_design_info[self.__description_property_name]
 
     @property
     def name(self) -> str:
-        return self.__name
+        return self.__entity_design_info[self.__name_property_name]
 
 
     def get_details_as_embed(self) -> discord.Embed:
-        return EntityDesignDetails._get_details_as_embed(self.name, self.description, self.details_long, self.link)
+        result = discord.Embed()
+        result.title = self.name
+        result.description = self.description
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long, self.link)
+        pass
+        #return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long, self.link)
 
 
     def get_details_as_text_short(self) -> List[str]:
-        return EntityDesignDetails._get_details_as_text_short(self.name, self.details_short)
+        pass
+        #return EntityDesignDetails._get_details_as_text_short(self.name, self.details_short)
+
+
+    #@staticmethod
+    #def _get
 
 
     @staticmethod
