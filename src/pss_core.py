@@ -25,7 +25,7 @@ DB_CONN: psycopg2.extensions.connection = None
 
 # ---------- Constants ----------
 
-LATEST_SETTINGS_BASE_URL = 'https://api.pixelstarships.com/SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
+
 
 
 # ----- Utilities --------------------------------
@@ -476,7 +476,7 @@ def get_real_name(search_str, lst_original):
 def get_latest_settings(language_key: str = 'en') -> dict:
     if not language_key:
         language_key = 'en'
-    url = f'{LATEST_SETTINGS_BASE_URL}{language_key}'
+    url = f'{settings.LATEST_SETTINGS_BASE_URL}{language_key}'
     raw_text = get_data_from_url(url)
     result = xmltree_to_dict3(raw_text)
     return result
