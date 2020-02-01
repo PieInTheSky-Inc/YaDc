@@ -37,8 +37,46 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 # ---------- Classes ----------
 
 class ItemDesignDetails(entity.EntityDesignDetails):
-    def __init__(self, item_info: dict, items_designs_data: dict = None):
+    def __init__(self, item_info: dict):
         self.__item_info: Dict[str, object] = item_info
+
+        bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+        bonus_value = item_info['EnhancementValue']
+        item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
+        item_sub_type = item_info['ItemSubType']
+        rarity = item_info['Rarity']
+
+        slot = _get_item_slot(item_type, item_sub_type)
+        if slot:
+            slot_txt = f' ({slot})'
+        else:
+            slot_txt = ''
+
+        if bonus_type == 'None':
+            bonus_txt = bonus_type
+        else:
+            bonus_txt = f'{bonus_type} +{bonus_value}'
+
+        return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
+
+
+        rarity = item_info['Rarity']
+        bonus_type = item_info['EnhancementType']  # if not 'None' then print bonus_value
+        item_type = item_info['ItemType']
+        item_sub_type = item_info['ItemSubType']
+        bonus_value = item_info['EnhancementValue']
+
+        slot = _get_item_slot(item_type, item_sub_type)
+        details = [rarity]
+        if slot:
+            details.append(slot)
+        if bonus_type != 'None':
+            details.append(f'+{bonus_value} {bonus_type}')
+        details_txt = ', '.join(details)
+        return [f'{name} ({details_txt})']
+
+        details
+
 
         super().__init__(
             name=item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME],
@@ -78,7 +116,7 @@ items_designs_retriever = entity.EntityDesignsRetriever(
 )
 
 
-NOT_ALLOWED_ITEM_NAMES = [
+NOT_ALLOWED_ITEM_NAMES: List[str] = [
     'AI',
     'I',
     'II',
@@ -210,7 +248,7 @@ def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[
         return None
 
 
-def get_item_details(item_name: str, as_embed=False):
+def get_item_details_by_name(item_name: str, as_embed=False):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_infos = _get_item_infos_by_name(item_name)
@@ -224,6 +262,23 @@ def get_item_details(item_name: str, as_embed=False):
             return _get_item_info_as_embed(item_name, item_infos), True
         else:
             return _get_item_info_as_text(item_name, item_infos), True
+
+
+def _get_item_design_details_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> List[ItemDesignDetails]:
+    if item_design_data is None:
+        item_design_data = items_designs_retriever.get_data_dict3()
+
+    item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data)
+    result = [item_design_data[item_design_id] for item_design_id in item_design_ids if item_design_id in item_design_data.keys()]
+
+    if result:
+        get_best_match = return_best_match or util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
+        if get_best_match:
+            result = [result[0]]
+
+    result = [ItemDesignDetails(item_design_data) for item_design_data in result]
+
+    return result
 
 
 def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
@@ -264,7 +319,7 @@ def _get_item_info_as_embed(item_name: str, item_infos: dict):
 
 
 def _get_item_info_as_text(item_name: str, item_infos: dict) -> list:
-    lines = [f'**Item stats for \'{item_name}\'**']
+    lines = [f'Item stats for **{item_name}**']
 
     for item_info in item_infos:
         lines.extend(get_item_details_from_data_as_text(item_info))

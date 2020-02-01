@@ -500,7 +500,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
             char_output = None
             char_success = False
         try:
-            item_output, item_success = item.get_item_details(name)
+            item_output, item_success = item.get_item_details_by_name(name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -562,7 +562,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_details(item_name)
+        output, _ = item.get_item_details_by_name(item_name)
     await util.post_output(ctx, output)
 
 
