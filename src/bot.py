@@ -494,13 +494,14 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
     """
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
+        full_name = f'{level} {name}'
         try:
             char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = item.get_item_details(name)
+            item_output, item_success = item.get_item_details(full_name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -514,7 +515,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
         await util.post_output(ctx, item_output)
 
     if not char_success and not item_success:
-        await ctx.send(f'Could not find a character or an item named `{name}`.')
+        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
 
 
 @bot.command(brief='Get character stats', name='char', aliases=['crew'])

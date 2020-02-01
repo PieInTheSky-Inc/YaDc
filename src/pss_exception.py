@@ -1,5 +1,11 @@
 import discord.ext.commands as commands
 
+import settings
+
+
+
+
+
 class Error(commands.CommandError):
     """Base class for exceptions in this module.
 
@@ -13,7 +19,7 @@ class Error(commands.CommandError):
 
 class InvalidParameter(Error):
     """Exception raised for invalid parameters."""
-    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: list = None):
+    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, valid_values: list = None):
         if parameter_name:
             self.__parameter_name = parameter_name
         else:
@@ -22,14 +28,14 @@ class InvalidParameter(Error):
             self.__invalid_value = invalid_value
         else:
             self.__invalid_value = '<unknown>'
-        self.__min_length = min_length
-        self.__valid_values = valid_values
-        self.__add_validity_hint = min_length > 1 or valid_values
+        self.__min_length = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
+        self.__valid_values = valid_values or []
+        self.__add_validity_hint = self.__min_length > 1 or self.__valid_values
         self.msg = self.__get_message()
 
 
     def __get_message(self) -> str:
-        result = f'Parameter `{self.__parameter_name}` recieved invalid value `{self.__invalid_value}`.'
+        result = f'Parameter `{self.__parameter_name}` received invalid value `{self.__invalid_value}`.'
         if self.__add_validity_hint:
             hints = []
             if self.__min_length > 1:

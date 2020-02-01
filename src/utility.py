@@ -393,6 +393,9 @@ def get_level_and_name(level, name) -> (int, str):
     if level is None and name is None:
         return level, name
 
+    if level is not None and name is None:
+        return None, level
+
     try:
         level = int(level)
     except:
