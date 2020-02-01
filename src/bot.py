@@ -495,13 +495,15 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
     async with ctx.typing():
         level, name = util.get_level_and_name(level, name)
         full_name = f'{level} {name}'
+        item_name = full_name if level is not None else name
         try:
             char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = item.get_item_details(full_name)
+            item
+            item_output, item_success = item.get_item_details(item_name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
