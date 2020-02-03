@@ -93,8 +93,6 @@ bot = discord.ext.commands.Bot(command_prefix=COMMAND_PREFIX,
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
 
-DAILY_LOOP_LOCK = Lock()
-
 
 
 
@@ -152,31 +150,36 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop() -> None:
     while True:
-        has_daily_changed = False
-        if not DAILY_LOOP_LOCK.locked():
-            DAILY_LOOP_LOCK.acquire()
+        utc_now = util.get_utcnow()
+        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=datetime.timezone.utc) - settings.ONE_SECOND
 
-            utc_now = util.get_utcnow()
-            daily_info = daily.get_daily_info()
-            has_daily_changed = daily.has_daily_changed(daily_info, utc_now)
-            if has_daily_changed:
-                print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-                await fix_daily_channels()
-            autodaily_settings = server_settings.get_autodaily_settings(bot, without_latest_message_id=True)
-            if has_daily_changed:
-                autodaily_settings.extend(server_settings.get_autodaily_settings(bot, can_post=True))
+        daily_info = daily.get_daily_info()
+        db_daily_info, db_daily_modify_date = daily.db_get_daily_info()
+        has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-            created_output = False
-            if autodaily_settings:
-                autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
-                output, created_output = dropship.get_dropship_text(daily_info=daily_info)
-                if created_output:
-                    await post_dailies(output, autodaily_settings, utc_now)
+        autodaily_settings = server_settings.get_autodaily_settings(bot, no_post_yet=True)
+        if autodaily_settings:
+            print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} channels')
+        if has_daily_changed:
+            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
+            post_here = server_settings.get_autodaily_settings(bot)
+            print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
+            autodaily_settings.extend(post_here)
 
-            DAILY_LOOP_LOCK.release()
+        created_output = False
+        if autodaily_settings:
+            autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
+            print(f'[post_dailies_loop] going to post to {len(post_here)} guilds')
+
+            latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_daily_message = '\n'.join(latest_message_output)
+            output, created_output = dropship.get_dropship_text(daily_info=daily_info)
+            if created_output:
+                current_daily_message = '\n'.join(output)
+                await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
 
         if has_daily_changed:
-            seconds_to_wait = 300
+            seconds_to_wait = 300.0
             if created_output:
                 daily.db_set_daily_info(daily_info, utc_now)
         else:
@@ -184,132 +187,119 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_all_dailies(output: List[str], utc_now: datetime) -> None:
-    await fix_daily_channels()
-    print(f'[post_all_dailies] Fixed daily channels.')
-    autodaily_settings = server_settings.get_autodaily_settings(bot, can_post=True)
-    print(f'[post_all_dailies] Retrieved autodaily settings.')
-    await post_dailies(output, autodaily_settings, utc_now)
-
-
-async def post_dailies(output: List[str], autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime) -> None:
+async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> None:
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            can_post, latest_message_id = await post_autodaily(settings.channel.id, settings.latest_message_id, settings.delete_on_change, output, utc_now)
+            can_post, latest_message_id = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
             await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
-            server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id)
+            server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id, latest_message_modify_date=utc_now)
 
 
-async def post_autodaily(channel_id: int, latest_message_id: int, delete_on_change: bool, output: list, utc_now: datetime) -> (bool, str):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, str):
     """
     Returns (can_post, latest_message_id)
     """
-    if delete_on_change is None or delete_on_change is True:
-        post_new = True
-    else:
-        post_new = False
+    if text_channel and current_daily_message:
+        error_msg_delete = f'could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
+        error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
+        error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
 
-    if channel_id and output:
+        if delete_on_change is None or delete_on_change is True:
+            post_new = True
+        else:
+            post_new = False
+
         can_post = True
-        post = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)[0]
-        text_channel: discord.TextChannel = bot.get_channel(channel_id)
         latest_message: discord.Message = None
-        if text_channel is not None:
-            guild = text_channel.guild
-            if can_post and latest_message_id:
-                try:
-                    latest_message = await text_channel.fetch_message(latest_message_id)
-                except discord.NotFound:
-                    print(f'[post_autodaily] could not find latest message [{latest_message_id}]')
-                except Exception as err:
-                    print(f'[post_autodaily] could not fetch message [{latest_message_id}]: {err}')
-                    can_post = False
 
-            if can_post:
-                if latest_message and latest_message.created_at.day == utc_now.day:
-                    if delete_on_change is True:
-                        try:
-                            await latest_message.delete()
-                            latest_message = None
-                            print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]')
-                        except discord.NotFound:
-                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the message could not be found')
-                            can_post = False
-                        except discord.Forbidden:
-                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
-                            can_post = False
-                        except Exception as err:
-                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: {err}')
-                            can_post = False
+        if can_post and latest_message_id:
+            latest_message, can_post = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
 
-                    elif delete_on_change is False:
-                        try:
-                            await latest_message.edit(content=post)
-                            print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{channel_id}] on guild [{guild.id}]')
-                        except discord.NotFound:
-                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the message could not be found')
-                            can_post = False
-                        except discord.Forbidden:
-                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
-                            can_post = False
-                        except Exception as err:
-                            print(f'[post_autodaily] could not edit message [{latest_message_id}] from channel [{channel_id}] on guild [{guild.id}]: {err}')
-                            can_post = False
-                else:
-                    post_new = True
-
-                if post_new and can_post:
+        if can_post:
+            if latest_message and latest_message.created_at.day == utc_now.day:
+                if latest_message.content == current_daily_message:
+                    post_new = False
+                elif delete_on_change is True:
                     try:
-                        latest_message = await text_channel.send(post)
-                        print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{channel_id}] on guild [{guild.id}]')
+                        await latest_message.delete()
+                        latest_message = None
+                        print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                    except discord.NotFound:
+                        print(f'[post_autodaily] {error_msg_delete}: the message could not be found')
                     except discord.Forbidden:
-                        print(f'[post_autodaily] could not post a message in channel [{channel_id}] on guild [{guild.id}]: the bot doesn\'t have the required permissions.')
+                        print(f'[post_autodaily] {error_msg_delete}: the bot doesn\'t have the required permissions.')
                         can_post = False
                     except Exception as err:
-                        print(f'[post_autodaily] could not post a message in channel [{channel_id}] on guild [{guild.id}]: {err}')
+                        print(f'[post_autodaily] {error_msg_delete}: {err}')
                         can_post = False
+                elif delete_on_change is False:
+                    try:
+                        await latest_message.edit(content=current_daily_message)
+                        print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                    except discord.NotFound:
+                        print(f'[post_autodaily] {error_msg_edit}: the message could not be found')
+                    except discord.Forbidden:
+                        print(f'[post_autodaily] {error_msg_edit}: the bot doesn\'t have the required permissions.')
+                        can_post = False
+                    except Exception as err:
+                        print(f'[post_autodaily] {error_msg_edit}: {err}')
+                        can_post = False
+            else:
+                post_new = True
+
+            if can_post and post_new:
+                try:
+                    latest_message = await text_channel.send(current_daily_message)
+                    print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                except discord.Forbidden:
+                    print(f'[post_autodaily] {error_msg_post}: the bot doesn\'t have the required permissions.')
+                    can_post = False
+                except Exception as err:
+                    print(f'[post_autodaily] {error_msg_post}: {err}')
+                    can_post = False
         else:
             can_post = False
 
         if latest_message:
-            return (can_post, latest_message.id)
+            return can_post, latest_message.id
         else:
-            return (can_post, None)
+            return can_post, None
     else:
-        return (None, None)
+        return None, None
 
 
-async def fix_daily_channels() -> None:
-    autodaily_settings = [settings for settings in server_settings.get_autodaily_settings(bot, guild_id=None, can_post=None) if settings.channel_id is not None]
-    for settings in autodaily_settings:
-        can_post = False
-        has_latest_message = False
-        if settings.channel is not None:
-            if settings.guild is not None:
-                try:
-                    me = await settings.guild.fetch_member(bot.user.id)
-                except:
-                    me = None
-                if me is not None:
-                    permissions = settings.channel.permissions_for(me)
-                    if permissions is not None and permissions.send_messages is True:
-                        can_post = True
-                    else:
-                        print(f'[fix_daily_channels] bot is not allowed to post in configured channel \'{settings.channel.name}\' (id: {settings.channel_id}) on server \'{settings.guild.name}\' (id: {settings.guild_id})')
-                else:
-                    print(f'[fix_daily_channels] couldn\'t fetch member for bot for guild: {settings.guild.name} (id: {settings.guild_id})')
-            else:
-                print(f'[fix_daily_channels] couldn\'t fetch guild for channel \'{settings.channel.name}\' (id: {settings.channel_id}) with id: {settings.guild_id}')
+async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str) -> (bool, discord.Message):
+    """
+    Attempts to fetch the message by id, then by content from the specified channel.
+    Returns (can_post, latest_message)
+    """
+    can_post: bool = True
+    result: discord.Message = None
 
-            if settings.latest_message_id is not None:
-                try:
-                    _ = await settings.channel.fetch_message(settings.latest_message_id)
-                    has_latest_message = True
-                except:
-                    pass
-        else:
-            print(f'[fix_daily_channels] couldn\'t fetch channel with id: {settings.channel_id}')
-        daily.fix_daily_channel(settings.guild_id, can_post, has_latest_message)
+    if text_channel:
+        if latest_message_id:
+            try:
+                result = await text_channel.fetch_message(latest_message_id)
+                print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+            except discord.NotFound:
+                print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+            except Exception as err:
+                print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
+                can_post = False
+        if result is None:
+            try:
+                async for message in text_channel.history(after=yesterday):
+                    if message.author == bot.user and (message.content == latest_daily or message.content == current_daily):
+                        result = message
+                        print(f'[daily_fetch_latest_message] found latest message by content in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {result.id}')
+                        break
+            except Exception as err:
+                print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
+                can_post = False
+            if result is None:
+                print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+
+    return can_post, result
 
 
 async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member, discord.Role], notify_type: server_settings.AutoDailyNotifyType) -> None:
@@ -796,16 +786,6 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
     pass
 
 
-@cmd_autodaily.command(brief='Fix the auto-daily channels.', name='fix')
-@discord.ext.commands.is_owner()
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
-async def cmd_autodaily_fix(ctx: discord.ext.commands.Context):
-    async with ctx.typing():
-        fix_daily_channels()
-    await ctx.send('Fixed daily channels')
-
-
 @cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -855,16 +835,6 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
         text_channel = bot.get_channel(channel_id)
         output, _ = dropship.get_dropship_text()
         await util.post_output_to_channel(text_channel, output)
-
-
-@cmd_autodaily.command(brief='Post a daily message on all servers\' auto-daily channels', name='postall')
-@discord.ext.commands.is_owner()
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
-async def cmd_autodaily_postall(ctx: discord.ext.commands.Context):
-    await util.try_delete_original_message(ctx)
-    daily_info = daily.get_daily_info()
-    await post_all_dailies(daily_info, util.get_utcnow())
 
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])

@@ -4,6 +4,7 @@
 from datetime import datetime
 import discord
 import pprint
+from typing import List
 
 from cache import PssCache
 import emojis
@@ -57,7 +58,7 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 
 # ---------- Dropship info ----------
 
-def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
+def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en') -> (List[str], bool):
     if not daily_info:
         daily_info = core.get_latest_settings(language_key=language_key)
 

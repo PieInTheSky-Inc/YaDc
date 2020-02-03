@@ -565,6 +565,11 @@ def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.5.0.')
         return
 
+    success_update_1_2_6_0 = db_update_schema_v_1_2_6_0()
+    if not success_update_1_2_6_0:
+        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.6.0.')
+        return
+
     success_serversettings = db_try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -582,6 +587,33 @@ def init_db():
 
     print('[init_db] DB initialization succeeded')
 
+
+
+def db_update_schema_v_1_2_6_0():
+    column_definitions_serversettings = [
+        ('dailylatestmessagecreatedate', 'TIMESTAMPTZ', False, False),
+        ('dailylatestmessagemodifydate', 'TIMESTAMPTZ', False, False)
+    ]
+
+    schema_version = db_get_schema_version()
+    if schema_version:
+        compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
+        compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
+        if compare_1260 <= 0:
+            return True
+        elif compare_1250 > 0:
+            return False
+
+    query_lines = []
+    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions_serversettings:
+        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
+        query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
+
+    query = '\n'.join(query_lines)
+    success = db_try_execute(query)
+    if success:
+        success = db_try_set_schema_version('1.2.6.0')
+    return success
 
 
 def db_update_schema_v_1_2_5_0():

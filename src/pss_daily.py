@@ -117,18 +117,20 @@ def try_remove_daily_channel(guild_id: int) -> bool:
     return success
 
 
-def fix_daily_channel(guild_id: int, can_post: bool, has_latest_message: bool = None) -> bool:
-    success = update_daily_channel(guild_id, None, can_post)
-    if success and has_latest_message is False:
-        success = server_settings.db_reset_autodaily_latest_message_id(guild_id)
+def fix_daily_channel(guild_id: int, latest_message_id: int = None) -> bool:
+    success = update_daily_channel(guild_id, None)
+    if success:
+        if latest_message_id:
+            success = server_settings.db_update_daily_latest_message_id(guild_id, latest_message_id)
+        else:
+            success = server_settings.db_reset_autodaily_latest_message_id(guild_id)
+
     return success
 
 
-def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime) -> bool:
+def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: dict, db_modify_date: datetime) -> bool:
     if retrieved_date.hour >= 23:
         return False
-
-    db_daily_info, db_modify_date = db_get_daily_info()
 
     if retrieved_date.day > db_modify_date.day:
         for daily_info_field in DAILY_INFO_FIELDS_TO_CHECK:
@@ -199,7 +201,7 @@ def get_daily_info_setting_name(field_name: str) -> str:
 def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
     success = server_settings.db_create_server_settings(guild_id)
     if success:
-        success = update_daily_channel(guild_id, channel_id=channel_id, can_post=True, latest_message_id=None)
+        success = update_daily_channel(guild_id, channel_id=channel_id, latest_message_id=None)
     return success
 
 
@@ -213,12 +215,10 @@ def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
     return list(result.values())
 
 
-def update_daily_channel(guild_id: int, channel_id: int = None, can_post: bool = True, latest_message_id: int = None) -> bool:
+def update_daily_channel(guild_id: int, channel_id: int = None, latest_message_id: int = None) -> bool:
     success = True
     if channel_id is not None:
         success = success and server_settings.db_update_daily_channel_id(guild_id, channel_id)
-    if can_post is not None:
-        success = success and server_settings.db_update_daily_can_post(guild_id, can_post)
     if latest_message_id is not None:
         success = success and server_settings.db_update_daily_latest_message_id(guild_id, latest_message_id)
     return success

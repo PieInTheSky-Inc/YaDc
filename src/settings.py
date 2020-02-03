@@ -1,3 +1,4 @@
+import datetime
 import os
 
 
@@ -27,6 +28,8 @@ LATEST_SETTINGS_BASE_URL = 'https://api.pixelstarships.com/SettingService/GetLat
 
 MAXIMUM_CHARACTERS = 1900
 MIN_ENTITY_NAME_LENGTH = 3
+
+ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 
 PREFIX_DEFAULT = '/'
 PRINT_DEBUG = False

@@ -1,3 +1,4 @@
+import datetime
 import discord
 from discord.ext import commands
 from enum import IntEnum
@@ -46,12 +47,14 @@ class AutoDailyNotifyType(IntEnum):
 
 
 class AutoDailySettings():
-    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, delete_on_change: bool, notify: Union[discord.Member, discord.Role]):
+    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, delete_on_change: bool, notify: Union[discord.Member, discord.Role], latest_message_create_date: datetime.datetime, latest_message_modify_date: datetime.datetime):
         self.__can_post: bool = can_post
         self.__channel: discord.TextChannel = channel
         self.__delete_on_change: bool = delete_on_change
         self.__guild: discord.Guild = guild
         self.__latest_message_id: int = latest_message_id or None
+        self.__latest_message_create_date: datetime.datetime = latest_message_create_date or None
+        self.__latest_message_modify_date: datetime.datetime = latest_message_modify_date or None
         self.__notify: Union[discord.Member, discord.Role] = notify
         self.__notify_type: AutoDailyNotifyType = None
         if notify is not None:
@@ -94,6 +97,14 @@ class AutoDailySettings():
     @property
     def latest_message_id(self) -> int:
         return self.__latest_message_id
+
+    @property
+    def latest_message_create_date(self) -> datetime:
+        return self.__latest_message_create_date
+
+    @property
+    def latest_message_modify_date(self) -> datetime:
+        return self.__latest_message_modify_date
 
     @property
     def notify(self) -> Union[discord.Member, discord.Role]:
@@ -194,7 +205,7 @@ def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int) -> A
         raise Exception('No parameters given. You need to specify both parameters \'bot\' and \'guild_id\'.')
 
     autodaily_settings = _prepare_create_autodaily_settings(guild_id)
-    _, channel_id, can_post, latest_message_id, delete_on_change, notify_id, notify_type = autodaily_settings[0]
+    _, channel_id, can_post, latest_message_id, delete_on_change, notify_id, notify_type, latest_message_create_date, latest_message_modify_date = autodaily_settings[0]
     try:
         channel = bot.get_channel(channel_id)
     except Exception as error:
@@ -211,7 +222,7 @@ def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int) -> A
         elif notify_type == AutoDailyNotifyType.ROLE:
             notify = guild.get_role(notify_id)
 
-    return AutoDailySettings(guild, channel, can_post, latest_message_id, delete_on_change, notify)
+    return AutoDailySettings(guild, channel, can_post, latest_message_id, delete_on_change, notify, latest_message_create_date, latest_message_modify_date)
 
 
 def _prepare_create_autodaily_settings(guild_id: int) -> list:
@@ -300,14 +311,15 @@ def fix_prefixes() -> bool:
     return all_success
 
 
-def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False) -> List[AutoDailySettings]:
-    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, without_latest_message_id=without_latest_message_id, only_guild_ids=True)
+def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+    db_autodaily_settings = db_get_autodaily_settings(guild_id=guild_id, can_post=can_post, only_guild_ids=True, no_post_yet=no_post_yet)
     result = []
     for db_autodaily_setting in db_autodaily_settings:
         guild_id = db_autodaily_setting[0]
         if guild_id:
             autodaily_setting = create_autodaily_settings(bot, guild_id)
-            result.append(autodaily_setting)
+            if not no_post_yet or autodaily_setting.latest_message_create_date:
+                result.append(autodaily_setting)
     return result
 
 
@@ -475,18 +487,18 @@ def db_delete_server_settings(guild_id: int) -> bool:
     return success
 
 
-def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, without_latest_message_id: bool = False, only_guild_ids: bool = False) -> list:
+def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> list:
     wheres = ['(dailychannelid IS NOT NULL or dailynotifyid IS NOT NULL)']
     if guild_id is not None:
         wheres.append(util.db_get_where_string('guildid', util.db_convert_text(str(guild_id))))
     if can_post is not None:
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
-    if without_latest_message_id is True:
-        wheres.append(util.db_get_where_string('dailylatestmessageid', None))
+    if no_post_yet is True:
+        wheres.append(util.db_get_where_string('dailylatestmessagecreatedate', None))
     if only_guild_ids:
         setting_names = ['guildid']
     else:
-        setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange', 'dailynotifyid', 'dailynotifytype']
+        setting_names = ['guildid', 'dailychannelid', 'dailycanpost', 'dailylatestmessageid', 'dailydeleteonchange', 'dailynotifyid', 'dailynotifytype', 'dailylatestmessagecreatedate', 'dailylatestmessagemodifydate']
     settings = _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
     for setting in settings:
@@ -502,7 +514,9 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, witho
                 util.db_convert_to_int(setting[3]),
                 util.db_convert_to_boolean(setting[4]),
                 util.db_convert_to_int(setting[5]),
-                convert_to_autodaily_notify_type(setting[6])
+                convert_to_autodaily_notify_type(setting[6]),
+                util.db_convert_to_datetime(setting[7]),
+                util.db_convert_to_datetime(setting[8])
             ))
     if not result:
         if guild_id:
@@ -520,16 +534,6 @@ def db_get_daily_channel_id(guild_id: int) -> int:
     if settings:
         for setting in settings:
             return util.db_convert_to_int(setting[0])
-    else:
-        return None
-
-
-def db_get_daily_can_post(guild_id: int) -> bool:
-    setting_names = ['dailycanpost']
-    settings = _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return util.db_convert_to_boolean(setting[0])
     else:
         return None
 
@@ -599,7 +603,6 @@ def db_reset_autodaily_channel(guild_id: int) -> bool:
         if current_setting is not None:
             settings = {
                 'dailychannelid': 'NULL',
-                'dailycanpost': 'NULL',
                 'dailylatestmessageid': 'NULL',
             }
             success = _db_update_server_setting(guild_id, settings)
@@ -650,7 +653,6 @@ def db_reset_autodaily_settings(guild_id: int) -> bool:
         if current_setting is not None:
             settings = {
                 'dailychannelid': 'NULL',
-                'dailycanpost': 'NULL',
                 'dailylatestmessageid': 'NULL',
                 'dailydeleteonchange': 'NULL',
                 'dailynotifyid': 'NULL',
@@ -693,22 +695,23 @@ def db_reset_use_pagination(guild_id: int) -> bool:
     return True
 
 
-def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, notify_id: int = None, notify_type: AutoDailyNotifyType = None) -> bool:
+def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, notify_id: int = None, notify_type: AutoDailyNotifyType = None, latest_message_modify_date: datetime.datetime = None) -> bool:
     autodaily_settings = db_get_autodaily_settings(guild_id)
-    current_channel_id = None
     current_can_post = None
+    current_channel_id = None
     current_latest_message_id = None
     current_delete_on_change = None
     current_notify_id = None
     current_notify_type = None
     if autodaily_settings:
-        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change, current_notify_id, current_notify_type) = autodaily_settings[0]
+        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change, current_notify_id, current_notify_type, current_latest_message_create_date, current_latest_message_modify_date) = autodaily_settings[0]
     if (current_channel_id != channel_id
-            or current_can_post != can_post
             or current_latest_message_id != latest_message_id
+            or current_can_post != can_post
             or current_delete_on_change != delete_on_change
             or current_notify_id != notify_id
-            or current_notify_type != notify_type):
+            or current_notify_type != notify_type
+            or latest_message_modify_date and (current_latest_message_create_date is None or current_latest_message_modify_date != latest_message_modify_date)):
         settings = {}
         if channel_id is not None:
             settings['dailychannelid'] = util.db_convert_text(channel_id)
@@ -722,18 +725,11 @@ def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post
             settings['dailynotifyid'] = util.db_convert_text(notify_id)
         if notify_type is not None:
             settings['dailynotifytype'] = util.db_convert_text(convert_from_autodaily_notify_type(notify_type))
+        if latest_message_modify_date is not None:
+            settings['dailylatestmessagemodifydate'] = util.db_convert_timestamp(latest_message_modify_date)
+            if current_latest_message_create_date is None:
+                settings['dailylatestmessagecreatedate'] = settings['dailylatestmessagemodifydate']
         success = not settings or _db_update_server_setting(guild_id, settings)
-        return success
-    return True
-
-
-def db_update_daily_can_post(guild_id: int, can_post: bool) -> bool:
-    current_daily_can_post = db_get_daily_channel_id(guild_id)
-    if not current_daily_can_post or can_post != current_daily_can_post:
-        settings = {
-            'dailycanpost': util.convert_to_boolean(can_post),
-        }
-        success = _db_update_server_setting(guild_id, settings)
         return success
     return True
 
@@ -743,7 +739,6 @@ def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
     if not current_daily_channel_id or channel_id != current_daily_channel_id:
         settings = {
             'dailychannelid': util.db_convert_text(channel_id),
-            'dailycanpost': util.convert_to_boolean(True),
             'dailylatestmessageid': 'NULL'
         }
         success = _db_update_server_setting(guild_id, settings)
