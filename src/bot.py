@@ -151,7 +151,8 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 async def post_dailies_loop() -> None:
     utc_now = util.get_utcnow()
     while utc_now < settings.POST_AUTODAILY_FROM:
-        await asyncio.sleep(util.get_seconds_to_wait(30, utc_now=utc_now))
+        wait_for = util.get_seconds_to_wait(60, utc_now=utc_now)
+        await asyncio.sleep(wait_for)
         utc_now = util.get_utcnow()
 
     while True:
