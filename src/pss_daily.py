@@ -75,7 +75,7 @@ def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
             print(f'[try_store_daily_channel] failed to insert new data row: {guild_id} ({text_channel_id})')
     else:
         if str(rows[0][1]) != str(text_channel_id):
-            success = update_daily_channel(guild_id, text_channel_id, True)
+            success = update_daily_channel(guild_id, text_channel_id, None)
             if success == False:
                 print(f'[try_store_daily_channel] failed to update data row: {guild_id} ({text_channel_id})')
         else:
@@ -114,17 +114,6 @@ def try_remove_daily_channel(guild_id: int) -> bool:
     success = server_settings.db_reset_autodaily_settings(guild_id)
     if success == False:
         print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
-    return success
-
-
-def fix_daily_channel(guild_id: int, latest_message_id: int = None) -> bool:
-    success = update_daily_channel(guild_id, None)
-    if success:
-        if latest_message_id:
-            success = server_settings.db_update_daily_latest_message_id(guild_id, latest_message_id)
-        else:
-            success = server_settings.db_reset_autodaily_latest_message_id(guild_id)
-
     return success
 
 
@@ -220,7 +209,7 @@ def update_daily_channel(guild_id: int, channel_id: int = None, latest_message_i
     if channel_id is not None:
         success = success and server_settings.db_update_daily_channel_id(guild_id, channel_id)
     if latest_message_id is not None:
-        success = success and server_settings.db_update_daily_latest_message_id(guild_id, latest_message_id)
+        success = success and server_settings.db_update_daily_latest_message(guild_id, latest_message_id)
     return success
 
 

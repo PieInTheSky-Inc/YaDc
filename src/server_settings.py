@@ -13,7 +13,7 @@ import pss_core as core
 
 # ---------- Constants ----------
 
-__AUTODAILY_SETTING_COUNT = 7
+__AUTODAILY_SETTING_COUNT = 9
 
 
 _VALID_PAGINATION_SWITCH_VALUES = {
@@ -318,7 +318,7 @@ def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, 
         guild_id = db_autodaily_setting[0]
         if guild_id:
             autodaily_setting = create_autodaily_settings(bot, guild_id)
-            if not no_post_yet or autodaily_setting.latest_message_create_date:
+            if not (no_post_yet and autodaily_setting.latest_message_create_date):
                 result.append(autodaily_setting)
     return result
 
@@ -515,8 +515,8 @@ def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_
                 util.db_convert_to_boolean(setting[4]),
                 util.db_convert_to_int(setting[5]),
                 convert_to_autodaily_notify_type(setting[6]),
-                util.db_convert_to_datetime(setting[7]),
-                util.db_convert_to_datetime(setting[8])
+                setting[7],
+                setting[8]
             ))
     if not result:
         if guild_id:
@@ -545,6 +545,16 @@ def db_get_daily_delete_on_change(guild_id: int) -> bool:
         for setting in settings:
             result = util.db_convert_to_boolean(setting[0])
             return result
+    else:
+        return None
+
+
+def db_get_daily_latest_message_create_date(guild_id: int) -> datetime.datetime:
+    setting_names = ['dailylatestmessagecreatedate']
+    settings = _db_get_server_settings(guild_id, setting_names=setting_names)
+    if settings:
+        for setting in settings:
+            return setting[0]
     else:
         return None
 
@@ -757,12 +767,23 @@ def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> b
     return True
 
 
-def db_update_daily_latest_message_id(guild_id: int, message_id: int) -> bool:
+def db_update_daily_latest_message(guild_id: int, message: discord.Message) -> bool:
     current_daily_latest_message_id = db_get_daily_latest_message_id(guild_id)
-    if not current_daily_latest_message_id or message_id != current_daily_latest_message_id:
+    current_daily_latest_message_create_date = db_get_daily_latest_message_create_date(guild_id)
+    new_day = message.created_at.day != current_daily_latest_message_create_date.day
+    if new_day:
+        modify_date = message.created_at
+    else:
+        modify_date = message.edited_at or message.created_at
+
+    if message and (not current_daily_latest_message_id or message.id != current_daily_latest_message_id):
         settings = {
-            'dailylatestmessageid': util.db_convert_text(message_id)
+            'dailylatestmessageid': util.db_convert_text(message.id),
+            'dailylatestmessagemodifydate': util.db_convert_timestamp(modify_date)
         }
+        if new_day:
+            settings['dailylatestmessagecreatedate'] = util.db_convert_timestamp(message.created_at)
+
         success = _db_update_server_setting(guild_id, settings)
         return success
     return True

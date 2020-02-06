@@ -108,7 +108,7 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     core.init_db()
-    #bot.loop.create_task(post_dailies_loop())
+    bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
@@ -151,7 +151,7 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 async def post_dailies_loop() -> None:
     while True:
         utc_now = util.get_utcnow()
-        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=datetime.timezone.utc) - settings.ONE_SECOND
+        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
 
         daily_info = daily.get_daily_info()
         db_daily_info, db_daily_modify_date = daily.db_get_daily_info()
@@ -167,16 +167,18 @@ async def post_dailies_loop() -> None:
             autodaily_settings.extend(post_here)
 
         created_output = False
+        posted_count = 0
         if autodaily_settings:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
-            print(f'[post_dailies_loop] going to post to {len(post_here)} guilds')
+            print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
             latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
             latest_daily_message = '\n'.join(latest_message_output)
             output, created_output = dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
-                await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
+                posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
+            print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed:
             seconds_to_wait = 300.0
@@ -187,18 +189,23 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> None:
+async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> int:
+    posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            can_post, latest_message_id = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
-            await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
+            posted, can_post, latest_message_id = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            if posted:
+                posted_count += 1
+                await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
             server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id, latest_message_modify_date=utc_now)
+    return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, str):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, str):
     """
-    Returns (can_post, latest_message_id)
+    Returns (posted, can_post, latest_message_id)
     """
+    posted = False
     if text_channel and current_daily_message:
         error_msg_delete = f'could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
@@ -212,8 +219,8 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         can_post = True
         latest_message: discord.Message = None
 
-        if can_post and latest_message_id:
-            latest_message, can_post = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
+        if can_post:
+            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
@@ -235,6 +242,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                 elif delete_on_change is False:
                     try:
                         await latest_message.edit(content=current_daily_message)
+                        posted = True
                         print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except discord.NotFound:
                         print(f'[post_autodaily] {error_msg_edit}: the message could not be found')
@@ -250,6 +258,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
             if can_post and post_new:
                 try:
                     latest_message = await text_channel.send(current_daily_message)
+                    posted = True
                     print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except discord.Forbidden:
                     print(f'[post_autodaily] {error_msg_post}: the bot doesn\'t have the required permissions.')
@@ -261,11 +270,11 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
             can_post = False
 
         if latest_message:
-            return can_post, latest_message.id
+            return posted, can_post, latest_message.id
         else:
-            return can_post, None
+            return posted, can_post, None
     else:
-        return None, None
+        return posted, None, None
 
 
 async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str) -> (bool, discord.Message):
@@ -277,7 +286,7 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
     result: discord.Message = None
 
     if text_channel:
-        if latest_message_id:
+        if latest_message_id is not None:
             try:
                 result = await text_channel.fetch_message(latest_message_id)
                 print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
@@ -1740,7 +1749,13 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
                 success = True
                 if autodaily_settings.channel_id != text_channel.id:
-                    success = server_settings.db_update_daily_latest_message_id(ctx.guild.id, None)
+                    utc_now = util.get_utcnow()
+                    yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=datetime.timezone.utc) - settings.ONE_SECOND
+                    db_daily_info, _ = daily.db_get_daily_info()
+                    latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+                    latest_daily_message = '\n'.join(latest_message_output)
+                    latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
+                    success = server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
                     output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
