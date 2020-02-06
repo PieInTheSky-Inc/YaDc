@@ -945,6 +945,7 @@ def db_try_rollback() -> None:
 
 
 def db_get_setting(setting_name: str) -> (object, datetime):
+    modify_date: datetime = None
     where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
     query = f'SELECT * FROM settings WHERE {where_string}'
     try:
@@ -967,7 +968,7 @@ def db_get_setting(setting_name: str) -> (object, datetime):
         else:
             return (None, modify_date)
     else:
-        return (None, None)
+        return (None, modify_date)
 
 
 def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
@@ -988,12 +989,12 @@ def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -
         db_value = util.db_convert_text(value)
         column_name = 'settingtext'
 
-    setting, _ = db_get_setting(setting_name)
+    setting, modify_date = db_get_setting(setting_name)
     if utc_now is None:
         utc_now = util.get_utcnow()
     modify_date = util.db_convert_timestamp(utc_now)
     query = ''
-    if setting is None:
+    if setting is None and modify_date is None:
         query = f'INSERT INTO settings (settingname, modifydate, {column_name}) VALUES ({util.db_convert_text(setting_name)}, {modify_date}, {db_value})'
     elif setting != value:
         where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
