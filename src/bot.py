@@ -149,6 +149,11 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 # ----- Tasks ----------------------------------------------------------
 async def post_dailies_loop() -> None:
+    utc_now = util.get_utcnow()
+    while utc_now < settings.POST_AUTODAILY_FROM:
+        await asyncio.sleep(util.get_seconds_to_wait(30, utc_now=utc_now))
+        utc_now = util.get_utcnow()
+
     while True:
         utc_now = util.get_utcnow()
         yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND

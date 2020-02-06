@@ -31,6 +31,7 @@ MIN_ENTITY_NAME_LENGTH = 3
 
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 
+POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
 PREFIX_DEFAULT = '/'
 PRINT_DEBUG = False
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
