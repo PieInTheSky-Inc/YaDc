@@ -230,6 +230,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
+                latest_message_id = latest_message.id
                 if latest_message.content == current_daily_message:
                     post_new = False
                 elif delete_on_change is True:
