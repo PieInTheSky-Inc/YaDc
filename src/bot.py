@@ -1728,7 +1728,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                 success = True
                 if autodaily_settings.channel_id != text_channel.id:
                     utc_now = util.get_utcnow()
-                    yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=datetime.timezone.utc) - settings.ONE_SECOND
+                    yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
                     db_daily_info, _ = daily.db_get_daily_info()
                     latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
                     latest_daily_message = '\n'.join(latest_message_output)
