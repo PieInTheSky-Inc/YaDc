@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractstaticmethod
 import discord
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from cache import PssCache
 import pss_core as core
@@ -18,8 +18,31 @@ import settings
 
 
 
+class EntityDesignDetailProperty(object):
+    def __init__(self, display_name: Union[str, Callable[[list], str]], transform_function: Callable[[list], str], entity_info_property_names: List[str], force_display_name: bool):
+        if isinstance(display_name, str):
+            self.__display_name: str = display_name
+            self.__display_name_function: Callable[[list], str] = None
+        elif isinstance(display_name, Callable[[list], str]):
+            self.__display_name: str = None
+            self.__display_name_function: Callable[[list], str] = display_name
+        else:
+            raise TypeError()
+
+
+
+
+
+
+
+
+
+
 class EntityDesignDetails(object):
     def __init__(self, entity_design_info: Dict[str, object], name_property_name: str, description_property_name: str, properties_long_text: List[Dict[str, object]], properties_short_text: List[Dict[str, object]], properties_embed: List[Dict[str, object]], entities_designs_data: Optional[Dict[str, Dict[str, object]]] = None):
+        """
+        _coroutine_
+        """
         self.__entity_design_info: Dict[str, object] = entity_design_info
         self.__name_property_name: str = name_property_name
         self.__description_property_name: str = description_property_name
@@ -61,8 +84,9 @@ class EntityDesignDetails(object):
         #return EntityDesignDetails._get_details_as_text_short(self.name, self.details_short)
 
 
-    #@staticmethod
-    #def _get
+    @staticmethod
+    def _get_properties():
+        pass
 
 
     @staticmethod
