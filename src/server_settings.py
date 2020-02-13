@@ -768,23 +768,27 @@ def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> b
 
 
 def db_update_daily_latest_message(guild_id: int, message: discord.Message) -> bool:
-    current_daily_latest_message_id = db_get_daily_latest_message_id(guild_id)
-    current_daily_latest_message_create_date = db_get_daily_latest_message_create_date(guild_id)
-    new_day = message.created_at.day != current_daily_latest_message_create_date.day
-    if new_day:
-        modify_date = message.created_at
-    else:
-        modify_date = message.edited_at or message.created_at
-
-    if message and (not current_daily_latest_message_id or message.id != current_daily_latest_message_id):
-        settings = {
-            'dailylatestmessageid': util.db_convert_text(message.id),
-            'dailylatestmessagemodifydate': util.db_convert_timestamp(modify_date)
-        }
+    if message:
+        current_daily_latest_message_id = db_get_daily_latest_message_id(guild_id)
+        current_daily_latest_message_create_date = db_get_daily_latest_message_create_date(guild_id)
+        new_day = message.created_at.day != current_daily_latest_message_create_date.day
         if new_day:
-            settings['dailylatestmessagecreatedate'] = util.db_convert_timestamp(message.created_at)
+            modify_date = message.created_at
+        else:
+            modify_date = message.edited_at or message.created_at
 
-        success = _db_update_server_setting(guild_id, settings)
+        if not current_daily_latest_message_id or message.id != current_daily_latest_message_id:
+            settings = {
+                'dailylatestmessageid': util.db_convert_text(message.id),
+                'dailylatestmessagemodifydate': util.db_convert_timestamp(modify_date)
+            }
+            if new_day:
+                settings['dailylatestmessagecreatedate'] = util.db_convert_timestamp(message.created_at)
+
+            success = _db_update_server_setting(guild_id, settings)
+            return success
+    else:
+        success = db_reset_autodaily_latest_message_id(guild_id)
         return success
     return True
 

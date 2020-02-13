@@ -1732,7 +1732,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                     db_daily_info, _ = daily.db_get_daily_info()
                     latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
                     latest_daily_message = '\n'.join(latest_message_output)
-                    latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
+                    _, latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
                     success = server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
                 success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
