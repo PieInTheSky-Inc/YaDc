@@ -18,8 +18,24 @@ import settings
 
 
 
+# ---------- Typing definitions ----------
+
+EntityDesignInfo = Dict[str, 'EntityDesignInfo']
+EntitiesDesignsData = Dict[str, EntityDesignInfo]
+
+
+
+
+
+
+
+
+
+
+# ---------- Classes ----------
+
 class EntityDesignDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[list], str]], transform_function: Callable[[list], str], entity_info_property_names: List[str], force_display_name: bool):
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str], force_display_name: bool):
         if isinstance(display_name, str):
             self.__display_name: str = display_name
             self.__display_name_function: Callable[[list], str] = None
@@ -27,7 +43,55 @@ class EntityDesignDetailProperty(object):
             self.__display_name: str = None
             self.__display_name_function: Callable[[list], str] = display_name
         else:
-            raise TypeError()
+            raise TypeError('The display_name must either be of type \'str\' or \'Callable[[EntityDesignInfo], ]\'.')
+
+        self.__transform_function: Callable[[EntityDesignInfo], str] = transform_function
+        self.__force_display_name: bool = force_display_name
+
+
+    @property
+    def force_display_name(self) -> bool:
+        return self.__force_display_name
+
+
+    def get_full_property(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> Tuple[str, str]:
+        if self.__force_display_name:
+            display_name = self.__get_display_name(entity_design_info, entities_designs_data)
+        else:
+            display_name = None
+        value = self.__get_value(entity_design_info, entities_designs_data)
+        return (display_name, value)
+
+
+    def __get_display_name(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> str:
+        if self.__display_name:
+            return self.__display_name
+        elif self.__display_name_function:
+            result = self.__display_name_function(entity_design_info, entities_designs_data)
+            return result
+        else:
+            return ''
+
+
+    def __get_value(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> str:
+        if self.__transform_function:
+            result = self.__transform_function(entity_design_info, entities_designs_data)
+            return result
+        else:
+            return ''
+
+
+
+
+
+
+
+
+
+
+class EntityDesignDetailEmbedProperty(EntityDesignDetailProperty):
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str]):
+        super().__init__(display_name, transform_function, True)
 
 
 
@@ -39,102 +103,90 @@ class EntityDesignDetailProperty(object):
 
 
 class EntityDesignDetails(object):
-    def __init__(self, entity_design_info: Dict[str, object], name_property_name: str, description_property_name: str, properties_long_text: List[Dict[str, object]], properties_short_text: List[Dict[str, object]], properties_embed: List[Dict[str, object]], entities_designs_data: Optional[Dict[str, Dict[str, object]]] = None):
+    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: List[EntityDesignDetailProperty], entities_designs_data: Optional[EntitiesDesignsData] = None):
         """
-        _coroutine_
+
         """
-        self.__entity_design_info: Dict[str, object] = entity_design_info
-        self.__name_property_name: str = name_property_name
-        self.__description_property_name: str = description_property_name
-        self.__properties_long_text: List[Dict[str, object]] = properties_long_text
-        self.__properties_short_text: List[Dict[str, object]] = properties_short_text
-        self.__properties_embed: List[Dict[str, object]] = properties_embed
+        self.__entities_designs_data: EntitiesDesignsData = entities_designs_data
+        self.__entity_design_info: EntityDesignInfo = entity_design_info
+        self.__title_property: EntityDesignDetailProperty = title
+        self.__description_property: EntityDesignDetailProperty = description
+        self.__properties_long: List[EntityDesignDetailProperty] = properties_long
+        self.__properties_short: List[EntityDesignDetailProperty] = properties_short
+        self.__properties_embed: List[EntityDesignDetailProperty] = properties_embed
+        self.__title: str = None
+        self.__description: str = None
+        self.__details_embed: List[Tuple[str, str]] = None
+        self.__details_long: List[Tuple[str, str]] = None
+        self.__details_short: List[Tuple[str, str]] = None
 
 
-    #def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None):
-    #    self.__name: str = name or None
-    #    self.__description: str = description or None
-    #    self.__details_long: List[Tuple[str, str]] = details_long or []
-    #    self.__details_short: List[Tuple[str, str, bool]] = details_short or []
-    #    self.__hyperlink: str = hyperlink or None
-
+    @property
+    def title(self) -> str:
+        if self.__title is None:
+            self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+        return self.__title
 
     @property
     def description(self) -> str:
-        return self.__entity_design_info[self.__description_property_name]
+        if self.__description is None:
+            self.__description: str = self.__description_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+        return self.__description
 
     @property
-    def name(self) -> str:
-        return self.__entity_design_info[self.__name_property_name]
+    def details_embed(self) -> List[Tuple[str, str]]:
+        if self.__details_embed is None:
+            self.__details_embed = self._get_properties(self.__properties_embed)
+        return self.__details_embed
+
+    @property
+    def details_long(self) -> List[Tuple[str, str]]:
+        if self.__details_long is None:
+            self.__details_long = self._get_properties(self.__properties_long)
+        return self.__details_long
+
+    @property
+    def details_short(self) -> List[Tuple[str, str]]:
+        if self.__details_short is None:
+            self.__details_short = self._get_properties(self.__properties_short)
+        return self.__details_short
 
 
     def get_details_as_embed(self) -> discord.Embed:
-        result = discord.Embed()
-        result.title = self.name
-        result.description = self.description
+        result = discord.Embed(title=self.title, description=self.description)
+        for detail in self.details_embed:
+            result.add_field(name=detail.name, value=detail.value)
+        return result
 
 
     def get_details_as_text_long(self) -> List[str]:
-        pass
-        #return EntityDesignDetails._get_details_as_text_long(self.name, self.description, self.details_long, self.link)
+        result = []
+        result.append(f'**{self.title}**')
+        result.append(f'_{self.description}_')
+        for detail in self.details_long:
+            if detail.force_display_name:
+                result.append(f'{detail.name} = {detail.value}')
+            else:
+                result.append(detail.value)
+        return result
 
 
     def get_details_as_text_short(self) -> List[str]:
-        pass
-        #return EntityDesignDetails._get_details_as_text_short(self.name, self.details_short)
-
-
-    @staticmethod
-    def _get_properties():
-        pass
-
-
-    @staticmethod
-    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]], link: str) -> discord.Embed:
-        result = discord.Embed()
-        if title:
-            result.title = title
-        if description:
-            result.description = description
-        if details:
-            for (detail_name, detail_value) in details:
-                result.add_field(name=detail_name, value=detail_value)
-        if link:
-            result.set_footer(text=link)
+        details = []
+        for detail in self.details_short:
+            if detail.force_display_name:
+                details.append(f'{detail.name} = {detail.value}')
+            else:
+                details.append(detail.value)
+        result = f'{self.title} ({", ".join(details)})'
         return result
 
 
-    @staticmethod
-    def _get_details_as_text_long(title: str, description: str, details: List[Tuple[str,str]], link: str) -> List[str]:
-        result = []
-        if title:
-            result.append(f'**{title}**')
-        if description:
-            result.append(f'_{description}_')
-        if details:
-            for (detail_name, detail_value) in details:
-                if detail_value:
-                    result.append(f'{detail_name} = {detail_value}')
-        if link:
-            result.append(f'<{link}>')
-        return result
-
-
-    @staticmethod
-    def _get_details_as_text_short(title: str, details: List[Tuple[str,str]]) -> List[str]:
-        result = []
-        if title:
-            result.append(title)
-        if details:
-            result_details = []
-            for (detail_name, detail_value, include_detail_name) in details:
-                if detail_value:
-                    if include_detail_name and detail_name:
-                        result_details.append(f'{detail_name}: {detail_value}')
-                    else:
-                        result_details.append(detail_value)
-            result.append(f'({", ".join(result_details)})')
-        result = [' '.join(result)]
+    def _get_properties(self, properties: List[EntityDesignDetailProperty]):
+        result: List[Tuple[str, str]] = []
+        entity_design_detail_property: EntityDesignDetailProperty = None
+        for entity_design_detail_property in properties:
+            result.append(entity_design_detail_property.get_full_property(self.__entity_design_info, self.__entities_designs_data))
         return result
 
 
