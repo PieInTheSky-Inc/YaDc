@@ -35,6 +35,7 @@ import pss_dropship as dropship
 import pss_exception
 import pss_fleet as fleet
 import pss_item as item
+import pss_login as login
 import pss_lookups as lookups
 import pss_research as research
 import pss_room as room
@@ -1948,6 +1949,15 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
+
+
+@bot.command(brief='test logging in', name='login', hidden=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_login(ctx: discord.ext.commands.Context, device_key: str = None):
+    device_key, data = login.login(device_key=device_key)
+    access_token = data['UserService']['UserLogin']['accessToken']
+    await ctx.send(f'Device key:{device_key}\nAccess token: {access_token}')
 
 
 
