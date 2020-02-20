@@ -703,6 +703,8 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
+    NOTE: Due to Savy having changed something in the API, this command doesn't work currently and has been disabled temporarily.
+
     Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
     Usage:
@@ -718,6 +720,10 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
     Notes:
       If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
+    if settings.ISSUE88:
+        await ctx.send('The `/stars fleet` command has been temporarily disabled due to external factors.')
+        return ''
+
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
@@ -1177,6 +1183,8 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
+    NOTE: Due to Savy having changed something in the API, this command doesn't work currently and has been disabled temporarily.
+
     Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
     Usage:
@@ -1187,8 +1195,12 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
       fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
 
     Examples:
-      /fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'.Upon selection prints fleet details and posts the spreadsheet.
+      /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
     """
+    if settings.ISSUE88:
+        await ctx.send('The `/fleet` command has been temporarily disabled due to external factors.')
+        return ''
+
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
@@ -1246,6 +1258,8 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         if user_info:
             async with ctx.typing():
                 output = user.get_user_details_by_info(user_info)
+                if settings.ISSUE88:
+                    output.append('_**Note:** A player\'s fleet data can\'t be retrieved temporarily._')
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
