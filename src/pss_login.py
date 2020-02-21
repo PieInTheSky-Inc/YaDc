@@ -84,13 +84,13 @@ class Device():
         with self.__token_lock:
             if self.access_token_expired:
                 if self.can_login:
-                    self.login()
+                    self.__login()
                 else:
                     raise Exception('Cannot login currently. Please try again later.')
         return self.__access_token
 
 
-    def login(self) -> None:
+    def __login(self) -> None:
         utc_now = util.get_utcnow()
         if not self.__key:
             self.__key = create_device_key()
@@ -162,8 +162,10 @@ class DeviceCollection():
         for existing_device in self.__devices:
             if existing_device.key == device.key:
                 return
+        db_try_store_device(device)
         self.__devices.append(device)
         self.__fix_position()
+        # TODO: select added device
 
 
     def add_devices(self, devices: List[Device]) -> None:
@@ -171,23 +173,27 @@ class DeviceCollection():
             self.add_device(device)
 
 
-    def add_device_by_key(self, device_key: str) -> None:
+    def add_device_by_key(self, device_key: str) -> Device:
         for existing_device in self.__devices:
             if existing_device.key == device_key:
                 return
-        self.__devices.append(Device(device_key))
+        device = Device(device_key)
+        db_try_store_device(device)
+        self.__devices.append(device)
         self.__fix_position()
+        return device
+
+
+    def create_device(self) -> Device:
+        device = Device(create_device_key())
+        db_try_store_device(device)
+        self.add_device(device)
+        self.__fix_position()
+        return device
 
 
     def remove_device(self, device: Device) -> None:
-        if self.count == 0:
-            raise Exception('Cannot remove device. There\'re no devices!')
-        for existing_device in self.__devices:
-            if existing_device.key == device.key:
-                self.__devices.remove(device)
-                self.__fix_position()
-                return
-        raise Exception('Cannot remove device. The specified device does not exist!')
+        self.remove_device_by_key(device.key)
 
 
     def remove_device_by_key(self, device_key: str) -> None:
@@ -195,6 +201,7 @@ class DeviceCollection():
             raise Exception('Cannot remove device. There\'re no devices!')
         for existing_device in self.__devices:
             if existing_device.key == device_key:
+                db_try_delete_device(existing_device)
                 self.__devices = [device for device in self.__devices if device.key != device_key]
                 self.__fix_position()
                 return
@@ -203,19 +210,20 @@ class DeviceCollection():
 
     def get_access_token(self) -> str:
         with self.__token_lock:
-            if self.count == 0:
+            count = self.count
+            if count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
             result: str = None
             current: Device = None
-            started_at = self.__position
+            end_at = (self.__position - 1) % count
             while True:
+                current = self.current
                 try:
-                    current = self.current
                     result = current.get_access_token()
                     break
                 except:
                     self.__select_next()
-                    if started_at == self.__position:
+                    if end_at == self.__position:
                         break
             if result is None:
                 raise Exception('Cannot get access token. No device has been able to retrieve one!')
