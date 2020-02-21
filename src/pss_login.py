@@ -121,7 +121,9 @@ class Device():
 
     def __set_can_login_until(self, last_login: datetime.datetime) -> None:
         if not self.__can_login_until or last_login > self.__can_login_until:
-            self.__can_login_until = last_login + FIFTEEN_HOURS
+            next_day = util.get_next_day(self.__can_login_until)
+            login_until = last_login + FIFTEEN_HOURS
+            self.__can_login_until = min(login_until, next_day)
 
 
 

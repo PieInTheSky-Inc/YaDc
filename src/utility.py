@@ -15,6 +15,9 @@ import pss_lookups as lookups
 import settings
 
 
+ONE_DAY = timedelta(days=1)
+
+
 def load_json_from_file(file_path: str) -> str:
     result = None
     with open(file_path) as fp:
@@ -568,6 +571,12 @@ def get_exact_args(ctx: discord.ext.commands.Context) -> str:
         return args
     except:
         return ''
+
+def get_next_day(utc_now: datetime = None) -> datetime:
+    utc_now = utc_now or get_utcnow()
+    result = datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=timezone.utc)
+    result = result + ONE_DAY
+    return result
 
 
 
