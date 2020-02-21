@@ -109,8 +109,6 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
-    core.init_db()
-    login.init()
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -2058,5 +2056,7 @@ async def cmd_device_login(ctx: discord.ext.commands.Context):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     print(f'discord.py version: {discord.__version__}')
+    core.init_db()
+    login.init()
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
