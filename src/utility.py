@@ -642,6 +642,7 @@ def db_convert_text(value: object) -> str:
         result = ''
     return result
 
+
 def db_convert_timestamp(datetime: datetime) -> str:
     """Convert from python datetime to postgresql TIMESTAMPTZ"""
     if datetime:
@@ -649,6 +650,7 @@ def db_convert_timestamp(datetime: datetime) -> str:
         return result
     else:
         return db_convert_text(None)
+
 
 def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
     """Convert from postgresql BOOLEAN to python bool"""
@@ -662,6 +664,7 @@ def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool
     else:
         return False
 
+
 def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> datetime:
     """Convert from postgresql TIMESTAMPTZ to python datetime"""
     if db_timestamp is None:
@@ -669,12 +672,14 @@ def db_convert_to_datetime(db_timestamp: str, default_if_none: bool = None) -> d
     result = datetime.strptime(db_timestamp, DB_TIMESTAMP_FORMAT)
     return result
 
+
 def db_convert_to_int(db_int: str, default_if_none: bool = None) -> int:
     """Convert from postgresql INTEGER to python int"""
     if db_int is None:
         return default_if_none
     result = int(db_int)
     return result
+
 
 def db_convert_to_float(db_float: str, default_if_none: bool = None) -> float:
     """Convert from postgresql NUMERIC to python float"""
