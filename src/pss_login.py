@@ -308,11 +308,13 @@ def db_get_devices() -> List[Device]:
 
 
 def _db_try_create_device(device: Device) -> bool:
-    key = util.db_convert_text(device.key)
-    checksum = util.db_convert_text(device.checksum)
-    can_login_until = util.db_convert_timestamp(device.can_login_until)
-    query = f'INSERT INTO devices VALUES ({key}, {checksum}, {can_login_until})'
+    db_key = util.db_convert_text(device.key)
+    db_checksum = util.db_convert_text(device.checksum)
+    db_login_until = util.db_convert_timestamp(device.can_login_until)
+    query = f'INSERT INTO devices VALUES ({db_key}, {db_checksum}, {db_login_until})'
     success = core.db_try_execute(query)
+    if success:
+        DEVICES.add_device_by_key(device.key)
     return success
 
 
@@ -320,6 +322,8 @@ def db_try_delete_device(device: Device) -> bool:
     where = util.db_get_where_string('key', device.key, is_text_type=True)
     query = f'DELETE FROM devices WHERE {where}'
     success = core.db_try_execute(query)
+    if success:
+        DEVICES.remove_device_by_key(device.key)
     return success
 
 
