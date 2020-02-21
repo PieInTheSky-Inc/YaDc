@@ -706,8 +706,6 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
-    NOTE: Due to Savy having changed something in the API, this command doesn't work currently and has been disabled temporarily.
-
     Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
     Usage:
@@ -1182,8 +1180,6 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     """
-    NOTE: Due to Savy having changed something in the API, this command doesn't work currently and has been disabled temporarily.
-
     Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
     Usage:
