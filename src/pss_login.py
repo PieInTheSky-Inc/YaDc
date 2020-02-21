@@ -36,6 +36,18 @@ DEVICES: 'DeviceCollection' = None
 
 # ---------- Classes ----------
 
+class LoginError(Exception):
+    """
+    Raised, when an error occurs during login.
+    """
+    pass
+
+class DeviceInUseError(LoginError):
+    """
+    Raised, when a device belongs to a real account.
+    """
+    pass
+
 class Device():
     def __init__(self, device_key: str, checksum: str = None, can_login_until: datetime.datetime = None):
         self.__key: str = device_key
@@ -86,7 +98,7 @@ class Device():
                 if self.can_login:
                     self.__login()
                 else:
-                    raise Exception('Cannot login currently. Please try again later.')
+                    raise LoginError('Cannot login currently. Please try again later.')
         return self.__access_token
 
 
@@ -104,8 +116,14 @@ class Device():
         result = core.convert_raw_xml_to_dict(data)
         self.__last_login = utc_now
         if 'UserService' in result.keys():
+            user = result['UserService']['UserLogin']['User']
+
+            if user.get('Name', None):
+                self.__user = None
+                self.__access_token = None
+                raise DeviceInUseError('Cannot login. The device is already in use.')
+            self.__user = user
             self.__access_token = result['UserService']['UserLogin']['accessToken']
-            self.__user = result['UserService']['UserLogin']['User']
             self.__set_can_login_until(utc_now)
         else:
             self.__access_token = None
@@ -208,25 +226,38 @@ class DeviceCollection():
         raise Exception('Cannot remove device. A device with the specified key does not exist!')
 
 
+    def select_device(self, device_key: str) -> Device:
+        if self.count == 0:
+            raise Exception('Cannot select a device. There\'re no devices!')
+        for i, device in enumerate(self.__devices):
+            if device_key == device.key:
+                self.__position = i
+                return device
+        raise Exception(f'Could not find device with key \'{device_key}\'')
+
+
+
     def get_access_token(self) -> str:
         with self.__token_lock:
-            count = self.count
-            if count == 0:
+            if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
             result: str = None
             current: Device = None
-            end_at = (self.__position - 1) % count
-            while True:
+            tried_devices: int = 0
+            while tried_devices < self.count:
                 current = self.current
                 try:
+                    tried_devices += 1
                     result = current.get_access_token()
                     break
-                except:
+                except DeviceInUseError:
+                    self.remove_device(current)
+                except Exception as err:
+                    print(f'[DeviceCollection.get_access_token] Could not log in:\n{err}')
                     self.__select_next()
-                    if end_at == self.__position:
-                        break
+                current = self.current
             if result is None:
-                raise Exception('Cannot get access token. No device has been able to retrieve one!')
+                raise LoginError('Cannot get access token. No device has been able to retrieve one!')
             if current is not None:
                 _db_try_update_device(current)
             return result
