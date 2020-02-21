@@ -2050,6 +2050,18 @@ async def cmd_device_login(ctx: discord.ext.commands.Context):
         await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
 
 
+@cmd_device.command(brief='select a device', name='select')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
+    """
+    Attempts to select a device with the given device_key from the DB.
+    """
+    async with ctx.typing():
+        device = login.DEVICES.select_device(device_key)
+    await ctx.send(f'Selected device \'{device.key}\'.')
+
+
 
 
 
