@@ -8,6 +8,7 @@ import os
 import emojis
 import pss_assert
 import pss_core as core
+import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
 import settings
@@ -16,7 +17,6 @@ import utility as util
 
 # ---------- Constants ----------
 TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
-TOP_CAPTAINS_BASE_PATH = f'LadderService/ListUsersByRanking?accessToken={settings.GPAT}&from=1&to='
 STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
 
 ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
@@ -68,7 +68,8 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 # ---------- Top 100 Captains ----------
 
 def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    raw_data = core.get_data_from_path(TOP_CAPTAINS_BASE_PATH + str(take))
+    path = _get_top_captains_path(take)
+    raw_data = core.get_data_from_path(path)
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
@@ -99,6 +100,13 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
             break
 
     return lines
+
+
+def _get_top_captains_path(take: int):
+    access_token = login.DEVICES.get_access_token()
+    result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to='
+    return result
+
 
 
 

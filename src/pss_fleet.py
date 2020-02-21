@@ -11,6 +11,7 @@ import excel
 import pss_assert
 import pss_core as core
 import pss_fleet as fleet
+import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
 import pss_user as user
@@ -20,12 +21,8 @@ import utility as util
 
 # ---------- Constants ----------
 
-SEARCH_FLEETS_BASE_PATH = f'AllianceService/SearchAlliances?accessToken={settings.GPAT}&skip=0&take=100&name='
-GET_ALLIANCE_BASE_PATH = f'AllianceService/GetAlliance?accessToken={settings.GPAT}&allianceId='
 FLEET_KEY_NAME = 'AllianceId'
 FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
-
-SEARCH_FLEET_USERS_BASE_PATH = f'AllianceService/ListUsers?accessToken={settings.GPAT}&skip=0&take=100&allianceId='
 
 FLEET_SHEET_COLUMN_NAMES = [
     'Timestamp',
@@ -168,6 +165,24 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
     return post_content, file_paths
 
 
+def _get_search_fleets_base_path(fleet_name: str) -> str:
+    access_token = login.DEVICES.get_access_token()
+    result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={util.url_escape(fleet_name)}'
+    return result
+
+
+def _get_get_alliance_base_path(fleet_id: str) -> str:
+    access_token = login.DEVICES.get_access_token()
+    result = f'AllianceService/GetAlliance?accessToken={access_token}&allianceId={fleet_id}'
+    return result
+
+
+def _get_search_fleet_users_base_path(fleet_id: str) -> str:
+    access_token = login.DEVICES.get_access_token()
+    result = f'AllianceService/ListUsers?accessToken={access_token}&skip=0&take=100&allianceId={fleet_id}'
+    return result
+
+
 
 
 
@@ -200,21 +215,21 @@ def get_fleet_search_details(fleet_info: dict) -> str:
 
 
 def _get_fleet_info_by_id(fleet_id: str) -> dict:
-    path = f'{GET_ALLIANCE_BASE_PATH}{fleet_id}'
+    path = _get_get_alliance_base_path(fleet_id)
     fleet_data_raw = core.get_data_from_path(path)
     fleet_info = core.xmltree_to_dict3(fleet_data_raw)
     return fleet_info
 
 
 def _get_fleet_infos_by_name(fleet_name: str) -> dict:
-    path = f'{SEARCH_FLEETS_BASE_PATH}{util.url_escape(fleet_name)}'
+    path = _get_search_fleets_base_path(fleet_name)
     fleet_data_raw = core.get_data_from_path(path)
     fleet_infos = core.xmltree_to_dict3(fleet_data_raw)
     return fleet_infos
 
 
 def _get_fleet_users_by_id(alliance_id: str) -> dict:
-    path = f'{SEARCH_FLEET_USERS_BASE_PATH}{alliance_id}'
+    path = _get_search_fleet_users_base_path(alliance_id)
     fleet_users_data_raw = core.get_data_from_path(path)
     fleet_users_infos = core.xmltree_to_dict3(fleet_users_data_raw)
     return fleet_users_infos

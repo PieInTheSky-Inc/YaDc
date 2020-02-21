@@ -335,7 +335,7 @@ def _db_try_update_device(device: Device) -> bool:
     checksum = util.db_convert_text(device.checksum)
     can_login_until = util.db_convert_timestamp(device.can_login_until)
     where = util.db_get_where_string('key', device.key, is_text_type=True)
-    query = f'UPDATE devices SET (key, checksum, canloginuntil) = ({key}, {checksum}, {can_login_until}) WHERE {where}'
+    query = f'UPDATE devices SET (key, checksum, loginuntil) = ({key}, {checksum}, {can_login_until}) WHERE {where}'
     success = core.db_try_execute(query)
     return success
 

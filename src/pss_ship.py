@@ -7,6 +7,7 @@ import re
 import pss_assert
 from cache import PssCache
 import pss_core as core
+import pss_login as login
 import pss_lookups as lookups
 import settings
 import utility as util
@@ -17,8 +18,6 @@ import utility as util
 SHIP_DESIGN_BASE_PATH = 'ShipService/ListAllShipDesigns2?languageKey=en'
 SHIP_DESIGN_KEY_NAME = 'ShipDesignId'
 SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
-
-INSPECT_SHIP_BASE_PATH = f'ShipService/InspectShip2?accessToken={settings.GPAT}&userId='
 
 
 
@@ -48,7 +47,7 @@ __ship_designs_cache = PssCache(
 # ---------- Helper functions ----------
 
 def get_inspect_ship_for_user(user_id: str) -> dict:
-    inspect_ship_path = f'{INSPECT_SHIP_BASE_PATH}{user_id}'
+    inspect_ship_path = _get_inspect_ship_base_path(user_id)
     inspect_ship_data = core.get_data_from_path(inspect_ship_path)
     result = core.xmltree_to_dict2(inspect_ship_data)
     return result
@@ -73,4 +72,10 @@ def get_ship_level_for_user(user_id: str) -> str:
 def get_ship_status_for_user(user_id: str) -> str:
     inspect_ship_info = get_inspect_ship_for_user(user_id)
     result = inspect_ship_info['Ship']['ShipStatus']
+    return result
+
+
+def _get_inspect_ship_base_path(user_id: str) -> str:
+    access_token = login.DEVICES.get_access_token()
+    result = f'ShipService/InspectShip2?accessToken={access_token}&userId={user_id}'
     return result

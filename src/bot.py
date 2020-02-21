@@ -723,10 +723,6 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
     Notes:
       If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
-    if settings.MISSING_ACCESS_TOKEN:
-        await ctx.send('The `/stars fleet` command has been temporarily disabled due to external factors.')
-        return ''
-
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
@@ -1200,10 +1196,6 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     Examples:
       /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
     """
-    if settings.MISSING_ACCESS_TOKEN:
-        await ctx.send('The `/fleet` command has been temporarily disabled due to external factors.')
-        return ''
-
     async with ctx.typing():
         exact_name = util.get_exact_args(ctx)
         if exact_name:
@@ -1261,8 +1253,6 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         if user_info:
             async with ctx.typing():
                 output = user.get_user_details_by_info(user_info)
-                if settings.MISSING_ACCESS_TOKEN:
-                    output.append('_**Note:** A player\'s fleet data can\'t be retrieved temporarily._')
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
