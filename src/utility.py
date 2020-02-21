@@ -648,7 +648,7 @@ def db_convert_timestamp(datetime: datetime) -> str:
         result = f'TIMESTAMPTZ \'{datetime.strftime(DB_TIMESTAMP_FORMAT)}\''
         return result
     else:
-        return None
+        return db_convert_text(None)
 
 def db_convert_to_boolean(db_boolean: str, default_if_none: bool = None) -> bool:
     """Convert from postgresql BOOLEAN to python bool"""

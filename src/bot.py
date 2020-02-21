@@ -107,8 +107,10 @@ async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot version is: {settings.VERSION}')
+    print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     core.init_db()
+    login.init()
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -721,7 +723,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
     Notes:
       If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
-    if settings.ISSUE88:
+    if settings.MISSING_ACCESS_TOKEN:
         await ctx.send('The `/stars fleet` command has been temporarily disabled due to external factors.')
         return ''
 
@@ -1198,7 +1200,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
     Examples:
       /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
     """
-    if settings.ISSUE88:
+    if settings.MISSING_ACCESS_TOKEN:
         await ctx.send('The `/fleet` command has been temporarily disabled due to external factors.')
         return ''
 
@@ -1259,7 +1261,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         if user_info:
             async with ctx.typing():
                 output = user.get_user_details_by_info(user_info)
-                if settings.ISSUE88:
+                if settings.MISSING_ACCESS_TOKEN:
                     output.append('_**Note:** A player\'s fleet data can\'t be retrieved temporarily._')
             await util.post_output(ctx, output)
     else:
@@ -1955,10 +1957,108 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_login(ctx: discord.ext.commands.Context, device_key: str = None):
-    device_key, data = login.login(device_key=device_key)
-    access_token = data['UserService']['UserLogin']['accessToken']
-    await ctx.send(f'Device key:{device_key}\nAccess token: {access_token}')
+    device_keys = [
+        '560977c56688',
+        '7a15f24751c2',
+        '9205c0630f01',
+        '7a0cc1aea29a'
+    ]
+    devices = login.DeviceCollection()
+    for key in device_keys:
+        devices.add_device_by_key(key)
 
+    access_token = devices.get_access_token()
+    await ctx.send(f'Device key: {devices.current.key}\nAccess token: {access_token}')
+
+
+@bot.group(brief='list available devices', name='device', hidden=True)
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device(ctx: discord.ext.commands.Context):
+    """
+    Returns all known devices stored in the DB.
+    """
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            keys = [device.key for device in login.DEVICES.devices]
+            output = [f'Device key: {key}' for key in keys]
+            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
+        for post in posts:
+            await ctx.send(post)
+
+
+@cmd_device.command(brief='create & store random device', name='create')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_create(ctx: discord.ext.commands.Context):
+    """
+    Creates a new random device_key and attempts to store the new device in the DB.
+    """
+    async with ctx.typing():
+        device_key = login.create_device_key()
+        device = login.Device(device_key)
+        device.login()
+        if device.get_access_token():
+            created = True
+            stored = login.db_try_store_device(device)
+        else:
+            created = False
+            stored = False
+    if created:
+        if stored:
+            await ctx.send(f'Created and stored device with key: {device_key}')
+        else:
+            await ctx.send(f'Failed to store device with key: {device_key}')
+    else:
+        await ctx.send(f'Failed to create device with key: {device_key}')
+
+
+@cmd_device.command(brief='store device', name='add')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_add(ctx: discord.ext.commands.Context, device_key: str):
+    """
+    Attempts to store a device with the given device_key in the DB.
+    """
+    async with ctx.typing():
+        device = login.Device(device_key)
+        stored = login.db_try_store_device(device)
+    if stored:
+        await ctx.send(f'Added device with device key: {device.key}')
+    else:
+        await ctx.send(f'Could not add device with device key: {device.key}')
+
+
+@cmd_device.command(brief='store device', name='remove')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_remove(ctx: discord.ext.commands.Context, device_key: str):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    async with ctx.typing():
+        device = login.Device(device_key)
+        stored = login.db_try_delete_device(device)
+    if stored:
+        await ctx.send(f'Removed device with device key: {device.key}')
+    else:
+        await ctx.send(f'Could not remove device with device key: {device.key}')
+
+
+@cmd_device.command(brief='store device', name='login')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_login(ctx: discord.ext.commands.Context):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    async with ctx.typing():
+        access_token = login.DEVICES.get_access_token()
+        device = login.DEVICES.current
+    if access_token:
+        await ctx.send(f'Logged in with device: {device.key}\nObtained access token: {access_token}')
+    else:
+        await ctx.send(f'Could not log in with device: {device.key}')
 
 
 
