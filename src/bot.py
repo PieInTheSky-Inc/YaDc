@@ -1986,6 +1986,7 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
             device.get_access_token()
             created = True
         except Exception as err:
+            login.DEVICES.remove_device(device)
             created = False
     if created is True:
         await ctx.send(f'Created and stored device with key \'{device.key}\'.')
