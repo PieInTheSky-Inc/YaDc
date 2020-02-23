@@ -1981,8 +1981,8 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
     Creates a new random device_key and attempts to store the new device in the DB.
     """
     async with ctx.typing():
+        device = login.DEVICES.create_device()
         try:
-            device = login.DEVICES.create_device()
             device.get_access_token()
             created = True
         except Exception as err:

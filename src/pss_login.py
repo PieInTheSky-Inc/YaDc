@@ -72,7 +72,7 @@ class Device():
         if self.__can_login_until is None:
             return True
         utc_now = util.get_utcnow()
-        if self.__can_login_until <= utc_now:
+        if self.__can_login_until <= utc_now and self.__can_login_until.day == utc_now.day:
             return False
         return True
 
@@ -204,9 +204,7 @@ class DeviceCollection():
 
     def create_device(self) -> Device:
         device = Device(create_device_key())
-        db_try_store_device(device)
         self.add_device(device)
-        self.__fix_position()
         return device
 
 
