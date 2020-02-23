@@ -1979,22 +1979,17 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
     Creates a new random device_key and attempts to store the new device in the DB.
     """
     async with ctx.typing():
-        device_key = login.create_device_key()
-        device = login.Device(device_key)
-        device.login()
-        if device.get_access_token():
+        device = login.DEVICES.create_device()
+        try:
+            device.get_access_token()
             created = True
-            stored = login.db_try_store_device(device)
-        else:
+        except Exception as err:
+            login.DEVICES.remove_device(device)
             created = False
-            stored = False
-    if created:
-        if stored:
-            await ctx.send(f'Created and stored device with key: {device_key}')
-        else:
-            await ctx.send(f'Failed to store device with key: {device_key}')
+    if created is True:
+        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
     else:
-        await ctx.send(f'Failed to create device with key: {device_key}')
+        await ctx.send(f'Failed to create and store device:```{err}```')
 
 
 @cmd_device.command(brief='store device', name='add')
@@ -2005,15 +2000,18 @@ async def cmd_device_add(ctx: discord.ext.commands.Context, device_key: str):
     Attempts to store a device with the given device_key in the DB.
     """
     async with ctx.typing():
-        device = login.Device(device_key)
-        stored = login.db_try_store_device(device)
-    if stored:
-        await ctx.send(f'Added device with device key: {device.key}')
+        try:
+            device = login.DEVICES.add_device_by_key(device_key)
+            added = True
+        except Exception as err:
+            added = False
+    if added:
+        await ctx.send(f'Added device with device key \'{device.key}\'.')
     else:
-        await ctx.send(f'Could not add device with device key: {device.key}')
+        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
 
 
-@cmd_device.command(brief='store device', name='remove')
+@cmd_device.command(brief='remove device', name='remove', aliases=['delete', 'yeet'])
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_device_remove(ctx: discord.ext.commands.Context, device_key: str):
@@ -2021,15 +2019,18 @@ async def cmd_device_remove(ctx: discord.ext.commands.Context, device_key: str):
     Attempts to remove a device with the given device_key from the DB.
     """
     async with ctx.typing():
-        device = login.Device(device_key)
-        stored = login.db_try_delete_device(device)
-    if stored:
-        await ctx.send(f'Removed device with device key: {device.key}')
+        try:
+            login.DEVICES.remove_device_by_key(device_key)
+            yeeted = True
+        except Exception as err:
+            yeeted = False
+    if yeeted:
+        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
     else:
-        await ctx.send(f'Could not remove device with device key: {device.key}')
+        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
 
 
-@cmd_device.command(brief='store device', name='login')
+@cmd_device.command(brief='login to a device', name='login')
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_device_login(ctx: discord.ext.commands.Context):
@@ -2037,12 +2038,27 @@ async def cmd_device_login(ctx: discord.ext.commands.Context):
     Attempts to remove a device with the given device_key from the DB.
     """
     async with ctx.typing():
-        access_token = login.DEVICES.get_access_token()
-        device = login.DEVICES.current
-    if access_token:
-        await ctx.send(f'Logged in with device: {device.key}\nObtained access token: {access_token}')
+        try:
+            access_token = login.DEVICES.get_access_token()
+            device = login.DEVICES.current
+        except Exception as err:
+            access_token = None
+    if access_token is not None:
+        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
     else:
-        await ctx.send(f'Could not log in with device: {device.key}')
+        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
+
+
+@cmd_device.command(brief='select a device', name='select')
+@discord.ext.commands.is_owner()
+@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
+    """
+    Attempts to select a device with the given device_key from the DB.
+    """
+    async with ctx.typing():
+        device = login.DEVICES.select_device(device_key)
+    await ctx.send(f'Selected device \'{device.key}\'.')
 
 
 
