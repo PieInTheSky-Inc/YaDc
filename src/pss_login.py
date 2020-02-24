@@ -19,6 +19,7 @@ import utility as util
 
 # ---------- Constants & Internals ----------
 
+ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 FIVE_MINUTES: datetime.timedelta = datetime.timedelta(seconds=299)
 FIFTEEN_HOURS: datetime.timedelta = datetime.timedelta(hours=15)
 ONE_DAY: datetime.timedelta = datetime.timedelta(days=1)
@@ -139,7 +140,7 @@ class Device():
 
     def __set_can_login_until(self, last_login: datetime.datetime) -> None:
         if not self.__can_login_until or last_login > self.__can_login_until:
-            next_day = util.get_next_day(self.__can_login_until)
+            next_day = util.get_next_day(self.__can_login_until) - ONE_SECOND
             login_until = last_login + FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
 
