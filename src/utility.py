@@ -554,7 +554,7 @@ async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) ->
         return False
 
 
-def get_exact_args(ctx: discord.ext.commands.Context) -> str:
+def get_exact_cmd(ctd: discord.ext.commands.Context) -> str:
     try:
         if ctx.command.full_parent_name:
             parent_command = f'{ctx.command.full_parent_name} '
@@ -567,6 +567,19 @@ def get_exact_args(ctx: discord.ext.commands.Context) -> str:
                 command = f'{full_parent_command}{alias} '
                 if ctx.message.content.startswith(command):
                     break
+        return command[:-1]
+    except:
+        return ''
+
+
+def get_exact_args(ctx: discord.ext.commands.Context) -> str:
+    command = get_exact_cmd(ctx)
+    if command == '':
+        return ''
+    else:
+        command = command + ' '
+
+    try:
         args = str(ctx.message.content[len(command):])
         return args
     except:
