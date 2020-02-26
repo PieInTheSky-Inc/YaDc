@@ -35,7 +35,7 @@ EntitiesDesignsData = Dict[str, EntityDesignInfo]
 # ---------- Classes ----------
 
 class EntityDesignDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str], force_display_name: bool):
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], force_display_name: bool, entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None):
         if isinstance(display_name, str):
             self.__display_name: str = display_name
             self.__display_name_function: Callable[[list], str] = None
@@ -45,13 +45,26 @@ class EntityDesignDetailProperty(object):
         else:
             raise TypeError('The display_name must either be of type \'str\' or \'Callable[[EntityDesignInfo], ]\'.')
 
-        self.__transform_function: Callable[[EntityDesignInfo], str] = transform_function
-        self.__force_display_name: bool = force_display_name
+        if not entity_property_name and not transform_function:
+            raise Exception('Invalid paramaeters: either the \'entity_property_name\' or the \'transform_function\' need to be provided!')
+        elif entity_property_name and transform_function:
+            raise Exception('Invalid paramaeters: either the \'entity_property_name\' or the \'transform_function\' need to be provided!')
 
+        self.__transform_function: Callable[[EntityDesignInfo], str] = transform_function
+        self.__entity_property_name: str = entity_property_name or None
+        self.__force_display_name: bool = force_display_name
+        self.__use_transform_function: bool = not entity_property_name and transform_function
+
+
+    @property
+    def display_name(self) -> Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]]:
+        return self.__display_name
 
     @property
     def force_display_name(self) -> bool:
         return self.__force_display_name
+
+    @property
 
 
     def get_full_property(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> Tuple[str, str]:
@@ -74,11 +87,13 @@ class EntityDesignDetailProperty(object):
 
 
     def __get_value(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> str:
-        if self.__transform_function:
+        if self.__use_transform_function and self.__transform_function:
             result = self.__transform_function(entity_design_info, entities_designs_data)
-            return result
+        elif self.__entity_property_name:
+            result = entity_design_info[self.__entity_property_name]
         else:
-            return ''
+            result = ''
+        return result
 
 
 
@@ -90,8 +105,16 @@ class EntityDesignDetailProperty(object):
 
 
 class EntityDesignDetailEmbedProperty(EntityDesignDetailProperty):
-    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str]):
-        super().__init__(display_name, transform_function, True)
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None):
+        super().__init__(display_name, True, entity_property_name=entity_property_name, transform_function=transform_function)
+
+
+    @classmethod
+    def from_entity_design_detail_property(cls, entity_design_detail_property: EntityDesignDetailProperty):
+        return cls(
+            entity_design_detail_property.display_name,
+
+        )
 
 
 

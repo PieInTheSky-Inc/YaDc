@@ -4,7 +4,7 @@
 import discord
 import os
 import re
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import pss_assert
 from cache import PssCache
@@ -37,125 +37,24 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 # ---------- Classes ----------
 
 class ItemDesignDetails(entity.EntityDesignDetails):
-    def __init__(self, item_info: dict):
-        self.__item_info: Dict[str, object] = item_info
-
-        bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
-        bonus_value = item_info['EnhancementValue']
-        item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
-        item_sub_type = item_info['ItemSubType']
-        rarity = item_info['Rarity']
-
-        slot = _get_item_slot(item_type, item_sub_type)
-        if slot:
-            slot_txt = f' ({slot})'
-        else:
-            slot_txt = ''
-
-        if bonus_type == 'None':
-            bonus_txt = bonus_type
-        else:
-            bonus_txt = f'{bonus_type} +{bonus_value}'
-
-        return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
-
-
-        rarity = item_info['Rarity']
-        bonus_type = item_info['EnhancementType']  # if not 'None' then print bonus_value
-        item_type = item_info['ItemType']
-        item_sub_type = item_info['ItemSubType']
-        bonus_value = item_info['EnhancementValue']
-
-        slot = _get_item_slot(item_type, item_sub_type)
-        details = [rarity]
-        if slot:
-            details.append(slot)
-        if bonus_type != 'None':
-            details.append(f'+{bonus_value} {bonus_type}')
-        details_txt = ', '.join(details)
-        return [f'{name} ({details_txt})']
-
-        details
-
-
-        super().__init__(
-            name=item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=item_info['ItemDesignDescription'],
-            details_long=[],
-            details_short=[]
-        )
-
-
-    def get_details_as_embed(self) -> discord.Embed:
-        return None
-
-
-    def get_details_as_text_long(self) -> List[str]:
-        return get_item_details_from_data_as_text(self.__item_info)
+    def __init__(self, entity_design_info: entity.EntityDesignInfo, properties_short: List[entity.EntityDesignDetailProperty], properties_embed: List[entity.EntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
+        self.__prefix: str = prefix or ''
+        super().__init__(entity_design_info, __title_property, __description_property, None, properties_short, properties_embed, entities_designs_data=entities_designs_data)
 
 
     def get_details_as_text_short(self) -> List[str]:
-        return get_item_details_short_from_data_as_text(self.__item_info)
+        details = []
+        for detail in self.details_short:
+            if detail.force_display_name:
+                details.append(f'{detail.name} = {detail.value}')
+            else:
+                details.append(detail.value)
+        result = f'{self.__prefix}{self.title} ({self.description}) - {", ".join(details)}'
+        return result
 
 
 
 
-
-
-
-
-
-
-# ---------- Initilization ----------
-
-items_designs_retriever = entity.EntityDesignsRetriever(
-    ITEM_DESIGN_BASE_PATH,
-    ITEM_DESIGN_KEY_NAME,
-    ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
-    'ItemsDesigns'
-)
-
-
-NOT_ALLOWED_ITEM_NAMES: List[str] = [
-    'AI',
-    'I',
-    'II',
-    'III',
-    'IV',
-    'V',
-    'VI'
-]
-
-
-def __get_allowed_item_names():
-    result = []
-    item_designs_data = items_designs_retriever.get_data_dict3()
-    for item_design_data in item_designs_data.values():
-        if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
-            item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            if item_name:
-                item_name = core.fix_allowed_value_candidate(item_name)
-                if len(item_name) < settings.MIN_ENTITY_NAME_LENGTH:
-                    result.append(item_name)
-                else:
-                    item_name_parts = item_name.split(' ')
-                    for item_name_part in item_name_parts:
-                        part_length = len(item_name_part)
-                        length_matches = part_length > 1 and part_length < settings.MIN_ENTITY_NAME_LENGTH
-                        is_proper_name = item_name_part == item_name_part.upper()
-                        if length_matches and is_proper_name:
-                            try:
-                                int(item_name_part)
-                                continue
-                            except:
-                                if item_name_part not in NOT_ALLOWED_ITEM_NAMES:
-                                    result.append(item_name_part)
-    if result:
-        result = list(set(result))
-    return result
-
-
-__allowed_item_names = sorted(__get_allowed_item_names())
 
 
 
@@ -164,34 +63,63 @@ __allowed_item_names = sorted(__get_allowed_item_names())
 
 # ---------- Helper functions ----------
 
-def get_item_details_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
-    if not item_designs_data:
-        item_designs_data = items_designs_retriever.get_data_dict3()
-
-    item_info = item_designs_data[item_id]
-    return get_item_details_from_data_as_text(item_info)
-
-
-def get_item_details_from_data_as_text(item_info: dict) -> list:
-    bonus_type = item_info['EnhancementType'] # if not 'None' then print bonus_value
+def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
-    item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    item_type = item_info['ItemType']  # if 'Equipment' then print equipment slot
+    if bonus_type.lower() == 'none':
+        result = bonus_type
+    else:
+        result = f'{bonus_type} +{bonus_value}'
+    return result
+
+
+def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    item_type = item_info['ItemType']
     item_sub_type = item_info['ItemSubType']
-    rarity = item_info['Rarity']
-
-    slot = _get_item_slot(item_type, item_sub_type)
-    if slot:
-        slot_txt = f' ({slot})'
+    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
+        result = item_sub_type.replace('Equipment', '')
     else:
-        slot_txt = ''
+        result = None
+    return result
 
-    if bonus_type == 'None':
-        bonus_txt = bonus_type
+
+def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = 'This item cannot be sold'
     else:
-        bonus_txt = f'{bonus_type} +{bonus_value}'
+        fair_price = item_info['FairPrice']
+        market_price = item_info['MarketPrice']
+        result = f'{market_price} ({fair_price})'
+    return result
 
-    return [f'{item_name} ({rarity}) - {bonus_txt}{slot_txt}']
+
+def __get_enhancement_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    enhancement_value = float(item_info['EnhancementValue'])
+    result = f'{enhancement_value:.1f}'
+    return result
+
+
+def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    market_price = item_info['MarketPrice']
+    result = f'({market_price} bux)'
+    return result
+
+
+def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+    return item_info['Rarity']
+
+
+def __create_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __item_base_properties, __item_base_properties)
+
+
+
+
+
+
+
+
 
 
 def get_item_details_short_from_id_as_text(item_id: str, item_designs_data: dict = None) -> list:
@@ -206,11 +134,9 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
     name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     rarity = item_info['Rarity']
     bonus_type = item_info['EnhancementType']  # if not 'None' then print bonus_value
-    item_type = item_info['ItemType']
-    item_sub_type = item_info['ItemSubType']
     bonus_value = item_info['EnhancementValue']
 
-    slot = _get_item_slot(item_type, item_sub_type)
+    slot = __get_item_slot(item_info, None)
     details = [rarity]
     if slot:
         details.append(slot)
@@ -225,12 +151,9 @@ def get_item_info_from_id(item_id: str) -> dict:
     return item_data[item_id]
 
 
-def _get_item_slot(item_type: str, item_sub_type: str) -> str:
-    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
-        result = item_sub_type.replace('Equipment', '')
-    else:
-        result = None
-    return result
+
+
+
 
 
 
@@ -238,17 +161,17 @@ def _get_item_slot(item_type: str, item_sub_type: str) -> str:
 
 # ---------- Item info ----------
 
-def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[str, object]) -> ItemDesignDetails:
+def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[str, entity.EntityDesignInfo]) -> ItemDesignDetails:
     if not items_designs_data:
         items_designs_data = items_designs_retriever.get_data_dict3()
 
     if item_design_id and item_design_id in items_designs_data.keys():
-        return ItemDesignDetails(items_designs_data[item_design_id])
+        return ItemDesignDetails(items_designs_data[item_design_id], __item_base_properties, __item_base_properties)
     else:
         return None
 
 
-def get_item_details_by_name(item_name: str, as_embed=False):
+def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
 
     item_infos = _get_item_infos_by_name(item_name)
@@ -257,28 +180,12 @@ def get_item_details_by_name(item_name: str, as_embed=False):
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        items_designs_details = [ItemDesignDetails(item_info, __item_base_properties, __item_base_properties) for item_info in item_infos]
 
         if as_embed:
-            return _get_item_info_as_embed(item_name, item_infos), True
+            return _get_item_info_as_embed(item_name, items_designs_details), True
         else:
-            return _get_item_info_as_text(item_name, item_infos), True
-
-
-def _get_item_design_details_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> List[ItemDesignDetails]:
-    if item_design_data is None:
-        item_design_data = items_designs_retriever.get_data_dict3()
-
-    item_design_ids = _get_item_design_ids_from_name(item_name, item_data=item_design_data)
-    result = [item_design_data[item_design_id] for item_design_id in item_design_ids if item_design_id in item_design_data.keys()]
-
-    if result:
-        get_best_match = return_best_match or util.is_str_in_list(item_name, __allowed_item_names, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
-        if get_best_match:
-            result = [result[0]]
-
-    result = [ItemDesignDetails(item_design_data) for item_design_data in result]
-
-    return result
+            return _get_item_info_as_text(item_name, items_designs_details), True
 
 
 def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
@@ -301,7 +208,7 @@ def get_item_details_short_by_training_id(training_id: str, item_design_data: di
         item_design_data = items_designs_retriever.get_data_dict3()
 
     item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = [' '.join(get_item_details_short_from_id_as_text(item_design_id)) for item_design_id in item_design_ids]
+    result = [' '.join(get_item_design_details_by_id(item_design_id, item_design_data).get_details_as_text_short()) for item_design_id in item_design_ids]
 
     return result
 
@@ -314,15 +221,16 @@ def _get_item_design_ids_from_name(item_name: str, item_data: dict = None) -> li
     return results
 
 
-def _get_item_info_as_embed(item_name: str, item_infos: dict):
-    return ''
+def _get_item_info_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]) -> List[discord.Embed]:
+    result = [item_design_details.get_details_as_embed() for item_design_details in items_designs_details]
+    return result
 
 
-def _get_item_info_as_text(item_name: str, item_infos: dict) -> list:
+def _get_item_info_as_text(item_name: str, items_designs_details: List[ItemDesignDetails]) -> list:
     lines = [f'Item stats for **{item_name}**']
 
-    for item_info in item_infos:
-        lines.extend(get_item_details_from_data_as_text(item_info))
+    for item_design_details in items_designs_details:
+        lines.extend(item_design_details.get_details_as_text_short())
 
     return lines
 
@@ -688,6 +596,96 @@ def _get_best_item_line(item_info: dict):
     enhancement_value = float(item_info['EnhancementValue'])
     result = f'> {name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
     return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Initilization ----------
+
+items_designs_retriever = entity.EntityDesignsRetriever(
+    ITEM_DESIGN_BASE_PATH,
+    ITEM_DESIGN_KEY_NAME,
+    ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    'ItemsDesigns'
+)
+
+
+NOT_ALLOWED_ITEM_NAMES: List[str] = [
+    'AI',
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+    'VI'
+]
+
+
+def __get_allowed_item_names():
+    result = []
+    item_designs_data = items_designs_retriever.get_data_dict3()
+    for item_design_data in item_designs_data.values():
+        if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
+            item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            if item_name:
+                item_name = core.fix_allowed_value_candidate(item_name)
+                if len(item_name) < settings.MIN_ENTITY_NAME_LENGTH:
+                    result.append(item_name)
+                else:
+                    item_name_parts = item_name.split(' ')
+                    for item_name_part in item_name_parts:
+                        part_length = len(item_name_part)
+                        length_matches = part_length > 1 and part_length < settings.MIN_ENTITY_NAME_LENGTH
+                        is_proper_name = item_name_part == item_name_part.upper()
+                        if length_matches and is_proper_name:
+                            try:
+                                int(item_name_part)
+                                continue
+                            except:
+                                if item_name_part not in NOT_ALLOWED_ITEM_NAMES:
+                                    result.append(item_name_part)
+    if result:
+        result = list(set(result))
+    return result
+
+
+__allowed_item_names = sorted(__get_allowed_item_names())
+
+
+__title_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+__description_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
+__item_base_properties: List[entity.EntityDesignDetailProperty] = __get_item_base_properties()
+__item_price_properties: List[entity.EntityDesignDetailProperty] = __get_item_price_properties()
+__item_best_properties: List[entity.EntityDesignDetailProperty] = __get_item_best_properties()
+
+
+def __get_item_base_properties() -> List[entity.EntityDesignDetailProperty]:
+    return [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+        entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+    ]
+
+
+def __get_item_price_properties() -> List[entity.EntityDesignDetailProperty]:
+    return [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+        entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
+    ]
+
+
+def __get_item_best_properties() -> List[entity.EntityDesignDetailProperty]:
+    return [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+        entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
+        entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+    ]
 
 
 
