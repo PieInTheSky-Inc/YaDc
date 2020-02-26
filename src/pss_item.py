@@ -151,16 +151,6 @@ def get_item_info_from_id(item_id: str) -> dict:
     return item_data[item_id]
 
 
-
-
-
-
-
-
-
-
-# ---------- Item info ----------
-
 def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[str, entity.EntityDesignInfo]) -> ItemDesignDetails:
     if not items_designs_data:
         items_designs_data = items_designs_retriever.get_data_dict3()
@@ -171,21 +161,12 @@ def get_item_design_details_by_id(item_design_id: str, items_designs_data: Dict[
         return None
 
 
-def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
+def _get_item_design_ids_from_name(item_name: str, item_data: dict = None) -> list:
+    if item_data is None:
+        item_data = items_designs_retriever.get_data_dict3()
 
-    item_infos = _get_item_infos_by_name(item_name)
-
-    if not item_infos:
-        return [f'Could not find an item named **{item_name}**.'], False
-    else:
-        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
-        items_designs_details = [ItemDesignDetails(item_info, __item_base_properties, __item_base_properties) for item_info in item_infos]
-
-        if as_embed:
-            return _get_item_info_as_embed(item_name, items_designs_details), True
-        else:
-            return _get_item_info_as_text(item_name, items_designs_details), True
+    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name)
+    return results
 
 
 def _get_item_infos_by_name(item_name: str, item_design_data: dict = None, return_best_match: bool = False) -> list:
@@ -213,12 +194,42 @@ def get_item_details_short_by_training_id(training_id: str, item_design_data: di
     return result
 
 
-def _get_item_design_ids_from_name(item_name: str, item_data: dict = None) -> list:
-    if item_data is None:
-        item_data = items_designs_retriever.get_data_dict3()
+def _fix_item_name(item_name) -> str:
+    result = item_name.lower()
+    result = re.sub('[^a-z0-9]', '', result)
+    result = re.sub("(darkmatterrifle|dmr)(mark|mk)?(ii|2)", "dmrmarkii", result)
+    result = result.replace('anonmask', 'anonymousmask')
+    result = result.replace('armour', 'armor')
+    result = result.replace('bunny', 'rabbit')
+    result = result.replace('golden', 'gold')
+    return result
 
-    results = core.get_ids_from_property_value(item_data, ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, item_name, fix_data_delegate=_fix_item_name)
-    return results
+
+
+
+
+
+
+
+
+
+# ---------- Item info ----------
+
+def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+    pss_assert.valid_entity_name(item_name, allowed_values=__allowed_item_names)
+
+    item_infos = _get_item_infos_by_name(item_name)
+
+    if not item_infos:
+        return [f'Could not find an item named **{item_name}**.'], False
+    else:
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        items_designs_details = [ItemDesignDetails(item_info, __item_base_properties, __item_base_properties) for item_info in item_infos]
+
+        if as_embed:
+            return _get_item_info_as_embed(item_name, items_designs_details), True
+        else:
+            return _get_item_info_as_text(item_name, items_designs_details), True
 
 
 def _get_item_info_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]) -> List[discord.Embed]:
@@ -235,15 +246,9 @@ def _get_item_info_as_text(item_name: str, items_designs_details: List[ItemDesig
     return lines
 
 
-def _fix_item_name(item_name) -> str:
-    result = item_name.lower()
-    result = re.sub('[^a-z0-9]', '', result)
-    result = re.sub("(darkmatterrifle|dmr)(mark|mk)?(ii|2)", "dmrmarkii", result)
-    result = result.replace('anonmask', 'anonymousmask')
-    result = result.replace('armour', 'armor')
-    result = result.replace('bunny', 'rabbit')
-    result = result.replace('golden', 'gold')
-    return result
+
+
+
 
 
 
