@@ -110,8 +110,16 @@ def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.
     return item_info['Rarity']
 
 
-def __create_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
+def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
     return ItemDesignDetails(item_design_info, __item_base_properties, __item_base_properties)
+
+
+def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __item_price_properties, __item_price_properties)
+
+
+def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __item_best_properties, __item_best_properties)
 
 
 
@@ -269,32 +277,24 @@ def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
             item_infos = [item_infos[0]]
 
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        items_designs_details = [__create_price_design_data_from_info(item_info) for item_info in item_infos]
 
         if as_embed:
-            return _get_item_price_as_embed(item_name, item_infos), True
+            return _get_item_price_as_embed(item_name, items_designs_details), True
         else:
-            return _get_item_price_as_text(item_name, item_infos), True
+            return _get_item_price_as_text(item_name, items_designs_details), True
 
 
-def _get_item_price_as_embed(item_name, item_infos):
-    return ''
+def _get_item_price_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]):
+    result = [item_design_details.get_details_as_embed() for item_design_details in items_designs_details]
+    return result
 
 
-def _get_item_price_as_text(item_name, item_infos) -> str:
+def _get_item_price_as_text(item_name: str, items_designs_details) -> str:
     lines = []
     lines.append(f'**Item prices matching \'{item_name}\'**')
-    for item_info in item_infos:
-        flags = int(item_info['Flags'])
-        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        fair_price = item_info['FairPrice']
-        market_price = item_info['MarketPrice']
-        rarity = item_info['Rarity']
-
-        prices = f'{market_price} ({fair_price})'
-        if flags & 1 == 0:
-            prices = 'This item cannot be sold'
-
-        lines.append(f'{item_name} ({rarity}) - {prices}')
+    for item_design_details in items_designs_details:
+        lines.extend(item_design_details.get_details_as_text_short())
 
     lines.append(settings.EMPTY_LINE)
     lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
