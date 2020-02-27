@@ -11,6 +11,7 @@ from cache import PssCache
 import pss_core as core
 import pss_entity as entity
 import pss_lookups as lookups
+import resources
 import settings
 import utility as util
 
@@ -119,7 +120,43 @@ def __create_price_design_data_from_info(item_design_info: entity.EntityDesignIn
 
 
 def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __item_best_properties, __item_best_properties)
+    return ItemDesignDetails(item_design_info, __item_best_properties, __item_best_properties, prefix='> ')
+
+
+def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
+    return [__create_best_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+
+
+def __create_price_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
+    return [__create_price_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+
+
+def __create_base_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
+    return [__create_base_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+
+
+def __get_key_for_best_items_sort(item_info: dict) -> str:
+    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
+        slot = item_info['ItemSubType']
+        rarity_num = lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']]
+        enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
+        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        result = f'{enhancement_value}{slot}{rarity_num}{item_name}'
+        return result
+
+
+def _get_stat_filter(stat: str) -> str:
+    stat = stat.lower()
+    return lookups.STAT_TYPES_LOOKUP[stat]
+
+
+def _get_slot_filter(slot: str, any_slot: bool) -> List[str]:
+    slot = slot.lower()
+    if any_slot:
+        result = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
+    else:
+        result = [lookups.EQUIPMENT_SLOTS_LOOKUP[slot]]
+    return result
 
 
 
@@ -297,7 +334,7 @@ def _get_item_price_as_text(item_name: str, items_designs_details) -> str:
         lines.extend(item_design_details.get_details_as_text_short())
 
     lines.append(settings.EMPTY_LINE)
-    lines.append('**Note:** 1st price is the market price. 2nd price is Savy\'s fair price. Market prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+    lines.append(' '.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE'), resources.get_resource('PRICE_NOTE')]))
 
     return lines
 
@@ -349,7 +386,7 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
             lines.append(f'Crafting costs: {current_level_costs} bux')
             lines.append(settings.EMPTY_LINE)
 
-        lines.append('**Note**: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
+        lines.append(resources.get_resource('PRICE_NOTE'))
     else:
         lines.append('This item can\'t be crafted')
 
@@ -485,45 +522,36 @@ def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
     if error:
         return error, False
 
-    slot = slot.lower()
-    stat = stat.lower()
-
     any_slot = slot == 'all' or slot == 'any'
+    slot_filter = _get_slot_filter(slot, any_slot)
+    stat_filter = _get_stat_filter(stat)
+    best_items = _get_best_items_designs(slot_filter, stat_filter)
+    groups = entity.group_entities_designs_details(best_items, 'ItemSubType')
 
-    item_design_data = items_designs_retriever.get_data_dict3()
-    if any_slot:
-        slot_filter = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
+    if not best_items:
+        return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
     else:
-        slot_filter = lookups.EQUIPMENT_SLOTS_LOOKUP[slot]
-    stat_filter = lookups.STAT_TYPES_LOOKUP[stat]
+        if as_embed:
+            return _get_best_items_as_embed(stat_filter, groups), True
+        else:
+            return _get_best_items_as_text_all(stat_filter, groups), True
+
+
+def _get_best_items_designs(slot_filter: List[str], stat_filter: str) -> Dict[str, List[ItemDesignDetails]]:
+    item_design_data = items_designs_retriever.get_data_dict3()
     filters = {
         'ItemType': 'Equipment',
         'ItemSubType': slot_filter,
         'EnhancementType': stat_filter
     }
+    result = {}
 
     filtered_data = core.filter_data_dict(item_design_data, filters, ignore_case=True)
-
-    if not filtered_data:
-        return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
-    else:
-        if any_slot:
-            key_function = _get_key_for_best_items_sort_all
-            slot_display = None
-        else:
-            key_function = _get_key_for_best_items_sort
-            slot_display = slot_filter.replace('Equipment', '')
-
-        match_design_data = sorted(filtered_data.values(), key=key_function)
-        stat_display = stat_filter
-
-        if as_embed:
-            return _get_best_items_as_embed(slot_display, stat_display, any_slot, match_design_data), True
-        else:
-            if any_slot:
-                return _get_best_items_as_text_all(stat_display, match_design_data), True
-            else:
-                return _get_best_items_as_text(slot_display, stat_display, match_design_data), True
+    if filtered_data:
+        items_infos = sorted(filtered_data.values(), key=__get_key_for_best_items_sort)
+        items_designs_details = [__create_best_design_data_from_info(item_info) for item_info in items_infos]
+        result = entity.group_entities_designs_details(items_designs_details, 'ItemSubType')
+    return result
 
 
 def _get_best_items_error(slot: str, stat: str) -> list:
@@ -540,67 +568,38 @@ def _get_best_items_error(slot: str, stat: str) -> list:
     return []
 
 
-def __get_key_for_best_items_sort(item_info: dict, consider_slots: bool) -> str:
-    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
-        if consider_slots:
-            slot = item_info['ItemSubType']
-        else:
-            slot = ''
-        rarity_num = lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']]
-        enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
-        item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        result = f'{enhancement_value}{slot}{rarity_num}{item_name}'
-        return result
+def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[discord.Embed]:
+    result = []
 
-
-def _get_key_for_best_items_sort(item_info: dict) -> str:
-    return __get_key_for_best_items_sort(item_info, True)
-
-
-def _get_key_for_best_items_sort_all(item_info: dict) -> str:
-    return __get_key_for_best_items_sort(item_info, False)
-
-
-def _get_best_items_as_embed(slot: str, stat: str, any_slots: bool, item_designs: list):
-    return []
-
-
-def _get_best_items_as_text(slot: str, stat: str, item_designs: list) -> list:
-    lines = [f'**Best {stat} bonus for {slot} slot**']
-
-    for entry in item_designs:
-        lines.append(_get_best_item_line(entry))
-
-    lines.append(settings.EMPTY_LINE)
-    lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
-
-    return lines
-
-
-def _get_best_items_as_text_all(stat: str, item_designs: list) -> list:
-    lines = [f'**Best {stat} bonus for...**']
-
-    groups = core.group_data_list(item_designs, 'ItemSubType')
-
-    for group_name, group in groups.items():
-        group_name = group_name.replace('Equipment', '')
-        lines.append(f'**...{group_name} slot**')
-        for entry in group:
-            lines.append(_get_best_item_line(entry))
-
-    lines.append(settings.EMPTY_LINE)
-    lines.append('**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.')
-
-    return lines
-
-
-def _get_best_item_line(item_info: dict):
-    name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    market_price = item_info['MarketPrice']
-    rarity = item_info['Rarity']
-    enhancement_value = float(item_info['EnhancementValue'])
-    result = f'> {name} ({rarity}) - {enhancement_value:.1f} ({market_price} bux)'
+    for group_name, group in items_designs_details_groups.items():
+        slot = _get_pretty_slot(group_name)
+        result.append(discord.Embed(title=_get_best_title(stat, slot)))
+        for item_design_details in group:
+            result.extend(item_design_details.get_details_as_embed())
     return result
+
+
+def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[str]:
+    result = []
+
+    for group_name, group in items_designs_details_groups.items():
+        slot = _get_pretty_slot(group_name)
+        result.append(_get_best_title(stat, slot))
+        for item_design_details in group:
+            result.extend(item_design_details.get_details_as_text_short())
+
+    result.append(settings.EMPTY_LINE)
+    result.append(resources.get_resource('PRICE_NOTE'))
+
+    return result
+
+
+def _get_best_title(stat: str, slot: str) -> str:
+    return f'**Best **{stat}** bonus for **{slot}** slot**'
+
+
+def _get_pretty_slot(slot: str) -> str:
+    return slot.replace('Equipment', '')
 
 
 
@@ -665,32 +664,20 @@ __allowed_item_names = sorted(__get_allowed_item_names())
 
 __title_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
 __description_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
-__item_base_properties: List[entity.EntityDesignDetailProperty] = __get_item_base_properties()
-__item_price_properties: List[entity.EntityDesignDetailProperty] = __get_item_price_properties()
-__item_best_properties: List[entity.EntityDesignDetailProperty] = __get_item_best_properties()
-
-
-def __get_item_base_properties() -> List[entity.EntityDesignDetailProperty]:
-    return [
-        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
-        entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
-    ]
-
-
-def __get_item_price_properties() -> List[entity.EntityDesignDetailProperty]:
-    return [
-        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
-        entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
-    ]
-
-
-def __get_item_best_properties() -> List[entity.EntityDesignDetailProperty]:
-    return [
-        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
-        entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
-        entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
-    ]
+__item_base_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+    entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+    entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+]
+__item_price_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+    entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
+]
+__item_best_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+    entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
+    entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+]
 
 
 
