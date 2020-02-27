@@ -144,11 +144,6 @@ class EntityDesignDetails(object):
         self.__details_short: List[Tuple[str, str]] = None
 
 
-    @property
-    def title(self) -> str:
-        if self.__title is None:
-            self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
-        return self.__title
 
     @property
     def description(self) -> str:
@@ -173,6 +168,20 @@ class EntityDesignDetails(object):
         if self.__details_short is None:
             self.__details_short = self._get_properties(self.__properties_short)
         return self.__details_short
+
+    @property
+    def entities_designs_data(self) -> EntitiesDesignsData:
+        return dict(self.__entities_designs_data)
+
+    @property
+    def entity_design_info(self) -> EntityDesignInfo:
+        return dict(self.__entity_design_info)
+
+    @property
+    def title(self) -> str:
+        if self.__title is None:
+            self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+        return self.__title
 
 
     def get_details_as_embed(self) -> discord.Embed:
@@ -329,3 +338,21 @@ class EntityDesignsRetriever:
 
     def update_cache(self) -> None:
         self.__cache.update_data()
+
+
+
+
+
+
+
+
+
+
+# ---------- Helper ----------
+
+def group_entities_designs_details(entities_designs_details: List[EntityDesignDetails], property_name: str) -> Dict[object, List[EntityDesignDetails]]:
+    result = {}
+    for entity_design_details in entities_designs_details:
+        key = entity_design_details.entity_design_info[property_name]
+        result.setdefault(key, []).append(entity_design_details)
+    return result
