@@ -3,13 +3,14 @@
 
 # ----- Packages ------------------------------------------------------
 from datetime import datetime
+import discord
 import json
 import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
 import sys
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Tuple, Union
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
@@ -539,6 +540,18 @@ def read_about_file() -> dict:
             break
         except:
             pass
+    return result
+
+
+def create_embed(title: str = None, description: str = None, fields: Union[List[Tuple[str, str]], Dict[str, str]] = None) -> discord.Embed:
+    result = discord.Embed(title=title, description=description)
+    if title is not None:
+        result.title = title
+    if description is not None:
+        result.description = description
+    if fields is not None:
+        for name, value in fields:
+            result.add_field(name=name, value=value)
     return result
 
 
