@@ -47,6 +47,7 @@ PRINT_DEBUG = False
 
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
+PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
 
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
 
