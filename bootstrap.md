@@ -17,7 +17,7 @@ And here's the checklist of the actual bootstrapping steps, with each step linki
 
 * [Prepare dev system to work on](#prepare-dev-system-to-work-on)
 * [Create a Google application](#create-a-google-application)
-* [Add a stub file to Google Drive](#add-a-stub-file-to-google-drive)
+* [Add a stub file to Google Drive](#add-a-stub-file-to-google-drive) (optional)
 * [Create a Discord application](#create-a-discord-application)
 * [Fork and clone the GitHub repository](#fork-and-clone-the-github-repository)
 * [Create and configure a Heroku Application](#create-and-configure-a-Heroku-Application)
@@ -191,6 +191,14 @@ gauth.LocalWebserverAuth() # Creates local webserver and auto handles authentica
 
 
 ## Add a stub file to Google Drive
+
+### This step is optional!
+
+The YaDc author has made a Google Drive folder that contains all the data that the bot needs available to the public. The `settings.py` file in the project source code contains the Google Drive folder ID you will later need to populate the environment variable `GDRIVE_FOLDER_ID`.
+
+So feel free to skip the next two sections if you wish to take advantage of this service.
+
+There is one risk you have to be aware of, though: The data in the public GDrive folder will always have the format required by the latest release of the vanilla source code. The YaDc author reserves the right to change that format at any time and without notice. You are advised to keep your forked repository in sync with the vanilla repository to make sure your fork can continue to read the data in the public GDrive folder.
 
 ### Create and share folder
 
