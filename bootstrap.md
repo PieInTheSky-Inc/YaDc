@@ -1,6 +1,6 @@
 # Bootstrapping
 
-This document contains the information you need to bootstrap the project and run your own instance of the Discord bot. It assumes that you know your way around Git, and that you have a fair bit of knowledge of Python.
+This document contains the information you need to bootstrap the project and run your own instance of the Discord bot. It assumes that you know your way around Git, and that you have a fair bit of Python knowledge.
 
 ## Summary
 
@@ -64,7 +64,7 @@ Also make sure that Python 3.7 or newer is the default Python version on your sy
 
 ### Packages
 
-On Debian install these packages if they are not yet installed:
+On Debian install these packages if they are not yet installed. On other systems you'll need similar packages.
 
 * `python3-pip`. This installs the Python package installer `pip`. This is required so that the project's Python dependencies can be installed.
 
