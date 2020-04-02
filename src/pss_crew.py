@@ -102,7 +102,7 @@ class CharDesignDetails(entity.EntityDesignDetails):
         ]
 
         super().__init__(
-            name=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            title=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
             description=char_design_info['CharacterDesignDescription'],
             details_long=details_long,
             details_short=details_short
