@@ -64,8 +64,6 @@ class EntityDesignDetailProperty(object):
     def force_display_name(self) -> bool:
         return self.__force_display_name
 
-    @property
-
 
     def get_full_property(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> Tuple[str, str]:
         if self.__force_display_name:
@@ -130,13 +128,13 @@ class EntityDesignDetails(object):
         """
 
         """
-        self.__entities_designs_data: EntitiesDesignsData = entities_designs_data
-        self.__entity_design_info: EntityDesignInfo = entity_design_info
+        self.__entities_designs_data: EntitiesDesignsData = entities_designs_data or {}
+        self.__entity_design_info: EntityDesignInfo = entity_design_info or {}
         self.__title_property: EntityDesignDetailProperty = title
         self.__description_property: EntityDesignDetailProperty = description
-        self.__properties_long: List[EntityDesignDetailProperty] = properties_long
-        self.__properties_short: List[EntityDesignDetailProperty] = properties_short
-        self.__properties_embed: List[EntityDesignDetailProperty] = properties_embed
+        self.__properties_long: List[EntityDesignDetailProperty] = properties_long or []
+        self.__properties_short: List[EntityDesignDetailProperty] = properties_short or []
+        self.__properties_embed: List[EntityDesignDetailProperty] = properties_embed or []
         self.__title: str = None
         self.__description: str = None
         self.__details_embed: List[Tuple[str, str]] = None
@@ -144,11 +142,10 @@ class EntityDesignDetails(object):
         self.__details_short: List[Tuple[str, str]] = None
 
 
-
     @property
     def description(self) -> str:
         if self.__description is None:
-            self.__description: str = self.__description_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+            _, self.__description = self.__description_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
         return self.__description
 
     @property
@@ -171,16 +168,20 @@ class EntityDesignDetails(object):
 
     @property
     def entities_designs_data(self) -> EntitiesDesignsData:
+        if self.__entities_designs_data is None:
+            return None
         return dict(self.__entities_designs_data)
 
     @property
     def entity_design_info(self) -> EntityDesignInfo:
+        if self.__entity_design_info is None:
+            return None
         return dict(self.__entity_design_info)
 
     @property
     def title(self) -> str:
         if self.__title is None:
-            self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+            _, self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
         return self.__title
 
 
@@ -218,7 +219,9 @@ class EntityDesignDetails(object):
         result: List[Tuple[str, str]] = []
         entity_design_detail_property: EntityDesignDetailProperty = None
         for entity_design_detail_property in properties:
-            result.append(entity_design_detail_property.get_full_property(self.__entity_design_info, self.__entities_designs_data))
+            info = self.__entity_design_info
+            data = self.__entities_designs_data
+            result.append(entity_design_detail_property.get_full_property(info, data))
         return result
 
 
