@@ -1165,9 +1165,9 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
         prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
         for prestige_from_cache in prestige_from_caches:
             prestige_from_cache.update_data()
-        item.__item_designs_cache.update_data()
+        item.items_designs_retriever.update_cache()
         research.__research_designs_cache.update_data()
-        room.__room_designs_cache.update_data()
+        room.rooms_designs_retriever.update_cache()
         training.training_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
 
