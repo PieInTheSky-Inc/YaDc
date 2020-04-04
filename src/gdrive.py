@@ -190,13 +190,13 @@ class TourneyData():
             self.__initialize()
 
         utc_now = util.get_utcnow()
-        data_date = TourneyData.__fix_filename_datetime(utc_now)
         g_file_name = TourneyData.__get_latest_file_name(utc_now)
         g_file = self.__get_first_file(g_file_name)
         raw_data = g_file.GetContentString()
         data = json.loads(raw_data)
         new_fleet_data = TourneyData.__create_fleet_dict_from_data(data['fleets'])
         new_user_data = TourneyData.__create_user_dict_from_data(data['users'], data['data'])
+        data_date = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
         self.__request_write()
         can_write = False

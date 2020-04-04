@@ -123,6 +123,10 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
         elif isinstance(err, discord.ext.commands.CheckFailure):
             await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
         else:
+            command_args = util.get_exact_args(ctx)
+            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+            command = bot.get_command(help_args)
+            await ctx.send_help(command)
             await ctx.send(f'Error: {err}')
 
 
@@ -1937,24 +1941,6 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
 
 
-@bot.command(brief='test logging in', name='login', hidden=True)
-@discord.ext.commands.is_owner()
-@discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_login(ctx: discord.ext.commands.Context, device_key: str = None):
-    device_keys = [
-        '560977c56688',
-        '7a15f24751c2',
-        '9205c0630f01',
-        '7a0cc1aea29a'
-    ]
-    devices = login.DeviceCollection()
-    for key in device_keys:
-        devices.add_device_by_key(key)
-
-    access_token = devices.get_access_token()
-    await ctx.send(f'Device key: {devices.current.key}\nAccess token: {access_token}')
-
-
 @bot.group(brief='list available devices', name='device', hidden=True)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -1964,8 +1950,15 @@ async def cmd_device(ctx: discord.ext.commands.Context):
     """
     if ctx.invoked_subcommand is None:
         async with ctx.typing():
-            keys = [device.key for device in login.DEVICES.devices]
-            output = [f'Device key: {key}' for key in keys]
+            output = []
+            for device in login.DEVICES.devices:
+                output.append(settings.EMPTY_LINE)
+                if device.can_login_until:
+                    login_until = util.get_formatted_datetime(device.can_login_until)
+                else:
+                    login_until = '-'
+                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
+            output = output[1:]
             posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
         for post in posts:
             await ctx.send(post)

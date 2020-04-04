@@ -64,6 +64,17 @@ def get_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True)
     return result
 
 
+def parse_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True):
+    format_string = '%Y-%m-%d %H:%M:%S'
+    if include_tz:
+        if include_tz_brackets:
+            format_string += ' (%Z)'
+        else:
+            format_string += ' %Z'
+    result = datetime.strptime(date_time, format_string)
+    return result
+
+
 def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
     result = date_time.strftime('%Y-%m-%d')
     if include_tz:
