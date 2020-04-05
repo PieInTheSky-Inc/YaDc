@@ -8,6 +8,7 @@ import json
 import math
 import pytz
 import subprocess
+from typing import Dict, Iterable, List, Tuple, Union
 import urllib.parse
 
 
@@ -326,12 +327,23 @@ def get_similarity(value_to_check: str, against: str) -> float:
     return result
 
 
-def get_similarity_map(values_to_check: dict, against: str) -> dict:
+def get_similarity_map(values_to_check: Iterable[str], against: str) -> dict:
     result = {}
-    for key, value in values_to_check.items():
+    for value in values_to_check:
         similarity = get_similarity(value, against)
-        result[key] = similarity
+        result.setdefault(similarity, []).append(value)
     return result
+
+
+def get_or_list(values: Iterable[str]) -> str:
+    if not values:
+        return ''
+    elif len(values) == 1:
+        return values[0]
+    else:
+        result = ', '.join(values[:-1])
+        result += f' or {values[-1]}'
+        return result
 
 
 def sort_entities_by(entity_infos: list, order_info: list) -> list:
