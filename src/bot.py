@@ -72,6 +72,7 @@ tournament_data = gdrive.TourneyData(
     settings.GDRIVE_SETTINGS_FILE
 )
 
+__COMMANDS = []
 
 
 
@@ -101,6 +102,7 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
 
+
 # ----- Bot Events ------------------------------------------------------------
 @bot.event
 async def on_ready() -> None:
@@ -109,6 +111,8 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
+    global __COMMANDS
+    __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -116,12 +120,18 @@ async def on_ready() -> None:
 async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
     if isinstance(err, discord.ext.commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
+    elif isinstance(err, discord.ext.commands.CommandNotFound):
+        prefix = COMMAND_PREFIX(bot, ctx.message)
+        invoked_with = ctx.invoked_with.split(' ')[0]
+        commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
+        commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
+        await ctx.send(f'Error: Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?')
+    elif isinstance(err, discord.ext.commands.CheckFailure):
+        await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
     else:
         logging.getLogger().error(err, exc_info=True)
         if isinstance(err, pss_exception.Error):
             await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
-        elif isinstance(err, discord.ext.commands.CheckFailure):
-            await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
         else:
             command_args = util.get_exact_args(ctx)
             help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
@@ -1913,7 +1923,7 @@ async def cmd_pagination(ctx: discord.ext.commands.Context):
 @bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
+async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
     print(f'+ called command test(ctx: discord.ext.commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
@@ -1939,6 +1949,9 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params):
             await ctx.send(error)
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
+    elif action == 'commands':
+        output = [', '.join(__COMMANDS)]
+        await util.post_output(ctx, output)
 
 
 @bot.group(brief='list available devices', name='device', hidden=True)
