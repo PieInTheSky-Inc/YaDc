@@ -117,6 +117,26 @@ async def on_ready() -> None:
 
 
 @bot.event
+async def on_connect():
+    print('+ on_connect()')
+
+
+@bot.event
+async def on_resumed():
+    print('+ on_resumed()')
+
+
+@bot.event
+async def on_disconnect():
+    print('+ on_disconnect()')
+
+
+@bot.event
+async def on_shard_ready():
+    print('+ on_shard_ready()')
+
+
+@bot.event
 async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
     if isinstance(err, discord.ext.commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
