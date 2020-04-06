@@ -113,7 +113,7 @@ async def on_ready() -> None:
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
-    bot.loop.create_task(post_dailies_loop())
+    #bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
