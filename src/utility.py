@@ -73,6 +73,8 @@ def parse_formatted_datetime(date_time, include_tz=True, include_tz_brackets=Tru
         else:
             format_string += ' %Z'
     result = datetime.strptime(date_time, format_string)
+    if result.tzinfo is None:
+        result = result.replace(tzinfo=timezone.utc)
     return result
 
 
