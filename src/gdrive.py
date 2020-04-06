@@ -44,7 +44,7 @@ class TourneyData():
         self.__initialize()
 
 
-    def get_data(self) -> (dict, dict):
+    def get_data(self) -> (dict, dict, datetime):
         utc_now = util.get_utcnow()
         if self.__is_data_outdated(utc_now):
             self.__update_data()
@@ -166,7 +166,7 @@ class TourneyData():
         return result
 
 
-    def __read_data(self) -> (dict, dict):
+    def __read_data(self) -> (dict, dict, datetime):
         self.__WRITE_LOCK.acquire()
         result = (dict(self.__fleet_data), dict(self.__user_data), self.__data_date)
         self.__WRITE_LOCK.release()
