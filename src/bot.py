@@ -113,7 +113,7 @@ async def on_ready() -> None:
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
-    #bot.loop.create_task(post_dailies_loop())
+    bot.loop.create_task(post_dailies_loop())
 
 
 @bot.event
@@ -148,16 +148,15 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
         await ctx.send(f'Error: Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?')
     elif isinstance(err, discord.ext.commands.CheckFailure):
         await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
+    elif isinstance(err, pss_exception.Error):
+        await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
     else:
         logging.getLogger().error(err, exc_info=True)
-        if isinstance(err, pss_exception.Error):
-            await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
-        else:
-            command_args = util.get_exact_args(ctx)
-            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-            command = bot.get_command(help_args)
-            await ctx.send_help(command)
-            await ctx.send(f'Error: {err}')
+        command_args = util.get_exact_args(ctx)
+        help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+        command = bot.get_command(help_args)
+        await ctx.send_help(command)
+        await ctx.send(f'Error: {err}')
 
 
 @bot.event
@@ -544,17 +543,15 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        level, name = util.get_level_and_name(level, name)
         full_name = f'{level} {name}'
-        item_name = full_name if level is not None else name
+        level, name = util.get_level_and_name(level, name)
         try:
             char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item
-            item_output, item_success = item.get_item_details(item_name)
+            item_output, item_success = item.get_item_details_by_name(name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -616,7 +613,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_details(item_name)
+        output, _ = item.get_item_details_by_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -661,7 +658,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str)
       This command will print information for all researches matching the specified name.
     """
     async with ctx.typing():
-        output, _ = research.get_research_details_from_name(research_name)
+        output, _ = research.get_research_infos_by_name(research_name)
     await util.post_output(ctx, output)
 
 
@@ -1032,8 +1029,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         now = datetime.datetime.now()
         today = datetime.date(now.year, now.month, now.day)
-        pss_start = datetime.date(year=2016, month=1, day=6)
-        pss_stardate = (today - pss_start).days
+        pss_stardate = (today - settings.PSS_START_DATE).days
         str_time = 'Today is Stardate {}\n'.format(pss_stardate)
 
         mel_tz = pytz.timezone('Australia/Melbourne')
@@ -1200,9 +1196,9 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
         prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
         for prestige_from_cache in prestige_from_caches:
             prestige_from_cache.update_data()
-        item.__item_designs_cache.update_data()
+        item.items_designs_retriever.update_cache()
         research.__research_designs_cache.update_data()
-        room.__room_designs_cache.update_data()
+        room.rooms_designs_retriever.update_cache()
         training.training_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
 
