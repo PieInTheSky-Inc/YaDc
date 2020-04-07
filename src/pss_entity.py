@@ -34,7 +34,7 @@ EntitiesDesignsData = Dict[str, EntityDesignInfo]
 
 # ---------- Classes ----------
 
-class NewEntityDesignDetailProperty(object):
+class EntityDesignDetailProperty(object):
     def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], force_display_name: bool, entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None):
         if isinstance(display_name, str):
             self.__display_name: str = display_name
@@ -102,13 +102,13 @@ class NewEntityDesignDetailProperty(object):
 
 
 
-class NewEntityDesignDetailEmbedProperty(NewEntityDesignDetailProperty):
+class EntityDesignDetailEmbedProperty(EntityDesignDetailProperty):
     def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None):
         super().__init__(display_name, True, entity_property_name=entity_property_name, transform_function=transform_function)
 
 
     @classmethod
-    def from_entity_design_detail_property(cls, entity_design_detail_property: NewEntityDesignDetailProperty):
+    def from_entity_design_detail_property(cls, entity_design_detail_property: EntityDesignDetailProperty):
         return cls(
             entity_design_detail_property.display_name,
 
@@ -123,18 +123,18 @@ class NewEntityDesignDetailEmbedProperty(NewEntityDesignDetailProperty):
 
 
 
-class NewEntityDesignDetails(object):
-    def __init__(self, entity_design_info: EntityDesignInfo, title: NewEntityDesignDetailProperty, description: NewEntityDesignDetailProperty, properties_long: List[NewEntityDesignDetailProperty], properties_short: List[NewEntityDesignDetailProperty], properties_embed: List[NewEntityDesignDetailProperty], entities_designs_data: Optional[EntitiesDesignsData] = None):
+class EntityDesignDetails(object):
+    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: List[EntityDesignDetailProperty], entities_designs_data: Optional[EntitiesDesignsData] = None):
         """
 
         """
         self.__entities_designs_data: EntitiesDesignsData = entities_designs_data or {}
         self.__entity_design_info: EntityDesignInfo = entity_design_info or {}
-        self.__title_property: NewEntityDesignDetailProperty = title
-        self.__description_property: NewEntityDesignDetailProperty = description
-        self.__properties_long: List[NewEntityDesignDetailProperty] = properties_long or []
-        self.__properties_short: List[NewEntityDesignDetailProperty] = properties_short or []
-        self.__properties_embed: List[NewEntityDesignDetailProperty] = properties_embed or []
+        self.__title_property: EntityDesignDetailProperty = title
+        self.__description_property: EntityDesignDetailProperty = description
+        self.__properties_long: List[EntityDesignDetailProperty] = properties_long or []
+        self.__properties_short: List[EntityDesignDetailProperty] = properties_short or []
+        self.__properties_embed: List[EntityDesignDetailProperty] = properties_embed or []
         self.__title: str = None
         self.__description: str = None
         self.__details_embed: List[Tuple[str, str]] = None
@@ -215,9 +215,9 @@ class NewEntityDesignDetails(object):
         return result
 
 
-    def _get_properties(self, properties: List[NewEntityDesignDetailProperty]):
+    def _get_properties(self, properties: List[EntityDesignDetailProperty]):
         result: List[Tuple[str, str]] = []
-        entity_design_detail_property: NewEntityDesignDetailProperty = None
+        entity_design_detail_property: EntityDesignDetailProperty = None
         for entity_design_detail_property in properties:
             info = self.__entity_design_info
             data = self.__entities_designs_data
@@ -233,10 +233,10 @@ class NewEntityDesignDetails(object):
 
 
 
-class NewEntityDesignDetailsCollection():
+class EntityDesignDetailsCollection():
     def __init__(self, entity_ids: List[str], big_set_threshold: int = 3):
         entities_designs_data = None
-        self.__entities_designs_details: List[NewEntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
+        self.__entities_designs_details: List[EntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
         self.__big_set_threshold: int = big_set_threshold
         pass
 
@@ -248,7 +248,7 @@ class NewEntityDesignDetailsCollection():
     def get_entity_details_as_text(self) -> List[str]:
         result = []
         set_size = len(self.__entities_designs_details)
-        entity_design_details: NewEntityDesignDetails
+        entity_design_details: EntityDesignDetails
         for i, entity_design_details in enumerate(self.__entities_designs_details, start=1):
             if set_size > self.__big_set_threshold:
                 result.extend(entity_design_details.get_details_as_text_short())
@@ -267,7 +267,7 @@ class NewEntityDesignDetailsCollection():
 
 
 
-class NewEntityDesignsRetriever:
+class EntityDesignsRetriever:
     def __init__(self, entity_design_base_path: str, entity_design_key_name: str, entity_design_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None, cache_update_interval: int = 10):
         self.__cache_name: str = cache_name or ''
         self.__base_path: str = entity_design_base_path
@@ -288,7 +288,7 @@ class NewEntityDesignsRetriever:
         return self.__cache.get_data_dict3()
 
 
-    def get_entity_design_details_by_id(self, entity_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> NewEntityDesignDetails:
+    def get_entity_design_details_by_id(self, entity_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> EntityDesignDetails:
         pass
 
 
@@ -353,7 +353,7 @@ class NewEntityDesignsRetriever:
 
 # ---------- Helper ----------
 
-def group_entities_designs_details(entities_designs_details: List[NewEntityDesignDetails], property_name: str) -> Dict[object, List[NewEntityDesignDetails]]:
+def group_entities_designs_details(entities_designs_details: List[EntityDesignDetails], property_name: str) -> Dict[object, List[EntityDesignDetails]]:
     result = {}
     for entity_design_details in entities_designs_details:
         key = entity_design_details.entity_design_info[property_name]

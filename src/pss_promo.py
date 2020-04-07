@@ -324,7 +324,7 @@ def get_promotion_design_details_by_id(promotion_design_id: str, promotions_desi
     return None
 
 
-def get_promotions_designs_details_by_name(promotion_name: str) -> entity.NewEntityDesignDetailsCollection:
+def get_promotions_designs_details_by_name(promotion_name: str) -> entity.EntityDesignDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
 
@@ -383,7 +383,7 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_design_detail
 
 # ---------- Initilization ----------
 
-promotion_designs_retriever = entity.NewEntityDesignsRetriever(
+promotion_designs_retriever = entity.EntityDesignsRetriever(
     PROMOTION_DESIGN_BASE_PATH,
     PROMOTION_DESIGN_KEY_NAME,
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,

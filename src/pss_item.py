@@ -37,8 +37,8 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
 # ---------- Classes ----------
 
-class ItemDesignDetails(entity.NewEntityDesignDetails):
-    def __init__(self, entity_design_info: entity.EntityDesignInfo, title: entity.NewEntityDesignDetailProperty, description: entity.NewEntityDesignDetailProperty, properties_long: List[entity.NewEntityDesignDetailProperty], properties_embed: List[entity.NewEntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
+class ItemDesignDetails(entity.EntityDesignDetails):
+    def __init__(self, entity_design_info: entity.EntityDesignInfo, title: entity.EntityDesignDetailProperty, description: entity.EntityDesignDetailProperty, properties_long: List[entity.EntityDesignDetailProperty], properties_embed: List[entity.EntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
         self.__prefix: str = prefix or ''
         super().__init__(entity_design_info, title, description, properties_long, None, properties_embed, entities_designs_data=entities_designs_data)
 
@@ -670,18 +670,18 @@ def __get_allowed_item_names():
 __allowed_item_names = sorted(__get_allowed_item_names())
 
 
-__title_property: entity.NewEntityDesignDetailProperty = entity.NewEntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-__description_property: entity.NewEntityDesignDetailProperty = entity.NewEntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
-__item_base_properties: List[entity.NewEntityDesignDetailProperty] = [
-    entity.NewEntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-    entity.NewEntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+__title_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+__description_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
+__item_base_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+    entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
 ]
-__item_price_properties: List[entity.NewEntityDesignDetailProperty] = [
-    entity.NewEntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
+__item_price_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
 ]
-__item_best_properties: List[entity.NewEntityDesignDetailProperty] = [
-    entity.NewEntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
-    entity.NewEntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+__item_best_properties: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
+    entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
 ]
 
 
