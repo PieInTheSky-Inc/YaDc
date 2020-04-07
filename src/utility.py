@@ -136,13 +136,11 @@ def get_utcnow():
 
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
-    pss_format = '%Y-%m-%dT%H:%M:%S'
-    detailed_pss_format = '%Y-%m-%dT%H:%M:%S.%f'
     result = None
     try:
-        result = datetime.strptime(pss_datetime, pss_format)
+        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
     except ValueError:
-        result = datetime.strptime(pss_datetime, detailed_pss_format)
+        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
     result = pytz.utc.localize(result)
     return result
 

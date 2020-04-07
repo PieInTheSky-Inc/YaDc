@@ -2,15 +2,26 @@ import datetime
 import os
 
 
+
+
+
+API_DATETIME_FORMAT_ISO = '%Y-%m-%dT%H:%M:%S'
+API_DATETIME_FORMAT_ISO_DETAILED = '%Y-%m-%dT%H:%M:%S.%f'
+API_DATETIME_FORMAT_CUSTOM = '%d.%m.%y %H:%M'
+
+
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
 DEFAULT_USE_EMOJI_PAGINATOR = True
 
+
 EMPTY_LINE = '\u200b'
+
 
 EXCEL_COLUMN_FORMAT_DATETIME = 'YYYY-MM-DD hh:MM:ss'
 EXCEL_COLUMN_FORMAT_NUMBER = '0'
+
 
 GDRIVE_CLIENT_EMAIL = str(os.environ.get('GDRIVE_SERVICE_CLIENT_EMAIL'))
 GDRIVE_CLIENT_ID = str(os.environ.get('GDRIVE_SERVICE_CLIENT_ID'))
@@ -32,15 +43,22 @@ ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
 PREFIX_DEFAULT = '/'
 PRINT_DEBUG = False
+
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
+PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
+
+PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
+
 
 SETTINGS_TABLE_NAME = 'settings'
 SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
+
 USE_EMBEDS = False
 
 VERSION = '1.2.7.3'
+
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
 

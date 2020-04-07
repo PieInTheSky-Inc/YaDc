@@ -33,7 +33,7 @@ TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
 # ---------- Classes ----------
 
-class TrainingDetails(entity.EntityDesignDetails):
+class TrainingDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, training_info: dict):
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
@@ -124,7 +124,7 @@ class TrainingDetails(entity.EntityDesignDetails):
 def get_training_details_from_name(training_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(training_name)
 
-    training_infos = training_designs_retriever.get_entity_design_infos_by_name(training_name)
+    training_infos = training_designs_retriever.get_entities_designs_infos_by_name(training_name)
     trainings_details = [TrainingDetails(training_info) for training_info in training_infos]
 
     if not training_infos:

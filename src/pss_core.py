@@ -3,19 +3,21 @@
 
 # ----- Packages ------------------------------------------------------
 from datetime import datetime
+import discord
 import json
 import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
 import sys
-from typing import Callable
+from typing import Callable, Dict, List, Tuple, Union
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree
 
 import data
 import pss_daily as daily
+import pss_lookups as lookups
 import settings
 import utility as util
 
@@ -432,6 +434,21 @@ def group_data_dict(data: dict, by_key, ignore_case: bool = False):
         return data
 
 
+def convert_iap_options_mask(iap_options_mask: int) -> str:
+    result = []
+    for flag in lookups.IAP_OPTIONS_MASK_LOOKUP.keys():
+        if (iap_options_mask & flag) != 0:
+            item, value = lookups.IAP_OPTIONS_MASK_LOOKUP[flag]
+            result.append(f'_{item}_ ({value})')
+    if result:
+        if len(result) > 1:
+            return f'{", ".join(result[:-1])} or {result[-1]}'
+        else:
+            return result[0]
+    else:
+        return ''
+
+
 # ----- Display -----
 def list_to_text(lst, max_chars=settings.MAXIMUM_CHARACTERS):
     txt_list = []
@@ -523,6 +540,18 @@ def read_about_file() -> dict:
             break
         except:
             pass
+    return result
+
+
+def create_embed(title: str = None, description: str = None, fields: Union[List[Tuple[str, str]], Dict[str, str]] = None) -> discord.Embed:
+    result = discord.Embed(title=title, description=description)
+    if title is not None:
+        result.title = title
+    if description is not None:
+        result.description = description
+    if fields is not None:
+        for name, value in fields:
+            result.add_field(name=name, value=value)
     return result
 
 

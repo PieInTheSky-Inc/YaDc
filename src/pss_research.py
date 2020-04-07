@@ -2,10 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import timedelta
+import discord
+from typing import Dict, List, Tuple, Union
 
 from cache import PssCache
 import pss_assert
 import pss_core as core
+import pss_entity as entity
 import pss_lookups as lookups
 import settings
 import utility as util
@@ -16,6 +19,11 @@ import utility as util
 RESEARCH_DESIGN_BASE_PATH = 'ResearchService/ListAllResearchDesigns2?languageKey=en'
 RESEARCH_DESIGN_KEY_NAME = 'ResearchDesignId'
 RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
+
+
+
+
+
 
 
 
@@ -32,14 +40,87 @@ __research_designs_cache = PssCache(
 
 
 
+
+
+
+
+
+# ---------- Classes ----------
+
+class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
+    def __init__(self, research_info: dict, researches_designs_data: dict = None):
+        if not researches_designs_data:
+            researches_designs_data = __research_designs_cache.get_data_dict3()
+
+        self.__cost: str = _get_costs_from_research_info(research_info)
+        self.__research_time_seconds: int = int(research_info['ResearchTime'])
+        self.__required_lab_level: str = research_info['RequiredLabLevel']
+        self.__required_research_design_id: str = research_info['RequiredResearchDesignId']
+
+        self.__research_timedelta: timedelta = timedelta(seconds=self.__research_time_seconds)
+        self.__duration: int = util.get_formatted_timedelta(self.__research_timedelta, include_relative_indicator=False)
+        if self.__required_research_design_id != '0':
+            self.__required_research_name = researches_designs_data[self.__required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        else:
+            self.__required_research_name = None
+
+        details_long: List[Tuple[str, str]] = [
+            ('Cost', self.__cost),
+            ('Duration', self.__duration),
+            ('Required LAB lvl', self.__required_lab_level),
+            ('Required Research', self.__required_research_name)
+        ]
+        details_short: List[Tuple[str, str, bool]] = [
+            (None, self.__cost, False),
+            (None, self.__duration, False),
+            ('LAB lvl', self.__required_lab_level, False)
+        ]
+
+        super().__init__(
+            name=research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            description=research_info['ResearchDescription'],
+            details_long=details_long,
+            details_short=details_short
+        )
+
+
+    @property
+    def cost(self) -> str:
+        return self.__cost
+
+    @property
+    def duration(self) -> int:
+        return self.__duration
+
+    @property
+    def required_lab_level(self) -> str:
+        return self.__required_lab_level
+
+    @property
+    def required_research_design_id(self) -> str:
+        return list(self.__required_research_design_id)
+
+    @property
+    def required_research_name(self) -> str:
+        return self.__required_research_name
+
+
+
+
+
+
+
+
+
+
 # ---------- Helper functions ----------
 
 def get_research_details_from_id_as_text(research_id: str, research_designs_data: dict = None) -> list:
     if not research_designs_data:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    research_info = research_designs_data[research_id]
-    return get_research_details_from_data_as_text(research_info, research_designs_data)
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
+    return research_design_details.get_details_as_text_long()
 
 
 def get_research_details_from_data_as_text(research_info: dict, research_designs_data: dict = None) -> list:
@@ -74,8 +155,8 @@ def get_research_details_short_from_id_as_text(research_id: str, research_design
     if not research_designs_data:
         research_designs_data = __research_designs_cache.get_data_dict3()
 
-    research_info = research_designs_data[research_id]
-    return get_research_details_short_from_data_as_text(research_info)
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
+    return research_design_details.get_details_as_text_short()
 
 
 def get_research_details_short_from_data_as_text(research_info: dict) -> list:
@@ -99,7 +180,7 @@ def get_research_name_from_id(research_id: str, research_designs_data: dict = No
         return None
 
 
-def _get_costs_from_research_info(research_info: dict) -> (int, str):
+def _get_costs_from_research_info(research_info: dict) -> str:
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])
 
@@ -141,19 +222,31 @@ def _get_parents(research_info: dict, research_designs_data: dict) -> list:
 
 # ---------- Research info ----------
 
-def get_research_details_from_name(research_name: str, as_embed: bool = settings.USE_EMBEDS):
+def get_research_design_details_by_id(research_design_id: str, research_designs_data: dict = None) -> ResearchDesignDetails:
+    if research_design_id:
+        if research_designs_data is None:
+            research_designs_data = research_designs_retriever.get_data_dict3()
+
+        if research_design_id and research_design_id in research_designs_data.keys():
+            char_design_info = research_designs_data[research_design_id]
+            char_design_details = ResearchDesignDetails(char_design_info, researches_designs_data=research_designs_data)
+            return char_design_details
+
+    return None
+
+
+def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     pss_assert.valid_entity_name(research_name)
 
-    research_designs_data = __research_designs_cache.get_data_dict3()
-    research_infos = _get_research_infos(research_name, research_designs_data=research_designs_data)
+    research_designs_details = research_designs_retriever.get_entities_designs_infos_by_name(research_name, sorted_key_function=_get_key_for_research_sort)
 
-    if not research_infos:
+    if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
     else:
         if as_embed:
-            return _get_research_info_as_embed(research_name, research_infos, research_designs_data), True
+            return _get_research_infos_as_embed(research_designs_details), True
         else:
-            return _get_research_info_as_text(research_name, research_infos, research_designs_data), True
+            return _get_research_infos_as_text(research_name, research_designs_details), True
 
 
 def _get_research_infos(research_name: str, research_designs_data: dict = None):
@@ -174,24 +267,22 @@ def _get_research_design_ids_from_name(research_name: str, research_designs_data
     return results
 
 
-def _get_research_info_as_embed(research_name: str, research_infos: dict, research_designs_data: dict):
-    return ''
+def _get_research_infos_as_embed(research_designs_details: List[ResearchDesignDetails]) -> List[discord.Embed]:
+    result = [research_design_details.get_details_as_embed() for research_design_details in research_designs_details]
+    return result
 
 
-def _get_research_info_as_text(research_name: str, research_infos: dict, research_designs_data: dict):
-    lines = [f'**Research stats for \'{research_name}\'**']
-    research_infos = sorted(research_infos, key=lambda research_info: (
-        _get_key_for_research_sort(research_info, research_designs_data)
-    ))
+def _get_research_infos_as_text(research_name: str, research_designs_details: List[ResearchDesignDetails]) -> List[str]:
+    lines = [f'Research stats for **{research_name}**']
 
-    research_infos_count = len(research_infos)
+    research_infos_count = len(research_designs_details)
     big_set = research_infos_count > 3
 
-    for i, research_info in enumerate(research_infos):
+    for i, research_design_details in enumerate(research_designs_details):
         if big_set:
-            lines.extend(get_research_details_short_from_data_as_text(research_info))
+            lines.extend(research_design_details.get_details_as_text_short())
         else:
-            lines.extend(get_research_details_from_data_as_text(research_info, research_designs_data))
+            lines.extend(research_design_details.get_details_as_text_long())
             if i < research_infos_count - 1:
                 lines.append(settings.EMPTY_LINE)
 
@@ -206,3 +297,21 @@ def _get_key_for_research_sort(research_info: dict, research_designs_data: dict)
             result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
     result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
     return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Initilization ----------
+
+research_designs_retriever = entity.EntityDesignsRetriever(
+    RESEARCH_DESIGN_BASE_PATH,
+    RESEARCH_DESIGN_KEY_NAME,
+    RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='ResearchDesigns'
+)
