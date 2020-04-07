@@ -544,9 +544,8 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        level, name = util.get_level_and_name(level, name)
         full_name = f'{level} {name}'
-        item_name = full_name if level is not None else name
+        level, name = util.get_level_and_name(level, name)
         try:
             char_output, char_success = crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
