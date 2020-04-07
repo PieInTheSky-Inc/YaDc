@@ -136,13 +136,11 @@ def get_utcnow():
 
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
-    pss_format = '%Y-%m-%dT%H:%M:%S'
-    detailed_pss_format = '%Y-%m-%dT%H:%M:%S.%f'
     result = None
     try:
-        result = datetime.strptime(pss_datetime, pss_format)
+        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
     except ValueError:
-        result = datetime.strptime(pss_datetime, detailed_pss_format)
+        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
     result = pytz.utc.localize(result)
     return result
 
@@ -528,10 +526,19 @@ def should_escape_entity_name(entity_name: str) -> bool:
     if entity_name:
         if entity_name != entity_name.strip():
             return True
-        for markdown in ['_', '*', '~~']:
+        for markdown in ['_', '*', '~~', '>', '`']:
             if markdown in entity_name:
                 return True
     return False
+
+
+def escape_markdown(s: str) -> str:
+    result = s
+    if result:
+        for markdown in ['_', '*', '~~', '>', '`']:
+            if markdown in s:
+                result = result.replace(markdown, f'\\{markdown}')
+    return result
 
 
 def get_seconds_to_wait(interval_length: int, utc_now: datetime = None) -> float:

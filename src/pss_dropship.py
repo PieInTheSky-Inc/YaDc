@@ -4,7 +4,7 @@
 from datetime import datetime
 import discord
 import pprint
-from typing import List
+from typing import Dict, Iterable, List, Tuple, Union
 
 from cache import PssCache
 import emojis
@@ -35,9 +35,9 @@ DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAnd
 
 def _convert_sale_item_mask(sale_item_mask: int) -> str:
     result = []
-    for flag in lookups.SALE_ITEM_MASK_LOOKUP.keys():
+    for flag in lookups.IAP_OPTIONS_MASK_LOOKUP.keys():
         if (sale_item_mask & flag) != 0:
-            item, value = lookups.SALE_ITEM_MASK_LOOKUP[flag]
+            item, value = lookups.IAP_OPTIONS_MASK_LOOKUP[flag]
             result.append(f'_{item}_ ({value})')
     if result:
         if len(result) > 1:
@@ -64,8 +64,8 @@ def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMB
 
     collection_design_data = crew.collection_designs_retriever.get_data_dict3()
     char_design_data = crew.character_designs_retriever.get_data_dict3()
-    item_design_data = item.__item_designs_cache.get_data_dict3()
-    room_design_data = room.__room_designs_cache.get_data_dict3()
+    item_design_data = item.items_designs_retriever.get_data_dict3()
+    room_design_data = room.rooms_designs_retriever.get_data_dict3()
 
     try:
         daily_msg = _get_daily_news_from_data_as_text(daily_info)
@@ -140,7 +140,8 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
             if ':' in item_id:
                 _, item_id = item_id.split(':')
             if item_id:
-                item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+                item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
+                item_details = ''.join(item_design_details.get_details_as_text_short())
                 currency_type, price = cargo_prices[i].split(':')
                 currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
                 result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
@@ -149,7 +150,7 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
     return result
 
 
-def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> list:
+def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> List[str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = raw_data['LimitedCatalogType']
@@ -164,7 +165,8 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
         char_design_details = crew.get_char_design_details_by_id(entity_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
         entity_details = char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
-        entity_details = item.get_item_details_short_from_id_as_text(entity_id, items_designs_data)
+        item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
+        entity_details = item_design_details.get_details_as_text_short()
     elif shop_type == 'Room':
         entity_details = room.get_room_details_short_from_id_as_text(entity_id, rooms_designs_data)
     else:
@@ -184,8 +186,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
-    sale_item_mask = raw_data['SaleItemMask']
-    sale_items = _convert_sale_item_mask(int(sale_item_mask))
+    sale_items = core.convert_iap_options_mask(int(raw_data['SaleItemMask']))
     sale_quantity = raw_data['SaleQuantity']
     result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 
@@ -195,7 +196,8 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
         char_design_details = crew.get_char_design_details_by_id(sale_argument, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
         entity_details = ''.join(char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
-        entity_details = ''.join(item.get_item_details_short_from_id_as_text(sale_argument, items_designs_data))
+        item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)
+        entity_details = ''.join(item_design_details.get_details_as_text_short())
     elif sale_type == 'Room':
         entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, rooms_designs_data))
     elif sale_type == 'Bonus':
@@ -225,7 +227,8 @@ def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict)
     item_rewards = raw_data['DailyItemRewards'].split('|')
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
-        item_details = ''.join(item.get_item_details_short_from_id_as_text(item_id, item_designs_data))
+        item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
+        item_details = ''.join(item_design_details.get_details_as_text_short())
         result.append(f'{amount} x {item_details}')
 
     return result
