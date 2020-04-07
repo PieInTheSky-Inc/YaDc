@@ -47,7 +47,7 @@ __research_designs_cache = PssCache(
 
 # ---------- Classes ----------
 
-class ResearchDesignDetails(entity.EntityDesignDetails):
+class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, research_info: dict, researches_designs_data: dict = None):
         if not researches_designs_data:
             researches_designs_data = __research_designs_cache.get_data_dict3()
@@ -309,7 +309,7 @@ def _get_key_for_research_sort(research_info: dict, research_designs_data: dict)
 
 # ---------- Initilization ----------
 
-research_designs_retriever = entity.EntityDesignsRetriever(
+research_designs_retriever = entity.NewEntityDesignsRetriever(
     RESEARCH_DESIGN_BASE_PATH,
     RESEARCH_DESIGN_KEY_NAME,
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,

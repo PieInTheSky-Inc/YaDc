@@ -61,7 +61,7 @@ REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 
 # ---------- Classes ----------
 
-class PromotionDesignDetails(entity.EntityDesignDetails):
+class PromotionDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, promotion_design_info: dict):
         """
         RewardString
@@ -285,7 +285,7 @@ def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
         if get_entity_design_details_function:
             intermediate = []
             for entity_id in rewards[entity_type]:
-                entity_design_details: entity.EntityDesignDetails = get_entity_design_details_function(entity_id)
+                entity_design_details: entity.LegacyEntityDesignDetails = get_entity_design_details_function(entity_id)
                 intermediate.append(entity_design_details.get_details_as_text_short())
             result.append(', '.join(intermediate))
         else:
@@ -324,7 +324,7 @@ def get_promotion_design_details_by_id(promotion_design_id: str, promotions_desi
     return None
 
 
-def get_promotions_designs_details_by_name(promotion_name: str) -> entity.EntityDesignDetailsCollection:
+def get_promotions_designs_details_by_name(promotion_name: str) -> entity.NewEntityDesignDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
 
@@ -383,7 +383,7 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_design_detail
 
 # ---------- Initilization ----------
 
-promotion_designs_retriever = entity.EntityDesignsRetriever(
+promotion_designs_retriever = entity.NewEntityDesignsRetriever(
     PROMOTION_DESIGN_BASE_PATH,
     PROMOTION_DESIGN_KEY_NAME,
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,

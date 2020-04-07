@@ -26,7 +26,7 @@ import utility as util
 
 # ---------- Classes ----------
 
-class RoomDesignDetails(entity.EntityDesignDetails):
+class RoomDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, room_info: dict):
         self.__room_info: Dict[str, object] = room_info
 
@@ -661,7 +661,7 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 
 # ---------- Initilization ----------
 
-rooms_designs_retriever = entity.EntityDesignsRetriever(
+rooms_designs_retriever = entity.LegacyEntityDesignsRetriever(
     ROOM_DESIGN_BASE_PATH,
     ROOM_DESIGN_KEY_NAME,
     ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
@@ -670,12 +670,11 @@ rooms_designs_retriever = entity.EntityDesignsRetriever(
 )
 
 
-rooms_designs_purchases_retriever = entity.EntityDesignsRetriever(
+rooms_designs_purchases_retriever = entity.LegacyEntityDesignsRetriever(
     ROOM_DESIGN_PURCHASE_BASE_PATH,
     ROOM_DESIGN_PURCHASE_KEY_NAME,
     ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,
-    cache_name='RoomDesignPurchases',
-    cache_update_interval=60
+    cache_name='RoomDesignPurchases'
 )
 
 

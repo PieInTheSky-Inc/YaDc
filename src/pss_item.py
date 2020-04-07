@@ -37,20 +37,27 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
 # ---------- Classes ----------
 
-class ItemDesignDetails(entity.EntityDesignDetails):
-    def __init__(self, entity_design_info: entity.EntityDesignInfo, title: entity.EntityDesignDetailProperty, description: entity.EntityDesignDetailProperty, properties_short: List[entity.EntityDesignDetailProperty], properties_embed: List[entity.EntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
+class ItemDesignDetails(entity.NewEntityDesignDetails):
+    def __init__(self, entity_design_info: entity.EntityDesignInfo, title: entity.NewEntityDesignDetailProperty, description: entity.NewEntityDesignDetailProperty, properties_long: List[entity.NewEntityDesignDetailProperty], properties_embed: List[entity.NewEntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
         self.__prefix: str = prefix or ''
-        super().__init__(entity_design_info, title, description, None, properties_short, properties_embed, entities_designs_data=entities_designs_data)
+        super().__init__(entity_design_info, title, description, properties_long, None, properties_embed, entities_designs_data=entities_designs_data)
+
+
+    def get_details_as_text_long(self) -> List[str]:
+        details = []
+        for display_name, display_value in self.details_long:
+            if display_value:
+                if display_name:
+                    details.append(f'{display_name} = {display_value}')
+                else:
+                    details.append(display_value)
+        details_short = ''.join(self.get_details_as_text_short())
+        result = [f'{details_short} - {", ".join(details)}']
+        return result
 
 
     def get_details_as_text_short(self) -> List[str]:
-        details = []
-        for display_name, display_value in self.details_short:
-            if display_name:
-                details.append(f'{display_name} = {display_value}')
-            else:
-                details.append(display_value)
-        result = [f'{self.__prefix}{self.title} ({self.description}) - {", ".join(details)}']
+        result = [f'{self.__prefix}{self.title} ({self.description})']
         return result
 
 
@@ -234,7 +241,7 @@ def get_item_details_short_by_training_id(training_id: str, item_design_data: di
         item_design_data = items_designs_retriever.get_data_dict3()
 
     item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = [' '.join(get_item_design_details_by_id(item_design_id, item_design_data).get_details_as_text_short()) for item_design_id in item_design_ids]
+    result = [' '.join(get_item_design_details_by_id(item_design_id, item_design_data).get_details_as_text_long()) for item_design_id in item_design_ids]
 
     return result
 
@@ -286,7 +293,7 @@ def _get_item_info_as_text(item_name: str, items_designs_details: List[ItemDesig
     lines = [f'Item stats for **{item_name}**']
 
     for item_design_details in items_designs_details:
-        lines.extend(item_design_details.get_details_as_text_short())
+        lines.extend(item_design_details.get_details_as_text_long())
 
     return lines
 
@@ -331,7 +338,7 @@ def _get_item_price_as_text(item_name: str, items_designs_details) -> str:
     lines = []
     lines.append(f'**Item prices matching \'{item_name}\'**')
     for item_design_details in items_designs_details:
-        lines.extend(item_design_details.get_details_as_text_short())
+        lines.extend(item_design_details.get_details_as_text_long())
 
     lines.append(settings.EMPTY_LINE)
     lines.append(' '.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE'), resources.get_resource('PRICE_NOTE')]))
@@ -587,7 +594,7 @@ def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[st
         result.append(settings.EMPTY_LINE)
         result.append(_get_best_title(stat, slot))
         for item_design_details in group:
-            result.extend(item_design_details.get_details_as_text_short())
+            result.extend(item_design_details.get_details_as_text_long())
 
     result.append(settings.EMPTY_LINE)
     result.append(resources.get_resource('PRICE_NOTE'))
@@ -613,7 +620,7 @@ def _get_pretty_slot(slot: str) -> str:
 
 # ---------- Initilization ----------
 
-items_designs_retriever = entity.EntityDesignsRetriever(
+items_designs_retriever = entity.LegacyEntityDesignsRetriever(
     ITEM_DESIGN_BASE_PATH,
     ITEM_DESIGN_KEY_NAME,
     ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
@@ -663,18 +670,18 @@ def __get_allowed_item_names():
 __allowed_item_names = sorted(__get_allowed_item_names())
 
 
-__title_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-__description_property: entity.EntityDesignDetailProperty = entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
-__item_base_properties: List[entity.EntityDesignDetailProperty] = [
-    entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-    entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+__title_property: entity.NewEntityDesignDetailProperty = entity.NewEntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+__description_property: entity.NewEntityDesignDetailProperty = entity.NewEntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
+__item_base_properties: List[entity.NewEntityDesignDetailProperty] = [
+    entity.NewEntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+    entity.NewEntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
 ]
-__item_price_properties: List[entity.EntityDesignDetailProperty] = [
-    entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
+__item_price_properties: List[entity.NewEntityDesignDetailProperty] = [
+    entity.NewEntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
 ]
-__item_best_properties: List[entity.EntityDesignDetailProperty] = [
-    entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
-    entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+__item_best_properties: List[entity.NewEntityDesignDetailProperty] = [
+    entity.NewEntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
+    entity.NewEntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
 ]
 
 

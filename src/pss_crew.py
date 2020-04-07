@@ -46,7 +46,7 @@ __prestige_to_cache_dict = {}
 
 # ---------- Classes ----------
 
-class CharDesignDetails(entity.EntityDesignDetails):
+class CharDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, char_design_info: dict, collections_designs_data: dict = None, level: int = None):
         special = _get_ability_name(char_design_info)
         equipment_slots = _convert_equipment_mask(int(char_design_info['EquipmentMask']))
@@ -102,7 +102,7 @@ class CharDesignDetails(entity.EntityDesignDetails):
         ]
 
         super().__init__(
-            title=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
+            name=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
             description=char_design_info['CharacterDesignDescription'],
             details_long=details_long,
             details_short=details_short
@@ -186,7 +186,7 @@ class CharDesignDetails(entity.EntityDesignDetails):
 
 
 
-class CollectionDesignDetails(entity.EntityDesignDetails):
+class CollectionDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, collection_design_info: dict):
         collection_crew = _get_collection_chars_designs_infos(collection_design_info)
         collection_perk = collection_design_info['EnhancementType']
@@ -239,7 +239,7 @@ class CollectionDesignDetails(entity.EntityDesignDetails):
 
 
 
-class PrestigeDetails(entity.EntityDesignDetails):
+class PrestigeDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
         self.__char_design_name: str = char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
         self.__count: int = sum([len(prestige_partners) for prestige_partners in prestige_infos.values()])
@@ -699,14 +699,14 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 # ---------- Initilization ----------
 
-character_designs_retriever = entity.EntityDesignsRetriever(
+character_designs_retriever = entity.LegacyEntityDesignsRetriever(
     CHARACTER_DESIGN_BASE_PATH,
     CHARACTER_DESIGN_KEY_NAME,
     CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='CharacterDesigns'
 )
 
-collection_designs_retriever = entity.EntityDesignsRetriever(
+collection_designs_retriever = entity.LegacyEntityDesignsRetriever(
     COLLECTION_DESIGN_BASE_PATH,
     COLLECTION_DESIGN_KEY_NAME,
     COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME,

@@ -33,7 +33,7 @@ TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
 # ---------- Classes ----------
 
-class TrainingDetails(entity.EntityDesignDetails):
+class TrainingDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, training_info: dict):
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
@@ -270,7 +270,7 @@ def _get_room_names(rank: int) -> Tuple[str, str]:
 
 # ---------- Initilization ----------
 
-training_designs_retriever = entity.EntityDesignsRetriever(
+training_designs_retriever = entity.NewEntityDesignsRetriever(
     TRAINING_DESIGN_BASE_PATH,
     TRAINING_DESIGN_KEY_NAME,
     TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME,
