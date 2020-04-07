@@ -599,7 +599,7 @@ def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[st
     result.append(settings.EMPTY_LINE)
     result.append(resources.get_resource('PRICE_NOTE'))
 
-    return result[1:]
+    return result
 
 
 def _get_best_title(stat: str, slot: str) -> str:
