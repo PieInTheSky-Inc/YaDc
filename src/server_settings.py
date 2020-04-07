@@ -614,6 +614,8 @@ def db_reset_autodaily_channel(guild_id: int) -> bool:
             settings = {
                 'dailychannelid': 'NULL',
                 'dailylatestmessageid': 'NULL',
+                'dailylatestmessagecreatedate': 'NULL',
+                'dailylatestmessagemodifydate': 'NULL'
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
@@ -626,6 +628,8 @@ def db_reset_autodaily_latest_message_id(guild_id: int) -> bool:
         if current_setting is not None:
             settings = {
                 'dailylatestmessageid': 'NULL',
+                'dailylatestmessagecreatedate': 'NULL',
+                'dailylatestmessagemodifydate': 'NULL'
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
@@ -666,7 +670,9 @@ def db_reset_autodaily_settings(guild_id: int) -> bool:
                 'dailylatestmessageid': 'NULL',
                 'dailydeleteonchange': 'NULL',
                 'dailynotifyid': 'NULL',
-                'dailynotifytype': 'NULL'
+                'dailynotifytype': 'NULL',
+                'dailylatestmessagecreatedate': 'NULL',
+                'dailylatestmessagemodifydate': 'NULL'
             }
             success = _db_update_server_setting(guild_id, settings)
             return success
