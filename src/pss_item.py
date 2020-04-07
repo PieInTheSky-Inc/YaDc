@@ -467,7 +467,6 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
 
     item_design_data = items_designs_retriever.get_data_dict3()
     item_ids = _get_item_design_ids_from_name(item_name)
-    item_infos = _get_item_infos_by_name(item_name)
 
     if not item_ids:
         return [f'Could not find an item named **{item_name}**.'], False
