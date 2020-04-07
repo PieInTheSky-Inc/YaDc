@@ -104,7 +104,7 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
 
 def _get_top_captains_path(take: int):
     access_token = login.DEVICES.get_access_token()
-    result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to='
+    result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
     return result
 
 
