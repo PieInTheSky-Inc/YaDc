@@ -475,6 +475,7 @@ def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EM
         item_infos = []
         for item_id in item_ids:
             item_infos.extend(_get_upgrades_for(item_id, item_design_data))
+        item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
 
         if as_embed:
