@@ -570,6 +570,18 @@ def dicts_equal(d1: dict, d2: dict) -> bool:
     return True
 
 
+def get_changed_value_keys(d1: dict, d2: dict, keys_to_check: list = None) -> list:
+    if not keys_to_check:
+        keys_to_check = list(d1.keys())
+    result = []
+    for key in keys_to_check:
+        if key in d1:
+            if key in d2:
+                if d1[key] != d2[key]:
+                    result.append(key)
+    return result
+
+
 async def try_delete_message(message: discord.Message) -> bool:
     try:
         await message.delete()
