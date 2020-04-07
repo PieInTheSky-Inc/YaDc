@@ -148,16 +148,15 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
         await ctx.send(f'Error: Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?')
     elif isinstance(err, discord.ext.commands.CheckFailure):
         await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
+    elif isinstance(err, pss_exception.Error):
+        await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
     else:
         logging.getLogger().error(err, exc_info=True)
-        if isinstance(err, pss_exception.Error):
-            await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
-        else:
-            command_args = util.get_exact_args(ctx)
-            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-            command = bot.get_command(help_args)
-            await ctx.send_help(command)
-            await ctx.send(f'Error: {err}')
+        command_args = util.get_exact_args(ctx)
+        help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+        command = bot.get_command(help_args)
+        await ctx.send_help(command)
+        await ctx.send(f'Error: {err}')
 
 
 @bot.event

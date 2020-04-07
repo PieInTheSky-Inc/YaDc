@@ -238,7 +238,9 @@ def get_research_design_details_by_id(research_design_id: str, research_designs_
 def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     pss_assert.valid_entity_name(research_name)
 
-    research_designs_details = research_designs_retriever.get_entities_designs_infos_by_name(research_name, sorted_key_function=_get_key_for_research_sort)
+    research_designs_data = research_designs_retriever.get_data_dict3()
+    research_designs_infos = research_designs_retriever.get_entity_design_infos_by_name(research_name, entity_designs_data=research_designs_data, sorted_key_function=_get_key_for_research_sort)
+    research_designs_details = [ResearchDesignDetails(research_info, researches_designs_data=research_designs_data) for research_info in research_designs_infos]
 
     if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
@@ -283,8 +285,7 @@ def _get_research_infos_as_text(research_name: str, research_designs_details: Li
             lines.extend(research_design_details.get_details_as_text_short())
         else:
             lines.extend(research_design_details.get_details_as_text_long())
-            if i < research_infos_count - 1:
-                lines.append(settings.EMPTY_LINE)
+            lines.append(settings.EMPTY_LINE)
 
     return lines
 
@@ -309,7 +310,7 @@ def _get_key_for_research_sort(research_info: dict, research_designs_data: dict)
 
 # ---------- Initilization ----------
 
-research_designs_retriever = entity.EntityDesignsRetriever(
+research_designs_retriever = entity.LegacyEntityDesignsRetriever(
     RESEARCH_DESIGN_BASE_PATH,
     RESEARCH_DESIGN_KEY_NAME,
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,
