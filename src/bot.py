@@ -193,7 +193,7 @@ async def post_dailies_loop() -> None:
         utc_now = util.get_utcnow()
         yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
 
-        daily_info = daily.get_daily_info()
+        daily_info = await daily.get_daily_info()
         db_daily_info, db_daily_modify_date = daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
@@ -212,9 +212,9 @@ async def post_dailies_loop() -> None:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
-            latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
             latest_daily_message = '\n'.join(latest_message_output)
-            output, created_output = dropship.get_dropship_text(daily_info=daily_info)
+            output, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
                 posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
@@ -756,7 +756,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
             fleet_name = exact_name
         is_tourney_running = tourney.is_tourney_running()
         (fleet_data, user_data, data_date) = tournament_data.get_data()
-        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+        fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
         if is_tourney_running:
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
         else:
@@ -772,7 +772,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if fleet_info:
             async with ctx.typing():
                 if is_tourney_running:
-                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info)
+                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
                     output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
@@ -798,7 +798,7 @@ async def cmd_daily(ctx: discord.ext.commands.Context):
     """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = dropship.get_dropship_text()
+        output, _ = await dropship.get_dropship_text()
     await util.post_output(ctx, output)
 
 
@@ -881,7 +881,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     channel_id = server_settings.db_get_daily_channel_id(guild.id)
     if channel_id is not None:
         text_channel = bot.get_channel(channel_id)
-        output, _ = dropship.get_dropship_text()
+        output, _ = await dropship.get_dropship_text()
         await util.post_output_to_channel(text_channel, output)
 
 
@@ -961,7 +961,7 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
       /top captains - prints top 100 captains.
       /top captains 30 - prints top 30 captains."""
     async with ctx.typing():
-        output, _ = pss_top.get_top_captains(count)
+        output, _ = await pss_top.get_top_captains(count)
     await util.post_output(ctx, output)
 
 
@@ -1192,12 +1192,12 @@ async def cmd_updatecache(ctx: discord.ext.commands.Context):
         crew.collection_designs_retriever.update_cache()
         prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
         for prestige_to_cache in prestige_to_caches:
-            prestige_to_cache.update_data()
+            await prestige_to_cache.update_data()
         prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
         for prestige_from_cache in prestige_from_caches:
-            prestige_from_cache.update_data()
+            await prestige_from_cache.update_data()
         item.items_designs_retriever.update_cache()
-        research.__research_designs_cache.update_data()
+        await research.__research_designs_cache.update_data()
         room.rooms_designs_retriever.update_cache()
         training.training_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
@@ -1224,7 +1224,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             fleet_name = exact_name
-        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+        fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1236,7 +1236,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         if fleet_info:
             async with ctx.typing():
                 (fleet_data, user_data, data_date) = tournament_data.get_data()
-                output, file_paths = fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1276,7 +1276,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
 
         if user_info:
             async with ctx.typing():
-                output = user.get_user_details_by_info(user_info)
+                output = await user.get_user_details_by_info(user_info)
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
@@ -1761,7 +1761,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                     utc_now = util.get_utcnow()
                     yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
                     db_daily_info, _ = daily.db_get_daily_info()
-                    latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+                    latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
                     latest_daily_message = '\n'.join(latest_message_output)
                     _, latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
                     success = server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
@@ -1946,7 +1946,7 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        core.init_db()
+        await core.init_db()
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
@@ -2003,7 +2003,7 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         device = login.DEVICES.create_device()
         try:
-            device.get_access_token()
+            await device.get_access_token()
             created = True
         except Exception as err:
             login.DEVICES.remove_device(device)
@@ -2061,7 +2061,7 @@ async def cmd_device_login(ctx: discord.ext.commands.Context):
     """
     async with ctx.typing():
         try:
-            access_token = login.DEVICES.get_access_token()
+            access_token = await login.DEVICES.get_access_token()
             device = login.DEVICES.current
         except Exception as err:
             access_token = None
@@ -2094,7 +2094,7 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     print(f'discord.py version: {discord.__version__}')
-    core.init_db()
+    await core.init_db()
     login.init()
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)

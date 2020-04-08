@@ -58,8 +58,8 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 # ---------- Helper functions ----------
 
-def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
-    fleet_info = _get_fleet_info_by_id(fleet_info[FLEET_KEY_NAME])
+async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
+    fleet_info = await _get_fleet_info_by_id(fleet_info[FLEET_KEY_NAME])
 
     division_design_id = fleet_info['DivisionDesignId']
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -94,8 +94,8 @@ def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> lis
     return lines
 
 
-def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
-    fleet_infos = _get_fleet_infos_by_name(fleet_name)
+async def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
+    fleet_infos = await _get_fleet_infos_by_name(fleet_name)
     if exact:
         for fleet_info in fleet_infos.values():
             if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] == fleet_name:
@@ -106,11 +106,11 @@ def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
         return None
 
 
-def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: dict, fleet_data: dict) -> list:
+async def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: dict, fleet_data: dict) -> list:
     fleet_id = fleet_info[FLEET_KEY_NAME]
     if fleet_id in fleet_data.keys():
         fleet_info['Score'] = fleet_data[fleet_id]['Score']
-    return _get_fleet_details_by_info(fleet_info, fleet_users_infos)
+    return await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
 
 
 def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None) -> list:
@@ -137,18 +137,18 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_data: dict = None, data_date: datetime = None) -> (list, list):
+async def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_data: dict = None, data_date: datetime = None) -> (list, list):
     """Returns a list of lines for the post, as well as the path to the spreadsheet created"""
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     fleet_id = fleet_info[FLEET_KEY_NAME]
     retrieval_date = util.get_utcnow()
-    fleet_users_infos = _get_fleet_users_by_id(fleet_id)
+    fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
     if fleet_users_infos:
         fleet_info = list(fleet_users_infos.values())[0]['Alliance']
     else:
-        fleet_info = _get_fleet_info_by_name(fleet_name)
+        fleet_info = await _get_fleet_info_by_name(fleet_name)
 
-    post_content = _get_fleet_details_by_info(fleet_info, fleet_users_infos)
+    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
     fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieval_date)
     fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date, FLEET_SHEET_COLUMN_TYPES)
     file_paths = [fleet_sheet_path_current]
@@ -165,20 +165,20 @@ def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_
     return post_content, file_paths
 
 
-def _get_search_fleets_base_path(fleet_name: str) -> str:
-    access_token = login.DEVICES.get_access_token()
+async def _get_search_fleets_base_path(fleet_name: str) -> str:
+    access_token = await login.DEVICES.get_access_token()
     result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={util.url_escape(fleet_name)}'
     return result
 
 
-def _get_get_alliance_base_path(fleet_id: str) -> str:
-    access_token = login.DEVICES.get_access_token()
+async def _get_get_alliance_base_path(fleet_id: str) -> str:
+    access_token = await login.DEVICES.get_access_token()
     result = f'AllianceService/GetAlliance?accessToken={access_token}&allianceId={fleet_id}'
     return result
 
 
-def _get_search_fleet_users_base_path(fleet_id: str) -> str:
-    access_token = login.DEVICES.get_access_token()
+async def _get_search_fleet_users_base_path(fleet_id: str) -> str:
+    access_token = await login.DEVICES.get_access_token()
     result = f'AllianceService/ListUsers?accessToken={access_token}&skip=0&take=100&allianceId={fleet_id}'
     return result
 
@@ -193,10 +193,10 @@ def _get_search_fleet_users_base_path(fleet_id: str) -> str:
 
 # ---------- Alliance info ----------
 
-def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
+async def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
 
-    fleet_infos = list(_get_fleet_infos_by_name(fleet_name).values())
+    fleet_infos = list((await _get_fleet_infos_by_name(fleet_name)).values())
     return fleet_infos
 
 
@@ -214,30 +214,30 @@ def get_fleet_search_details(fleet_info: dict) -> str:
     return result
 
 
-def _get_fleet_info_by_id(fleet_id: str) -> dict:
-    path = _get_get_alliance_base_path(fleet_id)
-    fleet_data_raw = core.get_data_from_path(path)
+async def _get_fleet_info_by_id(fleet_id: str) -> dict:
+    path = await _get_get_alliance_base_path(fleet_id)
+    fleet_data_raw = await core.get_data_from_path(path)
     fleet_info = core.xmltree_to_dict3(fleet_data_raw)
     return fleet_info
 
 
-def _get_fleet_infos_by_name(fleet_name: str) -> dict:
-    path = _get_search_fleets_base_path(fleet_name)
-    fleet_data_raw = core.get_data_from_path(path)
+async def _get_fleet_infos_by_name(fleet_name: str) -> dict:
+    path = await _get_search_fleets_base_path(fleet_name)
+    fleet_data_raw = await core.get_data_from_path(path)
     fleet_infos = core.xmltree_to_dict3(fleet_data_raw)
     return fleet_infos
 
 
-def _get_fleet_users_by_id(alliance_id: str) -> dict:
-    path = _get_search_fleet_users_base_path(alliance_id)
-    fleet_users_data_raw = core.get_data_from_path(path)
+async def _get_fleet_users_by_id(alliance_id: str) -> dict:
+    path = await _get_search_fleet_users_base_path(alliance_id)
+    fleet_users_data_raw = await core.get_data_from_path(path)
     fleet_users_infos = core.xmltree_to_dict3(fleet_users_data_raw)
     return fleet_users_infos
 
 
-def get_fleet_users_by_info(fleet_info: dict) -> dict:
+async def get_fleet_users_by_info(fleet_info: dict) -> dict:
     fleet_id = fleet_info[FLEET_KEY_NAME]
-    return _get_fleet_users_by_id(fleet_id)
+    return await _get_fleet_users_by_id(fleet_id)
 
 
 
@@ -294,7 +294,7 @@ if __name__ == '__main__':
     for fleet_name in test_fleets:
         os.system('clear')
         is_tourney_running = tourney.is_tourney_running()
-        fleet_infos = get_fleet_details_by_name(fleet_name)
+        fleet_infos = await get_fleet_details_by_name(fleet_name)
         lines = [get_fleet_search_details(fleet_info) for fleet_info in fleet_infos]
         for line in lines:
             print(line)

@@ -31,10 +31,10 @@ class PssCache:
         return self.__name
 
 
-    def update_data(self, old_data=None) -> bool:
+    async def update_data(self, old_data=None) -> bool:
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
-        data = core.get_data_from_path(self.__update_path)
+        data = await core.get_data_from_path(self.__update_path)
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
         if data_changed:
@@ -50,11 +50,11 @@ class PssCache:
         return False
 
 
-    def get_raw_data(self) -> str:
+    async def get_raw_data(self) -> str:
         util.dbg_prnt(f'+ PssCache[{self.name}].get_data()')
         if self.__get_is_data_outdated():
             util.dbg_prnt(f'[PssCache[{self.name}].get_data] Data is outdated')
-            self.update_data()
+            await self.update_data()
 
         can_read = False
         while not can_read:
@@ -68,13 +68,13 @@ class PssCache:
         return result
 
 
-    def get_data_dict2(self) -> dict:
-        data = self.get_raw_data()
+    async def get_data_dict2(self) -> dict:
+        data = await self.get_raw_data()
         return dict(core.xmltree_to_dict2(data))
 
 
-    def get_data_dict3(self) -> dict:
-        data = self.get_raw_data()
+    async def get_data_dict3(self) -> dict:
+        data = await self.get_raw_data()
         return dict(core.xmltree_to_dict3(data))
 
 

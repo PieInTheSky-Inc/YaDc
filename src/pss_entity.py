@@ -339,8 +339,8 @@ class EntityDesignsRetriever:
         return results
 
 
-    def update_cache(self) -> None:
-        self.__cache.update_data()
+    async def update_cache(self) -> None:
+        await self.__cache.update_data()
 
 
 
@@ -537,5 +537,5 @@ class LegacyEntityDesignsRetriever:
         return results
 
 
-    def update_cache(self) -> None:
-        self.__cache.update_data()
+    async def update_cache(self) -> None:
+        await self.__cache.update_data()

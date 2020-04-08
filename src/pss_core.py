@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# ----- Packages ------------------------------------------------------
+import aiohttp
+import asyncio
 from datetime import datetime
 import discord
 import json
@@ -27,21 +28,29 @@ DB_CONN: psycopg2.extensions.connection = None
 
 # ---------- Constants ----------
 
+__AIOHTTP_SESSION = aiohttp.ClientSession()
+
+
+
+
+
 
 
 
 # ----- Utilities --------------------------------
-def get_data_from_url(url):
-    data = urllib.request.urlopen(url).read()
-    return data.decode('utf-8')
+
+async def get_data_from_url(url: str) -> str:
+    async with __AIOHTTP_SESSION.get(url) as response:
+        data = await response.text(encoding='utf-8')
+    return data
 
 
-def get_data_from_path(path):
+async def get_data_from_path(path):
     if path:
         path = path.strip('/')
-    base_url = get_base_url()
+    base_url = await get_base_url()
     url = f'{base_url}{path}'
-    return get_data_from_url(url)
+    return await get_data_from_url(url)
 
 
 def save_raw_text(raw_text, filename):
@@ -98,17 +107,17 @@ def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
     return (time_diff.days > max_days) or time_diff.seconds > max_seconds
 
 
-def load_data_from_url(filename, url, refresh='auto'):
+async def load_data_from_url(filename, url, refresh='auto'):
     if os.path.isfile(filename) and refresh != 'true':
         if refresh == 'auto':
             if is_old_file(filename, max_seconds=3600, verbose=False):
-                raw_text = get_data_from_url(url)
+                raw_text = await get_data_from_url(url)
                 save_raw_text(raw_text, filename)
                 return raw_text
         with open(filename, 'r') as f:
             raw_text = f.read()
     else:
-        raw_text = get_data_from_url(url)
+        raw_text = await get_data_from_url(url)
         save_raw_text(raw_text, filename)
     return raw_text
 
@@ -243,9 +252,9 @@ def create_reverse_lookup(d, new_key, new_value):
     return rlookup
 
 
-def parse_links3(url):
-    data = urllib.request.urlopen(url).read()
-    root = xml.etree.ElementTree.fromstring(data.decode('utf-8'))
+async def parse_links3(url):
+    data = await get_data_from_url(url)
+    root = xml.etree.ElementTree.fromstring(data)
 
     txt_list = []
     txt = ''
@@ -490,22 +499,22 @@ def get_real_name(search_str, lst_original):
 
 # ---------- Get Production Server ----------
 
-def get_latest_settings(language_key: str = 'en') -> dict:
+async def get_latest_settings(language_key: str = 'en') -> dict:
     if not language_key:
         language_key = 'en'
     url = f'{settings.LATEST_SETTINGS_BASE_URL}{language_key}'
-    raw_text = get_data_from_url(url)
+    raw_text = await get_data_from_url(url)
     result = xmltree_to_dict3(raw_text)
     return result
 
 
-def get_production_server(language_key: str = 'en'):
-    latest_settings = get_latest_settings(language_key=language_key)
+async def get_production_server(language_key: str = 'en'):
+    latest_settings = await get_latest_settings(language_key=language_key)
     return latest_settings['ProductionServer']
 
 
-def get_base_url():
-    production_server = get_production_server()
+async def get_base_url():
+    production_server = await get_production_server()
     result = f'https://{production_server}/'
     return result
 
@@ -565,7 +574,7 @@ def create_embed(title: str = None, description: str = None, fields: Union[List[
 
 # ---------- DataBase ----------
 
-def init_db():
+async def init_db():
     success_settings = db_try_create_table('settings', [
         ('settingname', 'TEXT', True, True),
         ('modifydate', 'TIMESTAMPTZ', False, True),
@@ -584,7 +593,7 @@ def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
         return
 
-    success_update_1_2_4_0 = db_update_schema_v_1_2_4_0()
+    success_update_1_2_4_0 = await db_update_schema_v_1_2_4_0()
     if not success_update_1_2_4_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
         return
@@ -700,7 +709,7 @@ def db_update_schema_v_1_2_5_0():
 
 
 
-def db_update_schema_v_1_2_4_0():
+async def db_update_schema_v_1_2_4_0():
     column_definitions = [
         ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
@@ -723,7 +732,7 @@ def db_update_schema_v_1_2_4_0():
     success = db_try_execute(query)
     if success:
         utc_now = util.get_utcnow()
-        daily_info = daily.get_daily_info()
+        daily_info = await daily.get_daily_info()
         success = daily.db_set_daily_info(daily_info, utc_now)
         if success:
             success = db_try_set_schema_version('1.2.4.0')

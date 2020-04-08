@@ -57,10 +57,10 @@ def _get_league_from_trophies(trophies: int) -> str:
     return result
 
 
-def get_user_details_by_info(user_info: dict) -> list:
+async def get_user_details_by_info(user_info: dict) -> list:
     user_id = user_info[USER_KEY_NAME]
     utc_now = util.get_utcnow()
-    inspect_ship_info = ship.get_inspect_ship_for_user(user_id)
+    inspect_ship_info = await ship.get_inspect_ship_for_user(user_id)
     ship_info = {}
     for key in inspect_ship_info.keys():
         if key != user_id:
@@ -88,7 +88,7 @@ def get_user_details_by_info(user_info: dict) -> list:
     has_fleet = fleet_id != '0'
 
     if has_fleet:
-        fleet_info = fleet._get_fleet_info_by_id(fleet_id)
+        fleet_info = await fleet._get_fleet_info_by_id(fleet_id)
         if fleet_info:
             division_design_id = fleet_info['DivisionDesignId']
             fleet_join_date = util.parse_pss_datetime(user_info['AllianceJoinDate'])
@@ -149,10 +149,10 @@ def get_user_details_by_info(user_info: dict) -> list:
     return lines
 
 
-def _get_user_details_from_tournament_data(user_info: dict, user_data: dict) -> list:
+async def _get_user_details_from_tournament_data(user_info: dict, user_data: dict) -> list:
     user_id = user_info[USER_KEY_NAME]
     user_info['AllianceScore'] = user_data[user_id]['AllianceScore']
-    return get_user_details_by_info(user_info)
+    return await get_user_details_by_info(user_info)
 
 
 
@@ -195,9 +195,9 @@ def get_user_search_details(user_info: dict) -> str:
     return result
 
 
-def _get_user_infos(user_name: str) -> dict:
+async def _get_user_infos(user_name: str) -> dict:
     path = f'{SEARCH_USERS_BASE_PATH}{util.url_escape(user_name)}'
-    user_data_raw = core.get_data_from_path(path)
+    user_data_raw = await core.get_data_from_path(path)
     user_infos = core.xmltree_to_dict3(user_data_raw)
     return user_infos
 
@@ -212,8 +212,8 @@ def _get_user_infos(user_name: str) -> dict:
 
 # ---------- Initialization ----------
 
-def init():
-    league_data = core.get_data_from_path(LEAGUE_BASE_PATH)
+async def init():
+    league_data = await core.get_data_from_path(LEAGUE_BASE_PATH)
     league_infos = core.xmltree_to_dict3(league_data)
     for league_info in sorted(list(league_infos.values()), key=lambda league_info: int(league_info['MinTrophy'])):
         league_info['MinTrophy'] = int(league_info['MinTrophy'])
@@ -221,4 +221,4 @@ def init():
         LEAGUE_INFOS_CACHE.append(league_info)
 
 
-init()
+await init()

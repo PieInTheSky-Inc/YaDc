@@ -24,8 +24,8 @@ ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO
 
 # ---------- Top 100 Alliances ----------
 
-def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    raw_data = core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
+async def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    raw_data = await core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_fleets_as_embed(data, take), True
@@ -67,9 +67,9 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 
 # ---------- Top 100 Captains ----------
 
-def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    path = _get_top_captains_path(take)
-    raw_data = core.get_data_from_path(path)
+async def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    path = await _get_top_captains_path(take)
+    raw_data = await core.get_data_from_path(path)
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
@@ -102,8 +102,8 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
     return lines
 
 
-def _get_top_captains_path(take: int):
-    access_token = login.DEVICES.get_access_token()
+async def _get_top_captains_path(take: int):
+    access_token = await login.DEVICES.get_access_token()
     result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
     return result
 
