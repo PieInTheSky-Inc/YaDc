@@ -490,17 +490,21 @@ def get_real_name(search_str, lst_original):
 
 # ---------- Get Production Server ----------
 
-def get_latest_settings(language_key: str = 'en') -> dict:
+def get_latest_settings(language_key: str = 'en', use_base_production_server: bool = False) -> dict:
     if not language_key:
         language_key = 'en'
-    url = f'{settings.LATEST_SETTINGS_BASE_URL}{language_key}'
+    if use_base_production_server:
+        base_url = f'{settings.LATEST_SETTINGS_BASE_URL}{settings.LATEST_SETTINGS_BASE_PATH}'
+    else:
+        base_url = f'{get_base_url()}{settings.LATEST_SETTINGS_BASE_PATH}'
+    url = f'{base_url}{language_key}'
     raw_text = get_data_from_url(url)
     result = xmltree_to_dict3(raw_text)
     return result
 
 
 def get_production_server(language_key: str = 'en'):
-    latest_settings = get_latest_settings(language_key=language_key)
+    latest_settings = get_latest_settings(language_key=language_key, use_base_production_server=True)
     return latest_settings['ProductionServer']
 
 
