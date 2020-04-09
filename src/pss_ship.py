@@ -53,11 +53,11 @@ async def get_inspect_ship_for_user(user_id: str) -> dict:
     return result
 
 
-def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:
+async def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:
     if not ship_info:
         return None
     if not ship_design_data:
-        ship_design_data = __ship_designs_cache.get_data_dict3()
+        ship_design_data = await __ship_designs_cache.get_data_dict3()
     ship_design_id = ship_info['ShipDesignId']
     result = ship_design_data[ship_design_id]['ShipLevel']
     return result
@@ -65,7 +65,7 @@ def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:
 
 async def get_ship_level_for_user(user_id: str) -> str:
     inspect_ship_info = await get_inspect_ship_for_user(user_id)
-    result = get_ship_level(inspect_ship_info)
+    result = await get_ship_level(inspect_ship_info)
     return result
 
 

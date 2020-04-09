@@ -29,29 +29,10 @@ RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
 
 
 
-# ---------- Initilization ----------
-
-__research_designs_cache = PssCache(
-    RESEARCH_DESIGN_BASE_PATH,
-    'ResearchDesigns',
-    RESEARCH_DESIGN_KEY_NAME)
-
-
-
-
-
-
-
-
-
-
 # ---------- Classes ----------
 
 class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, research_info: dict, researches_designs_data: dict = None):
-        if not researches_designs_data:
-            researches_designs_data = __research_designs_cache.get_data_dict3()
-
+    def __init__(self, research_info: dict, researches_designs_data: dict):
         self.__cost: str = _get_costs_from_research_info(research_info)
         self.__research_time_seconds: int = int(research_info['ResearchTime'])
         self.__required_lab_level: str = research_info['RequiredLabLevel']
@@ -115,18 +96,12 @@ class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
 
 # ---------- Helper functions ----------
 
-def get_research_details_from_id_as_text(research_id: str, research_designs_data: dict = None) -> list:
-    if not research_designs_data:
-        research_designs_data = __research_designs_cache.get_data_dict3()
-
-    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
-    return research_design_details.get_details_as_text_long()
+async def get_research_details_from_id_as_text(research_id: str, researches_designs_data: dict) -> list:
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data)
+    return await research_design_details.get_details_as_text_long()
 
 
-def get_research_details_from_data_as_text(research_info: dict, research_designs_data: dict = None) -> list:
-    if not research_designs_data:
-        research_designs_data = __research_designs_cache.get_data_dict3()
-
+async def get_research_details_from_data_as_text(research_info: dict, researches_designs_data: dict) -> list:
     name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     description = research_info['ResearchDescription']
     costs = _get_costs_from_research_info(research_info)
@@ -136,7 +111,7 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     required_lab_level = research_info['RequiredLabLevel']
     required_research_design_id = research_info['RequiredResearchDesignId']
     if required_research_design_id != '0':
-        required_research_name = research_designs_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        required_research_name = researches_designs_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     else:
         required_research_name = None
 
@@ -151,11 +126,8 @@ def get_research_details_from_data_as_text(research_info: dict, research_designs
     return result
 
 
-def get_research_details_short_from_id_as_text(research_id: str, research_designs_data: dict = None) -> list:
-    if not research_designs_data:
-        research_designs_data = __research_designs_cache.get_data_dict3()
-
-    research_design_details = ResearchDesignDetails(research_id, researches_designs_data=research_designs_data)
+async def get_research_details_short_from_id_as_text(research_id: str, researches_designs_data: dict = None) -> list:
+    research_design_details = ResearchDesignDetails(research_id, researches_designs_data)
     return research_design_details.get_details_as_text_short()
 
 
@@ -169,12 +141,9 @@ def get_research_details_short_from_data_as_text(research_info: dict) -> list:
     return [f'**{name}**: {costs} - {duration} - LAB lvl {required_lab_level}']
 
 
-def get_research_name_from_id(research_id: str, research_designs_data: dict = None) -> str:
+async def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
     if research_id != '0':
-        if not research_designs_data:
-            research_designs_data = __research_designs_cache.get_data_dict3()
-
-        research_info = research_designs_data[research_id]
+        research_info = researches_designs_data[research_id]
         return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     else:
         return None
@@ -202,14 +171,14 @@ def _get_costs_from_research_info(research_info: dict) -> str:
     return f'{cost_reduced}{cost_multiplier} {currency_emoji}'
 
 
-def _get_parents(research_info: dict, research_designs_data: dict) -> list:
+def _get_parents(research_info: dict, researches_designs_data: dict) -> list:
     parent_research_design_id = research_info['RequiredResearchDesignId']
     if parent_research_design_id == '0':
         parent_research_design_id = None
 
     if parent_research_design_id is not None:
-        parent_info = research_designs_data[parent_research_design_id]
-        result = _get_parents(parent_info, research_designs_data)
+        parent_info = researches_designs_data[parent_research_design_id]
+        result = _get_parents(parent_info, researches_designs_data)
         result.append(parent_info)
         return result
     else:
@@ -222,25 +191,22 @@ def _get_parents(research_info: dict, research_designs_data: dict) -> list:
 
 # ---------- Research info ----------
 
-def get_research_design_details_by_id(research_design_id: str, research_designs_data: dict = None) -> ResearchDesignDetails:
+def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> ResearchDesignDetails:
     if research_design_id:
-        if research_designs_data is None:
-            research_designs_data = research_designs_retriever.get_data_dict3()
-
-        if research_design_id and research_design_id in research_designs_data.keys():
-            char_design_info = research_designs_data[research_design_id]
-            char_design_details = ResearchDesignDetails(char_design_info, researches_designs_data=research_designs_data)
+        if research_design_id and research_design_id in researches_designs_data.keys():
+            char_design_info = researches_designs_data[research_design_id]
+            char_design_details = ResearchDesignDetails(char_design_info, researches_designs_data)
             return char_design_details
 
     return None
 
 
-def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
+async def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     pss_assert.valid_entity_name(research_name)
 
-    research_designs_data = research_designs_retriever.get_data_dict3()
-    research_designs_infos = research_designs_retriever.get_entity_design_infos_by_name(research_name, entity_designs_data=research_designs_data, sorted_key_function=_get_key_for_research_sort)
-    research_designs_details = [ResearchDesignDetails(research_info, researches_designs_data=research_designs_data) for research_info in research_designs_infos]
+    researches_designs_data = await researches_designs_retriever.get_data_dict3()
+    research_designs_infos = researches_designs_retriever.get_entity_design_infos_by_name(research_name, entity_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
+    research_designs_details = [ResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
 
     if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
@@ -251,21 +217,15 @@ def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE
             return _get_research_infos_as_text(research_name, research_designs_details), True
 
 
-def _get_research_infos(research_name: str, research_designs_data: dict = None):
-    if research_designs_data is None:
-        research_designs_data = __research_designs_cache.get_data_dict3()
-
-    research_design_ids = _get_research_design_ids_from_name(research_name, research_designs_data=research_designs_data)
-    result = [research_designs_data[research_design_id] for research_design_id in research_design_ids if research_design_id in research_designs_data.keys()]
+async def _get_research_infos(research_name: str, researches_designs_data: dict):
+    research_design_ids = await _get_research_design_ids_from_name(research_name, researches_designs_data)
+    result = [researches_designs_data[research_design_id] for research_design_id in research_design_ids if research_design_id in researches_designs_data.keys()]
 
     return result
 
 
-def _get_research_design_ids_from_name(research_name: str, research_designs_data: dict = None):
-    if research_designs_data is None:
-        research_designs_data = __research_designs_cache.get_data_dict3()
-
-    results = core.get_ids_from_property_value(research_designs_data, RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, research_name)
+async def _get_research_design_ids_from_name(research_name: str, researches_designs_data: dict):
+    results = core.get_ids_from_property_value(researches_designs_data, RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, research_name)
     return results
 
 
@@ -280,7 +240,7 @@ def _get_research_infos_as_text(research_name: str, research_designs_details: Li
     research_infos_count = len(research_designs_details)
     big_set = research_infos_count > 3
 
-    for i, research_design_details in enumerate(research_designs_details):
+    for research_design_details in research_designs_details:
         if big_set:
             lines.extend(research_design_details.get_details_as_text_short())
         else:
@@ -290,9 +250,9 @@ def _get_research_infos_as_text(research_name: str, research_designs_details: Li
     return lines
 
 
-def _get_key_for_research_sort(research_info: dict, research_designs_data: dict) -> str:
+def _get_key_for_research_sort(research_info: dict, researches_designs_data: dict) -> str:
     result = ''
-    parent_infos = _get_parents(research_info, research_designs_data)
+    parent_infos = _get_parents(research_info, researches_designs_data)
     if parent_infos:
         for parent_info in parent_infos:
             result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
@@ -310,7 +270,7 @@ def _get_key_for_research_sort(research_info: dict, research_designs_data: dict)
 
 # ---------- Initilization ----------
 
-research_designs_retriever = entity.LegacyEntityDesignsRetriever(
+researches_designs_retriever = entity.LegacyEntityDesignsRetriever(
     RESEARCH_DESIGN_BASE_PATH,
     RESEARCH_DESIGN_KEY_NAME,
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,

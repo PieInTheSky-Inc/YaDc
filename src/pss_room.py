@@ -424,11 +424,8 @@ def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
         return .0
 
 
-def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
+def get_room_details_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+    room_info = rooms_designs_data[room_id]
     return get_room_details_from_data_as_text(room_info)
 
 
@@ -499,11 +496,8 @@ def get_room_details_from_data_as_text(room_info: dict) -> list:
     return result
 
 
-def get_room_details_long_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
+def get_room_details_long_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+    room_info = rooms_designs_data[room_id]
     return get_room_details_long_from_data_as_text(room_info)
 
 
@@ -511,11 +505,8 @@ def get_room_details_long_from_data_as_text(room_info: dict) -> list:
     return get_room_details_from_data_as_text(room_info)
 
 
-def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
+def get_room_details_short_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+    room_info = rooms_designs_data[room_id]
     return get_room_details_short_from_data_as_text(room_info)
 
 
@@ -538,14 +529,14 @@ def get_room_short_name(room_info: dict) -> str:
         return None
 
 
-def _get_parents(room_info: dict, room_designs_data: dict) -> list:
+def _get_parents(room_info: dict, rooms_designs_data: dict) -> list:
     parent_room_design_id = room_info['UpgradeFromRoomDesignId']
     if parent_room_design_id == '0':
         parent_room_design_id = None
 
     if parent_room_design_id is not None:
-        parent_info = room_designs_data[parent_room_design_id]
-        result = _get_parents(parent_info, room_designs_data)
+        parent_info = rooms_designs_data[parent_room_design_id]
+        result = _get_parents(parent_info, rooms_designs_data)
         result.append(parent_info)
         return result
     else:
@@ -565,68 +556,56 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_design_details_by_id(room_design_id: str, room_designs_data: dict = None) -> RoomDesignDetails:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    if room_design_id and room_design_id in room_designs_data:
-        result = RoomDesignDetails(room_designs_data[room_design_id])
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: dict) -> RoomDesignDetails:
+    if room_design_id and room_design_id in rooms_designs_data:
+        result = RoomDesignDetails(rooms_designs_data[room_design_id])
     else:
         result = None
     return result
 
 
-def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
-    room_designs_data = rooms_designs_retriever.get_data_dict3()
-    room_infos = _get_room_infos(room_name, room_designs_data=room_designs_data)
+    rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
+    room_infos = _get_room_infos(room_name, rooms_designs_data)
 
     if not room_infos:
         return [f'Could not find a room named **{room_name}**.'], False
     else:
         if as_embed:
-            return _get_room_info_as_embed(room_name, room_infos, room_designs_data), True
+            return _get_room_info_as_embed(room_name, room_infos, rooms_designs_data), True
         else:
-            return _get_room_info_as_text(room_name, room_infos, room_designs_data), True
+            return _get_room_info_as_text(room_name, room_infos, rooms_designs_data), True
 
 
-def _get_room_infos(room_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_design_ids = _get_room_design_ids_from_name(room_name, room_designs_data=room_designs_data)
+def _get_room_infos(room_name: str, rooms_designs_data: dict):
+    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
     if not room_design_ids:
-        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, room_designs_data=room_designs_data)
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
 
-    result = [room_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in room_designs_data.keys()]
+    result = [rooms_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_designs_data.keys()]
     return result
 
 
-def _get_room_design_ids_from_name(room_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
+def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: dict):
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
     return results
 
 
-def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
+def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: dict):
     return_best_match = any(char.isdigit() for char in room_short_name)
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
     if results and return_best_match:
         results = [results[0]]
     return results
 
 
-def _get_room_info_as_embed(room_name: str, room_infos: dict, room_designs_data: dict):
+def _get_room_info_as_embed(room_name: str, room_infos: dict, rooms_designs_data: dict):
     return ''
 
 
-def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: dict):
+def _get_room_info_as_text(room_name: str, room_infos: dict, rooms_designs_data: dict):
     lines = [f'**Room stats for \'{room_name}\'**']
     room_infos_count = len(room_infos)
 
@@ -646,9 +625,9 @@ def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: 
     return lines
 
 
-def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
+def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
     result = ''
-    parent_infos = _get_parents(room_info, room_designs_data)
+    parent_infos = _get_parents(room_info, rooms_designs_data)
     if parent_infos:
         for parent_info in parent_infos:
             result += parent_info[ROOM_DESIGN_KEY_NAME].zfill(4)
@@ -678,10 +657,9 @@ rooms_designs_purchases_retriever = entity.LegacyEntityDesignsRetriever(
 )
 
 
-def __get_allowed_room_short_names():
+def __get_allowed_room_short_names(rooms_designs_data: dict):
     result = []
-    room_designs_data = rooms_designs_retriever.get_data_dict3()
-    for room_design_data in room_designs_data.values():
+    for room_design_data in rooms_designs_data.values():
         if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
             room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
             if room_short_name not in result:
@@ -689,7 +667,9 @@ def __get_allowed_room_short_names():
     return result
 
 
-__allowed_room_names = sorted(__get_allowed_room_short_names())
+__rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
+__allowed_room_names = sorted(__get_allowed_room_short_names(__rooms_designs_data))
+del(__rooms_designs_data)
 #List items schema:
 # - Display name
 # - Print display name

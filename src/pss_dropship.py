@@ -62,10 +62,10 @@ async def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.U
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
 
-    collection_design_data = crew.collection_designs_retriever.get_data_dict3()
-    char_design_data = crew.character_designs_retriever.get_data_dict3()
-    item_design_data = item.items_designs_retriever.get_data_dict3()
-    room_design_data = room.rooms_designs_retriever.get_data_dict3()
+    collection_design_data = await crew.collections_designs_retriever.get_data_dict3()
+    char_design_data = await crew.characters_designs_retriever.get_data_dict3()
+    item_design_data = await item.items_designs_retriever.get_data_dict3()
+    room_design_data = await room.rooms_designs_retriever.get_data_dict3()
 
     try:
         daily_msg = _get_daily_news_from_data_as_text(daily_info)
@@ -106,11 +106,11 @@ def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
-        common_crew_details = crew.get_char_design_details_by_id(common_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        common_crew_details = crew.get_char_design_details_by_id(common_crew_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
         common_crew_info = common_crew_details.get_details_as_text_short()
 
         hero_crew_id = raw_data['HeroCrewId']
-        hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
         hero_crew_info = hero_crew_details.get_details_as_text_short()
 
         common_crew_rarity = common_crew_details.rarity
@@ -162,7 +162,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     entity_id = raw_data['LimitedCatalogArgument']
     entity_details = []
     if shop_type == 'Character':
-        char_design_details = crew.get_char_design_details_by_id(entity_id, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        char_design_details = crew.get_char_design_details_by_id(entity_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
         entity_details = char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
@@ -193,7 +193,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     sale_type = raw_data['SaleType']
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
-        char_design_details = crew.get_char_design_details_by_id(sale_argument, 40, chars_designs_data=chars_designs_data, collections_designs_data=collections_designs_data)
+        char_design_details = crew.get_char_design_details_by_id(sale_argument, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
         entity_details = ''.join(char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)

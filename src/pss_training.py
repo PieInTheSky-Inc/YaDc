@@ -121,10 +121,10 @@ class TrainingDetails(entity.LegacyEntityDesignDetails):
 
 # ---------- Training info ----------
 
-def get_training_details_from_name(training_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_training_details_from_name(training_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(training_name)
 
-    training_infos = training_designs_retriever.get_entities_designs_infos_by_name(training_name)
+    training_infos = await trainings_designs_retriever.get_entities_designs_infos_by_name(training_name)
     trainings_details = [TrainingDetails(training_info) for training_info in training_infos]
 
     if not training_infos:
@@ -194,9 +194,9 @@ def _get_fatigue_as_text(training_info: dict) -> str:
     return result
 
 
-def _get_key_for_training_sort(training_info: dict, training_designs_data: dict) -> str:
+def _get_key_for_training_sort(training_info: dict, trainings_designs_data: dict) -> str:
     result = ''
-    parent_infos = _get_parents(training_info, training_designs_data)
+    parent_infos = _get_parents(training_info, trainings_designs_data)
     if parent_infos:
         for parent_info in parent_infos:
             result += parent_info[TRAINING_DESIGN_KEY_NAME].zfill(4)
@@ -204,14 +204,14 @@ def _get_key_for_training_sort(training_info: dict, training_designs_data: dict)
     return result
 
 
-def _get_parents(training_info: dict, training_designs_data: dict) -> list:
+def _get_parents(training_info: dict, trainings_designs_data: dict) -> list:
     parent_training_design_id = training_info['RequiredTrainingDesignId']
     if parent_training_design_id == '0':
         parent_training_design_id = None
 
     if parent_training_design_id is not None:
-        parent_info = training_designs_data[parent_training_design_id]
-        result = _get_parents(parent_info, training_designs_data)
+        parent_info = trainings_designs_data[parent_training_design_id]
+        result = _get_parents(parent_info, trainings_designs_data)
         result.append(parent_info)
         return result
     else:
@@ -270,7 +270,7 @@ def _get_room_names(rank: int) -> Tuple[str, str]:
 
 # ---------- Initilization ----------
 
-training_designs_retriever = entity.EntityDesignsRetriever(
+trainings_designs_retriever = entity.EntityDesignsRetriever(
     TRAINING_DESIGN_BASE_PATH,
     TRAINING_DESIGN_KEY_NAME,
     TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME,

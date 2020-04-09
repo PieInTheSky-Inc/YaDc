@@ -376,6 +376,7 @@ async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member
 
 
 # ----- General Bot Commands ----------------------------------------------------------
+
 @bot.command(brief='Ping the server', name='ping')
 async def cmd_ping(ctx: discord.ext.commands.Context):
     """
@@ -387,7 +388,7 @@ async def cmd_ping(ctx: discord.ext.commands.Context):
     Examples:
       /ping - The bot will answer with 'Pong!'.
     """
-    await ctx.send('Pong!')
+    msg = await ctx.send('Pong!')
 
 
 
@@ -419,7 +420,7 @@ async def cmd_prestige(ctx: discord.ext.commands.Context, *, crew_name: str):
       This command will only print recipes for the crew with the best matching crew name.
     """
     async with ctx.typing():
-        output, _ = crew.get_prestige_from_info(crew_name)
+        output, _ = await crew.get_prestige_from_info(crew_name)
     await util.post_output(ctx, output)
 
 
@@ -442,7 +443,7 @@ async def cmd_recipe(ctx: discord.ext.commands.Context, *, crew_name: str):
       This command will only print recipes for the crew with the best matching crew name.
     """
     async with ctx.typing():
-        output, _ = crew.get_prestige_to_info(crew_name)
+        output, _ = await crew.get_prestige_to_info(crew_name)
     await util.post_output(ctx, output)
 
 
@@ -466,7 +467,7 @@ async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     async with ctx.typing():
-        output, _ = item.get_ingredients_for_item(item_name)
+        output, _ = await item.get_ingredients_for_item(item_name)
     await util.post_output(ctx, output)
 
 
@@ -491,7 +492,7 @@ async def cmd_craft(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_upgrades_from_name(item_name)
+        output, _ = await item.get_item_upgrades_from_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -517,7 +518,7 @@ async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print prices for all items matching the specified item_name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_price(item_name)
+        output, _ = await item.get_item_price(item_name)
     await util.post_output(ctx, output)
 
 
@@ -546,12 +547,12 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
         full_name = f'{level} {name}'
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = crew.get_char_design_details_by_name(name, level)
+            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = item.get_item_details_by_name(name)
+            item_output, item_success = await item.get_item_details_by_name(name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -590,7 +591,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
     """
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = crew.get_char_design_details_by_name(crew_name, level=level)
+        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
@@ -613,7 +614,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_details_by_name(item_name)
+        output, _ = await item.get_item_details_by_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -635,7 +636,7 @@ async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
       /best all hp - Prints all equipment items for all slots providing a HP bonus.
     """
     async with ctx.typing():
-        output, _ = item.get_best_items(slot, stat)
+        output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 
 
@@ -658,7 +659,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str)
       This command will print information for all researches matching the specified name.
     """
     async with ctx.typing():
-        output, _ = research.get_research_infos_by_name(research_name)
+        output, _ = await research.get_research_infos_by_name(research_name)
     await util.post_output(ctx, output)
 
 
@@ -681,7 +682,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
       This command will only print stats for the collection with the best matching collection_name.
     """
     async with ctx.typing():
-        output, _ = crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await crew.get_collection_design_details_by_name(collection_name)
     await util.post_output(ctx, output)
 
 
@@ -816,7 +817,7 @@ async def cmd_news(ctx: discord.ext.commands.Context):
     """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = dropship.get_news()
+        output, _ = await dropship.get_news()
     await util.post_output(ctx, output)
 
 
@@ -903,7 +904,7 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
       /level 35 - Prints exp and gas requirements from level 1 to 35
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
+        output, _ = await crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
 
 
@@ -942,7 +943,7 @@ async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
       /top fleets - prints top 100 fleets.
       /top fleets 30 - prints top 30 fleets."""
     async with ctx.typing():
-        output, _ = pss_top.get_top_fleets(count)
+        output, _ = await pss_top.get_top_fleets(count)
     await util.post_output(ctx, output)
 
 
@@ -986,7 +987,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
-        output, _ = room.get_room_details_from_name(name)
+        output, _ = await room.get_room_details_from_name(name)
     await util.post_output(ctx, output)
 
 
@@ -1010,7 +1011,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
       The highest yield will always be displayed on the far left.
     """
     async with ctx.typing():
-        output, _ = training.get_training_details_from_name(name)
+        output, _ = await training.get_training_details_from_name(name)
     await util.post_output(ctx, output)
 
 
@@ -1188,18 +1189,18 @@ async def cmd_tournament_next(ctx: discord.ext.commands.Context):
 async def cmd_updatecache(ctx: discord.ext.commands.Context):
     """This command is to be used to update all caches manually."""
     async with ctx.typing():
-        crew.character_designs_retriever.update_cache()
-        crew.collection_designs_retriever.update_cache()
+        await crew.characters_designs_retriever.update_cache()
+        await crew.collections_designs_retriever.update_cache()
         prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
         for prestige_to_cache in prestige_to_caches:
             await prestige_to_cache.update_data()
         prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
         for prestige_from_cache in prestige_from_caches:
             await prestige_from_cache.update_data()
-        item.items_designs_retriever.update_cache()
-        await research.__research_designs_cache.update_data()
-        room.rooms_designs_retriever.update_cache()
-        training.training_designs_retriever.update_cache()
+        await item.items_designs_retriever.update_cache()
+        await research.researches_designs_retriever.update_cache()
+        await room.rooms_designs_retriever.update_cache()
+        await training.trainings_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
 
 
@@ -1899,33 +1900,6 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
             else:
                 output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
-
-
-
-
-
-
-
-
-
-
-@bot.command(name='pagination', hidden=True, aliases=['pages'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.channel)
-async def cmd_pagination(ctx: discord.ext.commands.Context):
-    """
-    Some commands allow the user to search for a fleet, a player or other stuff. Such a search may yield more than one result. Then the bot may offer the user to select one of these results.
-
-    Pagination is a way to format the result list in way that allows the user to select one result. The pagination mode can be set individually per Discord server. There are two modes:
-    - ON
-    - OFF
-
-    If pagination is turned ON for a server, the bot will print the results on pages of 5 results. The bot will add reactions. The user can use the reactions to navigate the pages or select an item of the result list.
-    If pagination is turned OFF for a server, the bot will print the whole results list. The user can select an item from the list by typing the number in front of the respective result.
-
-    In both cases the result list will disappear after 60 seconds without user input.
-    """
-    pass
-
 
 
 

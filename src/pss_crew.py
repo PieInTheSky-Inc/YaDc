@@ -307,8 +307,8 @@ class PrestigeDetails(entity.LegacyEntityDesignDetails):
 
 
 class PrestigeFromDetails(PrestigeDetails):
-    def __init__(self, char_from_design_info: dict, chars_designs_data: dict = None, prestige_from_data: dict = None):
-        chars_designs_data = chars_designs_data or character_designs_retriever.get_data_dict3()
+    def __init__(self, char_from_design_info: dict, chars_designs_data: dict, prestige_from_data: dict):
+        chars_designs_data = chars_designs_data
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige combinations:'
@@ -339,8 +339,8 @@ class PrestigeFromDetails(PrestigeDetails):
 
 
 class PrestigeToDetails(PrestigeDetails):
-    def __init__(self, char_to_design_info: dict, chars_designs_data: dict = None, prestige_to_data: dict = None):
-        chars_designs_data = chars_designs_data or character_designs_retriever.get_data_dict3()
+    def __init__(self, char_to_design_info: dict, chars_designs_data: dict, prestige_to_data: dict):
+        chars_designs_data = chars_designs_data
         error = None
         prestige_infos = {}
         template_title = '**$char_design_name$** has **$count$** prestige recipes:'
@@ -418,20 +418,20 @@ def _get_ability_name(char_design_info: dict) -> str:
     return None
 
 
-def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
+async def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
     collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
-    chars_designs_data = character_designs_retriever.get_data_dict3()
+    chars_designs_data = await characters_designs_retriever.get_data_dict3()
     chars_designs_infos = [chars_designs_data[char_id] for char_id in chars_designs_data.keys() if chars_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
     result.sort()
     return result
 
 
-def _get_collection_name(char_design_info: dict, collections_designs_data: dict = None) -> str:
+def _get_collection_name(char_design_info: dict, collections_designs_data: dict) -> str:
     if char_design_info:
         collection_id = char_design_info[COLLECTION_DESIGN_KEY_NAME]
         if collection_id and collection_id != '0':
-            collection_design_info = collection_designs_retriever.get_entity_design_info_by_id(collection_id)
+            collection_design_info = collections_designs_retriever.get_entity_design_info_by_id(collection_id, collections_designs_data)
             return collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return None
 
@@ -472,11 +472,8 @@ def _calculate_stat_value(min_value: float, max_value: float, level: int, progre
 
 # ---------- Crew info ----------
 
-def get_char_design_details_by_id(char_design_id: str, level: int = None, chars_designs_data: dict = None, collections_designs_data: dict = None) -> CharDesignDetails:
+def get_char_design_details_by_id(char_design_id: str, chars_designs_data: dict, level: int = None, collections_designs_data: dict = None) -> CharDesignDetails:
     if char_design_id:
-        if chars_designs_data is None:
-            chars_designs_data = character_designs_retriever.get_data_dict3()
-
         if char_design_id and char_design_id in chars_designs_data.keys():
             char_design_info = chars_designs_data[char_design_id]
             char_design_details = CharDesignDetails(char_design_info, collections_designs_data=collections_designs_data, level=level)
@@ -485,11 +482,12 @@ def get_char_design_details_by_id(char_design_id: str, level: int = None, chars_
     return None
 
 
-def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
+async def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name')
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
-    char_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name)
+    chars_designs_data = await characters_designs_retriever.get_data_dict3()
+    char_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
@@ -511,10 +509,11 @@ def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool =
 
 # ---------- Collection Info ----------
 
-def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(collection_name)
 
-    collection_design_info = collection_designs_retriever.get_entity_design_info_by_name(collection_name)
+    collections_designs_data = await collections_designs_retriever.get_data_dict3()
+    collection_design_info = collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
 
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
@@ -536,17 +535,17 @@ def get_collection_design_details_by_name(collection_name: str, as_embed: bool =
 
 # ---------- Prestige from Info ----------
 
-def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
-    chars_designs_data = character_designs_retriever.get_data_dict3()
-    char_from_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name, entity_designs_data=chars_designs_data)
+    chars_designs_data = await characters_designs_retriever.get_data_dict3()
+    char_from_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if not char_from_design_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        prestige_from_data = _get_prestige_from_data(char_from_design_info)
-        prestige_from_details = PrestigeFromDetails(char_from_design_info, chars_designs_data=chars_designs_data, prestige_from_data=prestige_from_data)
+        prestige_from_data = await _get_prestige_from_data(char_from_design_info)
+        prestige_from_details = PrestigeFromDetails(char_from_design_info, chars_designs_data, prestige_from_data)
 
         if as_embed:
             return prestige_from_details.get_details_as_embed(), True
@@ -554,7 +553,7 @@ def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS)
             return prestige_from_details.get_details_as_text_long(), True
 
 
-def _get_prestige_from_data(char_design_info: dict) -> dict:
+async def _get_prestige_from_data(char_design_info: dict) -> dict:
     if not char_design_info:
         return {}
 
@@ -563,7 +562,7 @@ def _get_prestige_from_data(char_design_info: dict) -> dict:
         prestige_from_cache = __prestige_from_cache_dict[char_design_id]
     else:
         prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
-    return prestige_from_cache.get_data_dict3()
+    return await prestige_from_cache.get_data_dict3()
 
 
 def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
@@ -589,17 +588,17 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
 
 # ---------- Prestige to Info ----------
 
-def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name)
 
-    chars_designs_data = character_designs_retriever.get_data_dict3()
-    char_to_design_info = character_designs_retriever.get_entity_design_info_by_name(char_name, entity_designs_data=chars_designs_data)
+    chars_designs_data = await characters_designs_retriever.get_data_dict3()
+    char_to_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if not char_to_design_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        prestige_to_data = _get_prestige_to_data(char_to_design_info)
-        prestige_to_details = PrestigeToDetails(char_to_design_info, chars_designs_data=chars_designs_data, prestige_to_data=prestige_to_data)
+        prestige_to_data = await _get_prestige_to_data(char_to_design_info)
+        prestige_to_details = PrestigeToDetails(char_to_design_info, chars_designs_data, prestige_to_data)
 
         if as_embed:
             return prestige_to_details.get_details_as_embed(), True
@@ -607,7 +606,7 @@ def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
             return prestige_to_details.get_details_as_text_long(), True
 
 
-def _get_prestige_to_data(char_design_info: dict) -> dict:
+async def _get_prestige_to_data(char_design_info: dict) -> dict:
     if not char_design_info:
         return {}
 
@@ -616,7 +615,7 @@ def _get_prestige_to_data(char_design_info: dict) -> dict:
         prestige_to_cache = __prestige_to_cache_dict[char_design_id]
     else:
         prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
-    return prestige_to_cache.get_data_dict3()
+    return await prestige_to_cache.get_data_dict3()
 
 
 def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
@@ -699,14 +698,14 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 # ---------- Initilization ----------
 
-character_designs_retriever = entity.LegacyEntityDesignsRetriever(
+characters_designs_retriever = entity.LegacyEntityDesignsRetriever(
     CHARACTER_DESIGN_BASE_PATH,
     CHARACTER_DESIGN_KEY_NAME,
     CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='CharacterDesigns'
 )
 
-collection_designs_retriever = entity.LegacyEntityDesignsRetriever(
+collections_designs_retriever = entity.LegacyEntityDesignsRetriever(
     COLLECTION_DESIGN_BASE_PATH,
     COLLECTION_DESIGN_KEY_NAME,
     COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME,
@@ -737,15 +736,15 @@ if __name__ == '__main__':
     test_crew = [('alpaco', 5)]
     for (crew_name, level) in test_crew:
         os.system('clear')
-        result = get_char_design_details_by_name(crew_name, level, as_embed=False)
+        result = await get_char_design_details_by_name(crew_name, level, as_embed=False)
         for line in result[0]:
             print(line)
         print('')
-        result = get_prestige_from_info(crew_name, as_embed=False)
+        result = await get_prestige_from_info(crew_name, as_embed=False)
         for line in result[0]:
             print(line)
         print('')
-        result = get_prestige_to_info(crew_name, as_embed=False)
+        result = await get_prestige_to_info(crew_name, as_embed=False)
         for line in result[0]:
             print(line)
         print('')

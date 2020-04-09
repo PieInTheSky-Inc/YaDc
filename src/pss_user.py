@@ -113,7 +113,7 @@ async def get_user_details_by_info(user_info: dict) -> list:
     league_name = _get_league_from_trophies(trophies)
     level = None
     if user_id:
-        level = ship.get_ship_level(ship_info)
+        level = await ship.get_ship_level(ship_info)
     if level is None:
         level = '-'
     logged_in_ago = util.get_formatted_timedelta(logged_in_date - utc_now)
