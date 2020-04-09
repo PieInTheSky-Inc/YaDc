@@ -205,7 +205,7 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
     pss_assert.valid_entity_name(research_name)
 
     researches_designs_data = await researches_designs_retriever.get_data_dict3()
-    research_designs_infos = researches_designs_retriever.get_entity_design_infos_by_name(research_name, entity_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
+    research_designs_infos = researches_designs_retriever.get_entity_design_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
     research_designs_details = [ResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
 
     if not research_designs_details:

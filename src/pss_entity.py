@@ -288,54 +288,54 @@ class EntityDesignsRetriever:
         return await self.__cache.get_data_dict3()
 
 
-    def get_entity_design_details_by_id(self, entity_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> EntityDesignDetails:
+    def get_entity_design_details_by_id(self, entity_id: str, entities_designs_data: EntitiesDesignsData = None) -> EntityDesignDetails:
         pass
 
 
-    async def get_entity_design_info_by_id(self, entity_design_id: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> Dict[str, object]:
-        entity_designs_data = entity_designs_data or await self.get_data_dict3()
-        if entity_design_id in entity_designs_data.keys():
-            return entity_designs_data[entity_design_id]
+    async def get_entity_design_info_by_id(self, entity_design_id: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
+        entities_designs_data = entities_designs_data or await self.get_data_dict3()
+        if entity_design_id in entities_designs_data.keys():
+            return entities_designs_data[entity_design_id]
         else:
             return None
 
 
-    async def get_entity_design_info_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> Dict[str, object]:
-        entity_designs_data = entity_designs_data or await self.get_data_dict3()
-        entity_design_id = await self.get_entity_design_id_by_name(entity_name, entity_designs_data=entity_designs_data)
+    async def get_entity_design_info_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
+        entities_designs_data = entities_designs_data or await self.get_data_dict3()
+        entity_design_id = await self.get_entity_design_id_by_name(entity_name, entities_designs_data=entities_designs_data)
 
-        if entity_design_id and entity_design_id in entity_designs_data.keys():
-            return entity_designs_data[entity_design_id]
+        if entity_design_id and entity_design_id in entities_designs_data.keys():
+            return entities_designs_data[entity_design_id]
         else:
             return None
 
 
-    async def get_entities_designs_infos_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
-        entity_designs_data = entity_designs_data or await self.get_data_dict3()
+    async def get_entities_designs_infos_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
+        entities_designs_data = entities_designs_data or await self.get_data_dict3()
         sorted_key_function = sorted_key_function or self.__sorted_key_function
 
-        entity_design_ids = await self.get_entities_designs_ids_by_name(entity_name, entity_designs_data=entity_designs_data)
-        entity_designs_data_keys = entity_designs_data.keys()
-        result = [entity_designs_data[entity_design_id] for entity_design_id in entity_design_ids if entity_design_id in entity_designs_data_keys]
+        entity_design_ids = await self.get_entities_designs_ids_by_name(entity_name, entities_designs_data=entities_designs_data)
+        entities_designs_data_keys = entities_designs_data.keys()
+        result = [entities_designs_data[entity_design_id] for entity_design_id in entity_design_ids if entity_design_id in entities_designs_data_keys]
         if sorted_key_function is not None:
             result = sorted(result, key=lambda entity_info: (
-                sorted_key_function(entity_info, entity_designs_data)
+                sorted_key_function(entity_info, entities_designs_data)
             ))
 
         return result
 
 
-    async def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> str:
-        results = await self.get_entities_designs_ids_by_name(entity_name, entity_designs_data)
+    async def get_entity_design_id_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> str:
+        results = await self.get_entities_designs_ids_by_name(entity_name, entities_designs_data)
         if len(results) > 0:
             return results[0]
         else:
             return None
 
 
-    async def get_entities_designs_ids_by_name(self, entity_name: str, entity_designs_data: Dict[str, Dict[str, object]] = None) -> List[str]:
-        entity_designs_data = entity_designs_data or await self.get_data_dict3()
-        results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
+    async def get_entities_designs_ids_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> List[str]:
+        entities_designs_data = entities_designs_data or await self.get_data_dict3()
+        results = core.get_ids_from_property_value(entities_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
 
 
@@ -490,50 +490,50 @@ class LegacyEntityDesignsRetriever:
         return await self.__cache.get_data_dict3()
 
 
-    def get_entity_design_info_by_id(self, entity_design_id: str, entity_designs_data: dict) -> dict:
-        entity_designs_data = entity_designs_data
-        if entity_design_id in entity_designs_data.keys():
-            return entity_designs_data[entity_design_id]
+    def get_entity_design_info_by_id(self, entity_design_id: str, entities_designs_data: EntitiesDesignsData) -> dict:
+        entities_designs_data = entities_designs_data
+        if entity_design_id in entities_designs_data.keys():
+            return entities_designs_data[entity_design_id]
         else:
             return None
 
 
-    def get_entity_design_info_by_name(self, entity_name: str, entity_designs_data: dict) -> dict:
-        entity_designs_data = entity_designs_data
-        entity_design_id = self.get_entity_design_id_by_name(entity_name, entity_designs_data=entity_designs_data)
+    def get_entity_design_info_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData) -> dict:
+        entities_designs_data = entities_designs_data
+        entity_design_id = self.get_entity_design_id_by_name(entity_name, entities_designs_data=entities_designs_data)
 
-        if entity_design_id and entity_design_id in entity_designs_data.keys():
-            return entity_designs_data[entity_design_id]
+        if entity_design_id and entity_design_id in entities_designs_data.keys():
+            return entities_designs_data[entity_design_id]
         else:
             return None
 
 
-    def get_entity_design_infos_by_name(self, entity_name: str, entity_designs_data: dict, sorted_key_function: Callable[[dict, dict], str] = None) -> List[dict]:
-        entity_designs_data = entity_designs_data
+    def get_entity_design_infos_by_name(self, entity_name: str, entities_designs_data: dict, sorted_key_function: Callable[[dict, dict], str] = None) -> List[dict]:
+        entities_designs_data = entities_designs_data
         sorted_key_function = sorted_key_function or self.__sorted_key_function
 
-        entity_design_ids = self.get_entity_design_ids_by_name(entity_name, entity_designs_data=entity_designs_data)
-        entity_designs_data_keys = entity_designs_data.keys()
-        result = [entity_designs_data[entity_design_id] for entity_design_id in entity_design_ids if entity_design_id in entity_designs_data_keys]
+        entity_design_ids = self.get_entity_design_ids_by_name(entity_name, entities_designs_data=entities_designs_data)
+        entities_designs_data_keys = entities_designs_data.keys()
+        result = [entities_designs_data[entity_design_id] for entity_design_id in entity_design_ids if entity_design_id in entities_designs_data_keys]
         if sorted_key_function is not None:
             result = sorted(result, key=lambda entity_info: (
-                sorted_key_function(entity_info, entity_designs_data)
+                sorted_key_function(entity_info, entities_designs_data)
             ))
 
         return result
 
 
-    def get_entity_design_id_by_name(self, entity_name: str, entity_designs_data: dict) -> str:
-        results = self.get_entity_design_ids_by_name(entity_name, entity_designs_data)
+    def get_entity_design_id_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData) -> str:
+        results = self.get_entity_design_ids_by_name(entity_name, entities_designs_data)
         if len(results) > 0:
             return results[0]
         else:
             return None
 
 
-    def get_entity_design_ids_by_name(self, entity_name: str, entity_designs_data: dict) -> List[str]:
-        entity_designs_data = entity_designs_data
-        results = core.get_ids_from_property_value(entity_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
+    def get_entity_design_ids_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData) -> List[str]:
+        entities_designs_data = entities_designs_data
+        results = core.get_ids_from_property_value(entities_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
 
 
