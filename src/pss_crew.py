@@ -482,7 +482,7 @@ def get_char_design_details_by_id(char_design_id: str, chars_designs_data: dict,
 
 
 async def get_char_design_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(char_name, 'char_name')
+    pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
@@ -536,7 +536,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
 # ---------- Prestige from Info ----------
 
 async def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(char_name)
+    pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
     char_from_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
@@ -589,7 +589,7 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
 # ---------- Prestige to Info ----------
 
 async def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(char_name)
+    pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
     char_to_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)

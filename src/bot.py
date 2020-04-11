@@ -548,7 +548,7 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        full_name = f'{level} {name}'
+        full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
             char_output, char_success = await crew.get_char_design_details_by_name(name, level)
