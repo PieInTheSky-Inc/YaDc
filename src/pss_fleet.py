@@ -289,12 +289,12 @@ def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dic
 
 # ---------- Testing ----------
 
-if __name__ == '__main__':
-    test_fleets = ['Fallen An']
-    for fleet_name in test_fleets:
-        os.system('clear')
-        is_tourney_running = tourney.is_tourney_running()
-        fleet_infos = await get_fleet_details_by_name(fleet_name)
-        lines = [get_fleet_search_details(fleet_info) for fleet_info in fleet_infos]
-        for line in lines:
-            print(line)
+#if __name__ == '__main__':
+#    test_fleets = ['Fallen An']
+#    for fleet_name in test_fleets:
+#        os.system('clear')
+#        is_tourney_running = tourney.is_tourney_running()
+#        fleet_infos = await get_fleet_details_by_name(fleet_name)
+#        lines = [get_fleet_search_details(fleet_info) for fleet_info in fleet_infos]
+#        for line in lines:
+#            print(line)

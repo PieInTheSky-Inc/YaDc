@@ -187,8 +187,7 @@ class CharDesignDetails(entity.LegacyEntityDesignDetails):
 
 
 class CollectionDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, collection_design_info: dict):
-        collection_crew = _get_collection_chars_designs_infos(collection_design_info)
+    def __init__(self, collection_design_info: dict, collection_chars_names: dict):
         collection_perk = collection_design_info['EnhancementType']
         collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
         min_combo = collection_design_info['MinCombo']
@@ -196,7 +195,7 @@ class CollectionDesignDetails(entity.LegacyEntityDesignDetails):
         base_enhancement_value = collection_design_info['BaseEnhancementValue']
         step_enhancement_value = collection_design_info['StepEnhancementValue']
 
-        self.__characters: str = ', '.join(collection_crew)
+        self.__characters: str = ', '.join(collection_chars_names)
         self.__min_max_combo = f'{min_combo}...{max_combo}'
         self.__enhancement = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
 
@@ -518,7 +517,8 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
-        collection_design_details = CollectionDesignDetails(collection_design_info)
+        collection_chars_names = await _get_collection_chars_designs_infos(collection_design_info)
+        collection_design_details = CollectionDesignDetails(collection_design_info, collection_chars_names)
         if as_embed:
             return collection_design_details.get_details_as_embed(), True
         else:
@@ -731,21 +731,21 @@ collections_designs_retriever = entity.LegacyEntityDesignsRetriever(
 
 # ---------- Testing ----------
 
-if __name__ == '__main__':
-    f = get_level_costs(20, 30)
-    test_crew = [('alpaco', 5)]
-    for (crew_name, level) in test_crew:
-        os.system('clear')
-        result = await get_char_design_details_by_name(crew_name, level, as_embed=False)
-        for line in result[0]:
-            print(line)
-        print('')
-        result = await get_prestige_from_info(crew_name, as_embed=False)
-        for line in result[0]:
-            print(line)
-        print('')
-        result = await get_prestige_to_info(crew_name, as_embed=False)
-        for line in result[0]:
-            print(line)
-        print('')
-        result = ''
+#if __name__ == '__main__':
+#    f = get_level_costs(20, 30)
+#    test_crew = [('alpaco', 5)]
+#    for (crew_name, level) in test_crew:
+#        os.system('clear')
+#        result = await get_char_design_details_by_name(crew_name, level, as_embed=False)
+#        for line in result[0]:
+#            print(line)
+#        print('')
+#        result = await get_prestige_from_info(crew_name, as_embed=False)
+#        for line in result[0]:
+#            print(line)
+#        print('')
+#        result = await get_prestige_to_info(crew_name, as_embed=False)
+#        for line in result[0]:
+#            print(line)
+#        print('')
+#        result = ''

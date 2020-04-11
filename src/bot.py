@@ -111,6 +111,10 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
+    await core.init_db()
+    await item.init()
+    await room.init()
+    await user.init()
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
     bot.loop.create_task(post_dailies_loop())
@@ -2068,7 +2072,6 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     print(f'discord.py version: {discord.__version__}')
-    await core.init_db()
     login.init()
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)

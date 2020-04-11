@@ -317,6 +317,6 @@ def _get_news_details_as_text(news_info: dict) -> list:
 
 # ---------- Testing ----------
 
-if __name__ == '__main__':
-    result, success = await get_dropship_text(as_embed=False, language_key='en')
-    print('\n'.join(result))
+#if __name__ == '__main__':
+#    result, success = await get_dropship_text(as_embed=False, language_key='en')
+#    print('\n'.join(result))

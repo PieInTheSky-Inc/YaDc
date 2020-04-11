@@ -28,7 +28,7 @@ DB_CONN: psycopg2.extensions.connection = None
 
 # ---------- Constants ----------
 
-__AIOHTTP_SESSION = aiohttp.ClientSession()
+
 
 
 
@@ -40,8 +40,9 @@ __AIOHTTP_SESSION = aiohttp.ClientSession()
 # ----- Utilities --------------------------------
 
 async def get_data_from_url(url: str) -> str:
-    async with __AIOHTTP_SESSION.get(url) as response:
-        data = await response.text(encoding='utf-8')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            data = await response.text(encoding='utf-8')
     return data
 
 
@@ -505,7 +506,7 @@ async def get_latest_settings(language_key: str = 'en', use_base_production_serv
     if use_base_production_server:
         base_url = f'{settings.LATEST_SETTINGS_BASE_URL}{settings.LATEST_SETTINGS_BASE_PATH}'
     else:
-        base_url = f'{get_base_url()}{settings.LATEST_SETTINGS_BASE_PATH}'
+        base_url = f'{await get_base_url()}{settings.LATEST_SETTINGS_BASE_PATH}'
     url = f'{base_url}{language_key}'
     raw_text = await get_data_from_url(url)
     result = xmltree_to_dict3(raw_text)
@@ -1070,3 +1071,15 @@ def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -
         query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
     success = not query or db_try_execute(query)
     return success
+
+
+
+
+
+
+
+
+
+
+# ---------- Initialization ----------
+
