@@ -160,7 +160,7 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
         help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
         command = bot.get_command(help_args)
         await ctx.send_help(command)
-        await ctx.send(f'Error: {err}')
+        await ctx.send(f'**Error**\n> {err}')
 
 
 @bot.event
