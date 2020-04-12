@@ -47,7 +47,7 @@ __prestige_to_cache_dict = {}
 # ---------- Classes ----------
 
 class CharDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, char_design_info: dict, collections_designs_data: dict = None, level: int = None):
+    def __init__(self, char_design_info: dict, collections_designs_data: dict, level: int = None):
         special = _get_ability_name(char_design_info)
         equipment_slots = _convert_equipment_mask(int(char_design_info['EquipmentMask']))
         collection_name = _get_collection_name(char_design_info, collections_designs_data)
@@ -491,7 +491,8 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
     if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        char_design_details = CharDesignDetails(char_design_info, level=level)
+        collections_designs_data = await collections_designs_retriever.get_data_dict3()
+        char_design_details = CharDesignDetails(char_design_info, collections_designs_data, level=level)
         if as_embed:
             return char_design_details.get_details_as_embed(), True
         else:

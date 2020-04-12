@@ -908,7 +908,7 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
       /level 35 - Prints exp and gas requirements from level 1 to 35
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
-        output, _ = await crew.get_level_costs(from_level, to_level)
+        output, _ = crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
 
 
@@ -972,7 +972,7 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
 
 @bot.command(brief='Get room infos', name='room')
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
+async def cmd_room(ctx: discord.ext.commands.Context, *, room_name: str):
     """
     Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
@@ -991,7 +991,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
-        output, _ = await room.get_room_details_from_name(name)
+        output, _ = await room.get_room_details_from_name(room_name)
     await util.post_output(ctx, output)
 
 
