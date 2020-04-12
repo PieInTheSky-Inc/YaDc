@@ -141,7 +141,7 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
                 _, item_id = item_id.split(':')
             if item_id:
                 item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
-                item_details = ''.join(item_design_details.get_details_as_text_short())
+                item_details = ''.join(item_design_details.get_details_as_text_long())
                 currency_type, price = cargo_prices[i].split(':')
                 currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
                 result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
@@ -166,7 +166,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
         entity_details = char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
-        entity_details = item_design_details.get_details_as_text_short()
+        entity_details = item_design_details.get_details_as_text_long()
     elif shop_type == 'Room':
         entity_details = room.get_room_details_short_from_id_as_text(entity_id, rooms_designs_data)
     else:
@@ -197,7 +197,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
         entity_details = ''.join(char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)
-        entity_details = ''.join(item_design_details.get_details_as_text_short())
+        entity_details = ''.join(item_design_details.get_details_as_text_long())
     elif sale_type == 'Room':
         entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, rooms_designs_data))
     elif sale_type == 'Bonus':
@@ -228,7 +228,7 @@ def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict)
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
         item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
-        item_details = ''.join(item_design_details.get_details_as_text_short())
+        item_details = ''.join(item_design_details.get_details_as_text_long())
         result.append(f'{amount} x {item_details}')
 
     return result

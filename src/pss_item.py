@@ -75,7 +75,7 @@ def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_de
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
     if bonus_type.lower() == 'none':
-        result = bonus_type
+        result = None
     else:
         result = f'{bonus_type} +{bonus_value}'
     return result
@@ -682,6 +682,9 @@ __item_price_properties: List[entity.EntityDesignDetailProperty] = [
 __item_best_properties: List[entity.EntityDesignDetailProperty] = [
     entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
     entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+]
+__item_base_properties_short: List[entity.EntityDesignDetailProperty] = [
+    entity.EntityDesignDetailProperty('Rarity', False, transform_function=__get_rarity),
 ]
 
 
