@@ -997,7 +997,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, room_name: str):
 
 @bot.command(brief='Get training infos', name='training')
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
+async def cmd_training(ctx: discord.ext.commands.Context, *, training_name: str):
     """
     Get detailed information on a training. If more than 2 results are found, some details will be omitted.
 
@@ -1015,7 +1015,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
       The highest yield will always be displayed on the far left.
     """
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(name)
+        output, _ = await training.get_training_details_from_name(training_name)
     await util.post_output(ctx, output)
 
 
