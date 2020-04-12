@@ -141,7 +141,7 @@ def get_research_details_short_from_data_as_text(research_info: dict) -> list:
     return [f'**{name}**: {costs} - {duration} - LAB lvl {required_lab_level}']
 
 
-async def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
+def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
     if research_id != '0':
         research_info = researches_designs_data[research_id]
         return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
