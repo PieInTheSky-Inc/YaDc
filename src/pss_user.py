@@ -165,10 +165,10 @@ async def _get_user_details_from_tournament_data(user_info: dict, user_data: dic
 
 # ---------- User info ----------
 
-def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
+async def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
 
-    user_infos = list(_get_user_infos(user_name).values())
+    user_infos = list((await _get_user_infos(user_name)).values())
     return user_infos
 
 

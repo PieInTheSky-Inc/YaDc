@@ -728,11 +728,11 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
         if not called_subcommand:
             if tourney.is_tourney_running():
                 async with ctx.typing():
-                    output, _ = pss_top.get_division_stars(division=division)
+                    output, _ = await pss_top.get_division_stars(division=division)
             else:
                 async with ctx.typing():
                     (fleet_data, _, data_date) = tournament_data.get_data()
-                    output, _ = pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
             await util.post_output(ctx, output)
 
 
@@ -1270,7 +1270,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             player_name = exact_name
-        user_infos = user.get_user_details_by_name(player_name)
+        user_infos = await user.get_user_details_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:

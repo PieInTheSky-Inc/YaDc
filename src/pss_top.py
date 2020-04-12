@@ -16,10 +16,19 @@ import utility as util
 
 
 # ---------- Constants ----------
+
 TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
 
 ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
+
+
+
+
+
+
+
+
 
 
 # ---------- Top 100 Alliances ----------
@@ -60,6 +69,11 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
         lines.append(line)
 
     return lines
+
+
+
+
+
 
 
 
@@ -112,9 +126,13 @@ async def _get_top_captains_path(take: int):
 
 
 
+
+
+
+
 # ---------- Stars info ----------
 
-def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
+async def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
     if division:
         pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
         if division == '-':
@@ -123,7 +141,7 @@ def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_
         division = None
 
     if fleet_data is None or retrieved_date is None:
-        data = core.get_data_from_path(STARS_BASE_PATH)
+        data = await core.get_data_from_path(STARS_BASE_PATH)
         fleet_infos = core.xmltree_to_dict3(data)
     else:
         fleet_infos = fleet_data
