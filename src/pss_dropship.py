@@ -25,7 +25,17 @@ DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAnd
 
 
 
+
+
+
+
+
 # ---------- Initilization ----------
+
+
+
+
+
 
 
 

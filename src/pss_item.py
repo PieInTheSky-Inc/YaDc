@@ -51,8 +51,15 @@ class ItemDesignDetails(entity.EntityDesignDetails):
                     details.append(f'{display_name} = {display_value}')
                 else:
                     details.append(display_value)
-        details_short = ''.join(self.get_details_as_text_short())
-        result = [f'{details_short} - {", ".join(details)}']
+        short_details = ''.join(self.get_details_as_text_short())
+        if details:
+            bracketed_details = details.pop()
+            if details:
+                result = [f'{short_details} - {", ".join(details)} ({bracketed_details})']
+            else:
+                result = [f'{short_details} - {bracketed_details}']
+        else:
+            result = [f'{short_details}']
         return result
 
 
@@ -682,9 +689,6 @@ __item_price_properties: List[entity.EntityDesignDetailProperty] = [
 __item_best_properties: List[entity.EntityDesignDetailProperty] = [
     entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
     entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
-]
-__item_base_properties_short: List[entity.EntityDesignDetailProperty] = [
-    entity.EntityDesignDetailProperty('Rarity', False, transform_function=__get_rarity),
 ]
 
 
