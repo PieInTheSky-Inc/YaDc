@@ -51,8 +51,15 @@ class ItemDesignDetails(entity.EntityDesignDetails):
                     details.append(f'{display_name} = {display_value}')
                 else:
                     details.append(display_value)
-        details_short = ''.join(self.get_details_as_text_short())
-        result = [f'{details_short} - {", ".join(details)}']
+        short_details = ''.join(self.get_details_as_text_short())
+        if details:
+            bracketed_details = details.pop()
+            if details:
+                result = [f'{short_details} - {", ".join(details)} ({bracketed_details})']
+            else:
+                result = [f'{short_details} - {bracketed_details}']
+        else:
+            result = [f'{short_details}']
         return result
 
 
@@ -75,7 +82,7 @@ def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_de
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
     if bonus_type.lower() == 'none':
-        result = bonus_type
+        result = None
     else:
         result = f'{bonus_type} +{bonus_value}'
     return result

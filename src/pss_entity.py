@@ -144,7 +144,7 @@ class EntityDesignDetails(object):
 
     @property
     def description(self) -> str:
-        if self.__description is None:
+        if self.__description is None and self.__description_property is not None:
             _, self.__description = self.__description_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
         return self.__description
 
@@ -195,7 +195,8 @@ class EntityDesignDetails(object):
     def get_details_as_text_long(self) -> List[str]:
         result = []
         result.append(f'**{self.title}**')
-        result.append(f'_{self.description}_')
+        if self.description is not None:
+            result.append(f'_{self.description}_')
         for detail in self.details_long:
             if detail.force_display_name:
                 result.append(f'{detail.name} = {detail.value}')
