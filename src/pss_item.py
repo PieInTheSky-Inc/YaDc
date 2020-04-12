@@ -231,9 +231,9 @@ def _get_item_infos_by_name(item_name: str, items_designs_data: dict, return_bes
     return result
 
 
-def get_item_details_short_by_training_id(training_id: str, item_design_data: dict, return_best_match: bool = False) -> list:
-    item_design_ids = core.get_ids_from_property_value(item_design_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = [' '.join(get_item_design_details_by_id(item_design_id, item_design_data).get_details_as_text_long()) for item_design_id in item_design_ids]
+def get_item_details_short_by_training_id(training_id: str, items_designs_data: entity.EntitiesDesignsData, return_best_match: bool = False) -> list:
+    item_design_ids = core.get_ids_from_property_value(items_designs_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
+    result = [' '.join(get_item_design_details_by_id(item_design_id, items_designs_data).get_details_as_text_long()) for item_design_id in item_design_ids]
 
     return result
 
