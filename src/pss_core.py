@@ -3,6 +3,7 @@
 
 import aiohttp
 import asyncio
+import asyncpg
 from datetime import datetime
 import discord
 import json
@@ -19,7 +20,8 @@ import settings
 import utility as util
 
 
-DB_CONN: psycopg2.extensions.connection = None
+DB_CONN: asyncpg.Connection = None
+DB_CONN_LOCK: asyncio.Lock = asyncio.Lock()
 
 
 # ---------- Constants ----------
@@ -430,7 +432,7 @@ async def init_db():
         print('[init_db] DB initialization failed upon creating the table \'settings\'.')
         return
 
-    success_update_1_2_2_0 = db_update_schema_v_1_2_2_0()
+    success_update_1_2_2_0 = await db_update_schema_v_1_2_2_0()
     if not success_update_1_2_2_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
         return
@@ -440,17 +442,17 @@ async def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
         return
 
-    success_update_1_2_5_0 = db_update_schema_v_1_2_5_0()
+    success_update_1_2_5_0 = await db_update_schema_v_1_2_5_0()
     if not success_update_1_2_5_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.5.0.')
         return
 
-    success_update_1_2_6_0 = db_update_schema_v_1_2_6_0()
+    success_update_1_2_6_0 = await db_update_schema_v_1_2_6_0()
     if not success_update_1_2_6_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.6.0.')
         return
 
-    success_update_1_2_7_0 = db_update_schema_v_1_2_7_0()
+    success_update_1_2_7_0 = await db_update_schema_v_1_2_7_0()
     if not success_update_1_2_7_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.7.0.')
         return
@@ -474,14 +476,14 @@ async def init_db():
 
 
 
-def db_update_schema_v_1_2_7_0():
+async def db_update_schema_v_1_2_7_0():
     column_definitions_devices = [
         ('key', 'TEXT', True, True),
         ('checksum', 'TEXT', False, False),
         ('loginuntil', 'TIMESTAMPTZ', False, False)
     ]
 
-    schema_version = db_get_schema_version()
+    schema_version = await db_get_schema_version()
     if schema_version:
         compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
         compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
@@ -490,19 +492,19 @@ def db_update_schema_v_1_2_7_0():
         elif compare_1260 > 0:
             return False
 
-    success = db_try_create_table('devices', column_definitions_devices)
+    success = await db_try_create_table('devices', column_definitions_devices)
     if success:
-        success = db_try_set_schema_version('1.2.7.0')
+        success = await db_try_set_schema_version('1.2.7.0')
     return success
 
 
-def db_update_schema_v_1_2_6_0():
+async def db_update_schema_v_1_2_6_0():
     column_definitions_serversettings = [
         ('dailylatestmessagecreatedate', 'TIMESTAMPTZ', False, False),
         ('dailylatestmessagemodifydate', 'TIMESTAMPTZ', False, False)
     ]
 
-    schema_version = db_get_schema_version()
+    schema_version = await db_get_schema_version()
     if schema_version:
         compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
         compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
@@ -517,19 +519,19 @@ def db_update_schema_v_1_2_6_0():
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
-    success = db_try_execute(query)
+    success = await db_try_execute(query)
     if success:
-        success = db_try_set_schema_version('1.2.6.0')
+        success = await db_try_set_schema_version('1.2.6.0')
     return success
 
 
-def db_update_schema_v_1_2_5_0():
+async def db_update_schema_v_1_2_5_0():
     column_definitions = [
         ('dailynotifyid', 'TEXT', False, False),
         ('dailynotifytype', 'TEXT', False, False)
     ]
 
-    schema_version = db_get_schema_version()
+    schema_version = await db_get_schema_version()
     if schema_version:
         compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
         compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
@@ -544,11 +546,10 @@ def db_update_schema_v_1_2_5_0():
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
-    success = db_try_execute(query)
+    success = await db_try_execute(query)
     if success:
-        success = db_try_set_schema_version('1.2.5.0')
+        success = await db_try_set_schema_version('1.2.5.0')
     return success
-
 
 
 async def db_update_schema_v_1_2_4_0():
@@ -556,7 +557,7 @@ async def db_update_schema_v_1_2_4_0():
         ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
 
-    schema_version = db_get_schema_version()
+    schema_version = await db_get_schema_version()
     if schema_version:
         compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
         compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
@@ -571,17 +572,17 @@ async def db_update_schema_v_1_2_4_0():
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
 
     query = '\n'.join(query_lines)
-    success = db_try_execute(query)
+    success = await db_try_execute(query)
     if success:
         utc_now = util.get_utcnow()
         daily_info = await daily.get_daily_info()
-        success = daily.db_set_daily_info(daily_info, utc_now)
+        success = await daily.db_set_daily_info(daily_info, utc_now)
         if success:
-            success = db_try_set_schema_version('1.2.4.0')
+            success = await db_try_set_schema_version('1.2.4.0')
     return success
 
 
-def db_update_schema_v_1_2_2_0():
+async def db_update_schema_v_1_2_2_0():
     query_lines = []
     rename_columns = {
         'channelid': 'dailychannelid',
@@ -596,13 +597,13 @@ def db_update_schema_v_1_2_2_0():
         ('prefix', 'TEXT', False, False)
     ]
 
-    schema_version = db_get_schema_version()
+    schema_version = await db_get_schema_version()
     if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
         return True
 
     db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
 
-    column_names = db_get_column_names('serversettings')
+    column_names = await db_get_column_names('serversettings')
     column_names = [column_name.lower() for column_name in column_names]
     for name_from, name_to in rename_columns.items():
         if name_from in column_names:
@@ -619,37 +620,41 @@ def db_update_schema_v_1_2_2_0():
 
     query = '\n'.join(query_lines)
     if query:
-        success = db_try_execute(query)
+        success = await db_try_execute(query)
     else:
         success = True
     if success:
         query_lines = []
-        column_names = db_get_column_names('serversettings')
+        column_names = await db_get_column_names('serversettings')
         column_names = [column_name.lower() for column_name in column_names]
         for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
             if column_name not in column_names:
                 query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
         query = '\n'.join(query_lines)
         if query:
-            success = db_try_execute(query)
+            success = await db_try_execute(query)
         else:
             success = True
         if success:
-            success = db_try_set_schema_version('1.2.2.0')
+            success = await db_try_set_schema_version('1.2.2.0')
     return success
 
 
-def db_close_cursor(cursor: psycopg2.extensions.cursor) -> None:
-    if cursor is not None:
-        cursor.close()
 
 
-def db_connect() -> bool:
+
+
+
+
+
+
+async def db_connect() -> bool:
     global DB_CONN
-    if db_is_connected(DB_CONN) == False:
+    if db_is_connected(DB_CONN) is False:
         try:
-            DB_CONN = psycopg2.connect(settings.DATABASE_URL, sslmode='prefer')
-            return True
+            async with DB_CONN_LOCK:
+                DB_CONN = await asyncpg.connect(dsn=settings.DATABASE_URL)
+                return True
         except Exception as error:
             error_name = error.__class__.__name__
             print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
@@ -658,34 +663,31 @@ def db_connect() -> bool:
         return True
 
 
-def db_disconnect() -> None:
+async def db_disconnect() -> None:
     global DB_CONN
     if db_is_connected(DB_CONN):
-        DB_CONN.close()
+        async with DB_CONN_LOCK:
+            await DB_CONN.close()
 
 
-def db_execute(query: str, cursor: psycopg2.extensions.cursor) -> None:
-    cursor.execute(query)
+async def db_execute(query: str) -> bool:
+    async with DB_CONN_LOCK:
+        try:
+            DB_CONN.execute(query)
+            return True
+        except:
+            return False
 
 
-def db_fetchall(query: str) -> list:
+async def db_fetchall(query: str) -> list:
     result = None
-    connected = db_connect()
-    if connected:
-        cursor = db_get_cursor()
-        if cursor is not None:
-            try:
-                cursor.execute(query)
-                result = cursor.fetchall()
-            except (Exception, psycopg2.DatabaseError) as error:
-                error_name = error.__class__.__name__
-                print(f'[db_fetchall] {error_name} while performing a query: {error}')
-            finally:
-                db_close_cursor(cursor)
-                db_disconnect()
-        else:
-            print('[db_fetchall] could not get cursor')
-            db_disconnect()
+    if await db_connect():
+        try:
+            async with DB_CONN_LOCK:
+                result = await DB_CONN.fetch(query)
+        except Exception as error:
+            error_name = error.__class__.__name__
+            print(f'[db_fetchall] {error_name} while performing a query: {error}')
     else:
         print('[db_fetchall] could not connect to db')
     return result
@@ -698,39 +700,27 @@ def db_get_column_list(column_definitions: list) -> str:
     return ', '.join(result)
 
 
-def db_get_column_names(table_name: str, cursor: psycopg2.extensions.cursor=None) -> list:
-    created_cursor = False
-    if cursor is None:
-        cursor = db_get_cursor()
-        created_cursor = True
+async def db_get_column_names(table_name: str) -> List[str]:
     result = None
-    query = f'SELECT * FROM {table_name} LIMIT 0'
-    success = db_try_execute(query, cursor)
-    if success:
-        result = [desc.name for desc in cursor.description]
-    if created_cursor:
-        db_close_cursor(cursor)
-        db_disconnect()
+    query = f'SELECT column_name FROM information_schema.columns WHERE table_name = {util.db_convert_text(table_name)}'
+    if await db_connect():
+        try:
+            result = await db_fetchall(query)
+        except Exception as error:
+            error_name = error.__class__.__name__
+            print(f'[db_fetchall] {error_name} while performing a query: {error}')
+    else:
+        print('[db_fetchall] could not connect to db')
+    if result:
+        result = [record[0] for record in result]
     return result
 
 
-def db_get_cursor() -> psycopg2.extensions.cursor:
-    global DB_CONN
-    connected = db_is_connected(DB_CONN)
-    if not connected:
-        connected = db_connect()
-    if connected:
-        return DB_CONN.cursor()
-    else:
-        print('[db_get_cursor] db is not connected')
-    return None
-
-
-def db_get_schema_version() -> str:
+async def db_get_schema_version() -> str:
     where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
     query = f'SELECT * FROM settings WHERE {where_string}'
     try:
-        results = db_fetchall(query)
+        results = await db_fetchall(query)
     except:
         results = []
     if results:
@@ -739,15 +729,14 @@ def db_get_schema_version() -> str:
         return ''
 
 
-def db_is_connected(connection: psycopg2.extensions.connection) -> bool:
+def db_is_connected(connection: asyncpg.Connection) -> bool:
     if connection:
-        if connection.closed == 0:
-            return True
+        return not connection.is_closed()
     return False
 
 
-def db_try_set_schema_version(version: str) -> bool:
-    prior_version = db_get_schema_version()
+async def db_try_set_schema_version(version: str) -> bool:
+    prior_version = await db_get_schema_version()
     utc_now = util.get_utcnow()
     modify_date_for_db = util.db_convert_timestamp(utc_now)
     version_for_db = util.db_convert_text(version)
@@ -756,22 +745,23 @@ def db_try_set_schema_version(version: str) -> bool:
     else:
         where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
         query = f'UPDATE settings SET settingtext = {version_for_db}, modifydate = {modify_date_for_db} WHERE {where_string}'
-    success = db_try_execute(query)
+    success = await db_try_execute(query)
     return success
 
 
-def _db_try_rename_daily_table() -> bool:
+async def _db_try_rename_daily_table() -> bool:
     query_rename = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings;'
-    result = db_try_execute(query_rename)
+    result = await db_try_execute(query_rename)
     return result
 
 
-def db_try_commit() -> bool:
+async def db_try_commit() -> bool:
     global DB_CONN
     if db_is_connected(DB_CONN):
         try:
-            DB_CONN.commit()
-            return True
+            async with DB_CONN_LOCK:
+                await DB_CONN.commit()
+                return True
         except (Exception, psycopg2.DatabaseError) as error:
             error_name = error.__class__.__name__
             print(f'[db_try_commit] {error_name} while committing: {error}')
@@ -781,104 +771,58 @@ def db_try_commit() -> bool:
         return False
 
 
-def db_try_create_table(table_name: str, column_definitions: list) -> bool:
+async def db_try_create_table(table_name: str, column_definitions: list) -> bool:
     column_list = db_get_column_list(column_definitions)
     query_create = f'CREATE TABLE {table_name} ({column_list});'
     success = False
-    connected = db_connect()
-    if connected:
-        cursor = db_get_cursor()
-        if cursor is not None:
-            try:
-                db_execute(query_create, cursor)
-                success = db_try_commit()
-            except db_error.lookup('42P07'):  # DuplicateTable
-                db_try_rollback()
-                success = True
-            except (Exception, psycopg2.DatabaseError) as error:
-                error_name = error.__class__.__name__
-                print(f'[db_try_create_table] {error_name} while performing the query \'{query_create}\': {error}')
-
-            db_close_cursor(cursor)
-            db_disconnect()
-        else:
-            print('[db_try_create_table] could not get cursor')
-            db_disconnect()
+    if await db_connect():
+        try:
+            success = await db_execute(query_create)
+        except asyncpg.exceptions.DuplicateTableError:
+            success = True
+        except (Exception) as error:
+            error_name = error.__class__.__name__
+            print(f'[db_try_create_table] {error_name} while performing the query \'{query_create}\': {error}')
     else:
         print('[db_try_create_table] could not connect to db')
     return success
 
 
-def db_try_execute(query: str, cursor: psycopg2.extensions.cursor = None) -> bool:
+async def db_try_execute(query: str) -> bool:
     if query and query[-1] != ';':
         query += ';'
     success = False
-    connected = db_connect()
-    if connected:
-        if cursor is None:
-            cursor = db_get_cursor()
-        if cursor is not None:
-            try:
-                db_execute(query, cursor)
-                db_try_commit()
-                success = True
-            except (Exception, psycopg2.DatabaseError) as error:
-                db_try_rollback()
-                error_name = error.__class__.__name__
-                print(f'[db_try_execute] {error_name} while performing the query \'{query}\': {error}')
-            finally:
-                db_close_cursor(cursor)
-                db_disconnect()
-        else:
-            print('[db_try_execute] could not get cursor')
-            db_disconnect()
+    if await db_connect():
+        try:
+            success = await db_execute(query)
+        except (Exception, psycopg2.DatabaseError) as error:
+            error_name = error.__class__.__name__
+            print(f'[db_try_execute] {error_name} while performing the query \'{query}\': {error}')
     else:
         print('[db_try_execute] could not connect to db')
     return success
 
 
-def db_try_rollback() -> None:
-    if db_is_connected(DB_CONN):
-        try:
-            DB_CONN.rollback()
-            return True
-        except (Exception, psycopg2.DatabaseError) as error:
-            error_name = error.__class__.__name__
-            print(f'[db_try_rollback] {error_name} while rolling back: {error}')
-            return False
-    else:
-        print('[db_try_rollback] db is not connected')
-        return False
-
-
-def db_get_setting(setting_name: str) -> (object, datetime):
+async def db_get_setting(setting_name: str) -> (object, datetime):
     modify_date: datetime = None
     where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
     query = f'SELECT * FROM settings WHERE {where_string}'
     try:
-        results = db_fetchall(query)
+        records = await db_fetchall(query)
     except:
-        results = []
-    if results:
-        result = results[0]
+        records = []
+    if records:
+        result = records[0]
         modify_date = result[1]
-        if result[2]:
-            return (util.db_convert_to_boolean(result[2]), modify_date)
-        elif result[3]:
-            return (util.db_convert_to_float(result[3]), modify_date)
-        elif result[4]:
-            return (util.db_convert_to_int(result[4]), modify_date)
-        elif result[5]:
-            return (str(result[5]), modify_date)
-        elif result[6]:
-            return (result[6], modify_date)
-        else:
-            return (None, modify_date)
+        for field in result[2:]:
+            if field:
+                return (field, modify_date)
+        return (None, modify_date)
     else:
         return (None, modify_date)
 
 
-def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
+async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
     column_name = None
     if isinstance(value, bool):
         db_value = util.db_convert_boolean(value)
@@ -906,7 +850,7 @@ def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -
     elif setting != value:
         where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
         query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
-    success = not query or db_try_execute(query)
+    success = not query or await db_try_execute(query)
     return success
 
 
@@ -920,3 +864,5 @@ def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -
 
 # ---------- Initialization ----------
 
+async def init():
+    await db_connect()

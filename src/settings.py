@@ -10,7 +10,7 @@ API_DATETIME_FORMAT_ISO_DETAILED = '%Y-%m-%dT%H:%M:%S.%f'
 API_DATETIME_FORMAT_CUSTOM = '%d.%m.%y %H:%M'
 
 
-DATABASE_URL = str(os.environ.get('DATABASE_URL'))
+DATABASE_URL = f'{os.environ.get("DATABASE_URL")}?sslmode=prefer'
 
 DEFAULT_FLOAT_PRECISION = 1
 DEFAULT_USE_EMOJI_PAGINATOR = True
