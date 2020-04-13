@@ -2,8 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 import discord
+import inspect
 import os
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 from cache import PssCache
 import pss_assert
@@ -27,8 +28,9 @@ import utility as util
 # ---------- Classes ----------
 
 class RoomDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, room_info: dict):
+    def __init__(self, room_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData):
         self.__room_info: Dict[str, object] = room_info
+        self.__items_designs_data: entity.EntitiesDesignsData = items_designs_data
 
         super().__init__(
             name=room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME],
@@ -43,7 +45,7 @@ class RoomDesignDetails(entity.LegacyEntityDesignDetails):
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return get_room_details_from_data_as_text(self.__room_info)
+        return get_room_details_from_data_as_text(self.__room_info, self.__items_designs_data)
 
 
     def get_details_as_text_short(self) -> List[str]:
@@ -94,7 +96,7 @@ def _get_build_cost(price_string: str) -> str:
         return ''
 
 
-async def _get_build_requirement(requirement_string: str) -> str:
+def _get_build_requirement(requirement_string: str, items_designs_data: entity.EntitiesDesignsData) -> str:
     if requirement_string:
         requirement_string = requirement_string.lower()
         required_type, required_id = requirement_string.split(':')
@@ -105,7 +107,7 @@ async def _get_build_requirement(requirement_string: str) -> str:
             required_amount = '1'
 
         if required_type == 'item':
-            item_info = await item.get_item_info_from_id(required_id)
+            item_info = items_designs_data[required_id]
             result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
             return result
         else:
@@ -324,6 +326,14 @@ def _get_wikia_link(room_name: str) -> str:
         return ''
 
 
+
+
+
+
+
+
+
+
 # ---------- Constants ----------
 
 ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
@@ -414,6 +424,10 @@ ROOM_DETAILS_PROPERTY_OVERLOADS = {
 
 
 
+
+
+
+
 # ---------- Helper functions ----------
 
 def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
@@ -424,9 +438,9 @@ def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
         return .0
 
 
-def get_room_details_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+def get_room_details_from_id_as_text(room_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     room_info = rooms_designs_data[room_id]
-    return get_room_details_from_data_as_text(room_info)
+    return get_room_details_from_data_as_text(room_info, items_designs_data)
 
 
 def _get_overload_info(room_type: str, display_name: str) -> str:
@@ -459,12 +473,16 @@ def _get_parameter_from_room_info(room_info: dict, parameter: object) -> object:
         return parameter
 
 
-def _get_room_detail_from_data(room_info: dict, display_property_name: str, include_display_name: bool, parameter_definitions: list, transform_function: object) -> str:
+def _get_room_detail_from_data(room_info: dict, display_property_name: str, include_display_name: bool, parameter_definitions: list, transform_function: object, items_designs_data: entity.EntitiesDesignsData) -> str:
     params = []
     room_type = room_info[ROOM_DESIGN_TYPE_PROPERTY_NAME]
     for parameter_definition in parameter_definitions:
         parameter = _get_parameter_from_room_info(room_info, parameter_definition)
         params.append(parameter)
+
+    transform_signature = inspect.signature(transform_function)
+    if 'items_designs_data' in transform_signature.parameters:
+        params.append(items_designs_data)
 
     if transform_function:
         value = transform_function(*tuple(params))
@@ -485,24 +503,24 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
         return ''
 
 
-def get_room_details_from_data_as_text(room_info: dict) -> list:
+def get_room_details_from_data_as_text(room_info: dict, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     result = []
     room_type = room_info[ROOM_DESIGN_TYPE_PROPERTY_NAME]
     for display_property_name, include_display_name, parameter_definitions, transform_function, allowed_room_types in __room_details_properties:
         if not allowed_room_types or room_type in allowed_room_types:
-            line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
+            line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function, items_designs_data)
             if line:
                 result.append(line)
     return result
 
 
-def get_room_details_long_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+def get_room_details_long_from_id_as_text(room_id: str, rooms_designs_data: dict, items_designs_data: entity.EntitiesDesignsData) -> list:
     room_info = rooms_designs_data[room_id]
-    return get_room_details_long_from_data_as_text(room_info)
+    return get_room_details_long_from_data_as_text(room_info, items_designs_data)
 
 
-def get_room_details_long_from_data_as_text(room_info: dict) -> list:
-    return get_room_details_from_data_as_text(room_info)
+def get_room_details_long_from_data_as_text(room_info: dict, items_designs_data: entity.EntitiesDesignsData) -> list:
+    return get_room_details_from_data_as_text(room_info, items_designs_data)
 
 
 def get_room_details_short_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
@@ -556,15 +574,15 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: dict) -> RoomDesignDetails:
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> RoomDesignDetails:
     if room_design_id and room_design_id in rooms_designs_data:
-        result = RoomDesignDetails(rooms_designs_data[room_design_id])
+        result = RoomDesignDetails(rooms_designs_data[room_design_id], items_designs_data)
     else:
         result = None
     return result
 
 
-async def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], discord.Embed]:
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
     rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
@@ -573,13 +591,14 @@ async def get_room_details_from_name(room_name: str, as_embed: bool = settings.U
     if not room_infos:
         return [f'Could not find a room named **{room_name}**.'], False
     else:
+        items_designs_data = await item.items_designs_retriever.get_data_dict3()
         if as_embed:
-            return _get_room_info_as_embed(room_name, room_infos, rooms_designs_data), True
+            return _get_room_info_as_embed(room_name, room_infos, rooms_designs_data, items_designs_data), True
         else:
-            return _get_room_info_as_text(room_name, room_infos, rooms_designs_data), True
+            return _get_room_info_as_text(room_name, room_infos, rooms_designs_data, items_designs_data), True
 
 
-def _get_room_infos(room_name: str, rooms_designs_data: dict):
+def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
     room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
     if not room_design_ids:
         room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
@@ -588,12 +607,12 @@ def _get_room_infos(room_name: str, rooms_designs_data: dict):
     return result
 
 
-def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: dict):
+def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[str]:
     results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
     return results
 
 
-def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: dict):
+def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: entity.EntitiesDesignsData):
     return_best_match = any(char.isdigit() for char in room_short_name)
     results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
     if results and return_best_match:
@@ -601,26 +620,25 @@ def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs
     return results
 
 
-def _get_room_info_as_embed(room_name: str, room_infos: dict, rooms_designs_data: dict):
-    return ''
+def _get_room_info_as_embed(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> discord.Embed:
+    return None
 
 
-def _get_room_info_as_text(room_name: str, room_infos: dict, rooms_designs_data: dict):
+def _get_room_info_as_text(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     lines = [f'**Room stats for \'{room_name}\'**']
     room_infos_count = len(room_infos)
 
     if room_infos_count == 1:
-        lines.extend(get_room_details_from_data_as_text(room_infos[0]))
+        lines.extend(get_room_details_from_data_as_text(room_infos[0], items_designs_data))
     else:
         big_set = room_infos_count > 3
 
-        for i, room_info in enumerate(room_infos):
+        for room_info in room_infos:
             if big_set:
                 lines.extend(get_room_details_short_from_data_as_text(room_info))
             else:
-                lines.extend(get_room_details_from_data_as_text(room_info))
-                if i < room_infos_count - 1:
-                    lines.append(settings.EMPTY_LINE)
+                lines.extend(get_room_details_from_data_as_text(room_info, items_designs_data))
+                lines.append(settings.EMPTY_LINE)
 
     return lines
 
