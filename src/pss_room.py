@@ -2,8 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 import discord
+import inspect
 import os
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 from cache import PssCache
 import pss_assert
@@ -27,8 +28,9 @@ import utility as util
 # ---------- Classes ----------
 
 class RoomDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, room_info: dict):
+    def __init__(self, room_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData):
         self.__room_info: Dict[str, object] = room_info
+        self.__items_designs_data: entity.EntitiesDesignsData = items_designs_data
 
         super().__init__(
             name=room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME],
@@ -43,7 +45,7 @@ class RoomDesignDetails(entity.LegacyEntityDesignDetails):
 
 
     def get_details_as_text_long(self) -> List[str]:
-        return get_room_details_from_data_as_text(self.__room_info)
+        return get_room_details_from_data_as_text(self.__room_info, self.__items_designs_data)
 
 
     def get_details_as_text_short(self) -> List[str]:
@@ -94,7 +96,7 @@ def _get_build_cost(price_string: str) -> str:
         return ''
 
 
-def _get_build_requirement(requirement_string: str) -> str:
+def _get_build_requirement(requirement_string: str, items_designs_data: entity.EntitiesDesignsData) -> str:
     if requirement_string:
         requirement_string = requirement_string.lower()
         required_type, required_id = requirement_string.split(':')
@@ -105,7 +107,7 @@ def _get_build_requirement(requirement_string: str) -> str:
             required_amount = '1'
 
         if required_type == 'item':
-            item_info = item.get_item_info_from_id(required_id)
+            item_info = items_designs_data[required_id]
             result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
             return result
         else:
@@ -324,6 +326,14 @@ def _get_wikia_link(room_name: str) -> str:
         return ''
 
 
+
+
+
+
+
+
+
+
 # ---------- Constants ----------
 
 ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
@@ -414,6 +424,10 @@ ROOM_DETAILS_PROPERTY_OVERLOADS = {
 
 
 
+
+
+
+
 # ---------- Helper functions ----------
 
 def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
@@ -424,12 +438,9 @@ def _calculate_innate_armor_percent(default_defense_bonus: int) -> float:
         return .0
 
 
-def get_room_details_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
-    return get_room_details_from_data_as_text(room_info)
+def get_room_details_from_id_as_text(room_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
+    room_info = rooms_designs_data[room_id]
+    return get_room_details_from_data_as_text(room_info, items_designs_data)
 
 
 def _get_overload_info(room_type: str, display_name: str) -> str:
@@ -462,12 +473,16 @@ def _get_parameter_from_room_info(room_info: dict, parameter: object) -> object:
         return parameter
 
 
-def _get_room_detail_from_data(room_info: dict, display_property_name: str, include_display_name: bool, parameter_definitions: list, transform_function: object) -> str:
+def _get_room_detail_from_data(room_info: dict, display_property_name: str, include_display_name: bool, parameter_definitions: list, transform_function: object, items_designs_data: entity.EntitiesDesignsData) -> str:
     params = []
     room_type = room_info[ROOM_DESIGN_TYPE_PROPERTY_NAME]
     for parameter_definition in parameter_definitions:
         parameter = _get_parameter_from_room_info(room_info, parameter_definition)
         params.append(parameter)
+
+    transform_signature = inspect.signature(transform_function)
+    if 'items_designs_data' in transform_signature.parameters:
+        params.append(items_designs_data)
 
     if transform_function:
         value = transform_function(*tuple(params))
@@ -488,34 +503,28 @@ def _get_room_detail_from_data(room_info: dict, display_property_name: str, incl
         return ''
 
 
-def get_room_details_from_data_as_text(room_info: dict) -> list:
+def get_room_details_from_data_as_text(room_info: dict, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     result = []
     room_type = room_info[ROOM_DESIGN_TYPE_PROPERTY_NAME]
     for display_property_name, include_display_name, parameter_definitions, transform_function, allowed_room_types in __room_details_properties:
         if not allowed_room_types or room_type in allowed_room_types:
-            line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function)
+            line = _get_room_detail_from_data(room_info, display_property_name, include_display_name, parameter_definitions, transform_function, items_designs_data)
             if line:
                 result.append(line)
     return result
 
 
-def get_room_details_long_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
-    return get_room_details_long_from_data_as_text(room_info)
+def get_room_details_long_from_id_as_text(room_id: str, rooms_designs_data: dict, items_designs_data: entity.EntitiesDesignsData) -> list:
+    room_info = rooms_designs_data[room_id]
+    return get_room_details_long_from_data_as_text(room_info, items_designs_data)
 
 
-def get_room_details_long_from_data_as_text(room_info: dict) -> list:
-    return get_room_details_from_data_as_text(room_info)
+def get_room_details_long_from_data_as_text(room_info: dict, items_designs_data: entity.EntitiesDesignsData) -> list:
+    return get_room_details_from_data_as_text(room_info, items_designs_data)
 
 
-def get_room_details_short_from_id_as_text(room_id: str, room_designs_data: dict = None) -> list:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_info = room_designs_data[room_id]
+def get_room_details_short_from_id_as_text(room_id: str, rooms_designs_data: dict) -> list:
+    room_info = rooms_designs_data[room_id]
     return get_room_details_short_from_data_as_text(room_info)
 
 
@@ -538,14 +547,14 @@ def get_room_short_name(room_info: dict) -> str:
         return None
 
 
-def _get_parents(room_info: dict, room_designs_data: dict) -> list:
+def _get_parents(room_info: dict, rooms_designs_data: dict) -> list:
     parent_room_design_id = room_info['UpgradeFromRoomDesignId']
     if parent_room_design_id == '0':
         parent_room_design_id = None
 
     if parent_room_design_id is not None:
-        parent_info = room_designs_data[parent_room_design_id]
-        result = _get_parents(parent_info, room_designs_data)
+        parent_info = rooms_designs_data[parent_room_design_id]
+        result = _get_parents(parent_info, rooms_designs_data)
         result.append(parent_info)
         return result
     else:
@@ -565,90 +574,78 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_design_details_by_id(room_design_id: str, room_designs_data: dict = None) -> RoomDesignDetails:
-    if not room_designs_data:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    if room_design_id and room_design_id in room_designs_data:
-        result = RoomDesignDetails(room_designs_data[room_design_id])
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> RoomDesignDetails:
+    if room_design_id and room_design_id in rooms_designs_data:
+        result = RoomDesignDetails(rooms_designs_data[room_design_id], items_designs_data)
     else:
         result = None
     return result
 
 
-def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_room_details_from_name(room_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], discord.Embed]:
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
-    room_designs_data = rooms_designs_retriever.get_data_dict3()
-    room_infos = _get_room_infos(room_name, room_designs_data=room_designs_data)
+    rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
+    room_infos = _get_room_infos(room_name, rooms_designs_data)
 
     if not room_infos:
         return [f'Could not find a room named **{room_name}**.'], False
     else:
+        items_designs_data = await item.items_designs_retriever.get_data_dict3()
         if as_embed:
-            return _get_room_info_as_embed(room_name, room_infos, room_designs_data), True
+            return _get_room_info_as_embed(room_name, room_infos, rooms_designs_data, items_designs_data), True
         else:
-            return _get_room_info_as_text(room_name, room_infos, room_designs_data), True
+            return _get_room_info_as_text(room_name, room_infos, rooms_designs_data, items_designs_data), True
 
 
-def _get_room_infos(room_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    room_design_ids = _get_room_design_ids_from_name(room_name, room_designs_data=room_designs_data)
+def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
+    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
     if not room_design_ids:
-        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, room_designs_data=room_designs_data)
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
 
-    result = [room_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in room_designs_data.keys()]
+    result = [rooms_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_designs_data.keys()]
     return result
 
 
-def _get_room_design_ids_from_name(room_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
+def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[str]:
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
     return results
 
 
-def _get_room_design_ids_from_room_shortname(room_short_name: str, room_designs_data: dict = None):
-    if room_designs_data is None:
-        room_designs_data = rooms_designs_retriever.get_data_dict3()
-
+def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: entity.EntitiesDesignsData):
     return_best_match = any(char.isdigit() for char in room_short_name)
-    results = core.get_ids_from_property_value(room_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
     if results and return_best_match:
         results = [results[0]]
     return results
 
 
-def _get_room_info_as_embed(room_name: str, room_infos: dict, room_designs_data: dict):
-    return ''
+def _get_room_info_as_embed(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> discord.Embed:
+    return None
 
 
-def _get_room_info_as_text(room_name: str, room_infos: dict, room_designs_data: dict):
+def _get_room_info_as_text(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     lines = [f'**Room stats for \'{room_name}\'**']
     room_infos_count = len(room_infos)
 
     if room_infos_count == 1:
-        lines.extend(get_room_details_from_data_as_text(room_infos[0]))
+        lines.extend(get_room_details_from_data_as_text(room_infos[0], items_designs_data))
     else:
         big_set = room_infos_count > 3
 
-        for i, room_info in enumerate(room_infos):
+        for room_info in room_infos:
             if big_set:
                 lines.extend(get_room_details_short_from_data_as_text(room_info))
             else:
-                lines.extend(get_room_details_from_data_as_text(room_info))
-                if i < room_infos_count - 1:
-                    lines.append(settings.EMPTY_LINE)
+                lines.extend(get_room_details_from_data_as_text(room_info, items_designs_data))
+                lines.append(settings.EMPTY_LINE)
 
     return lines
 
 
-def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
+def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
     result = ''
-    parent_infos = _get_parents(room_info, room_designs_data)
+    parent_infos = _get_parents(room_info, rooms_designs_data)
     if parent_infos:
         for parent_info in parent_infos:
             result += parent_info[ROOM_DESIGN_KEY_NAME].zfill(4)
@@ -661,27 +658,21 @@ def _get_key_for_room_sort(room_info: dict, room_designs_data: dict) -> str:
 
 # ---------- Initilization ----------
 
-rooms_designs_retriever = entity.LegacyEntityDesignsRetriever(
-    ROOM_DESIGN_BASE_PATH,
-    ROOM_DESIGN_KEY_NAME,
-    ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
-    cache_name='RoomDesigns',
-    sorted_key_function=_get_key_for_room_sort
-)
+rooms_designs_retriever: entity.LegacyEntityDesignsRetriever
+rooms_designs_purchases_retriever: entity.LegacyEntityDesignsRetriever
+__allowed_room_names: List[str]
+#__room_details_properties schema:
+# - Display name
+# - Print display name
+# - Arguments to use / properties to print
+# - Transformation function
+# - List of allowed room types (empty if allowed for all)
+__room_details_properties: List[Tuple[str, bool, List[object], Callable, List[str]]]
 
 
-rooms_designs_purchases_retriever = entity.LegacyEntityDesignsRetriever(
-    ROOM_DESIGN_PURCHASE_BASE_PATH,
-    ROOM_DESIGN_PURCHASE_KEY_NAME,
-    ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,
-    cache_name='RoomDesignPurchases'
-)
-
-
-def __get_allowed_room_short_names():
+def __get_allowed_room_short_names(rooms_designs_data: dict):
     result = []
-    room_designs_data = rooms_designs_retriever.get_data_dict3()
-    for room_design_data in room_designs_data.values():
+    for room_design_data in rooms_designs_data.values():
         if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
             room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
             if room_short_name not in result:
@@ -689,44 +680,59 @@ def __get_allowed_room_short_names():
     return result
 
 
-__allowed_room_names = sorted(__get_allowed_room_short_names())
-#List items schema:
-# - Display name
-# - Print display name
-# - Arguments to use / properties to print
-# - Transformation function
-# - List of allowed room types (empty if allowed for all)
-__room_details_properties = [
-    ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name, []),
-    ('Description', False, ['RoomDescription'], _get_description, []),
-    ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size, []),
-    ('Max power used', True, ['MaxSystemPower'], _get_value, []),
-    ('Power generated', True, ['MaxPowerGenerated'], _get_value, []),
-    ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor, []),
-    ('Enhanced By', True, ['EnhancementType'], _get_value, []),
-    ('Min hull lvl', True, ['MinShipLevel'], _get_value, []),
-    ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time, []),
-    ('Shots fired', True, ['MissileDesign.Volley', 'MissileDesign.VolleyDelay'], _get_shots_fired, []),
-    ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
-    ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type, []),
-    ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length, []),
-    ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_max_storage_and_type, []),
-    ('Cap per tick', True, ['Capacity', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_capacity_per_tick, CAPACITY_PER_TICK_UNITS.keys()),
-    ('Cooldown', True, ['CooldownTime'], _get_cooldown, []),
-    ('Queue limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit, []),
-    ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate, []),
-    ('Gas per crew', True, ['ManufactureRate'], _get_value, ['Recycling']),
-    ('Max crew blend', True, ['ManufactureCapacity'], _get_value, ['Recycling']),
-    ('Build time', True, ['ConstructionTime'], _get_build_time, []),
-    ('Build cost', True, ['PriceString'], _get_build_cost, []),
-    ('Build requirement', True, ['RequirementString'], _get_build_requirement, []),
-    ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
-    ('More info', True, ['Flags'], _convert_room_flags, []),
-    ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
-]
+async def init():
+    global rooms_designs_retriever
+    global rooms_designs_purchases_retriever
+    rooms_designs_retriever = entity.LegacyEntityDesignsRetriever(
+        ROOM_DESIGN_BASE_PATH,
+        ROOM_DESIGN_KEY_NAME,
+        ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+        cache_name='RoomDesigns',
+        sorted_key_function=_get_key_for_room_sort
+    )
+    rooms_designs_purchases_retriever = entity.LegacyEntityDesignsRetriever(
+        ROOM_DESIGN_PURCHASE_BASE_PATH,
+        ROOM_DESIGN_PURCHASE_KEY_NAME,
+        ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,
+        cache_name='RoomDesignPurchases'
+    )
+
+    global __allowed_room_names
+    rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
+    __allowed_room_names = sorted(__get_allowed_room_short_names(rooms_designs_data))
+
+    global __room_details_properties
+    __room_details_properties = [
+        ('Name', False, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_room_name, []),
+        ('Description', False, ['RoomDescription'], _get_description, []),
+        ('Size (WxH)', True, ['Columns', 'Rows'], _get_room_size, []),
+        ('Max power used', True, ['MaxSystemPower'], _get_value, []),
+        ('Power generated', True, ['MaxPowerGenerated'], _get_value, []),
+        ('Innate armor', True, ['DefaultDefenceBonus'], _get_innate_armor, []),
+        ('Enhanced By', True, ['EnhancementType'], _get_value, []),
+        ('Min hull lvl', True, ['MinShipLevel'], _get_value, []),
+        ('Reload (Speed)', True, ['ReloadTime'], _get_reload_time, []),
+        ('Shots fired', True, ['MissileDesign.Volley', 'MissileDesign.VolleyDelay'], _get_shots_fired, []),
+        ('System dmg', True, ['MissileDesign.SystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+        ('Shield dmg', True, ['MissileDesign.ShieldDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+        ('Crew dmg', True, ['MissileDesign.CharacterDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+        ('Hull dmg', True, ['MissileDesign.HullDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', False], _get_dmg_for_dmg_type, []),
+        ('Direct System dmg', True, ['MissileDesign.DirectSystemDamage', 'ReloadTime', 'MaxSystemPower', 'MissileDesign.Volley', 'MissileDesign.VolleyDelay', True], _get_dmg_for_dmg_type, []),
+        ('EMP duration', True, ['MissileDesign.EMPLength'], _get_emp_length, []),
+        ('Max storage', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate', 'ManufactureType', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_max_storage_and_type, []),
+        ('Cap per tick', True, ['Capacity', ROOM_DESIGN_TYPE_PROPERTY_NAME], _get_capacity_per_tick, CAPACITY_PER_TICK_UNITS.keys()),
+        ('Cooldown', True, ['CooldownTime'], _get_cooldown, []),
+        ('Queue limit', True, ['Capacity', 'ManufactureCapacity', 'ManufactureRate'], _get_queue_limit, []),
+        ('Manufacture speed', True, ['ManufactureRate'], _get_manufacture_rate, []),
+        ('Gas per crew', True, ['ManufactureRate'], _get_value, ['Recycling']),
+        ('Max crew blend', True, ['ManufactureCapacity'], _get_value, ['Recycling']),
+        ('Build time', True, ['ConstructionTime'], _get_build_time, []),
+        ('Build cost', True, ['PriceString'], _get_build_cost, []),
+        ('Build requirement', True, ['RequirementString'], _get_build_requirement, []),
+        ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
+        ('More info', True, ['Flags'], _convert_room_flags, []),
+        ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
+    ]
 
 
 

@@ -90,27 +90,27 @@ class Device():
         return self.__key
 
 
-    def get_access_token(self) -> str:
+    async def get_access_token(self) -> str:
         """
         Returns a valid access token. If there's no valid access token related to this Device, this method will attempt to log in and retrieve an access token via the PSS API.
         """
         with self.__token_lock:
             if self.access_token_expired:
                 if self.can_login:
-                    self.__login()
+                    await self.__login()
                 else:
                     raise LoginError('Cannot login currently. Please try again later.')
         return self.__access_token
 
 
-    def __login(self) -> None:
+    async def __login(self) -> None:
         utc_now = util.get_utcnow()
         if not self.__key:
             self.__key = create_device_key()
         if not self.__checksum:
             self.__checksum = create_device_checksum(self.__key)
 
-        production_server = core.get_production_server()
+        production_server = await core.get_production_server()
         url = f'https://{production_server}/UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
         utc_now = util.get_utcnow()
         data = requests.post(url).content.decode('utf-8')
@@ -235,8 +235,7 @@ class DeviceCollection():
         raise Exception(f'Could not find device with key \'{device_key}\'')
 
 
-
-    def get_access_token(self) -> str:
+    async def get_access_token(self) -> str:
         with self.__token_lock:
             if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
@@ -247,7 +246,7 @@ class DeviceCollection():
                 current = self.current
                 try:
                     tried_devices += 1
-                    result = current.get_access_token()
+                    result = await current.get_access_token()
                     break
                 except DeviceInUseError:
                     self.remove_device(current)

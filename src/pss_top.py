@@ -16,16 +16,25 @@ import utility as util
 
 
 # ---------- Constants ----------
+
 TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
 
 ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
 
 
+
+
+
+
+
+
+
+
 # ---------- Top 100 Alliances ----------
 
-def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    raw_data = core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
+async def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    raw_data = await core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_fleets_as_embed(data, take), True
@@ -65,11 +74,16 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 
 
 
+
+
+
+
+
 # ---------- Top 100 Captains ----------
 
-def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    path = _get_top_captains_path(take)
-    raw_data = core.get_data_from_path(path)
+async def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    path = await _get_top_captains_path(take)
+    raw_data = await core.get_data_from_path(path)
     data = core.xmltree_to_dict3(raw_data)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
@@ -102,8 +116,8 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
     return lines
 
 
-def _get_top_captains_path(take: int):
-    access_token = login.DEVICES.get_access_token()
+async def _get_top_captains_path(take: int):
+    access_token = await login.DEVICES.get_access_token()
     result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
     return result
 
@@ -112,9 +126,13 @@ def _get_top_captains_path(take: int):
 
 
 
+
+
+
+
 # ---------- Stars info ----------
 
-def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
+async def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
     if division:
         pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
         if division == '-':
@@ -123,7 +141,7 @@ def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_
         division = None
 
     if fleet_data is None or retrieved_date is None:
-        data = core.get_data_from_path(STARS_BASE_PATH)
+        data = await core.get_data_from_path(STARS_BASE_PATH)
         fleet_infos = core.xmltree_to_dict3(data)
     else:
         fleet_infos = fleet_data

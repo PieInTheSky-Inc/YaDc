@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# ----- Packages ------------------------------------------------------
+import aiohttp
+import asyncio
 from datetime import datetime
 import discord
 import json
-import os
 import psycopg2
 from psycopg2 import errors as db_error
 import re
-import sys
 from typing import Callable, Dict, List, Tuple, Union
-import urllib.parse
-import urllib.request
 import xml.etree.ElementTree
 
 import data
@@ -30,87 +27,27 @@ DB_CONN: psycopg2.extensions.connection = None
 
 
 
+
+
+
+
+
+
 # ----- Utilities --------------------------------
-def get_data_from_url(url):
-    data = urllib.request.urlopen(url).read()
-    return data.decode('utf-8')
+
+async def get_data_from_url(url: str) -> str:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            data = await response.text(encoding='utf-8')
+    return data
 
 
-def get_data_from_path(path):
+async def get_data_from_path(path):
     if path:
         path = path.strip('/')
-    base_url = get_base_url()
+    base_url = await get_base_url()
     url = f'{base_url}{path}'
-    return get_data_from_url(url)
-
-
-def save_raw_text(raw_text, filename):
-    try:
-        with open(filename, 'w') as f:
-            f.write(raw_text)
-    except:
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(raw_text)
-
-
-def read_raw_text(filename):
-    try:
-        with open(filename, 'r') as f:
-            result = f.read()
-            return result
-    except:
-        with open(filename, 'r', encoding='utf-8') as f:
-            result = f.read()
-            return result
-
-
-def save_json_to_file(obj, filename):
-    try:
-        with open(filename, 'w') as f:
-            json.dump(obj, f)
-    except:
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(obj, f)
-
-
-def read_json_from_file(filename):
-    result = None
-    try:
-        with open(filename, 'r') as f:
-            result = json.load(f)
-    except:
-        with open(filename, 'r', encoding='utf-8') as f:
-            result = json.load(f)
-    return result
-
-
-def is_old_file(filename, max_days=0, max_seconds=3600, verbose=True):
-    """Returns true if the file modification date > max_days / max_seconds ago
-    or if the file does not exist"""
-    if not os.path.isfile(filename):
-        return True
-    file_stats = os.stat(filename)
-    modify_date = file_stats.st_mtime
-    utc_now = util.get_utcnow()
-    time_diff = utc_now - datetime.fromtimestamp(modify_date)
-    if verbose:
-        print('Time since file {} creation: {}'.format(filename, time_diff))
-    return (time_diff.days > max_days) or time_diff.seconds > max_seconds
-
-
-def load_data_from_url(filename, url, refresh='auto'):
-    if os.path.isfile(filename) and refresh != 'true':
-        if refresh == 'auto':
-            if is_old_file(filename, max_seconds=3600, verbose=False):
-                raw_text = get_data_from_url(url)
-                save_raw_text(raw_text, filename)
-                return raw_text
-        with open(filename, 'r') as f:
-            raw_text = f.read()
-    else:
-        raw_text = get_data_from_url(url)
-        save_raw_text(raw_text, filename)
-    return raw_text
+    return await get_data_from_url(url)
 
 
 def xmltree_to_dict3(raw_text):
@@ -141,25 +78,25 @@ def xmltree_to_dict2(raw_text):
 def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
     root = xml.etree.ElementTree.fromstring(raw_xml)
     # Create an empty dictionary
-    result = convert_xml_to_dict(root, include_root)
+    result = _convert_xml_to_dict(root, include_root)
     return result
 
 
-def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True) -> dict:
+def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True) -> dict:
     if root is None:
         return None
 
     result = {}
     if root.attrib:
         if include_root:
-            result[root.tag] = fix_attrib(root.attrib)
+            result[root.tag] = _fix_attrib(root.attrib)
         else:
-            result = fix_attrib(root.attrib)
+            result = _fix_attrib(root.attrib)
     elif include_root:
         result[root.tag] = {}
 
     # Retrieve all distinct names of sub tags
-    tag_count = get_child_tag_count(root)
+    tag_count = _get_child_tag_count(root)
 
     for child in root:
         tag = child.tag
@@ -180,7 +117,7 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
         if not key:
             key = tag
 
-        child_dict = convert_xml_to_dict(child, False)
+        child_dict = _convert_xml_to_dict(child, False)
         if include_root:
             if key not in result[root.tag].keys():
                 result[root.tag][key] = child_dict
@@ -191,7 +128,7 @@ def convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool 
     return result
 
 
-def get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
+def _get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
     if root is None:
         return None
 
@@ -203,7 +140,7 @@ def get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
     return result
 
 
-def fix_attrib(attrib: dict) -> dict:
+def _fix_attrib(attrib: dict) -> dict:
     if not attrib:
         return None
 
@@ -221,69 +158,10 @@ def fix_attrib(attrib: dict) -> dict:
     return result
 
 
-def convert_2_level_xml_to_dict(raw_text, key_name, tag):
-    root = xml.etree.ElementTree.fromstring(raw_text)
-    result = {}
-    for c in root:
-        for cc in c:
-            if cc.tag != tag:
-                continue
-            key = cc.attrib[key_name]
-            result[key] = cc.attrib
-    return result
-
-
-def create_reverse_lookup(d, new_key, new_value):
-    """Creates a dictionary of the form:
-    {'new_key': 'new_value'}"""
-    rlookup = {}
-    for key in d.keys():
-        item = d[key]
-        rlookup[item[new_key]] = item[new_value]
-    return rlookup
-
-
-def parse_links3(url):
-    data = urllib.request.urlopen(url).read()
-    root = xml.etree.ElementTree.fromstring(data.decode('utf-8'))
-
-    txt_list = []
-    txt = ''
-    for c in root:
-        if len(root) == 1:
-            txt += f'{c.tag}'
-        for cc in c:
-            if len(c) == 1:
-                txt += f'/{cc.tag}'
-            for ccc in cc:
-                if len(cc) == 1:
-                    txt += f'/{ccc.tag}'
-                if isinstance(ccc.attrib, dict):
-                    for k,v in ccc.attrib.items():
-                        txt += f'\n - {k}: {v}'
-                        if len(txt) > settings.MAXIMUM_CHARACTERS:
-                            txt_list += [txt]
-                            txt = ''
-    return txt_list + [txt]
-
-
-def parse_unicode(text, action):
-    if text[0] == '"' and text[-1] == '"':
-        text = text.strip('"')
-    if text[0] == "'" and text[-1] == "'":
-        text = text.strip("'")
-    if text[0] == "“" and text[-1] == "“":
-        text = text.strip("“")
-    if action == 'quote':
-        return urllib.parse.quote(text)
-    elif action == 'unquote':
-        return urllib.parse.unquote(text)
-
-
 __rx_property_fix_replace = re.compile(r'[^a-z0-9]', re.IGNORECASE)
 __rx_allowed_candidate_fix_replace = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
 
-def fix_property_value(property_value: str) -> str:
+def _fix_property_value(property_value: str) -> str:
     result = property_value.lower()
     result = result.strip()
     result = __rx_property_fix_replace.sub('', result)
@@ -304,7 +182,7 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
         return []
 
     if not fix_data_delegate:
-        fix_data_delegate = fix_property_value
+        fix_data_delegate = _fix_property_value
 
     fixed_value = fix_data_delegate(property_value)
     fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
@@ -449,67 +327,36 @@ def convert_iap_options_mask(iap_options_mask: int) -> str:
         return ''
 
 
-# ----- Display -----
-def list_to_text(lst, max_chars=settings.MAXIMUM_CHARACTERS):
-    txt_list = []
-    txt = ''
-    for i, item in enumerate(lst):
-        if i == 0:
-            txt = item
-        else:
-            new_text = txt + ', ' + item
-            if len(new_text) > max_chars:
-                txt_list += [txt]
-                txt = item
-            else:
-                txt += ', ' + item
-    txt_list += [txt]
-    return txt_list
 
 
-# ----- Search -----
-def fix_search_text(search_text):
-    # Convert to lower case & non alpha-numeric
-    new_txt = re.sub('[^a-z0-9]', '', search_text.lower())
-    return new_txt
 
 
-def get_real_name(search_str, lst_original):
-    lst_lookup = [ fix_search_text(s) for s in lst_original ]
-    txt_fixed = fix_search_text(search_str)
-    try:
-        idx = lst_lookup.index(txt_fixed)
-        return lst_original[idx]
-    except:
-        m = [re.search(txt_fixed, t) is not None for t in lst_lookup]
-        if sum(m) > 0:
-            return [txt for (txt, found) in zip(lst_original, m) if found][0]
-        else:
-            return None
+
+
 
 
 # ---------- Get Production Server ----------
 
-def get_latest_settings(language_key: str = 'en', use_base_production_server: bool = False) -> dict:
+async def get_latest_settings(language_key: str = 'en', use_base_production_server: bool = False) -> dict:
     if not language_key:
         language_key = 'en'
     if use_base_production_server:
         base_url = f'{settings.LATEST_SETTINGS_BASE_URL}{settings.LATEST_SETTINGS_BASE_PATH}'
     else:
-        base_url = f'{get_base_url()}{settings.LATEST_SETTINGS_BASE_PATH}'
+        base_url = f'{await get_base_url()}{settings.LATEST_SETTINGS_BASE_PATH}'
     url = f'{base_url}{language_key}'
-    raw_text = get_data_from_url(url)
+    raw_text = await get_data_from_url(url)
     result = xmltree_to_dict3(raw_text)
     return result
 
 
-def get_production_server(language_key: str = 'en'):
-    latest_settings = get_latest_settings(language_key=language_key, use_base_production_server=True)
+async def get_production_server(language_key: str = 'en'):
+    latest_settings = await get_latest_settings(language_key=language_key, use_base_production_server=True)
     return latest_settings['ProductionServer']
 
 
-def get_base_url():
-    production_server = get_production_server()
+async def get_base_url():
+    production_server = await get_production_server()
     result = f'https://{production_server}/'
     return result
 
@@ -569,7 +416,7 @@ def create_embed(title: str = None, description: str = None, fields: Union[List[
 
 # ---------- DataBase ----------
 
-def init_db():
+async def init_db():
     success_settings = db_try_create_table('settings', [
         ('settingname', 'TEXT', True, True),
         ('modifydate', 'TIMESTAMPTZ', False, True),
@@ -588,7 +435,7 @@ def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
         return
 
-    success_update_1_2_4_0 = db_update_schema_v_1_2_4_0()
+    success_update_1_2_4_0 = await db_update_schema_v_1_2_4_0()
     if not success_update_1_2_4_0:
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
         return
@@ -704,7 +551,7 @@ def db_update_schema_v_1_2_5_0():
 
 
 
-def db_update_schema_v_1_2_4_0():
+async def db_update_schema_v_1_2_4_0():
     column_definitions = [
         ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
@@ -727,7 +574,7 @@ def db_update_schema_v_1_2_4_0():
     success = db_try_execute(query)
     if success:
         utc_now = util.get_utcnow()
-        daily_info = daily.get_daily_info()
+        daily_info = await daily.get_daily_info()
         success = daily.db_set_daily_info(daily_info, utc_now)
         if success:
             success = db_try_set_schema_version('1.2.4.0')
@@ -1061,3 +908,15 @@ def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -
         query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
     success = not query or db_try_execute(query)
     return success
+
+
+
+
+
+
+
+
+
+
+# ---------- Initialization ----------
+
