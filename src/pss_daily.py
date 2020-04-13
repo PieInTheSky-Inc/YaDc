@@ -177,8 +177,8 @@ def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, 
     return result
 
 
-def get_daily_info():
-    latest_settings = core.get_latest_settings()
+async def get_daily_info():
+    latest_settings = await core.get_latest_settings()
     result = convert_to_daily_info(latest_settings)
     return result
 

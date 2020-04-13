@@ -46,36 +46,36 @@ __ship_designs_cache = PssCache(
 
 # ---------- Helper functions ----------
 
-def get_inspect_ship_for_user(user_id: str) -> dict:
-    inspect_ship_path = _get_inspect_ship_base_path(user_id)
-    inspect_ship_data = core.get_data_from_path(inspect_ship_path)
+async def get_inspect_ship_for_user(user_id: str) -> dict:
+    inspect_ship_path = await _get_inspect_ship_base_path(user_id)
+    inspect_ship_data = await core.get_data_from_path(inspect_ship_path)
     result = core.xmltree_to_dict2(inspect_ship_data)
     return result
 
 
-def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:
+async def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:
     if not ship_info:
         return None
     if not ship_design_data:
-        ship_design_data = __ship_designs_cache.get_data_dict3()
+        ship_design_data = await __ship_designs_cache.get_data_dict3()
     ship_design_id = ship_info['ShipDesignId']
     result = ship_design_data[ship_design_id]['ShipLevel']
     return result
 
 
-def get_ship_level_for_user(user_id: str) -> str:
-    inspect_ship_info = get_inspect_ship_for_user(user_id)
-    result = get_ship_level(inspect_ship_info)
+async def get_ship_level_for_user(user_id: str) -> str:
+    inspect_ship_info = await get_inspect_ship_for_user(user_id)
+    result = await get_ship_level(inspect_ship_info)
     return result
 
 
-def get_ship_status_for_user(user_id: str) -> str:
-    inspect_ship_info = get_inspect_ship_for_user(user_id)
+async def get_ship_status_for_user(user_id: str) -> str:
+    inspect_ship_info = await get_inspect_ship_for_user(user_id)
     result = inspect_ship_info['Ship']['ShipStatus']
     return result
 
 
-def _get_inspect_ship_base_path(user_id: str) -> str:
-    access_token = login.DEVICES.get_access_token()
+async def _get_inspect_ship_base_path(user_id: str) -> str:
+    access_token = await login.DEVICES.get_access_token()
     result = f'ShipService/InspectShip2?accessToken={access_token}&userId={user_id}'
     return result

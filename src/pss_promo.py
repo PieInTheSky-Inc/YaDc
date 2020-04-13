@@ -311,10 +311,10 @@ def _get_requirement_type_and_value(requirement_string: str, separator: str, add
 
 # ---------- Promo info ----------
 
-def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> PromotionDesignDetails:
+async def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> PromotionDesignDetails:
     if promotion_design_id:
         if promotions_designs_data is None:
-            promotions_designs_data = promotion_designs_retriever.get_data_dict3()
+            promotions_designs_data = await promotion_designs_retriever.get_data_dict3()
 
         if promotion_design_id and promotion_design_id in promotions_designs_data.keys():
             promotion_design_info = promotions_designs_data[promotion_design_id]
@@ -329,10 +329,10 @@ def get_promotions_designs_details_by_name(promotion_name: str) -> entity.Entity
 
 
 
-def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
-    promotion_design_infos = promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
+    promotion_design_infos = await promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
     promotions_designs_details = [PromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
 
     if not promotions_designs_details:
@@ -406,7 +406,7 @@ if __name__ == '__main__':
     test_promotions = ['alpaco']
     for promotion_name in test_promotions:
         os.system('clear')
-        result = get_promotions_designs_info_by_name(promotion_name, as_embed=False)
+        result = await get_promotions_designs_info_by_name(promotion_name, as_embed=False)
         for line in result[0]:
             print(line)
         print('')

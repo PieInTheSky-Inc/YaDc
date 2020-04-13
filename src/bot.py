@@ -111,6 +111,10 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
+    await core.init_db()
+    await item.init()
+    await room.init()
+    await user.init()
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
     bot.loop.create_task(post_dailies_loop())
@@ -156,7 +160,7 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
         help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
         command = bot.get_command(help_args)
         await ctx.send_help(command)
-        await ctx.send(f'Error: {err}')
+        await ctx.send(f'**Error**\n> {err}')
 
 
 @bot.event
@@ -193,7 +197,7 @@ async def post_dailies_loop() -> None:
         utc_now = util.get_utcnow()
         yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
 
-        daily_info = daily.get_daily_info()
+        daily_info = await daily.get_daily_info()
         db_daily_info, db_daily_modify_date = daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
@@ -212,9 +216,9 @@ async def post_dailies_loop() -> None:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
-            latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
             latest_daily_message = '\n'.join(latest_message_output)
-            output, created_output = dropship.get_dropship_text(daily_info=daily_info)
+            output, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
                 posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
@@ -376,6 +380,7 @@ async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member
 
 
 # ----- General Bot Commands ----------------------------------------------------------
+
 @bot.command(brief='Ping the server', name='ping')
 async def cmd_ping(ctx: discord.ext.commands.Context):
     """
@@ -387,7 +392,7 @@ async def cmd_ping(ctx: discord.ext.commands.Context):
     Examples:
       /ping - The bot will answer with 'Pong!'.
     """
-    await ctx.send('Pong!')
+    msg = await ctx.send('Pong!')
 
 
 
@@ -419,7 +424,7 @@ async def cmd_prestige(ctx: discord.ext.commands.Context, *, crew_name: str):
       This command will only print recipes for the crew with the best matching crew name.
     """
     async with ctx.typing():
-        output, _ = crew.get_prestige_from_info(crew_name)
+        output, _ = await crew.get_prestige_from_info(crew_name)
     await util.post_output(ctx, output)
 
 
@@ -442,7 +447,7 @@ async def cmd_recipe(ctx: discord.ext.commands.Context, *, crew_name: str):
       This command will only print recipes for the crew with the best matching crew name.
     """
     async with ctx.typing():
-        output, _ = crew.get_prestige_to_info(crew_name)
+        output, _ = await crew.get_prestige_to_info(crew_name)
     await util.post_output(ctx, output)
 
 
@@ -466,7 +471,7 @@ async def cmd_ingredients(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     async with ctx.typing():
-        output, _ = item.get_ingredients_for_item(item_name)
+        output, _ = await item.get_ingredients_for_item(item_name)
     await util.post_output(ctx, output)
 
 
@@ -491,7 +496,7 @@ async def cmd_craft(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_upgrades_from_name(item_name)
+        output, _ = await item.get_item_upgrades_from_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -517,7 +522,7 @@ async def cmd_price(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print prices for all items matching the specified item_name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_price(item_name)
+        output, _ = await item.get_item_price(item_name)
     await util.post_output(ctx, output)
 
 
@@ -546,12 +551,12 @@ async def cmd_stats(ctx: discord.ext.commands.Context, level: str = None, *, nam
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = crew.get_char_design_details_by_name(name, level)
+            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = item.get_item_details_by_name(name)
+            item_output, item_success = await item.get_item_details_by_name(name)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -590,7 +595,7 @@ async def cmd_char(ctx: discord.ext.commands.Context, level: str = None, *, crew
     """
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = crew.get_char_design_details_by_name(crew_name, level=level)
+        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
@@ -613,7 +618,7 @@ async def cmd_item(ctx: discord.ext.commands.Context, *, item_name: str):
       This command will print information for all items matching the specified name.
     """
     async with ctx.typing():
-        output, _ = item.get_item_details_by_name(item_name)
+        output, _ = await item.get_item_details_by_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -635,7 +640,7 @@ async def cmd_best(ctx: discord.ext.commands.Context, slot: str, stat: str):
       /best all hp - Prints all equipment items for all slots providing a HP bonus.
     """
     async with ctx.typing():
-        output, _ = item.get_best_items(slot, stat)
+        output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 
 
@@ -658,7 +663,7 @@ async def cmd_research(ctx: discord.ext.commands.Context, *, research_name: str)
       This command will print information for all researches matching the specified name.
     """
     async with ctx.typing():
-        output, _ = research.get_research_infos_by_name(research_name)
+        output, _ = await research.get_research_infos_by_name(research_name)
     await util.post_output(ctx, output)
 
 
@@ -681,7 +686,7 @@ async def cmd_collection(ctx: discord.ext.commands.Context, *, collection_name: 
       This command will only print stats for the collection with the best matching collection_name.
     """
     async with ctx.typing():
-        output, _ = crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await crew.get_collection_design_details_by_name(collection_name)
     await util.post_output(ctx, output)
 
 
@@ -723,11 +728,11 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
         if not called_subcommand:
             if tourney.is_tourney_running():
                 async with ctx.typing():
-                    output, _ = pss_top.get_division_stars(division=division)
+                    output, _ = await pss_top.get_division_stars(division=division)
             else:
                 async with ctx.typing():
                     (fleet_data, _, data_date) = tournament_data.get_data()
-                    output, _ = pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
             await util.post_output(ctx, output)
 
 
@@ -756,7 +761,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
             fleet_name = exact_name
         is_tourney_running = tourney.is_tourney_running()
         (fleet_data, user_data, data_date) = tournament_data.get_data()
-        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+        fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
         if is_tourney_running:
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
         else:
@@ -772,7 +777,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if fleet_info:
             async with ctx.typing():
                 if is_tourney_running:
-                    fleet_users_infos = fleet.get_fleet_users_by_info(fleet_info)
+                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
                     output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
@@ -798,7 +803,7 @@ async def cmd_daily(ctx: discord.ext.commands.Context):
     """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = dropship.get_dropship_text()
+        output, _ = await dropship.get_dropship_text()
     await util.post_output(ctx, output)
 
 
@@ -816,7 +821,7 @@ async def cmd_news(ctx: discord.ext.commands.Context):
     """
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = dropship.get_news()
+        output, _ = await dropship.get_news()
     await util.post_output(ctx, output)
 
 
@@ -881,7 +886,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     channel_id = server_settings.db_get_daily_channel_id(guild.id)
     if channel_id is not None:
         text_channel = bot.get_channel(channel_id)
-        output, _ = dropship.get_dropship_text()
+        output, _ = await dropship.get_dropship_text()
         await util.post_output_to_channel(text_channel, output)
 
 
@@ -942,7 +947,7 @@ async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
       /top fleets - prints top 100 fleets.
       /top fleets 30 - prints top 30 fleets."""
     async with ctx.typing():
-        output, _ = pss_top.get_top_fleets(count)
+        output, _ = await pss_top.get_top_fleets(count)
     await util.post_output(ctx, output)
 
 
@@ -961,13 +966,13 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
       /top captains - prints top 100 captains.
       /top captains 30 - prints top 30 captains."""
     async with ctx.typing():
-        output, _ = pss_top.get_top_captains(count)
+        output, _ = await pss_top.get_top_captains(count)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get room infos', name='room')
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
+async def cmd_room(ctx: discord.ext.commands.Context, *, room_name: str):
     """
     Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
@@ -986,13 +991,13 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, name: str = None):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
-        output, _ = room.get_room_details_from_name(name)
+        output, _ = await room.get_room_details_from_name(room_name)
     await util.post_output(ctx, output)
 
 
 @bot.command(brief='Get training infos', name='training')
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
+async def cmd_training(ctx: discord.ext.commands.Context, *, training_name: str):
     """
     Get detailed information on a training. If more than 2 results are found, some details will be omitted.
 
@@ -1010,7 +1015,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
       The highest yield will always be displayed on the far left.
     """
     async with ctx.typing():
-        output, _ = training.get_training_details_from_name(name)
+        output, _ = await training.get_training_details_from_name(training_name)
     await util.post_output(ctx, output)
 
 
@@ -1188,18 +1193,18 @@ async def cmd_tournament_next(ctx: discord.ext.commands.Context):
 async def cmd_updatecache(ctx: discord.ext.commands.Context):
     """This command is to be used to update all caches manually."""
     async with ctx.typing():
-        crew.character_designs_retriever.update_cache()
-        crew.collection_designs_retriever.update_cache()
+        await crew.characters_designs_retriever.update_cache()
+        await crew.collections_designs_retriever.update_cache()
         prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
         for prestige_to_cache in prestige_to_caches:
-            prestige_to_cache.update_data()
+            await prestige_to_cache.update_data()
         prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
         for prestige_from_cache in prestige_from_caches:
-            prestige_from_cache.update_data()
-        item.items_designs_retriever.update_cache()
-        research.__research_designs_cache.update_data()
-        room.rooms_designs_retriever.update_cache()
-        training.training_designs_retriever.update_cache()
+            await prestige_from_cache.update_data()
+        await item.items_designs_retriever.update_cache()
+        await research.researches_designs_retriever.update_cache()
+        await room.rooms_designs_retriever.update_cache()
+        await training.trainings_designs_retriever.update_cache()
     await ctx.send('Updated all caches successfully!')
 
 
@@ -1224,7 +1229,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             fleet_name = exact_name
-        fleet_infos = fleet.get_fleet_details_by_name(fleet_name)
+        fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1236,7 +1241,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         if fleet_info:
             async with ctx.typing():
                 (fleet_data, user_data, data_date) = tournament_data.get_data()
-                output, file_paths = fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1265,7 +1270,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             player_name = exact_name
-        user_infos = user.get_user_details_by_name(player_name)
+        user_infos = await user.get_user_details_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -1276,7 +1281,7 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
 
         if user_info:
             async with ctx.typing():
-                output = user.get_user_details_by_info(user_info)
+                output = await user.get_user_details_by_info(user_info)
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
@@ -1761,7 +1766,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                     utc_now = util.get_utcnow()
                     yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
                     db_daily_info, _ = daily.db_get_daily_info()
-                    latest_message_output, _ = dropship.get_dropship_text(daily_info=db_daily_info)
+                    latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
                     latest_daily_message = '\n'.join(latest_message_output)
                     _, latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
                     success = server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
@@ -1909,33 +1914,6 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
 
 
 
-@bot.command(name='pagination', hidden=True, aliases=['pages'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.channel)
-async def cmd_pagination(ctx: discord.ext.commands.Context):
-    """
-    Some commands allow the user to search for a fleet, a player or other stuff. Such a search may yield more than one result. Then the bot may offer the user to select one of these results.
-
-    Pagination is a way to format the result list in way that allows the user to select one result. The pagination mode can be set individually per Discord server. There are two modes:
-    - ON
-    - OFF
-
-    If pagination is turned ON for a server, the bot will print the results on pages of 5 results. The bot will add reactions. The user can use the reactions to navigate the pages or select an item of the result list.
-    If pagination is turned OFF for a server, the bot will print the whole results list. The user can select an item from the list by typing the number in front of the respective result.
-
-    In both cases the result list will disappear after 60 seconds without user input.
-    """
-    pass
-
-
-
-
-
-
-
-
-
-
-
 @bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -1946,7 +1924,7 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        core.init_db()
+        await core.init_db()
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
@@ -2003,7 +1981,7 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
     async with ctx.typing():
         device = login.DEVICES.create_device()
         try:
-            device.get_access_token()
+            await device.get_access_token()
             created = True
         except Exception as err:
             login.DEVICES.remove_device(device)
@@ -2061,7 +2039,7 @@ async def cmd_device_login(ctx: discord.ext.commands.Context):
     """
     async with ctx.typing():
         try:
-            access_token = login.DEVICES.get_access_token()
+            access_token = await login.DEVICES.get_access_token()
             device = login.DEVICES.current
         except Exception as err:
             access_token = None
@@ -2094,7 +2072,6 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     print(f'discord.py version: {discord.__version__}')
-    core.init_db()
     login.init()
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
