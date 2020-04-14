@@ -109,14 +109,17 @@ async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot version is: {settings.VERSION}')
-    print(f'DB schema version is: {core.db_get_schema_version()}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
-    await core.init_db()
+    await core.init()
+    print(f'DB schema version is: {await core.db_get_schema_version()}')
+    await server_settings.init()
+    await login.init()
     await item.init()
     await room.init()
     await user.init()
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
+    print(f'Initialized! Creating autodaily task.')
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -186,6 +189,7 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 
 # ----- Tasks ----------------------------------------------------------
+
 async def post_dailies_loop() -> None:
     utc_now = util.get_utcnow()
     while utc_now < settings.POST_AUTODAILY_FROM:
@@ -198,15 +202,15 @@ async def post_dailies_loop() -> None:
         yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
 
         daily_info = await daily.get_daily_info()
-        db_daily_info, db_daily_modify_date = daily.db_get_daily_info()
+        db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        autodaily_settings = server_settings.get_autodaily_settings(bot, no_post_yet=True)
+        autodaily_settings = await server_settings.get_autodaily_settings(bot, no_post_yet=True)
         if autodaily_settings:
             print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} channels')
         if has_daily_changed:
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-            post_here = server_settings.get_autodaily_settings(bot)
+            post_here = await server_settings.get_autodaily_settings(bot)
             print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
             autodaily_settings.extend(post_here)
 
@@ -227,7 +231,7 @@ async def post_dailies_loop() -> None:
         if has_daily_changed:
             seconds_to_wait = 300.0
             if created_output or not autodaily_settings:
-                daily.db_set_daily_info(daily_info, utc_now)
+                await daily.db_set_daily_info(daily_info, utc_now)
         else:
             seconds_to_wait = util.get_seconds_to_wait(1)
         await asyncio.sleep(seconds_to_wait)
@@ -1315,17 +1319,18 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
     if not util.is_guild_channel(ctx.channel):
         await ctx.send('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
     elif ctx.invoked_subcommand is None:
-        output = [f'**```Server settings for {ctx.guild.name}```**']
+        async with ctx.typing():
+            output = [f'**```Server settings for {ctx.guild.name}```**']
 
-        autodaily_settings = server_settings.get_autodaily_settings(bot, ctx.guild.id)
-        if autodaily_settings:
-            output.extend(autodaily_settings[0].get_pretty_settings())
-        use_pagination = server_settings.get_pagination_mode(ctx.guild.id)
-        prefix = server_settings.get_prefix_or_default(ctx.guild.id)
-        output.extend([
-            f'Pagination = `{use_pagination}`',
-            f'Prefix = `{prefix}`'
-        ])
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, ctx.guild.id)
+            if autodaily_settings:
+                output.extend(autodaily_settings[0].get_pretty_settings())
+            use_pagination = await server_settings.get_pagination_mode(ctx.guild.id)
+            prefix = await server_settings.get_prefix_or_default(ctx.guild.id)
+            output.extend([
+                f'Pagination = `{use_pagination}`',
+                f'Prefix = `{prefix}`'
+            ])
         await util.post_output(ctx, output)
 
 
@@ -1349,7 +1354,7 @@ async def cmd_settings_get_autodaily(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_settings()
         await util.post_output(ctx, output)
 
@@ -1374,7 +1379,7 @@ async def cmd_settings_get_autodaily_channel(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_channel()
         await util.post_output(ctx, output)
 
@@ -1399,7 +1404,7 @@ async def cmd_settings_get_autodaily_mode(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_changemode()
         await util.post_output(ctx, output)
 
@@ -1424,7 +1429,7 @@ async def cmd_settings_get_autodaily_notify(ctx: discord.ext.commands.Context):
     if util.is_guild_channel(ctx.channel):
         output = []
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)
             output = autodaily_settings[0].get_pretty_setting_notify()
         await util.post_output(ctx, output)
 
@@ -1448,7 +1453,7 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            use_pagination_mode = server_settings.get_pagination_mode(ctx.guild.id)
+            use_pagination_mode = await server_settings.get_pagination_mode(ctx.guild.id)
             output = [f'Pagination on this server has been set to: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
 
@@ -1471,7 +1476,7 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            prefix = server_settings.get_prefix_or_default(ctx.guild.id)
+            prefix = await server_settings.get_prefix_or_default(ctx.guild.id)
             output = [f'Prefix for this server is: `{prefix}`']
         await util.post_output(ctx, output)
 
@@ -1530,7 +1535,7 @@ async def cmd_settings_reset_autodaily(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
         async with ctx.typing():
-            success = server_settings.db_reset_autodaily_settings(ctx.guild.id)
+            success = await server_settings.db_reset_autodaily_settings(ctx.guild.id)
             if success:
                 output = ['Successfully removed all auto-daily settings for this server.']
             else:
@@ -1560,7 +1565,7 @@ async def cmd_settings_reset_autodaily_channel(ctx: discord.ext.commands.Context
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.db_reset_autodaily_channel(ctx.guild.id)
+            success = await server_settings.db_reset_autodaily_channel(ctx.guild.id)
             if success:
                 output = ['Successfully removed the auto-daily channel.']
             else:
@@ -1590,7 +1595,7 @@ async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.reset_daily_delete_on_change(ctx.guild.id)
+            success = await server_settings.reset_daily_delete_on_change(ctx.guild.id)
             if success:
                 output = ['Successfully reset the auto-daily change mode.']
             else:
@@ -1620,7 +1625,7 @@ async def cmd_settings_reset_autodaily_notify(ctx: discord.ext.commands.Context)
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.db_reset_autodaily_notify(ctx.guild.id)
+            success = await server_settings.db_reset_autodaily_notify(ctx.guild.id)
             if success:
                 output = ['Successfully reset the auto-daily notifications.']
             else:
@@ -1650,7 +1655,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.db_reset_use_pagination(ctx.guild.id)
+            success = await server_settings.db_reset_use_pagination(ctx.guild.id)
         if success:
             await ctx.invoke(bot.get_command(f'settings pagination'))
         else:
@@ -1679,7 +1684,7 @@ async def cmd_settings_reset_prefix(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = server_settings.reset_prefix(ctx.guild.id)
+            success = await server_settings.reset_prefix(ctx.guild.id)
         if success:
             output = ['Successfully reset the prefix for this server.']
             await util.post_output(ctx, output)
@@ -1757,7 +1762,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            autodaily_settings = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
+            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
             if not text_channel:
                 text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
@@ -1765,12 +1770,12 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
                 if autodaily_settings.channel_id != text_channel.id:
                     utc_now = util.get_utcnow()
                     yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
-                    db_daily_info, _ = daily.db_get_daily_info()
+                    db_daily_info, _ = await daily.db_get_daily_info()
                     latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
                     latest_daily_message = '\n'.join(latest_message_output)
                     _, latest_message = await daily_fetch_latest_message(text_channel, None, yesterday, latest_daily_message, None)
-                    success = server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
-                success = daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
+                    success = await server_settings.db_update_daily_latest_message(ctx.guild.id, latest_message)
+                success = await daily.try_store_daily_channel(ctx.guild.id, text_channel.id)
                 if success:
                     output = [f'Set auto-posting of the daily announcement to channel {text_channel.mention}.']
                 else:
@@ -1802,7 +1807,7 @@ async def cmd_settings_set_autodaily_change(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            result = server_settings.toggle_daily_delete_on_change(ctx.guild.id)
+            result = await server_settings.toggle_daily_delete_on_change(ctx.guild.id)
             change_mode = server_settings.convert_to_edit_delete(result)
             output = [f'Change mode on this server is set to: `{change_mode}`']
         await util.post_output(ctx, output)
@@ -1837,8 +1842,8 @@ async def cmd_settings_set_autodaily_notify(ctx: discord.ext.commands.Context, *
                 notify_type = server_settings.AutoDailyNotifyType.USER
             else:
                 raise Exception('You need to specify a user or a role!')
-            server_settings.set_autodaily_notify(ctx.guild.id, notify_id, notify_type)
-            result = server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
+            await server_settings.set_autodaily_notify(ctx.guild.id, notify_id, notify_type)
+            result = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
             output = [f'Notify on auto-daily changes: `{result._get_pretty_notify_settings()}`']
         await util.post_output(ctx, output)
 
@@ -1869,7 +1874,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            result = server_settings.set_pagination(ctx.guild.id, switch)
+            result = await server_settings.set_pagination(ctx.guild.id, switch)
             use_pagination_mode = server_settings.convert_to_on_off(result)
             output = [f'Pagination on this server is: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
@@ -1898,7 +1903,7 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
         prefix = prefix.lstrip()
         pss_assert.valid_parameter_value(prefix, 'prefix', min_length=1)
         async with ctx.typing():
-            success = server_settings.set_prefix(ctx.guild.id, prefix)
+            success = await server_settings.set_prefix(ctx.guild.id, prefix)
             if success:
                 output = [f'Prefix for this server has been set to: `{prefix}`']
             else:
@@ -1929,7 +1934,7 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
-        result, error = core.db_fetchall(query)
+        result, error = await core.db_fetchall(query)
         if error:
             await ctx.send(error)
         elif result:
@@ -2072,6 +2077,5 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     print(f'discord.py version: {discord.__version__}')
-    login.init()
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)

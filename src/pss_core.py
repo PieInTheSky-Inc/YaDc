@@ -4,12 +4,14 @@
 import aiohttp
 import asyncio
 import asyncpg
+import contextlib
 from datetime import datetime
 import discord
 import json
 import psycopg2
 from psycopg2 import errors as db_error
 import re
+from threading import Lock
 from typing import Callable, Dict, List, Tuple, Union
 import xml.etree.ElementTree
 
@@ -20,8 +22,8 @@ import settings
 import utility as util
 
 
-DB_CONN: asyncpg.Connection = None
-DB_CONN_LOCK: asyncio.Lock = asyncio.Lock()
+DB_CONN: asyncpg.pool.Pool = None
+CON: 'DbConnection' = None
 
 
 # ---------- Constants ----------
@@ -35,7 +37,57 @@ DB_CONN_LOCK: asyncio.Lock = asyncio.Lock()
 
 
 
-# ----- Utilities --------------------------------
+# ---------- Classes ----------
+
+class DbConnection(contextlib.AbstractAsyncContextManager):
+    def __init__(self, dsn: str):
+        self.__initialized: bool = False
+        self.__pool: asyncpg.pool.Pool = None
+        self.__dsn: str = dsn
+        self.__connection: asyncpg.connection.Connection = None
+        self.__lock: asyncio.Lock = asyncio.Lock()
+
+
+    async def init(self, dsn: str = None):
+        if dsn:
+            self.__dsn = dsn
+        self.__pool = await asyncpg.pool.create_pool(self.__dsn)
+        self.__initialized = True
+
+
+    def __assert_initialized(self):
+        if self.__initialized is False:
+            raise RuntimeError('This object hasn\'t been initialized, yet!')
+
+
+    def __del__(self):
+        self.__pool.close()
+
+
+    async def __aenter__(self):
+        self.__assert_initialized()
+        async with self.__lock:
+            self.__connection = await self.__pool.acquire()
+            self.__connection.transaction()
+            return self.__connection
+
+
+    async def __aexit__(self, exc_type, exc, tb):
+        async with self.__lock:
+            self.__pool.release(self.__connection)
+            self.__connection = None
+
+
+
+
+
+
+
+
+
+
+
+# ---------- Utilities ----------
 
 async def get_data_from_url(url: str) -> str:
     async with aiohttp.ClientSession() as session:
@@ -72,9 +124,6 @@ def xmltree_to_dict2(raw_text):
                 if isinstance(cc, dict):
                     return cc
     return {}
-
-
-
 
 
 def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
@@ -419,17 +468,9 @@ def create_embed(title: str = None, description: str = None, fields: Union[List[
 # ---------- DataBase ----------
 
 async def init_db():
-    success_settings = db_try_create_table('settings', [
-        ('settingname', 'TEXT', True, True),
-        ('modifydate', 'TIMESTAMPTZ', False, True),
-        ('settingboolean', 'BOOLEAN', False, False),
-        ('settingfloat', 'FLOAT', False, False),
-        ('settingint', 'INT', False, False),
-        ('settingtext', 'TEXT', False, False),
-        ('settingtimestamp', 'TIMESTAMPTZ', False, False)
-    ])
-    if not success_settings:
-        print('[init_db] DB initialization failed upon creating the table \'settings\'.')
+    success_create_schema = await db_create_schema()
+    if not success_create_schema:
+        print('[init_db] DB initialization failed upon creating the DB schema.')
         return
 
     success_update_1_2_2_0 = await db_update_schema_v_1_2_2_0()
@@ -457,7 +498,7 @@ async def init_db():
         print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.7.0.')
         return
 
-    success_serversettings = db_try_create_table('serversettings', [
+    success_serversettings = await db_try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
         ('dailycanpost', 'BOOLEAN', False, False),
@@ -601,7 +642,7 @@ async def db_update_schema_v_1_2_2_0():
     if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
         return True
 
-    db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
+    await db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
 
     column_names = await db_get_column_names('serversettings')
     column_names = [column_name.lower() for column_name in column_names]
@@ -640,6 +681,54 @@ async def db_update_schema_v_1_2_2_0():
     return success
 
 
+async def db_create_schema():
+    column_definitions_settings = [
+        ('settingname', 'TEXT', True, True),
+        ('modifydate', 'TIMESTAMPTZ', False, True),
+        ('settingboolean', 'BOOLEAN', False, False),
+        ('settingfloat', 'FLOAT', False, False),
+        ('settingint', 'INT', False, False),
+        ('settingtext', 'TEXT', False, False),
+        ('settingtimestamp', 'TIMESTAMPTZ', False, False)
+    ]
+    column_definitions_daily = [
+        ('guildid', 'TEXT', True, True),
+        ('channelid', 'TEXT', False, True),
+        ('canpost', 'BOOLEAN')
+    ]
+    query_server_settings = 'SELECT * FROM serversettings'
+
+    schema_version = await db_get_schema_version()
+    if schema_version:
+        compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
+        if compare_1000 <= 0:
+            return True
+
+    success_settings = await db_try_create_table('settings', column_definitions_settings)
+    if not success_settings:
+        print('[init_db] DB initialization failed upon creating the table \'settings\'.')
+
+    create_daily = False
+    try:
+        _ = await db_fetchall(query_server_settings)
+    except asyncpg.exceptions.UndefinedTableError:
+        create_daily = True
+
+    if create_daily:
+        success_daily = await db_try_create_table('daily', column_definitions_daily)
+    else:
+        success_daily = True
+
+    if success_daily is False:
+        print('[init_db] DB initialization failed upon creating the table \'daily\'.')
+
+    success = success_settings and success_daily
+    if success:
+        success = await db_try_set_schema_version('1.0.0.0')
+    return success
+
+
+
 
 
 
@@ -652,9 +741,17 @@ async def db_connect() -> bool:
     global DB_CONN
     if db_is_connected(DB_CONN) is False:
         try:
-            async with DB_CONN_LOCK:
-                DB_CONN = await asyncpg.connect(dsn=settings.DATABASE_URL)
-                return True
+            DB_CONN = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
+            return True
+        #except ValueError:
+        #    try:
+        #        with DB_CONN_LOCK:
+        #            DB_CONN = await asyncpg.connect(host='127.0.0.1', database='pss-statistics')
+        #            return True
+        #    except Exception as error:
+        #        error_name = error.__class__.__name__
+        #        print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
+        #        return False
         except Exception as error:
             error_name = error.__class__.__name__
             print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
@@ -666,28 +763,33 @@ async def db_connect() -> bool:
 async def db_disconnect() -> None:
     global DB_CONN
     if db_is_connected(DB_CONN):
-        async with DB_CONN_LOCK:
-            await DB_CONN.close()
+        await DB_CONN.close()
 
 
-async def db_execute(query: str) -> bool:
-    async with DB_CONN_LOCK:
-        try:
-            DB_CONN.execute(query)
-            return True
-        except:
-            return False
+async def db_execute(query: str, args: list = None) -> bool:
+    async with DB_CONN.acquire() as connection:
+        if args:
+            await connection.execute(query, *args)
+        else:
+            await connection.execute(query)
 
 
-async def db_fetchall(query: str) -> list:
-    result = None
+async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
+    if query and query[-1] != ';':
+        query += ';'
+    result: List[asyncpg.Record] = None
     if await db_connect():
         try:
-            async with DB_CONN_LOCK:
-                result = await DB_CONN.fetch(query)
+            async with DB_CONN.acquire() as connection:
+                if args:
+                    result = await connection.fetch(query, *args)
+                else:
+                    result = await connection.fetch(query)
+        except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
+            print_db_query_error('db_fetchall', query, pg_error)
+            raise pg_error
         except Exception as error:
-            error_name = error.__class__.__name__
-            print(f'[db_fetchall] {error_name} while performing a query: {error}')
+            print_db_query_error('db_fetchall', query, error)
     else:
         print('[db_fetchall] could not connect to db')
     return result
@@ -702,73 +804,33 @@ def db_get_column_list(column_definitions: list) -> str:
 
 async def db_get_column_names(table_name: str) -> List[str]:
     result = None
-    query = f'SELECT column_name FROM information_schema.columns WHERE table_name = {util.db_convert_text(table_name)}'
-    if await db_connect():
-        try:
-            result = await db_fetchall(query)
-        except Exception as error:
-            error_name = error.__class__.__name__
-            print(f'[db_fetchall] {error_name} while performing a query: {error}')
-    else:
-        print('[db_fetchall] could not connect to db')
+    query = f'SELECT column_name FROM information_schema.columns WHERE table_name = $1'
+    result = await db_fetchall(query, [table_name])
     if result:
         result = [record[0] for record in result]
     return result
 
 
 async def db_get_schema_version() -> str:
-    where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
-    query = f'SELECT * FROM settings WHERE {where_string}'
-    try:
-        results = await db_fetchall(query)
-    except:
-        results = []
-    if results:
-        return results[0][5]
-    else:
-        return ''
+    result, _ = await db_get_setting('schema_version')
+    return result or '0.0.0.0'
 
 
-def db_is_connected(connection: asyncpg.Connection) -> bool:
-    if connection:
-        return not connection.is_closed()
+def db_is_connected(pool: asyncpg.pool.Pool) -> bool:
+    if pool:
+        return not (pool._closed or pool._closing)
     return False
 
 
 async def db_try_set_schema_version(version: str) -> bool:
     prior_version = await db_get_schema_version()
     utc_now = util.get_utcnow()
-    modify_date_for_db = util.db_convert_timestamp(utc_now)
-    version_for_db = util.db_convert_text(version)
-    if prior_version == '':
-        query = f'INSERT INTO settings (settingname, modifydate, settingtext) VALUES (\'schema_version\', {modify_date_for_db}, {version_for_db})'
+    if not prior_version or prior_version == '0.0.0.0':
+        query = f'INSERT INTO settings (modifydate, settingtext, settingname) VALUES ($1, $2, $3)'
     else:
-        where_string = util.db_get_where_string('settingname', 'schema_version', is_text_type=True)
-        query = f'UPDATE settings SET settingtext = {version_for_db}, modifydate = {modify_date_for_db} WHERE {where_string}'
-    success = await db_try_execute(query)
+        query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
+    success = await db_try_execute(query, ['schema_version', utc_now, version])
     return success
-
-
-async def _db_try_rename_daily_table() -> bool:
-    query_rename = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings;'
-    result = await db_try_execute(query_rename)
-    return result
-
-
-async def db_try_commit() -> bool:
-    global DB_CONN
-    if db_is_connected(DB_CONN):
-        try:
-            async with DB_CONN_LOCK:
-                await DB_CONN.commit()
-                return True
-        except (Exception, psycopg2.DatabaseError) as error:
-            error_name = error.__class__.__name__
-            print(f'[db_try_commit] {error_name} while committing: {error}')
-            return False
-    else:
-        print('[db_try_commit] db is not connected')
-        return False
 
 
 async def db_try_create_table(table_name: str, column_definitions: list) -> bool:
@@ -777,27 +839,31 @@ async def db_try_create_table(table_name: str, column_definitions: list) -> bool
     success = False
     if await db_connect():
         try:
-            success = await db_execute(query_create)
+            success = await db_try_execute(query_create, raise_db_error=True)
         except asyncpg.exceptions.DuplicateTableError:
             success = True
-        except (Exception) as error:
-            error_name = error.__class__.__name__
-            print(f'[db_try_create_table] {error_name} while performing the query \'{query_create}\': {error}')
     else:
         print('[db_try_create_table] could not connect to db')
     return success
 
 
-async def db_try_execute(query: str) -> bool:
+async def db_try_execute(query: str, args: list = None, raise_db_error: bool = False) -> bool:
     if query and query[-1] != ';':
         query += ';'
     success = False
     if await db_connect():
         try:
-            success = await db_execute(query)
-        except (Exception, psycopg2.DatabaseError) as error:
-            error_name = error.__class__.__name__
-            print(f'[db_try_execute] {error_name} while performing the query \'{query}\': {error}')
+            await db_execute(query, args)
+            success = True
+        except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
+            if raise_db_error:
+                raise pg_error
+            else:
+                print_db_query_error('db_try_execute', query, error)
+                success = False
+        except Exception as error:
+            print_db_query_error('db_try_execute', query, error)
+            success = False
     else:
         print('[db_try_execute] could not connect to db')
     return success
@@ -805,10 +871,9 @@ async def db_try_execute(query: str) -> bool:
 
 async def db_get_setting(setting_name: str) -> (object, datetime):
     modify_date: datetime = None
-    where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
-    query = f'SELECT * FROM settings WHERE {where_string}'
+    query = f'SELECT * FROM settings WHERE settingname = $1'
     try:
-        records = await db_fetchall(query)
+        records = await db_fetchall(query, [setting_name])
     except:
         records = []
     if records:
@@ -825,33 +890,32 @@ async def db_get_setting(setting_name: str) -> (object, datetime):
 async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
     column_name = None
     if isinstance(value, bool):
-        db_value = util.db_convert_boolean(value)
         column_name = 'settingboolean'
     elif isinstance(value, int):
-        db_value = util.db_convert_to_int(value)
         column_name = 'settingint'
     elif isinstance(value, float):
-        db_value = util.db_convert_to_float(value)
         column_name = 'settingfloat'
     elif isinstance(value, datetime):
-        db_value = util.db_convert_to_datetime(value)
         column_name = 'settingtimestamptz'
     else:
-        db_value = util.db_convert_text(value)
         column_name = 'settingtext'
 
-    setting, modify_date = db_get_setting(setting_name)
+    success = True
+    setting, modify_date = await db_get_setting(setting_name)
     if utc_now is None:
         utc_now = util.get_utcnow()
-    modify_date = util.db_convert_timestamp(utc_now)
     query = ''
     if setting is None and modify_date is None:
-        query = f'INSERT INTO settings (settingname, modifydate, {column_name}) VALUES ({util.db_convert_text(setting_name)}, {modify_date}, {db_value})'
+        query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ($1, $2, $3)'
     elif setting != value:
-        where_string = util.db_get_where_string('settingname', setting_name, is_text_type=True)
-        query = f'UPDATE settings SET {column_name} = {db_value}, modifydate = {modify_date} WHERE {where_string}'
-    success = not query or await db_try_execute(query)
+        query = f'UPDATE settings SET {column_name} = $1, modifydate = $2 WHERE settingname = $3'
+    success = not query or await db_try_execute(query, [value, utc_now, setting_name])
     return success
+
+
+def print_db_query_error(function_name: str, query: str, error: asyncpg.exceptions.PostgresError) -> None:
+    print(f'[{function_name}] {error.__class__.__name__} while performing the query: {query}\nMSG: {error}')
+
 
 
 
@@ -865,4 +929,8 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
 # ---------- Initialization ----------
 
 async def init():
-    await db_connect()
+    global CON
+    CON = DbConnection(settings.DATABASE_URL)
+    await CON.init()
+    #await db_connect()
+    await init_db()

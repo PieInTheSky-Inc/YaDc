@@ -66,16 +66,16 @@ DAILY_INFO_FIELDS_TO_CHECK = [
 
 # ---------- ----------
 
-def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
+async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
-    rows = server_settings.db_get_autodaily_settings(guild_id=guild_id, can_post=None)
+    rows = await server_settings.db_get_autodaily_settings(guild_id=guild_id, can_post=None)
     if len(rows) == 0:
-        success = insert_daily_channel(guild_id, text_channel_id)
+        success = await insert_daily_channel(guild_id, text_channel_id)
         if success == False:
             print(f'[try_store_daily_channel] failed to insert new data row: {guild_id} ({text_channel_id})')
     else:
         if str(rows[0][1]) != str(text_channel_id):
-            success = update_daily_channel(guild_id, text_channel_id, None)
+            success = await update_daily_channel(guild_id, text_channel_id, None)
             if success == False:
                 print(f'[try_store_daily_channel] failed to update data row: {guild_id} ({text_channel_id})')
         else:
@@ -83,8 +83,8 @@ def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     return success
 
 
-def get_daily_channel_id(guild_id: int) -> int:
-    rows = server_settings.db_get_daily_channel_id(guild_id)
+async def get_daily_channel_id(guild_id: int) -> int:
+    rows = await server_settings.db_get_daily_channel_id(guild_id)
     if len(rows) == 0:
         return -1
     else:
@@ -92,8 +92,8 @@ def get_daily_channel_id(guild_id: int) -> int:
         return int(result)
 
 
-def get_all_daily_channel_ids() -> List[int]:
-    rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
+async def get_all_daily_channel_ids() -> List[int]:
+    rows = await server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
     if len(rows) == 0:
         return []
     else:
@@ -101,8 +101,8 @@ def get_all_daily_channel_ids() -> List[int]:
         return results
 
 
-def get_valid_daily_channel_ids() -> List[int]:
-    rows = server_settings.db_get_autodaily_settings(guild_id=None, can_post=True)
+async def get_valid_daily_channel_ids() -> List[int]:
+    rows = await server_settings.db_get_autodaily_settings(guild_id=None, can_post=True)
     if len(rows) == 0:
         return []
     else:
@@ -110,8 +110,8 @@ def get_valid_daily_channel_ids() -> List[int]:
         return results
 
 
-def try_remove_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_settings(guild_id)
+async def try_remove_daily_channel(guild_id: int) -> bool:
+    success = await server_settings.db_reset_autodaily_settings(guild_id)
     if success == False:
         print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
     return success
@@ -121,7 +121,9 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
     if retrieved_date.hour >= 23:
         return False
 
-    if retrieved_date.day > db_modify_date.day:
+    if db_modify_date is None:
+        return True
+    elif retrieved_date.day > db_modify_date.day:
         for daily_info_field in DAILY_INFO_FIELDS_TO_CHECK:
             if daily_info[daily_info_field] != db_daily_info[daily_info_field]:
                 return True
@@ -154,13 +156,13 @@ def convert_to_daily_info(dropship_info: dict) -> dict:
     return result
 
 
-def delete_daily_channel(guild_id: int) -> bool:
-    success = server_settings.db_reset_autodaily_settings(guild_id)
+async def delete_daily_channel(guild_id: int) -> bool:
+    success = await server_settings.db_reset_autodaily_settings(guild_id)
     return success
 
 
-def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
-    channels = server_settings.db_get_autodaily_settings(guild_id, can_post)
+async def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
+    channels = await server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
     at_least_one = False
     for (channel_id, can_post, _) in channels:
@@ -187,10 +189,10 @@ def get_daily_info_setting_name(field_name: str) -> str:
     return f'daily{field_name}'
 
 
-def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
-    success = server_settings.db_create_server_settings(guild_id)
+async def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
+    success = await server_settings.db_create_server_settings(guild_id)
     if success:
-        success = update_daily_channel(guild_id, channel_id=channel_id, latest_message_id=None)
+        success = await update_daily_channel(guild_id, channel_id=channel_id, latest_message_id=None)
     return success
 
 
@@ -204,21 +206,21 @@ def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
     return list(result.values())
 
 
-def update_daily_channel(guild_id: int, channel_id: int = None, latest_message_id: int = None) -> bool:
+async def update_daily_channel(guild_id: int, channel_id: int = None, latest_message_id: int = None) -> bool:
     success = True
     if channel_id is not None:
-        success = success and server_settings.db_update_daily_channel_id(guild_id, channel_id)
+        success = success and await server_settings.db_update_daily_channel_id(guild_id, channel_id)
     if latest_message_id is not None:
-        success = success and server_settings.db_update_daily_latest_message(guild_id, latest_message_id)
+        success = success and await server_settings.db_update_daily_latest_message(guild_id, latest_message_id)
     return success
 
 
-def db_get_daily_info() -> (dict, datetime):
+async def db_get_daily_info() -> (dict, datetime):
     result = {}
     modify_dates = []
     for daily_info_field in DAILY_INFO_FIELDS:
         setting_name = get_daily_info_setting_name(daily_info_field)
-        value, modify_date = core.db_get_setting(setting_name)
+        value, modify_date = await core.db_get_setting(setting_name)
         if modify_date:
             modify_dates.append(modify_date)
         if value:
@@ -229,11 +231,11 @@ def db_get_daily_info() -> (dict, datetime):
         return ({}, None)
 
 
-def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
+async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
     for key, value in daily_info.items():
         setting_name = get_daily_info_setting_name(key)
-        result = core.db_set_setting(setting_name, value, utc_now=utc_now) and result
+        result = await core.db_set_setting(setting_name, value, utc_now=utc_now) and result
     return result
 
 
