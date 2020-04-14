@@ -50,11 +50,6 @@ import pss_user as user
 RATE = 5
 COOLDOWN = 15.0
 
-if 'COMMAND_PREFIX' in os.environ:
-    COMMAND_PREFIX=os.getenv('COMMAND_PREFIX')
-else:
-    COMMAND_PREFIX=server_settings.get_prefix
-
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
 
@@ -89,7 +84,7 @@ logging.basicConfig(
     datefmt = '%Y%m%d %H:%M:%S',
     format = '{asctime} [{levelname:<8}] {name}: {message}')
 
-bot = discord.ext.commands.Bot(command_prefix=COMMAND_PREFIX,
+bot = discord.ext.commands.Bot(command_prefix=server_settings.get_prefix,
                                description='This is a Discord Bot for Pixel Starships',
                                activity=ACTIVITY)
 
@@ -148,7 +143,7 @@ async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
     if isinstance(err, discord.ext.commands.CommandOnCooldown):
         await ctx.send('Error: {}'.format(err))
     elif isinstance(err, discord.ext.commands.CommandNotFound):
-        prefix = COMMAND_PREFIX(bot, ctx.message)
+        prefix = await server_settings.get_prefix(bot, ctx.message)
         invoked_with = ctx.invoked_with.split(' ')[0]
         commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
         commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
