@@ -1,4 +1,6 @@
 aiohttp[speedups]
+asyncio
+asyncpg
 discord.py==1.3.3
 google-auth
 holidays

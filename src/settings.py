@@ -10,6 +10,9 @@ API_DATETIME_FORMAT_ISO_DETAILED = '%Y-%m-%dT%H:%M:%S.%f'
 API_DATETIME_FORMAT_CUSTOM = '%d.%m.%y %H:%M'
 
 
+BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
+
+
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
@@ -58,7 +61,7 @@ SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
 
 USE_EMBEDS = False
 
-VERSION = '1.2.7.8'
+VERSION = '1.2.8.0'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'

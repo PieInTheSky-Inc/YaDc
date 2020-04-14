@@ -635,18 +635,18 @@ def get_next_day(utc_now: datetime = None) -> datetime:
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, default: object = None) -> str:
+    modifiers = []
     column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
-    is_primary_txt = ''
-    not_null_txt = ''
-    default_txt = ''
     if is_primary:
-        is_primary_txt = 'PRIMARY KEY'
+        modifiers.append('PRIMARY KEY')
     if not_null:
-        not_null_txt = 'NOT NULL'
+        modifiers.append('NOT NULL')
     if default is not None:
-        default_txt = f'DEFAULT {default}'
-    result = f'{column_name_txt} {column_type_txt} {is_primary_txt} {not_null_txt} {default_txt}'
+        modifiers.append(f'DEFAULT {default}')
+    result = f'{column_name_txt} {column_type_txt}'
+    if modifiers:
+        result += ' ' + ' '.join(modifiers)
     return result.strip()
 
 
