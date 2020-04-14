@@ -1762,7 +1762,7 @@ async def cmd_settings_set_autodaily_channel(ctx: discord.ext.commands.Context, 
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            autodaily_settings = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
+            autodaily_settings = (await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id))[0]
             if not text_channel:
                 text_channel = ctx.channel
             if text_channel and isinstance(text_channel, discord.TextChannel) and util.is_guild_channel(text_channel):
@@ -1843,7 +1843,7 @@ async def cmd_settings_set_autodaily_notify(ctx: discord.ext.commands.Context, *
             else:
                 raise Exception('You need to specify a user or a role!')
             await server_settings.set_autodaily_notify(ctx.guild.id, notify_id, notify_type)
-            result = await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id)[0]
+            result = (await server_settings.get_autodaily_settings(bot, guild_id=ctx.guild.id))[0]
             output = [f'Notify on auto-daily changes: `{result._get_pretty_notify_settings()}`']
         await util.post_output(ctx, output)
 
