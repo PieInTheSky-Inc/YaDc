@@ -476,20 +476,20 @@ async def db_create_server_settings(guild_id: int) -> bool:
         return True
     else:
         query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ($1, $2)'
-        success = await core.db_try_execute(query, [str(guild_id), True])
+        success = await core.db_try_execute(query, [guild_id, True])
         return success
 
 
 async def db_delete_server_settings(guild_id: int) -> bool:
     query = f'DELETE FROM serversettings WHERE guildid = $1'
-    success = await core.db_try_execute(query, [str(guild_id)])
+    success = await core.db_try_execute(query, [guild_id])
     return success
 
 
 async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> list:
     wheres = ['(dailychannelid IS NOT NULL or dailynotifyid IS NOT NULL)']
     if guild_id is not None:
-        wheres.append(util.db_get_where_string('guildid', util.db_convert_text(str(guild_id))))
+        wheres.append(util.db_get_where_string('guildid', util.db_convert_text(guild_id)))
     if can_post is not None:
         wheres.append(util.db_get_where_string('dailycanpost', util.db_convert_boolean(can_post)))
     if no_post_yet is True:
@@ -859,7 +859,7 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
     if where:
         query = f'SELECT {setting_string} FROM serversettings WHERE {where}'
         if guild_id is not None:
-            records = await core.db_fetchall(query, [str(guild_id)])
+            records = await core.db_fetchall(query, [guild_id])
         else:
             records = await core.db_fetchall(query)
     else:
@@ -874,13 +874,13 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
 async def _db_reset_server_setting(guild_id: int, settings: dict) -> bool:
     set_string = ', '.join([f'{key} = NULL' for key in settings.keys()])
     query = f'UPDATE serversettings SET {set_string} WHERE guildid = $1'
-    success = await core.db_try_execute(query, [str(guild_id)])
+    success = await core.db_try_execute(query, [guild_id])
     return success
 
 
 async def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
     set_names = []
-    set_values = [str(guild_id)]
+    set_values = [guild_id]
     for i, (key, value) in enumerate(settings.items(), start=2):
         set_names.append(f'{key} = ${i:d}')
         set_values.append(value)

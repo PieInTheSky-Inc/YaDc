@@ -467,35 +467,34 @@ def create_embed(title: str = None, description: str = None, fields: Union[List[
 
 # ---------- DataBase ----------
 
+USING_LOOKUP = {
+    'BIGINT': 'bigint',
+    'INT': 'integer'
+}
+
+
 async def init_db():
     success_create_schema = await db_create_schema()
     if not success_create_schema:
         print('[init_db] DB initialization failed upon creating the DB schema.')
         return
 
-    success_update_1_2_2_0 = await db_update_schema_v_1_2_2_0()
-    if not success_update_1_2_2_0:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.2.0.')
+    if not (await db_update_schema('1.2.2.0', db_update_schema_v_1_2_2_0)):
         return
 
-    success_update_1_2_4_0 = await db_update_schema_v_1_2_4_0()
-    if not success_update_1_2_4_0:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.4.0.')
+    if not (await db_update_schema('1.2.4.0', db_update_schema_v_1_2_4_0)):
         return
 
-    success_update_1_2_5_0 = await db_update_schema_v_1_2_5_0()
-    if not success_update_1_2_5_0:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.5.0.')
+    if not (await db_update_schema('1.2.5.0', db_update_schema_v_1_2_5_0)):
         return
 
-    success_update_1_2_6_0 = await db_update_schema_v_1_2_6_0()
-    if not success_update_1_2_6_0:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.6.0.')
+    if not (await db_update_schema('1.2.6.0', db_update_schema_v_1_2_6_0)):
         return
 
-    success_update_1_2_7_0 = await db_update_schema_v_1_2_7_0()
-    if not success_update_1_2_7_0:
-        print('[init_db] DB initialization failed upon upgrading the DB schema to version 1.2.7.0.')
+    if not (await db_update_schema('1.2.7.0', db_update_schema_v_1_2_7_0)):
+        return
+
+    if not (await db_update_schema('1.2.8.0', db_update_schema_v_1_2_8_0)):
         return
 
     success_serversettings = await db_try_create_table('serversettings', [
@@ -516,8 +515,50 @@ async def init_db():
     print('[init_db] DB initialization succeeded')
 
 
+async def db_update_schema(version: str, update_function: Callable) -> bool:
+    success = await update_function()
+    if not success:
+        print(f'[db_update_schema] DB initialization failed upon upgrading the DB schema to version {version}.')
+    return success
 
-async def db_update_schema_v_1_2_7_0():
+
+async def db_update_schema_v_1_2_8_0() -> bool:
+    column_definitions_serversettings = [
+        ('guildid', 'BIGINT', True, True),
+        ('dailychannelid', 'BIGINT', False, False),
+        ('dailylatestmessageid', 'BIGINT', False, False),
+        ('dailynotifyid', 'BIGINT', False, False),
+        ('dailynotifytype', 'INT', False, False)
+    ]
+
+    schema_version = await db_get_schema_version()
+    if schema_version:
+        compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
+        compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
+        if compare_1280 <= 0:
+            return True
+        elif compare_1270 > 0:
+            return False
+
+    print(f'[db_update_schema_v_1_2_8_0] Updating database schema from v1.2.7.0 to v1.2.8.0')
+
+    query_lines = ['ALTER TABLE serversettings']
+    for column_name, new_column_type, _, _ in column_definitions_serversettings:
+        if new_column_type in USING_LOOKUP:
+            using = f' USING {column_name}::{USING_LOOKUP[new_column_type]}'
+        else:
+            using = ''
+        query_lines.append(f'ALTER COLUMN {column_name} SET DATA TYPE {new_column_type}{using},')
+    query_lines[-1] = query_lines[-1].replace(',', ';')
+
+    query = '\n'.join(query_lines)
+    success = await db_try_execute(query)
+    if success:
+        success = await db_try_set_schema_version('1.2.8.0')
+    return success
+
+
+async def db_update_schema_v_1_2_7_0() -> bool:
     column_definitions_devices = [
         ('key', 'TEXT', True, True),
         ('checksum', 'TEXT', False, False),
@@ -533,13 +574,15 @@ async def db_update_schema_v_1_2_7_0():
         elif compare_1260 > 0:
             return False
 
+    print(f'[db_update_schema_v_1_2_7_0] Updating database schema from v1.2.6.0 to v1.2.7.0')
+
     success = await db_try_create_table('devices', column_definitions_devices)
     if success:
         success = await db_try_set_schema_version('1.2.7.0')
     return success
 
 
-async def db_update_schema_v_1_2_6_0():
+async def db_update_schema_v_1_2_6_0() -> bool:
     column_definitions_serversettings = [
         ('dailylatestmessagecreatedate', 'TIMESTAMPTZ', False, False),
         ('dailylatestmessagemodifydate', 'TIMESTAMPTZ', False, False)
@@ -554,6 +597,8 @@ async def db_update_schema_v_1_2_6_0():
         elif compare_1250 > 0:
             return False
 
+    print(f'[db_update_schema_v_1_2_6_0] Updating database schema from v1.2.5.0 to v1.2.6.0')
+
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions_serversettings:
         column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
@@ -566,7 +611,7 @@ async def db_update_schema_v_1_2_6_0():
     return success
 
 
-async def db_update_schema_v_1_2_5_0():
+async def db_update_schema_v_1_2_5_0() -> bool:
     column_definitions = [
         ('dailynotifyid', 'TEXT', False, False),
         ('dailynotifytype', 'TEXT', False, False)
@@ -581,6 +626,8 @@ async def db_update_schema_v_1_2_5_0():
         elif compare_1240 > 0:
             return False
 
+    print(f'[db_update_schema_v_1_2_5_0] Updating database schema from v1.2.4.0 to v1.2.5.0')
+
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
         column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
@@ -593,7 +640,7 @@ async def db_update_schema_v_1_2_5_0():
     return success
 
 
-async def db_update_schema_v_1_2_4_0():
+async def db_update_schema_v_1_2_4_0() -> bool:
     column_definitions = [
         ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
@@ -606,6 +653,8 @@ async def db_update_schema_v_1_2_4_0():
             return True
         elif compare_1220 > 0:
             return False
+
+    print(f'[db_update_schema_v_1_2_4_0] Updating database schema from v1.2.2.0 to v1.2.4.0')
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
@@ -623,7 +672,7 @@ async def db_update_schema_v_1_2_4_0():
     return success
 
 
-async def db_update_schema_v_1_2_2_0():
+async def db_update_schema_v_1_2_2_0() -> bool:
     query_lines = []
     rename_columns = {
         'channelid': 'dailychannelid',
@@ -639,8 +688,15 @@ async def db_update_schema_v_1_2_2_0():
     ]
 
     schema_version = await db_get_schema_version()
-    if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
-        return True
+    if schema_version:
+        compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
+        compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
+        if compare_1220 <= 0:
+            return True
+        elif compare_1000 > 0:
+            return False
+
+    print(f'[db_update_schema_v_1_2_2_0] Updating database schema from v1.0.0.0 to v1.2.2.0')
 
     query = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings'
     try:
@@ -686,7 +742,7 @@ async def db_update_schema_v_1_2_2_0():
     return success
 
 
-async def db_create_schema():
+async def db_create_schema() -> bool:
     column_definitions_settings = [
         ('settingname', 'TEXT', True, True),
         ('modifydate', 'TIMESTAMPTZ', False, True),
@@ -708,6 +764,8 @@ async def db_create_schema():
         compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
         if compare_1000 <= 0:
             return True
+
+    print(f'[db_create_schema] Creating database schema v1.0.0.0')
 
     success_settings = await db_try_create_table('settings', column_definitions_settings)
     if not success_settings:
