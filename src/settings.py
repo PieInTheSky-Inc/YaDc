@@ -10,6 +10,9 @@ API_DATETIME_FORMAT_ISO_DETAILED = '%Y-%m-%dT%H:%M:%S.%f'
 API_DATETIME_FORMAT_CUSTOM = '%d.%m.%y %H:%M'
 
 
+BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
+
+
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
