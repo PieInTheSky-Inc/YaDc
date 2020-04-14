@@ -642,42 +642,47 @@ async def db_update_schema_v_1_2_2_0():
     if schema_version and util.compare_versions(schema_version, '1.2.2.0') <= 0:
         return True
 
-    await db_try_execute('ALTER TABLE IF EXISTS daily RENAME TO serversettings')
-
-    column_names = await db_get_column_names('serversettings')
-    column_names = [column_name.lower() for column_name in column_names]
-    for name_from, name_to in rename_columns.items():
-        if name_from in column_names:
-            query_lines.append(f'ALTER TABLE IF EXISTS serversettings RENAME COLUMN {name_from} TO {name_to};')
-
-    for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
-        if column_name in rename_columns.values() or column_name in column_names:
-            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} TYPE {column_type};')
-            if column_not_null:
-                not_null_toggle = 'SET'
-            else:
-                not_null_toggle = 'DROP'
-            query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} {not_null_toggle} NOT NULL;')
-
-    query = '\n'.join(query_lines)
-    if query:
-        success = await db_try_execute(query)
-    else:
-        success = True
+    query = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings'
+    try:
+        success = await db_try_execute(query, raise_db_error=True)
+    except Exception as error:
+        success = False
+        print_db_query_error('db_update_schema_v_1_2_2_0', query, None, error)
     if success:
-        query_lines = []
         column_names = await db_get_column_names('serversettings')
         column_names = [column_name.lower() for column_name in column_names]
+        for name_from, name_to in rename_columns.items():
+            if name_from in column_names:
+                query_lines.append(f'ALTER TABLE IF EXISTS serversettings RENAME COLUMN {name_from} TO {name_to};')
+
         for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
-            if column_name not in column_names:
-                query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+            if column_name in rename_columns.values() or column_name in column_names:
+                query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} TYPE {column_type};')
+                if column_not_null:
+                    not_null_toggle = 'SET'
+                else:
+                    not_null_toggle = 'DROP'
+                query_lines.append(f'ALTER TABLE IF EXISTS serversettings ALTER COLUMN {column_name} {not_null_toggle} NOT NULL;')
+
         query = '\n'.join(query_lines)
         if query:
             success = await db_try_execute(query)
         else:
             success = True
         if success:
-            success = await db_try_set_schema_version('1.2.2.0')
+            query_lines = []
+            column_names = await db_get_column_names('serversettings')
+            column_names = [column_name.lower() for column_name in column_names]
+            for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
+                if column_name not in column_names:
+                    query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+            query = '\n'.join(query_lines)
+            if query:
+                success = await db_try_execute(query)
+            else:
+                success = True
+            if success:
+                success = await db_try_set_schema_version('1.2.2.0')
     return success
 
 
@@ -768,10 +773,11 @@ async def db_disconnect() -> None:
 
 async def db_execute(query: str, args: list = None) -> bool:
     async with DB_CONN.acquire() as connection:
-        if args:
-            await connection.execute(query, *args)
-        else:
-            await connection.execute(query)
+        async with connection.transaction():
+            if args:
+                await connection.execute(query, *args)
+            else:
+                await connection.execute(query)
 
 
 async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
@@ -781,15 +787,15 @@ async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
     if await db_connect():
         try:
             async with DB_CONN.acquire() as connection:
-                if args:
-                    result = await connection.fetch(query, *args)
-                else:
-                    result = await connection.fetch(query)
+                async with connection.transaction():
+                    if args:
+                        result = await connection.fetch(query, *args)
+                    else:
+                        result = await connection.fetch(query)
         except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
-            print_db_query_error('db_fetchall', query, pg_error)
             raise pg_error
         except Exception as error:
-            print_db_query_error('db_fetchall', query, error)
+            print_db_query_error('db_fetchall', query, args, error)
     else:
         print('[db_fetchall] could not connect to db')
     return result
@@ -813,7 +819,7 @@ async def db_get_column_names(table_name: str) -> List[str]:
 
 async def db_get_schema_version() -> str:
     result, _ = await db_get_setting('schema_version')
-    return result or '0.0.0.0'
+    return result or ''
 
 
 def db_is_connected(pool: asyncpg.pool.Pool) -> bool:
@@ -825,11 +831,11 @@ def db_is_connected(pool: asyncpg.pool.Pool) -> bool:
 async def db_try_set_schema_version(version: str) -> bool:
     prior_version = await db_get_schema_version()
     utc_now = util.get_utcnow()
-    if not prior_version or prior_version == '0.0.0.0':
+    if not prior_version:
         query = f'INSERT INTO settings (modifydate, settingtext, settingname) VALUES ($1, $2, $3)'
     else:
         query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
-    success = await db_try_execute(query, ['schema_version', utc_now, version])
+    success = await db_try_execute(query, [utc_now, version, 'schema_version'])
     return success
 
 
@@ -859,10 +865,10 @@ async def db_try_execute(query: str, args: list = None, raise_db_error: bool = F
             if raise_db_error:
                 raise pg_error
             else:
-                print_db_query_error('db_try_execute', query, pg_error)
+                print_db_query_error('db_try_execute', query, args, pg_error)
                 success = False
         except Exception as error:
-            print_db_query_error('db_try_execute', query, error)
+            print_db_query_error('db_try_execute', query, args, error)
             success = False
     else:
         print('[db_try_execute] could not connect to db')
@@ -872,9 +878,11 @@ async def db_try_execute(query: str, args: list = None, raise_db_error: bool = F
 async def db_get_setting(setting_name: str) -> (object, datetime):
     modify_date: datetime = None
     query = f'SELECT * FROM settings WHERE settingname = $1'
+    args = [setting_name]
     try:
-        records = await db_fetchall(query, [setting_name])
-    except:
+        records = await db_fetchall(query, args)
+    except Exception as error:
+        print_db_query_error('db_get_setting', query, args, error)
         records = []
     if records:
         result = records[0]
@@ -884,7 +892,7 @@ async def db_get_setting(setting_name: str) -> (object, datetime):
                 return (field, modify_date)
         return (None, modify_date)
     else:
-        return (None, modify_date)
+        return (None, None)
 
 
 async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
@@ -913,8 +921,12 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
     return success
 
 
-def print_db_query_error(function_name: str, query: str, error: asyncpg.exceptions.PostgresError) -> None:
-    print(f'[{function_name}] {error.__class__.__name__} while performing the query: {query}\nMSG: {error}')
+def print_db_query_error(function_name: str, query: str, args: list, error: asyncpg.exceptions.PostgresError) -> None:
+    if args:
+        args = f'\n{args}'
+    else:
+        args = ''
+    print(f'[{function_name}] {error.__class__.__name__} while performing the query: {query}{args}\nMSG: {error}')
 
 
 
