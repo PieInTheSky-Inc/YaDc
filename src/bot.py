@@ -245,7 +245,7 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
             if posted:
                 posted_count += 1
                 await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
-            server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id, latest_message_modify_date=utc_now)
+            await server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id, latest_message_modify_date=utc_now)
     return posted_count
 
 
