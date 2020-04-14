@@ -859,7 +859,7 @@ async def db_try_execute(query: str, args: list = None, raise_db_error: bool = F
             if raise_db_error:
                 raise pg_error
             else:
-                print_db_query_error('db_try_execute', query, error)
+                print_db_query_error('db_try_execute', query, pg_error)
                 success = False
         except Exception as error:
             print_db_query_error('db_try_execute', query, error)
