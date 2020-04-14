@@ -22,61 +22,12 @@ import settings
 import utility as util
 
 
-DB_CONN: asyncpg.pool.Pool = None
-CON: 'DbConnection' = None
+
 
 
 # ---------- Constants ----------
 
-
-
-
-
-
-
-
-
-
-# ---------- Classes ----------
-
-class DbConnection(contextlib.AbstractAsyncContextManager):
-    def __init__(self, dsn: str):
-        self.__initialized: bool = False
-        self.__pool: asyncpg.pool.Pool = None
-        self.__dsn: str = dsn
-        self.__connection: asyncpg.connection.Connection = None
-        self.__lock: asyncio.Lock = asyncio.Lock()
-
-
-    async def init(self, dsn: str = None):
-        if dsn:
-            self.__dsn = dsn
-        self.__pool = await asyncpg.pool.create_pool(self.__dsn)
-        self.__initialized = True
-
-
-    def __assert_initialized(self):
-        if self.__initialized is False:
-            raise RuntimeError('This object hasn\'t been initialized, yet!')
-
-
-    def __del__(self):
-        self.__pool.close()
-
-
-    async def __aenter__(self):
-        self.__assert_initialized()
-        async with self.__lock:
-            self.__connection = await self.__pool.acquire()
-            self.__connection.transaction()
-            return self.__connection
-
-
-    async def __aexit__(self, exc_type, exc, tb):
-        async with self.__lock:
-            self.__pool.release(self.__connection)
-            self.__connection = None
-
+DB_CONN: asyncpg.pool.Pool = None
 
 
 
@@ -999,8 +950,5 @@ def print_db_query_error(function_name: str, query: str, args: list, error: asyn
 # ---------- Initialization ----------
 
 async def init():
-    global CON
-    CON = DbConnection(settings.DATABASE_URL)
-    await CON.init()
-    #await db_connect()
+    await db_connect()
     await init_db()
