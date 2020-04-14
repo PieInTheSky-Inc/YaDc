@@ -226,7 +226,7 @@ async def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int
 
 
 async def _prepare_create_autodaily_settings(guild_id: int) -> list:
-    autodaily_settings =await db_get_autodaily_settings(guild_id=guild_id)
+    autodaily_settings = await db_get_autodaily_settings(guild_id=guild_id)
     if not autodaily_settings:
         await db_create_server_settings(guild_id)
         autodaily_settings = await db_get_autodaily_settings(guild_id=guild_id)
