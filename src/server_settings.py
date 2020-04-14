@@ -729,17 +729,17 @@ async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, ca
             or latest_message_modify_date and (current_latest_message_create_date is None or current_latest_message_modify_date != latest_message_modify_date)):
         settings = {}
         if channel_id is not None:
-            settings['dailychannelid'] = channel_id
+            settings['dailychannelid'] = str(channel_id)
         if can_post is not None:
             settings['dailycanpost'] = can_post
         if latest_message_id is not None:
-            settings['dailylatestmessageid'] = latest_message_id
+            settings['dailylatestmessageid'] = str(latest_message_id)
         if delete_on_change is not None:
             settings['dailydeleteonchange'] = delete_on_change
         if notify_id is not None:
-            settings['dailynotifyid'] = notify_id
+            settings['dailynotifyid'] = str(notify_id)
         if notify_type is not None:
-            settings['dailynotifytype'] = convert_from_autodaily_notify_type(notify_type)
+            settings['dailynotifytype'] = str(convert_from_autodaily_notify_type(notify_type))
         if latest_message_modify_date is not None:
             settings['dailylatestmessagemodifydate'] = latest_message_modify_date
             if current_latest_message_create_date is None:
@@ -753,7 +753,7 @@ async def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
     current_daily_channel_id = await db_get_daily_channel_id(guild_id)
     if not current_daily_channel_id or channel_id != current_daily_channel_id:
         settings = {
-            'dailychannelid': channel_id,
+            'dailychannelid': str(channel_id),
             'dailylatestmessageid': None
         }
         success = await _db_update_server_setting(guild_id, settings)
@@ -784,7 +784,7 @@ async def db_update_daily_latest_message(guild_id: int, message: discord.Message
 
         if not current_daily_latest_message_id or message.id != current_daily_latest_message_id:
             settings = {
-                'dailylatestmessageid': message.id,
+                'dailylatestmessageid': str(message.id),
                 'dailylatestmessagemodifydate': modify_date
             }
             if new_day:
@@ -802,8 +802,8 @@ async def db_update_daily_notify_settings(guild_id: int, notify_id: int, notify_
     current_daily_notify_id, _ = await db_get_daily_notify_settings(guild_id)
     if not current_daily_notify_id or notify_id != current_daily_notify_id:
         settings = {
-            'dailynotifyid': notify_id,
-            'dailynotifytype': convert_from_autodaily_notify_type(notify_type)
+            'dailynotifyid': str(notify_id),
+            'dailynotifytype': str(convert_from_autodaily_notify_type(notify_type))
         }
         success = await _db_update_server_setting(guild_id, settings)
         return success
