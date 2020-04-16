@@ -47,7 +47,7 @@ async def get_data_from_url(url: str) -> str:
     return data
 
 
-async def get_data_from_path(path):
+async def get_data_from_path(path: str) -> str:
     if path:
         path = path.strip('/')
     base_url = await get_base_url()
@@ -55,7 +55,7 @@ async def get_data_from_path(path):
     return await get_data_from_url(url)
 
 
-def xmltree_to_dict3(raw_text):
+def xmltree_to_dict3(raw_text: str) -> dict:
     root = convert_raw_xml_to_dict(raw_text)
     for c in root.values():
         if isinstance(c, dict):
@@ -67,7 +67,7 @@ def xmltree_to_dict3(raw_text):
     return {}
 
 
-def xmltree_to_dict2(raw_text):
+def xmltree_to_dict2(raw_text: str) -> dict:
     root = convert_raw_xml_to_dict(raw_text)
     for c in root.values():
         if isinstance(c, dict):
@@ -209,7 +209,7 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     return results
 
 
-def filter_data_list(data: list, by: dict, ignore_case: bool = False):
+def filter_data_list(data: list, by: dict, ignore_case: bool = False) -> list:
     """Parameter 'data':
        - A list of entity dicts
        Parameter 'by':
@@ -222,7 +222,7 @@ def filter_data_list(data: list, by: dict, ignore_case: bool = False):
     return result
 
 
-def _filter_data_list(data: list, by_key, by_value, ignore_case: bool):
+def _filter_data_list(data: list, by_key: object, by_value: object, ignore_case: bool) -> list:
     """Parameter 'data':
        - A list of entity dicts """
     if data:
@@ -243,7 +243,7 @@ def _filter_data_list(data: list, by_key, by_value, ignore_case: bool):
         return data
 
 
-def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
+def filter_data_dict(data: dict, by: dict, ignore_case: bool = False) -> dict:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values.
        Parameter 'by':
@@ -256,7 +256,7 @@ def filter_data_dict(data: dict, by: dict, ignore_case: bool = False):
     return result
 
 
-def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
+def _filter_data_dict(data: dict, by_key: object, by_value: object, ignore_case: bool) -> dict:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -277,7 +277,7 @@ def _filter_data_dict(data: dict, by_key, by_value, ignore_case: bool):
         return data
 
 
-def group_data_list(data: list, by_key, ignore_case: bool = False):
+def group_data_list(data: list, by_key: object, ignore_case: bool = False) -> dict:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -295,7 +295,7 @@ def group_data_list(data: list, by_key, ignore_case: bool = False):
         return data
 
 
-def group_data_dict(data: dict, by_key, ignore_case: bool = False):
+def group_data_dict(data: dict, by_key: object, ignore_case: bool = False) -> dict:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -353,19 +353,27 @@ async def get_latest_settings(language_key: str = 'en', use_base_production_serv
     return result
 
 
-async def get_production_server(language_key: str = 'en'):
+async def get_production_server(language_key: str = 'en') -> str:
     latest_settings = await get_latest_settings(language_key=language_key, use_base_production_server=True)
     return latest_settings['ProductionServer']
 
 
-async def get_base_url():
+async def get_base_url() -> str:
     production_server = await get_production_server()
     result = f'https://{production_server}/'
     return result
 
 
-# ----- Links -----
-def read_links_file():
+
+
+
+
+
+
+
+
+# ---------- Links ----------
+def read_links_file() -> str:
     result = []
     links = {}
     for pss_links_file in settings.PSS_LINKS_FILES:
