@@ -83,15 +83,6 @@ async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     return success
 
 
-async def get_daily_channel_id(guild_id: int) -> int:
-    rows = await server_settings.db_get_daily_channel_id(guild_id)
-    if len(rows) == 0:
-        return -1
-    else:
-        result = rows[0][1]
-        return int(result)
-
-
 async def get_all_daily_channel_ids() -> List[int]:
     rows = await server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
     if len(rows) == 0:
@@ -215,7 +206,7 @@ async def update_daily_channel(guild_id: int, channel_id: int = None, latest_mes
     return success
 
 
-async def db_get_daily_info() -> (dict, datetime):
+async def db_get_daily_info() -> Tuple[Dict, datetime]:
     result = {}
     modify_dates = []
     for daily_info_field in DAILY_INFO_FIELDS:
@@ -228,7 +219,7 @@ async def db_get_daily_info() -> (dict, datetime):
     if result and modify_dates:
         return (result, max(modify_dates))
     else:
-        return ({}, None)
+        return (dict(), None)
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
