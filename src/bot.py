@@ -78,17 +78,25 @@ __COMMANDS = []
 
 
 # ----- Bot Setup -------------------------------------------------------------
+
+async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
+    result = await server_settings.get_prefix(bot, message)
+    return commands.when_mentioned_or(result)(bot, message)
+
+
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
     datefmt = '%Y%m%d %H:%M:%S',
     format = '{asctime} [{levelname:<8}] {name}: {message}')
 
-bot = discord.ext.commands.Bot(command_prefix=server_settings.get_prefix,
+bot = discord.ext.commands.Bot(command_prefix=get_prefix,
                                description='This is a Discord Bot for Pixel Starships',
                                activity=ACTIVITY)
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
+
+
 
 
 
@@ -140,26 +148,27 @@ async def on_shard_ready():
 
 
 @bot.event
-async def on_command_error(ctx: discord.ext.commands.Context, err) -> None:
+async def on_command_error(ctx: discord.ext.commands.Context, err: Exception) -> None:
+    error_message = str(err)
     if isinstance(err, discord.ext.commands.CommandOnCooldown):
-        await ctx.send('Error: {}'.format(err))
+        pass
     elif isinstance(err, discord.ext.commands.CommandNotFound):
         prefix = await server_settings.get_prefix(bot, ctx.message)
         invoked_with = ctx.invoked_with.split(' ')[0]
         commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
         commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
-        await ctx.send(f'Error: Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?')
+        error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?'
     elif isinstance(err, discord.ext.commands.CheckFailure):
-        await ctx.send(f'Error: You don\'t have the required permissions in order to be able to use this command!')
+        error_message = 'You don\'t have the required permissions in order to be able to use this command!'
     elif isinstance(err, pss_exception.Error):
-        await ctx.send(f'`{ctx.message.clean_content}`: {err.msg}')
+        error_message = f'`{ctx.message.clean_content}`: {err.msg}'
     else:
         logging.getLogger().error(err, exc_info=True)
         command_args = util.get_exact_args(ctx)
         help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
         command = bot.get_command(help_args)
         await ctx.send_help(command)
-        await ctx.send(f'**Error**\n> {err}')
+    await ctx.send(f'**Error**\n> {error_message}')
 
 
 @bot.event
@@ -1471,6 +1480,25 @@ async def cmd_settings_get_prefix(ctx: discord.ext.commands.Context):
             output = [f'Prefix for this server is: `{prefix}`']
         await util.post_output(ctx, output)
 
+
+@bot.command(brief='Retrieve prefix settings', name='prefix')
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_prefix(ctx: discord.ext.commands.Context):
+    """
+    Retrieve the prefix setting for this server.
+
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /prefix
+
+    Examples:
+      /prefix - Prints the prefix setting for the current Discord server/guild.
+    """
+    async with ctx.typing():
+        prefix = await server_settings.get_prefix_or_default(ctx.guild.id)
+        output = [f'Prefix = `{prefix}`']
+    await util.post_output(ctx, output)
 
 
 

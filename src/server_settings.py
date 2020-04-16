@@ -378,7 +378,7 @@ async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) ->
         result = await get_prefix_or_default(message.channel.guild.id)
     else:
         result = settings.PREFIX_DEFAULT
-    return commands.when_mentioned_or(result)(bot, message)
+    return result
 
 
 async def get_prefix_or_default(guild_id: int) -> str:
