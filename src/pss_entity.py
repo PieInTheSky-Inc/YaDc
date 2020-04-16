@@ -289,26 +289,15 @@ class EntityDesignsRetriever:
         return await self.__cache.get_data_dict3()
 
 
-    def get_entity_design_details_by_id(self, entity_id: str, entities_designs_data: EntitiesDesignsData = None) -> EntityDesignDetails:
-        pass
-
-
     async def get_entity_design_info_by_id(self, entity_design_id: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
         entities_designs_data = entities_designs_data or await self.get_data_dict3()
-        if entity_design_id in entities_designs_data.keys():
-            return entities_designs_data[entity_design_id]
-        else:
-            return None
+        return entities_designs_data.get(entity_design_id, None)
 
 
     async def get_entity_design_info_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
         entities_designs_data = entities_designs_data or await self.get_data_dict3()
         entity_design_id = await self.get_entity_design_id_by_name(entity_name, entities_designs_data=entities_designs_data)
-
-        if entity_design_id and entity_design_id in entities_designs_data.keys():
-            return entities_designs_data[entity_design_id]
-        else:
-            return None
+        return entities_designs_data.get(entity_design_id, None)
 
 
     async def get_entities_designs_infos_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None, sorted_key_function: Callable[[dict, dict], str] = None) -> List[Dict[str, object]]:
