@@ -195,7 +195,7 @@ class DeviceCollection():
     async def add_device_by_key(self, device_key: str) -> Device:
         for existing_device in self.__devices:
             if existing_device.key == device_key:
-                return
+                return existing_device
         device = Device(device_key)
         await db_try_store_device(device)
         self.__devices.append(device)
