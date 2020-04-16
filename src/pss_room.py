@@ -658,8 +658,8 @@ def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
 
 # ---------- Initilization ----------
 
-rooms_designs_retriever: entity.LegacyEntityDesignsRetriever
-rooms_designs_purchases_retriever: entity.LegacyEntityDesignsRetriever
+rooms_designs_retriever: entity.EntityDesignsRetriever
+rooms_designs_purchases_retriever: entity.EntityDesignsRetriever
 __allowed_room_names: List[str]
 #__room_details_properties schema:
 # - Display name
@@ -683,14 +683,14 @@ def __get_allowed_room_short_names(rooms_designs_data: dict):
 async def init():
     global rooms_designs_retriever
     global rooms_designs_purchases_retriever
-    rooms_designs_retriever = entity.LegacyEntityDesignsRetriever(
+    rooms_designs_retriever = entity.EntityDesignsRetriever(
         ROOM_DESIGN_BASE_PATH,
         ROOM_DESIGN_KEY_NAME,
         ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
         cache_name='RoomDesigns',
         sorted_key_function=_get_key_for_room_sort
     )
-    rooms_designs_purchases_retriever = entity.LegacyEntityDesignsRetriever(
+    rooms_designs_purchases_retriever = entity.EntityDesignsRetriever(
         ROOM_DESIGN_PURCHASE_BASE_PATH,
         ROOM_DESIGN_PURCHASE_KEY_NAME,
         ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,

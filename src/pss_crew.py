@@ -699,14 +699,14 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 # ---------- Initilization ----------
 
-characters_designs_retriever = entity.LegacyEntityDesignsRetriever(
+characters_designs_retriever = entity.EntityDesignsRetriever(
     CHARACTER_DESIGN_BASE_PATH,
     CHARACTER_DESIGN_KEY_NAME,
     CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='CharacterDesigns'
 )
 
-collections_designs_retriever = entity.LegacyEntityDesignsRetriever(
+collections_designs_retriever = entity.EntityDesignsRetriever(
     COLLECTION_DESIGN_BASE_PATH,
     COLLECTION_DESIGN_KEY_NAME,
     COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME,
