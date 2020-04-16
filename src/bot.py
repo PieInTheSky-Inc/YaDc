@@ -1968,7 +1968,7 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'commands':
-        output = [', '.join(__COMMANDS)]
+        output = [', '.join(sorted(bot.all_commands.keys()))]
         await util.post_output(ctx, output)
 
 
