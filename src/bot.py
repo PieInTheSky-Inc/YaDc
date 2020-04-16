@@ -724,17 +724,19 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     if ctx.invoked_subcommand is None:
         called_subcommand = False
         subcommands = ['fleet']
-        for subcommand in subcommands:
-            subcommand_length = len(subcommand)
-            if division == subcommand:
-                called_subcommand = True
-                cmd = bot.get_command(f'stars {subcommand}')
-                await ctx.invoke(cmd)
-            elif division and division.startswith(f'{subcommand} '):
-                called_subcommand = True
-                cmd = bot.get_command(f'stars {subcommand}')
-                args = str(division[subcommand_length:]).strip()
-                await ctx.invoke(cmd, fleet_name=args)
+        if division:
+            valid_division = division.lower() in [letter.lower() for letter in pss_top.ALLOWED_DIVISION_LETTERS]
+            for subcommand in subcommands:
+                subcommand_length = len(subcommand)
+                if division == subcommand:
+                    called_subcommand = True
+                    cmd = bot.get_command(f'stars {subcommand}')
+                    await ctx.invoke(cmd)
+                elif division.startswith(f'{subcommand} ') or not valid_division:
+                    called_subcommand = True
+                    cmd = bot.get_command(f'stars {subcommand}')
+                    args = str(division[subcommand_length:]).strip()
+                    await ctx.invoke(cmd, fleet_name=args)
 
         if not called_subcommand:
             if tourney.is_tourney_running():
