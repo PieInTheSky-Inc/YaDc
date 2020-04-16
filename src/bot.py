@@ -2003,7 +2003,7 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
     Creates a new random device_key and attempts to store the new device in the DB.
     """
     async with ctx.typing():
-        device = login.DEVICES.create_device()
+        device = await login.DEVICES.create_device()
         try:
             await device.get_access_token()
             created = True
@@ -2025,7 +2025,7 @@ async def cmd_device_add(ctx: discord.ext.commands.Context, device_key: str):
     """
     async with ctx.typing():
         try:
-            device = login.DEVICES.add_device_by_key(device_key)
+            device = await login.DEVICES.add_device_by_key(device_key)
             added = True
         except Exception as err:
             added = False
@@ -2044,7 +2044,7 @@ async def cmd_device_remove(ctx: discord.ext.commands.Context, device_key: str):
     """
     async with ctx.typing():
         try:
-            login.DEVICES.remove_device_by_key(device_key)
+            await login.DEVICES.remove_device_by_key(device_key)
             yeeted = True
         except Exception as err:
             yeeted = False
