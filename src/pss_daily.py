@@ -162,10 +162,10 @@ async def delete_daily_channel(guild_id: int) -> bool:
 
 
 async def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
-    channels = await server_settings.db_get_autodaily_settings(guild_id, can_post)
+    settings = await server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
     at_least_one = False
-    for (channel_id, can_post, _) in channels:
+    for (_, channel_id, can_post, _, _, _, _, _, _) in settings:
         if channel_id:
             at_least_one = True
             text_channel = ctx.bot.get_channel(int(channel_id))

@@ -828,13 +828,11 @@ async def cmd_news(ctx: discord.ext.commands.Context):
 @bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily(ctx: discord.ext.commands.Context):
     """
-    This command can be used to configure the bot to automatically post the daily announcement at 1 am UTC to a certain text channel.
-    The daily announcement is the message that this bot will post, when you use the /daily command.
+    This command can be used to get an overview of the autodaily settings for this bot.
 
-    In order to use this command, you need the Administrator permission for the current Discord server/guild.
+    In order to use this command or any sub commands, you need to be the owner of this bot.
     """
     pass
 
@@ -842,7 +840,6 @@ async def cmd_autodaily(ctx: discord.ext.commands.Context):
 @cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
     pass
 
@@ -850,40 +847,36 @@ async def cmd_autodaily_list(ctx: discord.ext.commands.Context):
 @cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_all(ctx: discord.ext.commands.Context):
     async with ctx.typing():
-        output = daily.get_daily_channels(ctx, None, None)
+        output = await daily.get_daily_channels(ctx, None, None)
     await util.post_output(ctx, output)
 
 
 @cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_invalid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
-        output = daily.get_daily_channels(ctx, None, False)
+        output = await daily.get_daily_channels(ctx, None, False)
     await util.post_output(ctx, output)
 
 
 @cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_list_valid(ctx: discord.ext.commands.Context):
     async with ctx.typing():
-        output = daily.get_daily_channels(ctx, None, True)
+        output = await daily.get_daily_channels(ctx, None, True)
     await util.post_output(ctx, output)
 
 
 @cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-@discord.ext.commands.has_permissions(manage_guild=True)
 async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
     guild = ctx.guild
-    channel_id = server_settings.db_get_daily_channel_id(guild.id)
+    channel_id = await server_settings.db_get_daily_channel_id(guild.id)
     if channel_id is not None:
         text_channel = bot.get_channel(channel_id)
         output, _ = await dropship.get_dropship_text()
