@@ -621,7 +621,7 @@ __description_property: entity.EntityDesignDetailProperty = None
 __item_base_properties: List[entity.EntityDesignDetailProperty] = None
 __item_price_properties: List[entity.EntityDesignDetailProperty] = None
 __item_best_properties: List[entity.EntityDesignDetailProperty] = None
-items_designs_retriever: entity.LegacyEntityDesignsRetriever = None
+items_designs_retriever: entity.EntityDesignsRetriever = None
 
 
 def __get_allowed_item_names(items_designs_data: dict):
@@ -655,11 +655,12 @@ async def init():
     global items_designs_retriever
     global ALLOWED_ITEM_NAMES
     global NOT_ALLOWED_ITEM_NAMES
-    items_designs_retriever = entity.LegacyEntityDesignsRetriever(
+    items_designs_retriever = entity.EntityDesignsRetriever(
         ITEM_DESIGN_BASE_PATH,
         ITEM_DESIGN_KEY_NAME,
         ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
-        'ItemsDesigns'
+        'ItemsDesigns',
+        fix_data_delegate=_fix_item_name
     )
     items_designs_data = await items_designs_retriever.get_data_dict3()
     NOT_ALLOWED_ITEM_NAMES = [
