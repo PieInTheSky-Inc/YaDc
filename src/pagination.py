@@ -11,7 +11,7 @@ import utility as util
 
 
 class Paginator():
-    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], page_size: int = 5, timeout: float = 60.0):
+    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], use_pagination: bool, page_size: int = 5, timeout: float = 60.0):
         self.__context = ctx
         self.__search_term = search_term
         self.__available_options = list(available_options)
@@ -23,7 +23,7 @@ class Paginator():
         if ctx.channel.type == discord.ChannelType.text and ctx.guild and ctx.guild.id:
             bot_permissions = ctx.me.permissions_in(ctx.channel)
             if bot_permissions.add_reactions:
-                self.__use_emojis = server_settings.db_get_use_pagination(ctx.guild.id)
+                self.__use_emojis = use_pagination
             else:
                 self.__use_emojis = False
         else:

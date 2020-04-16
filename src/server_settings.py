@@ -4,11 +4,10 @@ from discord.ext import commands
 from enum import IntEnum
 from typing import List, Union
 
-import settings
-import utility as util
-
 import pss_assert
 import pss_core as core
+import settings
+import utility as util
 
 
 # ---------- Constants ----------
@@ -388,8 +387,8 @@ async def get_prefix_or_default(guild_id: int) -> str:
     return result
 
 
-async def get_pagination_mode(guild_id: int) -> str:
-    use_pagination_mode = await db_get_use_pagination(guild_id)
+async def get_pagination_mode(guild: discord.Guild) -> str:
+    use_pagination_mode = await db_get_use_pagination(guild)
     result = convert_to_on_off(use_pagination_mode)
     return result
 
@@ -411,15 +410,15 @@ async def set_autodaily_notify(guild_id: int, notify_id: int, notify_type: AutoD
     return success
 
 
-async def set_pagination(guild_id: int, switch: str) -> bool:
-    await db_create_server_settings(guild_id)
+async def set_pagination(guild: discord.Guild, switch: str) -> bool:
+    await db_create_server_settings(guild.id)
 
     if switch is None:
-        return await toggle_use_pagination(guild_id)
+        return await toggle_use_pagination(guild.id)
     else:
         pss_assert.valid_parameter_value(switch, 'switch', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
         use_pagination = convert_from_on_off(switch)
-        success = await db_update_use_pagination(guild_id, use_pagination)
+        success = await db_update_use_pagination(guild.id, use_pagination)
         if success:
             return use_pagination
         else:
@@ -448,10 +447,10 @@ async def toggle_daily_delete_on_change(guild_id: int) -> bool:
         return delete_on_change
 
 
-async def toggle_use_pagination(guild_id: int) -> bool:
-    await db_create_server_settings(guild_id)
-    use_pagination = await db_get_use_pagination(guild_id)
-    success = await db_update_use_pagination(guild_id, not use_pagination)
+async def toggle_use_pagination(guild: discord.Guild) -> bool:
+    await db_create_server_settings(guild.id)
+    use_pagination = await db_get_use_pagination(guild.id)
+    success = await db_update_use_pagination(guild.id, not use_pagination)
     if success:
         return not use_pagination
     else:
@@ -596,17 +595,17 @@ async def db_get_prefix(guild_id: int) -> str:
         return None
 
 
-async def db_get_use_pagination(guild_id: int) -> bool:
-    setting_names = ['usepagination']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            result = setting[0]
-            if result is None:
-                return True
-            return result
-    else:
-        return None
+async def db_get_use_pagination(guild: discord.Guild) -> bool:
+    if guild:
+        setting_names = ['usepagination']
+        settings = await _db_get_server_settings(guild.id, setting_names=setting_names)
+        if settings:
+            for setting in settings:
+                result = setting[0]
+                if result is None:
+                    return True
+                return result
+    return settings.DEFAULT_USE_EMOJI_PAGINATOR
 
 
 async def db_reset_autodaily_channel(guild_id: int) -> bool:
@@ -702,13 +701,13 @@ async def db_reset_prefix(guild_id: int) -> bool:
     return True
 
 
-async def db_reset_use_pagination(guild_id: int) -> bool:
-    current_use_pagination = await db_get_use_pagination(guild_id)
+async def db_reset_use_pagination(guild: discord.Guild) -> bool:
+    current_use_pagination = await db_get_use_pagination(guild.id)
     if current_use_pagination is not None:
         settings = {
             'usepagination': None
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_setting(guild.id, settings)
         return success
     return True
 
@@ -824,13 +823,13 @@ async def db_update_prefix(guild_id: int, prefix: str) -> bool:
     return True
 
 
-async def db_update_use_pagination(guild_id: int, use_pagination: bool) -> bool:
-    current_use_pagination = await db_get_use_pagination(guild_id)
+async def db_update_use_pagination(guild: discord.Guild, use_pagination: bool) -> bool:
+    current_use_pagination = await db_get_use_pagination(guild.id)
     if not current_use_pagination or use_pagination != current_use_pagination:
         settings = {
             'usepagination': use_pagination
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_setting(guild.id, settings)
         return success
     return True
 

@@ -784,7 +784,8 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if len(fleet_infos) == 1:
             fleet_info = fleet_infos[0]
         else:
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
@@ -1241,7 +1242,8 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         if len(fleet_infos) == 1:
             fleet_info = fleet_infos[0]
         else:
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details)
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
@@ -1282,7 +1284,8 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
         if len(user_infos) == 1:
             user_info = user_infos[0]
         else:
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details)
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
@@ -1327,7 +1330,7 @@ async def cmd_settings(ctx: discord.ext.commands.Context):
             autodaily_settings = await server_settings.get_autodaily_settings(bot, ctx.guild.id)
             if autodaily_settings:
                 output.extend(autodaily_settings[0].get_pretty_settings())
-            use_pagination = await server_settings.get_pagination_mode(ctx.guild.id)
+            use_pagination = await server_settings.get_pagination_mode(ctx.guild)
             prefix = await server_settings.get_prefix_or_default(ctx.guild.id)
             output.extend([
                 f'Pagination = `{use_pagination}`',
@@ -1455,7 +1458,7 @@ async def cmd_settings_get_pagination(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            use_pagination_mode = await server_settings.get_pagination_mode(ctx.guild.id)
+            use_pagination_mode = await server_settings.get_pagination_mode(ctx.guild)
             output = [f'Pagination on this server has been set to: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
 
@@ -1676,7 +1679,7 @@ async def cmd_settings_reset_pagination(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = await server_settings.db_reset_use_pagination(ctx.guild.id)
+            success = await server_settings.db_reset_use_pagination(ctx.guild)
         if success:
             await ctx.invoke(bot.get_command(f'settings pagination'))
         else:
@@ -1895,7 +1898,7 @@ async def cmd_settings_set_pagination(ctx: discord.ext.commands.Context, switch:
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            result = await server_settings.set_pagination(ctx.guild.id, switch)
+            result = await server_settings.set_pagination(ctx.guild, switch)
             use_pagination_mode = server_settings.convert_to_on_off(result)
             output = [f'Pagination on this server is: `{use_pagination_mode}`']
         await util.post_output(ctx, output)
