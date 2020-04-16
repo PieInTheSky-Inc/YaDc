@@ -255,12 +255,17 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info['DivisionDesignId']]
 
     fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
+    fleet_users_infos_count = len(fleet_users_infos)
 
     lines = [f'**{fleet_name} member stars (division {division})**']
     for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
         user_name = util.escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
-        lines.append(f'**{i}.** {stars} {emojis.star} {user_name}')
+        if i < fleet_users_infos_count:
+            difference = int(user_info['AllianceScore']) - int(fleet_users_infos[i]['AllianceScore'])
+        else:
+            difference = 0
+        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name}')
 
     if retrieved_date is not None:
         lines.append(util.get_historic_data_note(retrieved_date))
