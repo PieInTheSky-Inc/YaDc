@@ -249,7 +249,7 @@ class DeviceCollection():
                     result = await current.get_access_token()
                     break
                 except DeviceInUseError:
-                    self.remove_device(current)
+                    await self.remove_device(current)
                 except Exception as err:
                     print(f'[DeviceCollection.get_access_token] Could not log in:\n{err}')
                     self.__select_next()
@@ -257,7 +257,7 @@ class DeviceCollection():
             if result is None:
                 raise LoginError('Cannot get access token. No device has been able to retrieve one!')
             if current is not None:
-                _db_try_update_device(current)
+                await _db_try_update_device(current)
             return result
 
 
