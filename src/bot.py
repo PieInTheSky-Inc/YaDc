@@ -393,6 +393,8 @@ async def cmd_ping(ctx: discord.ext.commands.Context):
       /ping - The bot will answer with 'Pong!'.
     """
     msg = await ctx.send('Pong!')
+    miliseconds = (msg.created_at - ctx.message.created_at).microseconds / 1000.0
+    await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
 
 
 
