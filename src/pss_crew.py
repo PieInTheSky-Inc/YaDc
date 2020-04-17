@@ -285,7 +285,10 @@ def __get_ability_stat(character_design_info: entity.EntityDesignInfo, character
 
 
 def __get_collection_name(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    result = _get_collection_name(character_design_info, collections_designs_data)
+    result = None
+    collection_id = character_design_info[COLLECTION_DESIGN_KEY_NAME]
+    if collection_id and int(collection_id):
+        result = collections_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return result
 
 
@@ -300,10 +303,8 @@ def __get_slots(character_design_info: entity.EntityDesignInfo, characters_desig
         if (equipment_mask & k) != 0:
             result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
 
-    if result:
-        return ', '.join(result)
-    else:
-        return '-'
+    result = ', '.join(result) if result else '-'
+    return result
 
 
 def __get_speed(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -347,15 +348,6 @@ async def _get_collection_chars_designs_infos(collection_design_info: Dict[str, 
     result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
     result.sort()
     return result
-
-
-def _get_collection_name(char_design_info: dict, collections_designs_data: dict) -> str:
-    if char_design_info:
-        collection_id = char_design_info[COLLECTION_DESIGN_KEY_NAME]
-        if collection_id and collection_id != '0':
-            collection_design_info = collections_designs_data[collection_id]
-            return collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    return None
 
 
 

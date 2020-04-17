@@ -165,7 +165,8 @@ async def on_command_error(ctx: discord.ext.commands.Context, err: Exception) ->
     elif isinstance(err, pss_exception.Error):
         error_message = f'`{ctx.message.clean_content}`: {err.msg}'
     else:
-        logging.getLogger().error(err, exc_info=True)
+        if not isinstance(err, discord.ext.commands.MissingRequiredArgument):
+            logging.getLogger().error(err, exc_info=True)
         command_args = util.get_exact_args(ctx)
         help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
         command = bot.get_command(help_args)
