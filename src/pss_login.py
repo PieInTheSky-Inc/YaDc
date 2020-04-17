@@ -347,7 +347,7 @@ async def _db_try_create_device(device: Device) -> bool:
     query = f'INSERT INTO devices VALUES ($1, $2, $3)'
     success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
     if success:
-        DEVICES.add_device_by_key(device.key)
+        await DEVICES.add_device_by_key(device.key)
     return success
 
 
@@ -355,7 +355,7 @@ async def db_try_delete_device(device: Device) -> bool:
     query = f'DELETE FROM devices WHERE key = $1'
     success = await core.db_try_execute(query, [device.key])
     if success:
-        DEVICES.remove_device_by_key(device.key)
+        await DEVICES.remove_device_by_key(device.key)
     return success
 
 
