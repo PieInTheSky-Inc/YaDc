@@ -118,6 +118,8 @@ async def on_ready() -> None:
     print(f'DB schema version is: {schema_version}')
     await server_settings.init()
     await login.init()
+
+    await crew.init()
     await item.init()
     await room.init()
     await user.init()

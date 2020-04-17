@@ -2,8 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 from abc import ABC, abstractstaticmethod
+from collections import namedtuple
 import discord
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from cache import PssCache
 import pss_core as core
@@ -34,8 +35,11 @@ EntitiesDesignsData = Dict[str, EntityDesignInfo]
 
 # ---------- Classes ----------
 
+CalculatedEntityDesignDetailProperty = namedtuple('CalculatedEntityDesignDetailProperty', ['display_name', 'value'])
+
+
 class EntityDesignDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], force_display_name: bool, entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None):
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], force_display_name: bool, omit_if_none: bool = False, entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None, **transform_kwargs):
         if isinstance(display_name, str):
             self.__display_name: str = display_name
             self.__display_name_function: Callable[[list], str] = None
@@ -43,17 +47,18 @@ class EntityDesignDetailProperty(object):
             self.__display_name: str = None
             self.__display_name_function: Callable[[list], str] = display_name
         else:
-            raise TypeError('The display_name must either be of type \'str\' or \'Callable[[EntityDesignInfo], ]\'.')
+            raise TypeError('The display_name must either be of type \'str\' or \'Callable[[EntityDesignInfo, EntitiesDesignsData], str]\'.')
 
         if not entity_property_name and not transform_function:
             raise Exception('Invalid paramaeters: either the \'entity_property_name\' or the \'transform_function\' need to be provided!')
         elif entity_property_name and transform_function:
-            raise Exception('Invalid paramaeters: either the \'entity_property_name\' or the \'transform_function\' need to be provided!')
+            raise Exception('Invalid paramaeters: only \'entity_property_name\' or the \'transform_function\' must be provided!')
 
         self.__transform_function: Callable[[EntityDesignInfo], str] = transform_function
         self.__entity_property_name: str = entity_property_name or None
         self.__force_display_name: bool = force_display_name
         self.__use_transform_function: bool = not entity_property_name and transform_function
+        self.__kwargs: Dict[str, object] = transform_kwargs or {}
 
 
     @property
@@ -65,28 +70,29 @@ class EntityDesignDetailProperty(object):
         return self.__force_display_name
 
 
-    def get_full_property(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> Tuple[str, str]:
+    def get_full_property(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **additional_kwargs) -> CalculatedEntityDesignDetailProperty:
+        kwargs = {**self.__kwargs, **additional_kwargs}
         if self.__force_display_name:
-            display_name = self.__get_display_name(entity_design_info, entities_designs_data)
+            display_name = self.__get_display_name(entity_design_info, *entities_designs_data, **kwargs)
         else:
             display_name = None
-        value = self.__get_value(entity_design_info, entities_designs_data)
-        return (display_name, value)
+        value = self.__get_value(entity_design_info, *entities_designs_data, **kwargs)
+        return CalculatedEntityDesignDetailProperty(display_name, value)
 
 
-    def __get_display_name(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> str:
+    def __get_display_name(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **kwargs) -> str:
         if self.__display_name:
             return self.__display_name
         elif self.__display_name_function:
-            result = self.__display_name_function(entity_design_info, entities_designs_data)
+            result = self.__display_name_function(entity_design_info, *entities_designs_data, **kwargs)
             return result
         else:
             return ''
 
 
-    def __get_value(self, entity_design_info: EntityDesignInfo, entities_designs_data: EntitiesDesignsData) -> str:
+    def __get_value(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **kwargs) -> str:
         if self.__use_transform_function and self.__transform_function:
-            result = self.__transform_function(entity_design_info, entities_designs_data)
+            result = self.__transform_function(entity_design_info, *entities_designs_data, **kwargs)
         elif self.__entity_property_name:
             result = entity_design_info[self.__entity_property_name]
         else:
@@ -124,7 +130,7 @@ class EntityDesignDetailEmbedProperty(EntityDesignDetailProperty):
 
 
 class EntityDesignDetails(object):
-    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: List[EntityDesignDetailProperty], entities_designs_data: Optional[EntitiesDesignsData] = None):
+    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: List[EntityDesignDetailProperty], *entities_designs_data: Optional[EntitiesDesignsData], prefix: str = None, **kwargs):
         """
 
         """
@@ -140,12 +146,14 @@ class EntityDesignDetails(object):
         self.__details_embed: List[Tuple[str, str]] = None
         self.__details_long: List[Tuple[str, str]] = None
         self.__details_short: List[Tuple[str, str]] = None
+        self.__prefix: str = prefix or ''
+        self.__kwargs: Dict[str, object] = kwargs
 
 
     @property
     def description(self) -> str:
         if self.__description is None and self.__description_property is not None:
-            _, self.__description = self.__description_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+            _, self.__description = self.__description_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
         return self.__description
 
     @property
@@ -179,9 +187,13 @@ class EntityDesignDetails(object):
         return dict(self.__entity_design_info)
 
     @property
+    def prefix(self) -> str:
+        return self.__prefix
+
+    @property
     def title(self) -> str:
         if self.__title is None:
-            _, self.__title = self.__title_property.get_full_property(self.__entity_design_info, self.__entities_designs_data)
+            _, self.__title = self.__title_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
         return self.__title
 
 
@@ -198,22 +210,22 @@ class EntityDesignDetails(object):
         if self.description is not None:
             result.append(f'_{self.description}_')
         for detail in self.details_long:
-            if detail.force_display_name:
-                result.append(f'{detail.name} = {detail.value}')
+            if detail.display_name:
+                result.append(f'{self.prefix}{detail.display_name} = {detail.value}')
             else:
-                result.append(detail.value)
+                result.append(f'{self.prefix}{detail.value}')
         return result
 
 
     def get_details_as_text_short(self) -> List[str]:
         details = []
         for detail in self.details_short:
-            if detail.force_display_name:
-                details.append(f'{detail.name} = {detail.value}')
+            if detail.display_name:
+                details.append(f'{detail.display_name} = {detail.value}')
             else:
                 details.append(detail.value)
-        result = f'{self.title} ({", ".join(details)})'
-        return result
+        result = f'{self.prefix}{self.title} ({", ".join(details)})'
+        return [result]
 
 
     def _get_properties(self, properties: List[EntityDesignDetailProperty]):
@@ -222,7 +234,8 @@ class EntityDesignDetails(object):
         for entity_design_detail_property in properties:
             info = self.__entity_design_info
             data = self.__entities_designs_data
-            result.append(entity_design_detail_property.get_full_property(info, data))
+            kwargs = self.__kwargs
+            result.append(entity_design_detail_property.get_full_property(info, *data, **kwargs))
         return result
 
 

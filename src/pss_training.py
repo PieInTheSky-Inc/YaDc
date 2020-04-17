@@ -33,7 +33,7 @@ TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
 # ---------- Classes ----------
 
-class TrainingDetails(entity.LegacyEntityDesignDetails):
+class LegacyTrainingDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, training_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData):
         required_room_level = training_info['RequiredRoomLevel']
         training_rank = int(training_info['Rank'])
@@ -127,7 +127,7 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
     training_infos = await trainings_designs_retriever.get_entities_designs_infos_by_name(training_name)
     items_designs_data = await item.items_designs_retriever.get_data_dict3()
     researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
-    trainings_details = [TrainingDetails(training_info, items_designs_data, researches_designs_data) for training_info in training_infos]
+    trainings_details = [LegacyTrainingDetails(training_info, items_designs_data, researches_designs_data) for training_info in training_infos]
 
     if not training_infos:
         return [f'Could not find a training named **{training_name}**.'], False
@@ -138,12 +138,12 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
             return _get_training_info_as_text(training_name, trainings_details), True
 
 
-def _get_training_info_as_embed(training_name: str, trainings_details: List[TrainingDetails]) -> discord.Embed:
+def _get_training_info_as_embed(training_name: str, trainings_details: List[LegacyTrainingDetails]) -> discord.Embed:
     result = [training_details.get_details_as_embed() for training_details in trainings_details]
     return result
 
 
-def _get_training_info_as_text(training_name: str, trainings_details: List[TrainingDetails]) -> List[str]:
+def _get_training_info_as_text(training_name: str, trainings_details: List[LegacyTrainingDetails]) -> List[str]:
     trainings_details_count = len(trainings_details)
 
     lines = [f'Training stats for **{training_name}**']

@@ -3,7 +3,7 @@
 
 import discord
 import os
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Union
 
 from cache import PssCache
 import emojis
@@ -46,147 +46,7 @@ __prestige_to_cache_dict = {}
 
 # ---------- Classes ----------
 
-class CharDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, char_design_info: dict, collections_designs_data: dict, level: int = None):
-        special = _get_ability_name(char_design_info)
-        equipment_slots = _convert_equipment_mask(int(char_design_info['EquipmentMask']))
-        collection_name = _get_collection_name(char_design_info, collections_designs_data)
-        walk_speed = char_design_info['WalkingSpeed']
-        run_speed = char_design_info['RunSpeed']
-
-        ability = _get_stat('SpecialAbilityArgument', level, char_design_info)
-        if special:
-            ability += f' ({special})'
-
-        self.__ability: str = ability
-        self.__collection_name: str = collection_name
-        self.__equipment_slots: str = equipment_slots
-        self.__gender: str = char_design_info['GenderType']
-        self.__level: int = level
-        self.__race: str = char_design_info['RaceType']
-        self.__rarity: str = char_design_info['Rarity']
-        self.__speed: str = f'{walk_speed}/{run_speed}'
-        self.__stat_attack: str = _get_stat('Attack', level, char_design_info)
-        self.__stat_engine: str = _get_stat('Engine', level, char_design_info)
-        self.__stat_fire_resistance: str = char_design_info['FireResistance']
-        self.__stat_hp: str = _get_stat('Hp', level, char_design_info)
-        self.__stat_pilot: str = _get_stat('Pilot', level, char_design_info)
-        self.__stat_repair: str = _get_stat('Repair', level, char_design_info)
-        self.__stat_science: str = _get_stat('Science', level, char_design_info)
-        self.__stat_weapon: str = _get_stat('Weapon', level, char_design_info)
-        self.__training_capacity: str = char_design_info['TrainingCapacity']
-
-        details_long: List[Tuple[str, str]] = [
-            ('Level', self.__level),
-            ('Rarity', self.__rarity),
-            ('Race', self.__race),
-            ('Collection', self.__collection_name),
-            ('Gender', self.__gender),
-            ('Ability', self.__ability),
-            ('HP', self.__stat_hp),
-            ('Attack', self.__stat_attack),
-            ('Repair', self.__stat_repair),
-            ('Pilot', self.__stat_pilot),
-            ('Science', self.__stat_science),
-            ('Engine', self.__stat_engine),
-            ('Weapon', self.__stat_weapon),
-            ('Walk/run speed', self.__speed),
-            ('Fire resist', self.__stat_fire_resistance),
-            ('Training cap', self.__training_capacity),
-            ('Slots', self.__equipment_slots)
-        ]
-        details_short: List[Tuple[str, str, bool]] = [
-            ('Rarity', self.__rarity, False),
-            ('Ability', self.__ability, True),
-            ('Collection', self.__collection_name, True)
-        ]
-
-        super().__init__(
-            name=char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=char_design_info['CharacterDesignDescription'],
-            details_long=details_long,
-            details_short=details_short
-        )
-
-
-    @property
-    def ability(self) -> str:
-        return self.__ability
-
-    @property
-    def attack(self) -> str:
-        return self.__stat_attack
-
-    @property
-    def collection_name(self) -> str:
-        return self.__collection_name
-
-    @property
-    def engine(self) -> str:
-        return self.__stat_engine
-
-    @property
-    def equipment_slots(self) -> str:
-        return self.__equipment_slots
-
-    @property
-    def fire_resistance(self) -> str:
-        return self.__stat_fire_resistance
-
-    @property
-    def gender(self) -> str:
-        return self.__gender
-
-    @property
-    def hp(self) -> str:
-        return self.__stat_hp
-
-    @property
-    def level(self) -> int:
-        return self.__level
-
-    @property
-    def pilot(self) -> str:
-        return self.__stat_pilot
-
-    @property
-    def race(self) -> str:
-        return self.__race
-
-    @property
-    def rarity(self) -> str:
-        return self.__rarity
-
-    @property
-    def repair(self) -> str:
-        return self.__stat_repair
-
-    @property
-    def science(self) -> str:
-        return self.__stat_science
-
-    @property
-    def speed(self) -> str:
-        return self.__speed
-
-    @property
-    def training_capacity(self) -> str:
-        return self.__training_capacity
-
-    @property
-    def weapon(self) -> str:
-        return self.__stat_weapon
-
-
-
-
-
-
-
-
-
-
-class CollectionDesignDetails(entity.LegacyEntityDesignDetails):
+class LegacyCollectionDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, collection_design_info: dict, collection_chars_names: dict):
         collection_perk = collection_design_info['EnhancementType']
         collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
@@ -238,7 +98,7 @@ class CollectionDesignDetails(entity.LegacyEntityDesignDetails):
 
 
 
-class PrestigeDetails(entity.LegacyEntityDesignDetails):
+class LegacyPrestigeDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
         self.__char_design_name: str = char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
         self.__count: int = sum([len(prestige_partners) for prestige_partners in prestige_infos.values()])
@@ -305,7 +165,7 @@ class PrestigeDetails(entity.LegacyEntityDesignDetails):
 
 
 
-class PrestigeFromDetails(PrestigeDetails):
+class LegacyPrestigeFromDetails(LegacyPrestigeDetails):
     def __init__(self, char_from_design_info: dict, chars_designs_data: dict, prestige_from_data: dict):
         chars_designs_data = chars_designs_data
         error = None
@@ -337,7 +197,7 @@ class PrestigeFromDetails(PrestigeDetails):
 
 
 
-class PrestigeToDetails(PrestigeDetails):
+class LegacyPrestigeToDetails(LegacyPrestigeDetails):
     def __init__(self, char_to_design_info: dict, chars_designs_data: dict, prestige_to_data: dict):
         chars_designs_data = chars_designs_data
         error = None
@@ -360,7 +220,7 @@ class PrestigeToDetails(PrestigeDetails):
                 prestige_recipe_ingredients = sorted(prestige_recipe_ingredients, key=lambda t: len(t[1]), reverse=True)
                 (char_design_name, prestige_partners) = prestige_recipe_ingredients[0]
                 prestige_infos[char_design_name] = list(prestige_partners)
-                prestige_recipe_ingredients = PrestigeToDetails._update_prestige_recipe_ingredients(prestige_recipe_ingredients)
+                prestige_recipe_ingredients = LegacyPrestigeToDetails._update_prestige_recipe_ingredients(prestige_recipe_ingredients)
         else:
             if char_to_design_info['Rarity'] == 'Special':
                 error = 'One cannot prestige to **Special** crew.'
@@ -397,8 +257,45 @@ class PrestigeToDetails(PrestigeDetails):
 
 # ---------- Helper functions ----------
 
-def _convert_equipment_mask(equipment_mask: int) -> str:
+def __create_character_design_details_from_info(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(character_design_info, __properties['title'], __properties['description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_designs_data, collections_designs_data, level=level)
+
+
+def __create_character_design_data_list_from_infos(character_design_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> List[entity.EntitiesDesignsData]:
+    return [__create_character_design_details_from_info(character_design_info, characters_designs_data, collections_designs_data, level) for character_design_info in character_design_infos]
+
+
+
+
+
+def __calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
+    exponent = lookups.PROGRESSION_TYPES[progression_type]
+    result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
+    return result
+
+
+def __get_ability_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
+    value = __get_stat(character_design_info, characters_designs_data, collections_designs_data, level, stat_name='SpecialAbilityArgument')
+    special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_design_info['SpecialAbilityType'], None)
+    if special_ability:
+        result = f'{value} ({special_ability})'
+    else:
+        result = value
+    return result
+
+
+def __get_collection_name(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    result = _get_collection_name(character_design_info, collections_designs_data)
+    return result
+
+
+def __get_level(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
+    return str(level)
+
+
+def __get_slots(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     result = []
+    equipment_mask = int(character_design_info['EquipmentMask'])
     for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
         if (equipment_mask & k) != 0:
             result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
@@ -409,12 +306,38 @@ def _convert_equipment_mask(equipment_mask: int) -> str:
         return '-'
 
 
-def _get_ability_name(char_design_info: dict) -> str:
-    if char_design_info:
-        special = char_design_info['SpecialAbilityType']
-        if special in lookups.SPECIAL_ABILITIES_LOOKUP.keys():
-            return lookups.SPECIAL_ABILITIES_LOOKUP[special]
-    return None
+def __get_speed(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    walk_speed = character_design_info['WalkingSpeed']
+    run_speed = character_design_info['RunSpeed']
+    result = f'{walk_speed}/{run_speed}'
+    return result
+
+
+def __get_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, stat_name: str, **kwargs) -> str:
+    is_special_stat = stat_name.lower().startswith('specialability')
+    if is_special_stat:
+        max_stat_name = 'SpecialAbilityFinalArgument'
+    else:
+        max_stat_name = f'Final{stat_name}'
+    min_value = float(character_design_info[stat_name])
+    max_value = float(character_design_info[max_stat_name])
+    progression_type = character_design_info['ProgressionType']
+    result = __get_stat_value(min_value, max_value, level, progression_type)
+    return result
+
+
+def __get_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> str:
+    if level is None or level < 1 or level > 40:
+        return f'{min_value:0.1f} - {max_value:0.1f}'
+    else:
+        return f'{__calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
+
+
+
+
+
+
+
 
 
 async def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
@@ -430,35 +353,9 @@ def _get_collection_name(char_design_info: dict, collections_designs_data: dict)
     if char_design_info:
         collection_id = char_design_info[COLLECTION_DESIGN_KEY_NAME]
         if collection_id and collection_id != '0':
-            collection_design_info = collections_designs_retriever.get_entity_design_info_by_id(collection_id, collections_designs_data)
+            collection_design_info = collections_designs_data[collection_id]
             return collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return None
-
-
-def _get_stat(stat_name: str, level: int, char_design_info: dict) -> str:
-    is_special_stat = stat_name.lower().startswith('specialability')
-    if is_special_stat:
-        max_stat_name = 'SpecialAbilityFinalArgument'
-    else:
-        max_stat_name = f'Final{stat_name}'
-    min_value = float(char_design_info[stat_name])
-    max_value = float(char_design_info[max_stat_name])
-    progression_type = char_design_info['ProgressionType']
-    result = _get_stat_value(min_value, max_value, level, progression_type)
-    return result
-
-
-def _get_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> str:
-    if level is None or level < 1 or level > 40:
-        return f'{min_value:0.1f} - {max_value:0.1f}'
-    else:
-        return f'{_calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
-
-
-def _calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
-    exponent = lookups.PROGRESSION_TYPES[progression_type]
-    result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
-    return result
 
 
 
@@ -471,13 +368,10 @@ def _calculate_stat_value(min_value: float, max_value: float, level: int, progre
 
 # ---------- Crew info ----------
 
-def get_char_design_details_by_id(char_design_id: str, chars_designs_data: dict, level: int = None, collections_designs_data: dict = None) -> CharDesignDetails:
+def get_char_design_details_by_id(char_design_id: str, chars_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int = None) -> entity.EntityDesignDetails:
     if char_design_id:
         if char_design_id and char_design_id in chars_designs_data.keys():
-            char_design_info = chars_designs_data[char_design_id]
-            char_design_details = CharDesignDetails(char_design_info, collections_designs_data=collections_designs_data, level=level)
-            return char_design_details
-
+            return __create_character_design_details_from_info(chars_designs_data[char_design_id], chars_designs_data, collections_designs_data, level)
     return None
 
 
@@ -486,17 +380,17 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
-    char_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
+    char_design_info = await characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if char_design_info is None:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
         collections_designs_data = await collections_designs_retriever.get_data_dict3()
-        char_design_details = CharDesignDetails(char_design_info, collections_designs_data, level=level)
+        character_design_details = __create_character_design_details_from_info(char_design_info, None, collections_designs_data, level)
         if as_embed:
-            return char_design_details.get_details_as_embed(), True
+            return character_design_details.get_details_as_embed(), True
         else:
-            return char_design_details.get_details_as_text_long(), True
+            return character_design_details.get_details_as_text_long(), True
 
 
 
@@ -519,7 +413,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
         collection_chars_names = await _get_collection_chars_designs_infos(collection_design_info)
-        collection_design_details = CollectionDesignDetails(collection_design_info, collection_chars_names)
+        collection_design_details = LegacyCollectionDesignDetails(collection_design_info, collection_chars_names)
         if as_embed:
             return collection_design_details.get_details_as_embed(), True
         else:
@@ -546,7 +440,7 @@ async def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_E
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
         prestige_from_data = await _get_prestige_from_data(char_from_design_info)
-        prestige_from_details = PrestigeFromDetails(char_from_design_info, chars_designs_data, prestige_from_data)
+        prestige_from_details = LegacyPrestigeFromDetails(char_from_design_info, chars_designs_data, prestige_from_data)
 
         if as_embed:
             return prestige_from_details.get_details_as_embed(), True
@@ -599,7 +493,7 @@ async def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMB
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
         prestige_to_data = await _get_prestige_to_data(char_to_design_info)
-        prestige_to_details = PrestigeToDetails(char_to_design_info, chars_designs_data, prestige_to_data)
+        prestige_to_details = LegacyPrestigeToDetails(char_to_design_info, chars_designs_data, prestige_to_data)
 
         if as_embed:
             return prestige_to_details.get_details_as_embed(), True
@@ -706,6 +600,7 @@ characters_designs_retriever = entity.EntityDesignsRetriever(
     cache_name='CharacterDesigns'
 )
 
+
 collections_designs_retriever = entity.EntityDesignsRetriever(
     COLLECTION_DESIGN_BASE_PATH,
     COLLECTION_DESIGN_KEY_NAME,
@@ -714,9 +609,43 @@ collections_designs_retriever = entity.EntityDesignsRetriever(
 )
 
 
+__properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {}
 
 
+async def init():
 
+    title_property = entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    description_property = entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription')
+    character_properties_long = [
+        entity.EntityDesignDetailProperty('Level', True, omit_if_none=True, transform_function=__get_level),
+        entity.EntityDesignDetailProperty('Rarity', True, entity_property_name='Rarity'),
+        entity.EntityDesignDetailProperty('Race', True, entity_property_name='RaceType'),
+        entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name),
+        entity.EntityDesignDetailProperty('Gender', True, entity_property_name='GenderType'),
+        entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_ability_stat),
+        entity.EntityDesignDetailProperty('HP', True, transform_function=__get_stat, stat_name='Hp'),
+        entity.EntityDesignDetailProperty('Attack', True, transform_function=__get_stat, stat_name='Attack'),
+        entity.EntityDesignDetailProperty('Repair', True, transform_function=__get_stat, stat_name='Repair'),
+        entity.EntityDesignDetailProperty('Pilot', True, transform_function=__get_stat, stat_name='Pilot'),
+        entity.EntityDesignDetailProperty('Science', True, transform_function=__get_stat, stat_name='Science'),
+        entity.EntityDesignDetailProperty('Engine', True, transform_function=__get_stat, stat_name='Engine'),
+        entity.EntityDesignDetailProperty('Weapon', True, transform_function=__get_stat, stat_name='Weapon'),
+        entity.EntityDesignDetailProperty('Walk/run speed', True, transform_function=__get_speed),
+        entity.EntityDesignDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
+        entity.EntityDesignDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
+        entity.EntityDesignDetailProperty('Slots', True, transform_function=__get_slots)
+    ]
+    character_properties_short = [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
+        entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_stat, stat_name='SpecialAbility'),
+        entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name)
+    ]
+    __properties.update({
+        'title': title_property,
+        'description': description_property,
+        'character_long': character_properties_long,
+        'character_short': character_properties_short
+    })
 
 
 

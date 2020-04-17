@@ -61,7 +61,7 @@ REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 
 # ---------- Classes ----------
 
-class PromotionDesignDetails(entity.LegacyEntityDesignDetails):
+class LegacyPromotionDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, promotion_design_info: dict):
         """
         RewardString
@@ -311,14 +311,14 @@ def _get_requirement_type_and_value(requirement_string: str, separator: str, add
 
 # ---------- Promo info ----------
 
-async def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> PromotionDesignDetails:
+async def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> LegacyPromotionDesignDetails:
     if promotion_design_id:
         if promotions_designs_data is None:
             promotions_designs_data = await promotion_designs_retriever.get_data_dict3()
 
         if promotion_design_id and promotion_design_id in promotions_designs_data.keys():
             promotion_design_info = promotions_designs_data[promotion_design_id]
-            promotion_design_details = PromotionDesignDetails(promotion_design_info)
+            promotion_design_details = LegacyPromotionDesignDetails(promotion_design_info)
             return promotion_design_details
 
     return None
@@ -333,7 +333,7 @@ async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: boo
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
     promotion_design_infos = await promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
-    promotions_designs_details = [PromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
+    promotions_designs_details = [LegacyPromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
 
     if not promotions_designs_details:
         return [f'Could not find a promotion named **{promotion_name}**.'], False

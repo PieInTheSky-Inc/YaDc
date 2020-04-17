@@ -31,7 +31,7 @@ RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
 
 # ---------- Classes ----------
 
-class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
+class LegacyResearchDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, research_info: dict, researches_designs_data: dict):
         self.__cost: str = _get_costs_from_research_info(research_info)
         self.__research_time_seconds: int = int(research_info['ResearchTime'])
@@ -97,7 +97,7 @@ class ResearchDesignDetails(entity.LegacyEntityDesignDetails):
 # ---------- Helper functions ----------
 
 async def get_research_details_from_id_as_text(research_id: str, researches_designs_data: dict) -> list:
-    research_design_details = ResearchDesignDetails(research_id, researches_designs_data)
+    research_design_details = LegacyResearchDesignDetails(research_id, researches_designs_data)
     return await research_design_details.get_details_as_text_long()
 
 
@@ -127,7 +127,7 @@ async def get_research_details_from_data_as_text(research_info: dict, researches
 
 
 async def get_research_details_short_from_id_as_text(research_id: str, researches_designs_data: dict = None) -> list:
-    research_design_details = ResearchDesignDetails(research_id, researches_designs_data)
+    research_design_details = LegacyResearchDesignDetails(research_id, researches_designs_data)
     return research_design_details.get_details_as_text_short()
 
 
@@ -191,11 +191,11 @@ def _get_parents(research_info: dict, researches_designs_data: dict) -> list:
 
 # ---------- Research info ----------
 
-def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> ResearchDesignDetails:
+def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> LegacyResearchDesignDetails:
     if research_design_id:
         if research_design_id and research_design_id in researches_designs_data.keys():
             char_design_info = researches_designs_data[research_design_id]
-            char_design_details = ResearchDesignDetails(char_design_info, researches_designs_data)
+            char_design_details = LegacyResearchDesignDetails(char_design_info, researches_designs_data)
             return char_design_details
 
     return None
@@ -205,8 +205,8 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
     pss_assert.valid_entity_name(research_name)
 
     researches_designs_data = await researches_designs_retriever.get_data_dict3()
-    research_designs_infos = researches_designs_retriever.get_entity_design_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
-    research_designs_details = [ResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
+    research_designs_infos = researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
+    research_designs_details = [LegacyResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
 
     if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
@@ -229,12 +229,12 @@ async def _get_research_design_ids_from_name(research_name: str, researches_desi
     return results
 
 
-def _get_research_infos_as_embed(research_designs_details: List[ResearchDesignDetails]) -> List[discord.Embed]:
+def _get_research_infos_as_embed(research_designs_details: List[LegacyResearchDesignDetails]) -> List[discord.Embed]:
     result = [research_design_details.get_details_as_embed() for research_design_details in research_designs_details]
     return result
 
 
-def _get_research_infos_as_text(research_name: str, research_designs_details: List[ResearchDesignDetails]) -> List[str]:
+def _get_research_infos_as_text(research_name: str, research_designs_details: List[LegacyResearchDesignDetails]) -> List[str]:
     lines = [f'Research stats for **{research_name}**']
 
     research_infos_count = len(research_designs_details)

@@ -27,7 +27,7 @@ import utility as util
 
 # ---------- Classes ----------
 
-class RoomDesignDetails(entity.LegacyEntityDesignDetails):
+class LegacyRoomDesignDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, room_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData):
         self.__room_info: Dict[str, object] = room_info
         self.__items_designs_data: entity.EntitiesDesignsData = items_designs_data
@@ -574,9 +574,9 @@ def _get_pretty_short_name(short_name: str) -> str:
 
 # ---------- Room info ----------
 
-def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> RoomDesignDetails:
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> LegacyRoomDesignDetails:
     if room_design_id and room_design_id in rooms_designs_data:
-        result = RoomDesignDetails(rooms_designs_data[room_design_id], items_designs_data)
+        result = LegacyRoomDesignDetails(rooms_designs_data[room_design_id], items_designs_data)
     else:
         result = None
     return result

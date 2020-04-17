@@ -116,14 +116,14 @@ def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
-        common_crew_details = crew.get_char_design_details_by_id(common_crew_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
+        common_crew_details = crew.get_char_design_details_by_id(common_crew_id, chars_designs_data, collections_designs_data, level=40)
         common_crew_info = common_crew_details.get_details_as_text_short()
 
         hero_crew_id = raw_data['HeroCrewId']
-        hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
+        hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, chars_designs_data, collections_designs_data, level=40)
         hero_crew_info = hero_crew_details.get_details_as_text_short()
 
-        common_crew_rarity = common_crew_details.rarity
+        common_crew_rarity = common_crew_details.entity_design_info['Rarity']
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
             common_crew_info.append(' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!')
 
@@ -172,7 +172,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     entity_id = raw_data['LimitedCatalogArgument']
     entity_details = []
     if shop_type == 'Character':
-        char_design_details = crew.get_char_design_details_by_id(entity_id, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
+        char_design_details = crew.get_char_design_details_by_id(entity_id, chars_designs_data, collections_designs_data, level=40)
         entity_details = char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
@@ -203,7 +203,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     sale_type = raw_data['SaleType']
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
-        char_design_details = crew.get_char_design_details_by_id(sale_argument, chars_designs_data, level=40, collections_designs_data=collections_designs_data)
+        char_design_details = crew.get_char_design_details_by_id(sale_argument, chars_designs_data, collections_designs_data, level=40)
         entity_details = ''.join(char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)

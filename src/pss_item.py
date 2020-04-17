@@ -38,11 +38,6 @@ ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 # ---------- Classes ----------
 
 class ItemDesignDetails(entity.EntityDesignDetails):
-    def __init__(self, entity_design_info: entity.EntityDesignInfo, title: entity.EntityDesignDetailProperty, description: entity.EntityDesignDetailProperty, properties_long: List[entity.EntityDesignDetailProperty], properties_embed: List[entity.EntityDesignDetailProperty], entities_designs_data: Optional[entity.EntitiesDesignsData] = None, prefix: str = None):
-        self.__prefix: str = prefix or ''
-        super().__init__(entity_design_info, title, description, properties_long, None, properties_embed, entities_designs_data=entities_designs_data)
-
-
     def get_details_as_text_long(self) -> List[str]:
         details = []
         for display_name, display_value in self.details_long:
@@ -64,7 +59,7 @@ class ItemDesignDetails(entity.EntityDesignDetails):
 
 
     def get_details_as_text_short(self) -> List[str]:
-        result = [f'{self.__prefix}{self.title} ({self.description})']
+        result = [f'{self.prefix}{self.title} ({self.description})']
         return result
 
 
@@ -78,7 +73,7 @@ class ItemDesignDetails(entity.EntityDesignDetails):
 
 # ---------- Helper functions ----------
 
-def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
     if bonus_type.lower() == 'none':
@@ -88,7 +83,7 @@ def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_de
     return result
 
 
-def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     item_type = item_info['ItemType']
     item_sub_type = item_info['ItemSubType']
     if item_type == 'Equipment' and 'Equipment' in item_sub_type:
@@ -98,7 +93,7 @@ def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: enti
     return result
 
 
-def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = 'This item cannot be sold'
@@ -109,44 +104,44 @@ def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: ent
     return result
 
 
-def __get_enhancement_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_enhancement_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     enhancement_value = float(item_info['EnhancementValue'])
     result = f'{enhancement_value:.1f}'
     return result
 
 
-def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     market_price = item_info['MarketPrice']
     result = f'{market_price} bux'
     return result
 
 
-def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> str:
+def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     return item_info['Rarity']
 
 
-def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_base_properties, __item_base_properties)
+def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_base_properties, None, __item_base_properties, items_designs_data)
 
 
-def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_price_properties, __item_price_properties)
+def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_price_properties, None, __item_price_properties, items_designs_data)
 
 
-def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_best_properties, __item_best_properties, prefix='> ')
+def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_best_properties, None, __item_best_properties, items_designs_data, prefix='> ')
 
 
-def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
-    return [__create_best_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
+    return [__create_best_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
-def __create_price_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
-    return [__create_price_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+def __create_price_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
+    return [__create_price_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
-def __create_base_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo]) -> List[ItemDesignDetails]:
-    return [__create_base_design_data_from_info(item_design_info) for item_design_info in items_designs_infos]
+def __create_base_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
+    return [__create_base_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
 def __get_key_for_best_items_sort(item_info: dict) -> str:
@@ -209,7 +204,7 @@ async def get_item_info_from_id(item_id: str) -> dict:
 
 def get_item_design_details_by_id(item_design_id: str, items_designs_data: dict) -> ItemDesignDetails:
     if item_design_id and item_design_id in items_designs_data.keys():
-        return __create_base_design_data_from_info(items_designs_data[item_design_id])
+        return __create_base_design_data_from_info(items_designs_data[item_design_id], items_designs_data)
     else:
         return None
 
@@ -269,7 +264,7 @@ async def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE
         return [f'Could not find an item named **{item_name}**.'], False
     else:
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
-        items_designs_details = __create_base_design_data_list_from_infos(item_infos)
+        items_designs_details = __create_base_design_data_list_from_infos(item_infos, items_designs_data)
 
         if as_embed:
             return _get_item_info_as_embed(item_name, items_designs_details), True
@@ -315,7 +310,7 @@ async def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
             item_infos = [item_infos[0]]
 
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
-        items_designs_details = __create_price_design_data_list_from_infos(item_infos)
+        items_designs_details = __create_price_design_data_list_from_infos(item_infos, items_designs_data)
 
         if as_embed:
             return _get_item_price_as_embed(item_name, items_designs_details), True
@@ -549,7 +544,7 @@ def _get_best_items_designs(slot_filter: List[str], stat_filter: str, items_desi
     filtered_data = core.filter_data_dict(items_designs_data, filters, ignore_case=True)
     if filtered_data:
         items_infos = sorted(filtered_data.values(), key=__get_key_for_best_items_sort)
-        items_designs_details = __create_best_design_data_list_from_infos(items_infos)
+        items_designs_details = __create_best_design_data_list_from_infos(items_infos, items_designs_data)
         result = entity.group_entities_designs_details(items_designs_details, 'ItemSubType')
     return result
 
