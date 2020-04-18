@@ -887,7 +887,7 @@ async def cmd_autodaily_post(ctx: discord.ext.commands.Context):
 
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level: int = None):
+async def cmd_level(ctx: discord.ext.commands.Context, from_level: str, to_level: str = None):
     """
     Shows the cost for a crew to reach a certain level.
 
@@ -903,13 +903,19 @@ async def cmd_level(ctx: discord.ext.commands.Context, from_level: int, to_level
       /level 35 - Prints exp and gas requirements from level 1 to 35
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
+        try:
+            from_level = int(from_level)
+            to_level = None if to_level is None else int(to_level)
+        except ValueError:
+            output = f"Arguments to `{util.get_exact_cmd(ctx)}` need to be numbers."
+        else:
+            output, _ = crew.get_level_costs(from_level, to_level)
     await util.post_output(ctx, output)
 
 
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_top(ctx: discord.ext.commands.Context, count: int = 100):
+async def cmd_top(ctx: discord.ext.commands.Context, count: str = 100):
     """
     Prints either top fleets or captains. Prints top 100 fleets by default.
 
@@ -928,7 +934,7 @@ async def cmd_top(ctx: discord.ext.commands.Context, count: int = 100):
 
 
 @cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
-async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
+async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: str = 100):
     """
     Prints top fleets. Prints top 100 fleets by default.
 
@@ -942,12 +948,17 @@ async def cmd_top_fleets(ctx: discord.ext.commands.Context, count: int = 100):
       /top fleets - prints top 100 fleets.
       /top fleets 30 - prints top 30 fleets."""
     async with ctx.typing():
-        output, _ = pss_top.get_top_fleets(count)
+        try:
+            count = int(count)
+        except ValueError:
+            output = f"The argument to `{util.get_exact_cmd(ctx)}` needs to be a number.\nMaybe you meant to use `{ctx.prefix}stars fleet`?"
+        else:
+            output, _ = pss_top.get_top_fleets(count)
     await util.post_output(ctx, output)
 
 
 @cmd_top.command(brief='Prints top captains', name='players', aliases=['captains', 'users'])
-async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
+async def cmd_top_captains(ctx: discord.ext.commands.Context, count: str = 100):
     """
     Prints top captains. Prints top 100 captains by default.
 
@@ -961,6 +972,11 @@ async def cmd_top_captains(ctx: discord.ext.commands.Context, count: int = 100):
       /top captains - prints top 100 captains.
       /top captains 30 - prints top 30 captains."""
     async with ctx.typing():
+      try:
+        count = int(count)
+      except ValueError:
+          output = f"The argument to `{util.get_exact_cmd(ctx)}` needs to be a number.\nMaybe you meant to use `{ctx.prefix}stars fleet`?"
+      else:
         output, _ = pss_top.get_top_captains(count)
     await util.post_output(ctx, output)
 
@@ -1000,7 +1016,7 @@ async def cmd_training(ctx: discord.ext.commands.Context, *, name: str = None):
       /training [name]
 
     Parameters:
-      name: A room's name or part of it. Mandatory.
+      name: A training's name or part of it. Mandatory.
 
     Examples:
       /training bench - Searches for trainings having 'bench' in their names and prints their details.
