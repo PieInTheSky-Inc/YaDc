@@ -121,15 +121,15 @@ def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.
 
 
 def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_base_properties, None, __item_base_properties, items_designs_data)
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['base'], None, __properties['base'], items_designs_data)
 
 
 def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_price_properties, None, __item_price_properties, items_designs_data)
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['price'], None, __properties['price'], items_designs_data)
 
 
 def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __title_property, __description_property, __item_best_properties, None, __item_best_properties, items_designs_data, prefix='> ')
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['best'], None, __properties['best'], items_designs_data, prefix='> ')
 
 
 def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
@@ -168,6 +168,33 @@ def _get_slot_filter(slot: str, any_slot: bool) -> List[str]:
     return result
 
 
+def __get_allowed_item_names(items_designs_data: dict, not_allowed_item_names: List[str]):
+    result = []
+    for item_design_data in items_designs_data.values():
+        if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
+            item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            if item_name:
+                item_name = core.fix_allowed_value_candidate(item_name)
+                if len(item_name) < settings.MIN_ENTITY_NAME_LENGTH:
+                    result.append(item_name)
+                else:
+                    item_name_parts = item_name.split(' ')
+                    for item_name_part in item_name_parts:
+                        part_length = len(item_name_part)
+                        length_matches = part_length > 1 and part_length < settings.MIN_ENTITY_NAME_LENGTH
+                        is_proper_name = item_name_part == item_name_part.upper()
+                        if length_matches and is_proper_name:
+                            try:
+                                int(item_name_part)
+                                continue
+                            except:
+                                if item_name_part not in not_allowed_item_names:
+                                    result.append(item_name_part)
+    if result:
+        result = list(set(result))
+    return result
+
+
 
 
 
@@ -195,11 +222,6 @@ def get_item_details_short_from_data_as_text(item_info: dict) -> list:
         details.append(f'+{bonus_value} {bonus_type}')
     details_txt = ', '.join(details)
     return [f'{name} ({details_txt})']
-
-
-async def get_item_info_from_id(item_id: str) -> dict:
-    item_data = await items_designs_retriever.get_data_dict3()
-    return item_data[item_id]
 
 
 def get_item_design_details_by_id(item_design_id: str, items_designs_data: dict) -> ItemDesignDetails:
@@ -609,84 +631,47 @@ def _get_pretty_slot(slot: str) -> str:
 
 # ---------- Initilization ----------
 
-NOT_ALLOWED_ITEM_NAMES: List[str] = None
-ALLOWED_ITEM_NAMES: List[str] = None
-__title_property: entity.EntityDesignDetailProperty = None
-__description_property: entity.EntityDesignDetailProperty = None
-__item_base_properties: List[entity.EntityDesignDetailProperty] = None
-__item_price_properties: List[entity.EntityDesignDetailProperty] = None
-__item_best_properties: List[entity.EntityDesignDetailProperty] = None
-items_designs_retriever: entity.EntityDesignsRetriever = None
+NOT_ALLOWED_ITEM_NAMES: List[str] = [
+    'AI',
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+    'VI'
+]
+ALLOWED_ITEM_NAMES: List[str] = []
+items_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+    ITEM_DESIGN_BASE_PATH,
+    ITEM_DESIGN_KEY_NAME,
+    ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    'ItemsDesigns',
+    fix_data_delegate=_fix_item_name
+)
+__properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
+    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity),
+    'base': [
+        entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+    ],
+    'best': [
+        entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
+        entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
+    ],
+    'price': [
+        entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
+    ]
+}
 
 
-def __get_allowed_item_names(items_designs_data: dict):
-    result = []
-    for item_design_data in items_designs_data.values():
-        if ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME in item_design_data.keys():
-            item_name = item_design_data[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            if item_name:
-                item_name = core.fix_allowed_value_candidate(item_name)
-                if len(item_name) < settings.MIN_ENTITY_NAME_LENGTH:
-                    result.append(item_name)
-                else:
-                    item_name_parts = item_name.split(' ')
-                    for item_name_part in item_name_parts:
-                        part_length = len(item_name_part)
-                        length_matches = part_length > 1 and part_length < settings.MIN_ENTITY_NAME_LENGTH
-                        is_proper_name = item_name_part == item_name_part.upper()
-                        if length_matches and is_proper_name:
-                            try:
-                                int(item_name_part)
-                                continue
-                            except:
-                                if item_name_part not in NOT_ALLOWED_ITEM_NAMES:
-                                    result.append(item_name_part)
-    if result:
-        result = list(set(result))
-    return result
+
 
 
 async def init():
-    global items_designs_retriever
     global ALLOWED_ITEM_NAMES
-    global NOT_ALLOWED_ITEM_NAMES
-    items_designs_retriever = entity.EntityDesignsRetriever(
-        ITEM_DESIGN_BASE_PATH,
-        ITEM_DESIGN_KEY_NAME,
-        ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
-        'ItemsDesigns',
-        fix_data_delegate=_fix_item_name
-    )
     items_designs_data = await items_designs_retriever.get_data_dict3()
-    NOT_ALLOWED_ITEM_NAMES = [
-        'AI',
-        'I',
-        'II',
-        'III',
-        'IV',
-        'V',
-        'VI'
-    ]
-    ALLOWED_ITEM_NAMES = sorted(__get_allowed_item_names(items_designs_data))
-
-    global __title_property
-    global __description_property
-    global __item_base_properties
-    global __item_price_properties
-    global __item_best_properties
-    __title_property = entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-    __description_property = entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity)
-    __item_base_properties = [
-        entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
-    ]
-    __item_price_properties = [
-        entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
-    ]
-    __item_best_properties = [
-        entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
-        entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
-    ]
+    ALLOWED_ITEM_NAMES = sorted(__get_allowed_item_names(items_designs_data, NOT_ALLOWED_ITEM_NAMES))
 
 
 

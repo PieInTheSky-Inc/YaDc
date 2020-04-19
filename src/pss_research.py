@@ -96,51 +96,6 @@ class LegacyResearchDesignDetails(entity.LegacyEntityDesignDetails):
 
 # ---------- Helper functions ----------
 
-async def get_research_details_from_id_as_text(research_id: str, researches_designs_data: dict) -> list:
-    research_design_details = LegacyResearchDesignDetails(research_id, researches_designs_data)
-    return await research_design_details.get_details_as_text_long()
-
-
-async def get_research_details_from_data_as_text(research_info: dict, researches_designs_data: dict) -> list:
-    name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    description = research_info['ResearchDescription']
-    costs = _get_costs_from_research_info(research_info)
-    research_time_seconds = int(research_info['ResearchTime'])
-    research_timedelta = timedelta(seconds=research_time_seconds)
-    duration = util.get_formatted_timedelta(research_timedelta, include_relative_indicator=False)
-    required_lab_level = research_info['RequiredLabLevel']
-    required_research_design_id = research_info['RequiredResearchDesignId']
-    if required_research_design_id != '0':
-        required_research_name = researches_designs_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    else:
-        required_research_name = None
-
-    result = [f'**{name}**']
-    result.append(f'_{description}_')
-    result.append(f'Cost = {costs}')
-    result.append(f'Duration = {duration}')
-    result.append(f'Required LAB lvl = {required_lab_level}')
-    if required_research_name:
-        result.append(f'Required Research = {required_research_name}')
-
-    return result
-
-
-async def get_research_details_short_from_id_as_text(research_id: str, researches_designs_data: dict = None) -> list:
-    research_design_details = LegacyResearchDesignDetails(research_id, researches_designs_data)
-    return research_design_details.get_details_as_text_short()
-
-
-def get_research_details_short_from_data_as_text(research_info: dict) -> list:
-    name = research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    costs = _get_costs_from_research_info(research_info)
-    research_time_seconds = int(research_info['ResearchTime'])
-    research_timedelta = timedelta(seconds=research_time_seconds)
-    duration = util.get_formatted_timedelta(research_timedelta, include_relative_indicator=False)
-    required_lab_level = research_info['RequiredLabLevel']
-    return [f'**{name}**: {costs} - {duration} - LAB lvl {required_lab_level}']
-
-
 def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
     if research_id != '0':
         research_info = researches_designs_data[research_id]
@@ -205,7 +160,7 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
     pss_assert.valid_entity_name(research_name)
 
     researches_designs_data = await researches_designs_retriever.get_data_dict3()
-    research_designs_infos = researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
+    research_designs_infos = await researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
     research_designs_details = [LegacyResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
 
     if not research_designs_details:
@@ -215,18 +170,6 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
             return _get_research_infos_as_embed(research_designs_details), True
         else:
             return _get_research_infos_as_text(research_name, research_designs_details), True
-
-
-async def _get_research_infos(research_name: str, researches_designs_data: dict):
-    research_design_ids = await _get_research_design_ids_from_name(research_name, researches_designs_data)
-    result = [researches_designs_data[research_design_id] for research_design_id in research_design_ids if research_design_id in researches_designs_data.keys()]
-
-    return result
-
-
-async def _get_research_design_ids_from_name(research_name: str, researches_designs_data: dict):
-    results = core.get_ids_from_property_value(researches_designs_data, RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, research_name)
-    return results
 
 
 def _get_research_infos_as_embed(research_designs_details: List[LegacyResearchDesignDetails]) -> List[discord.Embed]:

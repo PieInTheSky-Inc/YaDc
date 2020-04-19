@@ -83,31 +83,6 @@ async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     return success
 
 
-async def get_all_daily_channel_ids() -> List[int]:
-    rows = await server_settings.db_get_autodaily_settings(guild_id=None, can_post=None)
-    if len(rows) == 0:
-        return []
-    else:
-        results = [int(channel_id) for (channel_id, _, _) in rows]
-        return results
-
-
-async def get_valid_daily_channel_ids() -> List[int]:
-    rows = await server_settings.db_get_autodaily_settings(guild_id=None, can_post=True)
-    if len(rows) == 0:
-        return []
-    else:
-        results = [int(channel_id) for (channel_id, _, _) in rows]
-        return results
-
-
-async def try_remove_daily_channel(guild_id: int) -> bool:
-    success = await server_settings.db_reset_autodaily_settings(guild_id)
-    if success == False:
-        print(f'[try_remove_daily_channel] failed to delete data row with key: {guild_id}')
-    return success
-
-
 def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: dict, db_modify_date: datetime) -> bool:
     if retrieved_date.hour >= 23:
         return False
@@ -145,11 +120,6 @@ def convert_to_daily_info(dropship_info: dict) -> dict:
             value = dropship_info[field_name]
         result[field_name] = value
     return result
-
-
-async def delete_daily_channel(guild_id: int) -> bool:
-    success = await server_settings.db_reset_autodaily_settings(guild_id)
-    return success
 
 
 async def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:

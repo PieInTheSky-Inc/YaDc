@@ -68,11 +68,6 @@ class PssCache:
         return result
 
 
-    async def get_data_dict2(self) -> dict:
-        data = await self.get_raw_data()
-        return dict(core.xmltree_to_dict2(data))
-
-
     async def get_data_dict3(self) -> dict:
         data = await self.get_raw_data()
         return dict(core.xmltree_to_dict3(data))

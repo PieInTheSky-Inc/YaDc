@@ -1622,7 +1622,7 @@ async def cmd_settings_reset_autodaily_mode(ctx: discord.ext.commands.Context):
     """
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
-            success = await server_settings.reset_daily_delete_on_change(ctx.guild.id)
+            success = await server_settings.db_reset_autodaily_mode(ctx.guild.id)
             if success:
                 output = ['Successfully reset the auto-daily change mode.']
             else:
@@ -1970,7 +1970,7 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
             await ctx.send('The query didn\'t return any results.')
     elif action == 'query' and params:
         query = f'{params}'
-        success, error = core.db_try_execute(query)
+        success, error = await core.db_try_execute(query)
         if not success:
             await ctx.send(error)
         else:
@@ -2016,7 +2016,7 @@ async def cmd_device_create(ctx: discord.ext.commands.Context):
             await device.get_access_token()
             created = True
         except Exception as err:
-            login.DEVICES.remove_device(device)
+            await login.DEVICES.remove_device(device)
             created = False
     if created is True:
         await ctx.send(f'Created and stored device with key \'{device.key}\'.')

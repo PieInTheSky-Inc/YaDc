@@ -163,7 +163,7 @@ async def post_output_to_channel(text_channel: discord.TextChannel, output: list
                 await text_channel.send(post)
 
 
-async def post_output_with_files(ctx, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
     if output:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
@@ -180,16 +180,6 @@ async def post_output_with_files(ctx, output: list, file_paths: list, maximum_ch
                         await ctx.send(content=post, files=files)
                     else:
                         await ctx.send(content=post)
-
-
-async def get_latest_message(from_channel, by_member_id=None, with_content=None, after=None, before=None):
-    if from_channel is not None:
-        messages = from_channel.history(limit=100, after=after, before=before, older_first=True).flatten()
-        for msg in reversed(messages):
-            process = not by_member_id or msg.author.id == by_member_id
-            if process and msg.content == with_content:
-                return msg
-    return None
 
 
 def create_embed(title, description=None, colour=None, fields=None):
@@ -313,11 +303,8 @@ def check_hyperlink(hyperlink: str) -> bool:
         return False
 
 
-async def try_delete_original_message(ctx):
-    try:
-        await ctx.message.delete()
-    except:
-        pass
+async def try_delete_original_message(ctx: discord.ext.commands.Context) -> bool:
+    return await try_delete_message(ctx.message)
 
 
 def get_similarity(value_to_check: str, against: str) -> float:

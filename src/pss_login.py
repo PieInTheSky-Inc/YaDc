@@ -60,6 +60,7 @@ class Device():
         self.__set_access_token_expiry()
         self.__user: dict = None
         self.__token_lock: Lock = Lock()
+        self.__login_path: str = f'UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
 
 
     @property
@@ -110,8 +111,8 @@ class Device():
         if not self.__checksum:
             self.__checksum = create_device_checksum(self.__key)
 
-        production_server = await core.get_production_server()
-        url = f'https://{production_server}/UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
+        base_url = await core.get_base_url()
+        url = f'{base_url}{self.__login_path}'
         utc_now = util.get_utcnow()
         data = requests.post(url).content.decode('utf-8')
         result = core.convert_raw_xml_to_dict(data)
@@ -181,10 +182,9 @@ class DeviceCollection():
         for existing_device in self.__devices:
             if existing_device.key == device.key:
                 return
-        await db_try_store_device(device)
+        await __db_try_store_device(device)
         self.__devices.append(device)
-        self.__fix_position()
-        # TODO: select added device
+        self.select_device(device.key)
 
 
     async def add_devices(self, devices: List[Device]) -> None:
@@ -197,7 +197,7 @@ class DeviceCollection():
             if existing_device.key == device_key:
                 return existing_device
         device = Device(device_key)
-        await db_try_store_device(device)
+        await __db_try_store_device(device)
         self.__devices.append(device)
         self.__fix_position()
         return device
@@ -218,7 +218,7 @@ class DeviceCollection():
             raise Exception('Cannot remove device. There\'re no devices!')
         for existing_device in self.__devices:
             if existing_device.key == device_key:
-                await db_try_delete_device(existing_device)
+                await __db_try_delete_device(existing_device)
                 self.__devices = [device for device in self.__devices if device.key != device_key]
                 self.__fix_position()
                 return
@@ -257,7 +257,7 @@ class DeviceCollection():
             if result is None:
                 raise LoginError('Cannot get access token. No device has been able to retrieve one!')
             if current is not None:
-                await _db_try_update_device(current)
+                await __db_try_update_device(current)
             return result
 
 
@@ -322,7 +322,7 @@ def create_device_checksum(device_key: str) -> str:
 
 # ---------- DB ----------
 
-async def _db_get_device(device_key: str) -> Device:
+async def __db_get_device(device_key: str) -> Device:
     query = f'SELECT * FROM devices WHERE key = $1'
     rows = await core.db_fetchall(query, [device_key])
     if rows:
@@ -333,7 +333,7 @@ async def _db_get_device(device_key: str) -> Device:
     return result
 
 
-async def db_get_devices() -> List[Device]:
+async def __db_get_devices() -> List[Device]:
     query = f'SELECT * FROM devices;'
     rows = await core.db_fetchall(query)
     if rows:
@@ -343,32 +343,28 @@ async def db_get_devices() -> List[Device]:
     return result
 
 
-async def _db_try_create_device(device: Device) -> bool:
+async def __db_try_create_device(device: Device) -> bool:
     query = f'INSERT INTO devices VALUES ($1, $2, $3)'
     success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
-    if success:
-        await DEVICES.add_device_by_key(device.key)
     return success
 
 
-async def db_try_delete_device(device: Device) -> bool:
+async def __db_try_delete_device(device: Device) -> bool:
     query = f'DELETE FROM devices WHERE key = $1'
     success = await core.db_try_execute(query, [device.key])
-    if success:
-        await DEVICES.remove_device_by_key(device.key)
     return success
 
 
-async def db_try_store_device(device: Device) -> bool:
-    current_device: Device = await _db_get_device(device.key)
+async def __db_try_store_device(device: Device) -> bool:
+    current_device: Device = await __db_get_device(device.key)
     if current_device:
-        success = await _db_try_update_device(device)
+        success = await __db_try_update_device(device)
     else:
-        success = await _db_try_create_device(device)
+        success = await __db_try_create_device(device)
     return success
 
 
-async def _db_try_update_device(device: Device) -> bool:
+async def __db_try_update_device(device: Device) -> bool:
     query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
     success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
@@ -385,6 +381,6 @@ async def _db_try_update_device(device: Device) -> bool:
 # ---------- Initialization ----------
 
 async def init():
-    __devices = await db_get_devices()
+    __devices = await __db_get_devices()
     global DEVICES
     DEVICES = DeviceCollection(__devices)

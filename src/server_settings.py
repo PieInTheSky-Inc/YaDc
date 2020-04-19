@@ -322,55 +322,6 @@ async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = 
     return result
 
 
-async def get_daily_channel_mention(ctx: discord.ext.commands.Context) -> str:
-    channel_id = await db_get_daily_channel_id(ctx.guild.id)
-    if channel_id is not None:
-        text_channel = ctx.bot.get_channel(channel_id)
-        if text_channel:
-            channel_name = text_channel.mention
-        else:
-            channel_name = '_<deleted channel>_'
-    else:
-        channel_name = None
-    return channel_name
-
-
-async def get_daily_channel_name(ctx: discord.ext.commands.Context) -> str:
-    channel_id = await db_get_daily_channel_id(ctx.guild.id)
-    if channel_id is not None:
-        text_channel = ctx.bot.get_channel(channel_id)
-        if text_channel:
-            channel_name = text_channel.name
-        else:
-            channel_name = '<deleted channel>'
-    else:
-        channel_name = '<not set>'
-    return channel_name
-
-
-async def get_daily_notify_settings(ctx: discord.ext.commands.Context) -> str:
-    notify_id, notify_type = await db_get_daily_notify_settings(ctx.guild.id)
-    if notify_id is not None and notify_type is not None:
-        type_str = ''
-        name = ''
-        if notify_type == AutoDailyNotifyType.USER:
-            member: discord.Member = ctx.guild.get_member(notify_id)
-            name = f'{member.nick} ({member.name})'
-            type_str = 'user'
-        elif notify_type == AutoDailyNotifyType.ROLE:
-            role: discord.Role = ctx.guild.get_role(notify_id)
-            name = role.name
-            type_str = 'role'
-
-        if type_str and name:
-            result = f'{name} ({type_str})'
-        else:
-            result = f'An error occured on retrieving the notify settings. Please contact the bot\'s author (in `/about`).'
-    else:
-        result = '<not set>'
-    return result
-
-
 async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
     result = None
     if util.is_guild_channel(message.channel):
@@ -395,11 +346,6 @@ async def get_pagination_mode(guild: discord.Guild) -> str:
 
 async def reset_prefix(guild_id: int) -> bool:
     success = await db_reset_prefix(guild_id)
-    return success
-
-
-async def reset_daily_delete_on_change(guild_id: int) -> bool:
-    success = await db_reset_daily_delete_on_change(guild_id)
     return success
 
 
@@ -475,7 +421,7 @@ async def db_create_server_settings(guild_id: int) -> bool:
         return True
     else:
         query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ($1, $2)'
-        success = await core.db_try_execute(query, [guild_id, True])
+        success = await core.db_try_execute(query, [guild_id, settings.DEFAULT_MODE_REPOST_AUTODAILY])
         return success
 
 
@@ -642,7 +588,7 @@ async def db_reset_autodaily_mode(guild_id: int) -> bool:
     for current_setting in current_autodaily_settings:
         if current_setting is not None:
             settings = {
-                'dailydeleteonchange': None
+                'dailydeleteonchange': settings.DEFAULT_MODE_REPOST_AUTODAILY
             }
             success = await _db_update_server_setting(guild_id, settings)
             return success
@@ -669,7 +615,7 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
             settings = {
                 'dailychannelid': None,
                 'dailylatestmessageid': None,
-                'dailydeleteonchange': None,
+                'dailydeleteonchange': settings.DEFAULT_MODE_REPOST_AUTODAILY,
                 'dailynotifyid': None,
                 'dailynotifytype': None,
                 'dailylatestmessagecreatedate': None,
@@ -678,16 +624,6 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
             success = await _db_update_server_setting(guild_id, settings)
             return success
     return True
-
-
-async def db_reset_daily_delete_on_change(guild_id: int) -> bool:
-    success = await db_update_daily_delete_on_change(guild_id, None)
-    return success
-
-
-async def db_reset_daily_notify_settings(guild_id: int) -> bool:
-    success = await db_update_daily_notify_settings(guild_id, None, None)
-    return success
 
 
 async def db_reset_prefix(guild_id: int) -> bool:
@@ -871,13 +807,6 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
         return records
     else:
         return []
-
-
-async def _db_reset_server_setting(guild_id: int, settings: dict) -> bool:
-    set_string = ', '.join([f'{key} = NULL' for key in settings.keys()])
-    query = f'UPDATE serversettings SET {set_string} WHERE guildid = $1'
-    success = await core.db_try_execute(query, [guild_id])
-    return success
 
 
 async def _db_update_server_setting(guild_id: int, settings: dict) -> bool:

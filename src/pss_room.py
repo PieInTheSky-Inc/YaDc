@@ -746,11 +746,11 @@ async def init():
 
 # ---------- Testing ----------
 
-if __name__ == '__main__':
-    test_rooms = ['ion']
-    for room_name in test_rooms:
-        os.system('clear')
-        result = get_room_details_from_name(room_name, as_embed=False)
-        for line in result[0]:
-            print(line)
-        result = ''
+#if __name__ == '__main__':
+#    test_rooms = ['ion']
+#    for room_name in test_rooms:
+#        os.system('clear')
+#        result = await get_room_details_from_name(room_name, as_embed=False)
+#        for line in result[0]:
+#            print(line)
+#        result = ''

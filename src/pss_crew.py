@@ -399,7 +399,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
     pss_assert.valid_entity_name(collection_name)
 
     collections_designs_data = await collections_designs_retriever.get_data_dict3()
-    collection_design_info = collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
+    collection_design_info = await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
 
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
@@ -426,7 +426,7 @@ async def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_E
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
-    char_from_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
+    char_from_design_info = await characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if not char_from_design_info:
         return [f'Could not find a crew named **{char_name}**.'], False
@@ -479,7 +479,7 @@ async def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMB
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_designs_data = await characters_designs_retriever.get_data_dict3()
-    char_to_design_info = characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
+    char_to_design_info = await characters_designs_retriever.get_entity_design_info_by_name(char_name, chars_designs_data)
 
     if not char_to_design_info:
         return [f'Could not find a crew named **{char_name}**.'], False
@@ -601,14 +601,10 @@ collections_designs_retriever = entity.EntityDesignsRetriever(
 )
 
 
-__properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {}
-
-
-async def init():
-
-    title_property = entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
-    description_property = entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription')
-    character_properties_long = [
+__properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
+    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription'),
+    'character_long': [
         entity.EntityDesignDetailProperty('Level', True, omit_if_none=True, transform_function=__get_level),
         entity.EntityDesignDetailProperty('Rarity', True, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Race', True, entity_property_name='RaceType'),
@@ -626,18 +622,17 @@ async def init():
         entity.EntityDesignDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
         entity.EntityDesignDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
         entity.EntityDesignDetailProperty('Slots', True, transform_function=__get_slots)
-    ]
-    character_properties_short = [
+    ],
+    'character_short': [
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_stat, stat_name='SpecialAbility'),
         entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name)
     ]
-    __properties.update({
-        'title': title_property,
-        'description': description_property,
-        'character_long': character_properties_long,
-        'character_short': character_properties_short
-    })
+}
+
+
+async def init():
+    pass
 
 
 

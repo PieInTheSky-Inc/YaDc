@@ -16,6 +16,7 @@ BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_FLOAT_PRECISION = 1
+DEFAULT_MODE_REPOST_AUTODAILY = True
 DEFAULT_USE_EMOJI_PAGINATOR = True
 
 

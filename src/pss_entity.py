@@ -302,11 +302,6 @@ class EntityDesignsRetriever:
         return await self.__cache.get_data_dict3()
 
 
-    async def get_entity_design_info_by_id(self, entity_design_id: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
-        entities_designs_data = entities_designs_data or await self.get_data_dict3()
-        return entities_designs_data.get(entity_design_id, None)
-
-
     async def get_entity_design_info_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> Dict[str, object]:
         entities_designs_data = entities_designs_data or await self.get_data_dict3()
         entity_design_id = await self.get_entity_design_id_by_name(entity_name, entities_designs_data=entities_designs_data)
@@ -329,6 +324,7 @@ class EntityDesignsRetriever:
 
 
     async def get_entity_design_id_by_name(self, entity_name: str, entities_designs_data: EntitiesDesignsData = None) -> str:
+        entities_designs_data = entities_designs_data or await self.get_data_dict3()
         results = await self.get_entities_designs_ids_by_name(entity_name, entities_designs_data)
         if len(results) > 0:
             return results[0]
