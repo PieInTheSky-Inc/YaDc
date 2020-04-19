@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, NamedTuple, Optional, Tuple, Union
 from cache import PssCache
 import pss_core as core
 import settings
+import utility as util
 
 
 
@@ -59,6 +60,7 @@ class EntityDesignDetailProperty(object):
         self.__force_display_name: bool = force_display_name
         self.__use_transform_function: bool = not entity_property_name and transform_function
         self.__kwargs: Dict[str, object] = transform_kwargs or {}
+        self.__omit_if_none: bool = omit_if_none
 
 
     @property
@@ -69,6 +71,10 @@ class EntityDesignDetailProperty(object):
     def force_display_name(self) -> bool:
         return self.__force_display_name
 
+    @property
+    def omit_if_none(self) -> bool:
+        return self.__omit_if_none
+
 
     def get_full_property(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **additional_kwargs) -> CalculatedEntityDesignDetailProperty:
         kwargs = {**self.__kwargs, **additional_kwargs}
@@ -77,6 +83,8 @@ class EntityDesignDetailProperty(object):
         else:
             display_name = None
         value = self.__get_value(entity_design_info, *entities_designs_data, **kwargs)
+        if self.__omit_if_none and not value:
+            return CalculatedEntityDesignDetailProperty(None, None)
         return CalculatedEntityDesignDetailProperty(display_name, value)
 
 
@@ -96,7 +104,7 @@ class EntityDesignDetailProperty(object):
         elif self.__entity_property_name:
             result = entity_design_info[self.__entity_property_name]
         else:
-            result = ''
+            result = None
         return result
 
 
@@ -153,7 +161,8 @@ class EntityDesignDetails(object):
     @property
     def description(self) -> str:
         if self.__description is None and self.__description_property is not None:
-            _, self.__description = self.__description_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
+            _, description = self.__description_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
+            self.__description = description or ''
         return self.__description
 
     @property
@@ -193,7 +202,8 @@ class EntityDesignDetails(object):
     @property
     def title(self) -> str:
         if self.__title is None:
-            _, self.__title = self.__title_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
+            _, title = self.__title_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
+            self.__title = title or ''
         return self.__title
 
 
@@ -235,7 +245,9 @@ class EntityDesignDetails(object):
             info = self.__entity_design_info
             data = self.__entities_designs_data
             kwargs = self.__kwargs
-            result.append(entity_design_detail_property.get_full_property(info, *data, **kwargs))
+            full_property = entity_design_detail_property.get_full_property(info, *data, **kwargs)
+            if not entity_design_detail_property.omit_if_none or full_property.value:
+                result.append(full_property)
         return result
 
 
