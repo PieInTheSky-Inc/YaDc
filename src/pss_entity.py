@@ -231,7 +231,7 @@ class EntityDesignDetails(object):
         details = []
         for detail in self.details_short:
             if detail.display_name:
-                details.append(f'{detail.display_name} = {detail.value}')
+                details.append(f'{detail.display_name}: {detail.value}')
             else:
                 details.append(detail.value)
         result = f'{self.prefix}{self.title} ({", ".join(details)})'
