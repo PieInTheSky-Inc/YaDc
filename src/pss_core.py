@@ -356,7 +356,7 @@ async def get_production_server(language_key: str = 'en') -> str:
 
 async def get_base_url(use_default: bool = False) -> str:
     if use_default is True:
-        production_server = settings.LATEST_SETTINGS_BASE_URL
+        production_server = settings.DEFAULT_PRODUCTION_SERVER
     else:
         production_server = await get_production_server()
     result = f'https://{production_server}/'
