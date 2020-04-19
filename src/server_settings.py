@@ -2,7 +2,7 @@ import datetime
 import discord
 from discord.ext import commands
 from enum import IntEnum
-from typing import List, Union
+from typing import Callable, List, Union
 
 import pss_assert
 import pss_core as core
@@ -474,53 +474,32 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
 
 async def db_get_daily_channel_id(guild_id: int) -> int:
     setting_names = ['dailychannelid']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return setting[0]
-    else:
-        return None
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or None
 
 
 async def db_get_daily_delete_on_change(guild_id: int) -> bool:
     setting_names = ['dailydeleteonchange']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            result = setting[0]
-            return result
-    else:
-        return None
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or None
 
 
 async def db_get_daily_latest_message_create_date(guild_id: int) -> datetime.datetime:
     setting_names = ['dailylatestmessagecreatedate']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return setting[0]
-    else:
-        return None
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or None
 
 
 async def db_get_daily_latest_message_id(guild_id: int) -> int:
     setting_names = ['dailylatestmessageid']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return setting[0]
-    else:
-        return None
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or None
 
 
 async def db_get_daily_notify_settings(guild_id: int) -> (int, AutoDailyNotifyType):
     setting_names = ['dailynotifyid', 'dailynotifytype']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return (setting[0], convert_to_autodaily_notify_type(setting[1]))
-    else:
-        return (None, None)
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or (None, None)
 
 
 async def db_get_has_settings(guild_id: int) -> bool:
@@ -533,12 +512,8 @@ async def db_get_has_settings(guild_id: int) -> bool:
 
 async def db_get_prefix(guild_id: int) -> str:
     setting_names = ['prefix']
-    settings = await _db_get_server_settings(guild_id, setting_names=setting_names)
-    if settings:
-        for setting in settings:
-            return setting[0]
-    else:
-        return None
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
+    return result or None
 
 
 async def db_get_use_pagination(guild: discord.Guild) -> bool:
@@ -780,7 +755,8 @@ async def db_update_use_pagination(guild: discord.Guild, use_pagination: bool) -
 
 # ---------- Utilities ----------
 
-async def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = []) -> list:
+async def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> list:
+    additional_wheres = additional_wheres or []
     wheres = []
     if guild_id is not None:
         wheres.append(f'guildid = $1')
@@ -807,6 +783,19 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
         return records
     else:
         return []
+
+
+async def _db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
+    settings = await _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=additional_wheres)
+    if settings:
+        for setting in settings:
+            result = []
+            if conversion_functions:
+                for i, value in enumerate(setting):
+                    result.append(conversion_functions[i](value))
+            return tuple(result)
+    else:
+        return None
 
 
 async def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
