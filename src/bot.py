@@ -738,7 +738,10 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
                 elif division.startswith(f'{subcommand} ') or not valid_division:
                     called_subcommand = True
                     cmd = bot.get_command(f'stars {subcommand}')
-                    args = str(division[subcommand_length:]).strip()
+                    if valid_division:
+                        args = str(division[subcommand_length:]).strip()
+                    else:
+                        args = division
                     await ctx.invoke(cmd, fleet_name=args)
 
         if not called_subcommand:
