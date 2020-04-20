@@ -6,7 +6,7 @@ from typing import Callable, List, Union
 
 import pss_assert
 import pss_core as core
-import settings
+import settings as app_settings
 import utility as util
 
 
@@ -303,7 +303,7 @@ async def fix_prefixes() -> bool:
                     print(f'[fix_prefixes] Fixing prefix \'{prefix}\' for guild with id \'{guild_id}\'. New prefix is: \'{new_prefix}\'')
                     success = await set_prefix(guild_id, new_prefix)
                 else:
-                    print(f'[fix_prefixes] Fixing prefix \'{prefix}\' for guild with id \'{guild_id}\'. New prefix is: \'{settings.PREFIX_DEFAULT}\'')
+                    print(f'[fix_prefixes] Fixing prefix \'{prefix}\' for guild with id \'{guild_id}\'. New prefix is: \'{app_settings.PREFIX_DEFAULT}\'')
                     success = await reset_prefix(guild_id)
                 if not success:
                     all_success = False
@@ -327,14 +327,14 @@ async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) ->
     if util.is_guild_channel(message.channel):
         result = await get_prefix_or_default(message.channel.guild.id)
     else:
-        result = settings.PREFIX_DEFAULT
+        result = app_settings.PREFIX_DEFAULT
     return result
 
 
 async def get_prefix_or_default(guild_id: int) -> str:
     result = await db_get_prefix(guild_id)
     if result is None or result.lower() == 'none':
-        result = settings.PREFIX_DEFAULT
+        result = app_settings.PREFIX_DEFAULT
     return result
 
 
@@ -421,7 +421,7 @@ async def db_create_server_settings(guild_id: int) -> bool:
         return True
     else:
         query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ($1, $2)'
-        success = await core.db_try_execute(query, [guild_id, settings.DEFAULT_MODE_REPOST_AUTODAILY])
+        success = await core.db_try_execute(query, [guild_id, app_settings.DEFAULT_MODE_REPOST_AUTODAILY])
         return success
 
 
@@ -475,31 +475,31 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
 async def db_get_daily_channel_id(guild_id: int) -> int:
     setting_names = ['dailychannelid']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
+    return result[0] or None if result else None
 
 
 async def db_get_daily_delete_on_change(guild_id: int) -> bool:
     setting_names = ['dailydeleteonchange']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
+    return result[0] or None if result else None
 
 
 async def db_get_daily_latest_message_create_date(guild_id: int) -> datetime.datetime:
     setting_names = ['dailylatestmessagecreatedate']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
+    return result[0] or None if result else None
 
 
 async def db_get_daily_latest_message_id(guild_id: int) -> int:
     setting_names = ['dailylatestmessageid']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
+    return result[0] or None if result else None
 
 
 async def db_get_daily_notify_settings(guild_id: int) -> (int, AutoDailyNotifyType):
     setting_names = ['dailynotifyid', 'dailynotifytype']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or (None, None)
+    return result or None
 
 
 async def db_get_has_settings(guild_id: int) -> bool:
@@ -513,7 +513,7 @@ async def db_get_has_settings(guild_id: int) -> bool:
 async def db_get_prefix(guild_id: int) -> str:
     setting_names = ['prefix']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
+    return result[0] or None
 
 
 async def db_get_use_pagination(guild: discord.Guild) -> bool:
@@ -526,7 +526,7 @@ async def db_get_use_pagination(guild: discord.Guild) -> bool:
                 if result is None:
                     return True
                 return result
-    return settings.DEFAULT_USE_EMOJI_PAGINATOR
+    return app_settings.DEFAULT_USE_EMOJI_PAGINATOR
 
 
 async def db_reset_autodaily_channel(guild_id: int) -> bool:
@@ -563,7 +563,7 @@ async def db_reset_autodaily_mode(guild_id: int) -> bool:
     for current_setting in current_autodaily_settings:
         if current_setting is not None:
             settings = {
-                'dailydeleteonchange': settings.DEFAULT_MODE_REPOST_AUTODAILY
+                'dailydeleteonchange': app_settings.DEFAULT_MODE_REPOST_AUTODAILY
             }
             success = await _db_update_server_setting(guild_id, settings)
             return success
@@ -590,7 +590,7 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
             settings = {
                 'dailychannelid': None,
                 'dailylatestmessageid': None,
-                'dailydeleteonchange': settings.DEFAULT_MODE_REPOST_AUTODAILY,
+                'dailydeleteonchange': app_settings.DEFAULT_MODE_REPOST_AUTODAILY,
                 'dailynotifyid': None,
                 'dailynotifytype': None,
                 'dailylatestmessagecreatedate': None,
@@ -613,7 +613,7 @@ async def db_reset_prefix(guild_id: int) -> bool:
 
 
 async def db_reset_use_pagination(guild: discord.Guild) -> bool:
-    current_use_pagination = await db_get_use_pagination(guild.id)
+    current_use_pagination = await db_get_use_pagination(guild)
     if current_use_pagination is not None:
         settings = {
             'usepagination': None
@@ -793,7 +793,11 @@ async def _db_get_server_setting(guild_id: int = None, setting_names: list = Non
             if conversion_functions:
                 for i, value in enumerate(setting):
                     result.append(conversion_functions[i](value))
-            return tuple(result)
+            else:
+                result = setting
+            if not result:
+                result = [None] * len(setting_names)
+            return result
     else:
         return None
 

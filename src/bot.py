@@ -111,11 +111,9 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
-    print(f'Bot version is: {settings.VERSION}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
     await core.init()
     schema_version = await core.db_get_schema_version()
-    print(f'DB schema version is: {schema_version}')
     await server_settings.init()
     await login.init()
 
@@ -125,7 +123,9 @@ async def on_ready() -> None:
     await user.init()
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
-    print(f'Initialized! Creating autodaily task.')
+    print(f'Initialized!')
+    print(f'Bot version is: {settings.VERSION}')
+    print(f'DB schema version is: {schema_version}')
     bot.loop.create_task(post_dailies_loop())
 
 
