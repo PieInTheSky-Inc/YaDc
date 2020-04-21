@@ -1,8 +1,8 @@
+import aiohttp
 from datetime import date, datetime, time, timedelta, timezone
 import calendar
 import discord
 from discord.ext import commands
-import requests
 import jellyfish
 import json
 import math
@@ -297,8 +297,11 @@ def get_wikia_link(page_name: str) -> str:
 
 def check_hyperlink(hyperlink: str) -> bool:
     if hyperlink:
-        request = requests.get(hyperlink)
-        return request.status_code == 200
+        session: aiohttp.ClientSession
+        async with aiohttp.ClientSession() as session:
+            response: aiohttp.ClientResponse
+            async with session.get(hyperlink) as response:
+                return response.status == 200
     else:
         return False
 

@@ -1,7 +1,7 @@
+import aiohttp
 import datetime
 import hashlib
 import random
-import requests
 from threading import Lock
 from typing import List
 
@@ -114,7 +114,10 @@ class Device():
         base_url = await core.get_base_url()
         url = f'{base_url}{self.__login_path}'
         utc_now = util.get_utcnow()
-        data = requests.post(url).content.decode('utf-8')
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url) as response:
+                data = await response.text(encoding='utf-8')
+        return data
         result = core.convert_raw_xml_to_dict(data)
         self.__last_login = utc_now
         if 'UserService' in result.keys():

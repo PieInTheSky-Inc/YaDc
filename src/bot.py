@@ -1051,7 +1051,7 @@ async def cmd_time(ctx: discord.ext.commands.Context):
         str_time = 'Today is Stardate {}\n'.format(pss_stardate)
 
         mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = now.replace(tzinfo=pytz.utc).astimezone(mel_tz)
+        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
         str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
 
         aus_holidays = holidays.Australia(years=now.year, prov='ACT')
@@ -1964,18 +1964,23 @@ async def cmd_test(ctx: discord.ext.commands.Context, action, *, params = None):
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
-        result, error = await core.db_fetchall(query)
+        try:
+            result = await core.db_fetchall(query)
+            error = None
+        except Exception as error:
+            result = []
         if error:
-            await ctx.send(error)
+            await ctx.send(f'The query \'{params}\' failed.')
         elif result:
+            await ctx.send(f'The query \'{params}\' has been executed successfully.')
             await ctx.send(result)
         else:
             await ctx.send('The query didn\'t return any results.')
     elif action == 'query' and params:
         query = f'{params}'
-        success, error = await core.db_try_execute(query)
+        success = await core.db_try_execute(query)
         if not success:
-            await ctx.send(error)
+            await ctx.send(f'The query \'{params}\' failed.')
         else:
             await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'commands':

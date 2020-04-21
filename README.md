@@ -39,9 +39,7 @@ sudo yum install python36 python36-pip git
 
 3. Clone this Github repository
    Use pip to install Python dependencies:
-   `asyncio`, `holidays`, `numpy`, `pandas`,
-   `python-dateutil`, `pytz`,
-   `git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py`
+   `pip install -r requirements.txt`
 
 ```bash
 git clone https://github.com/jzx3/heroku-pss.git
