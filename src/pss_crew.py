@@ -625,7 +625,7 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     ],
     'character_short': [
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
-        entity.EntityDesignDetailProperty('Ability', True, omit_if_none=True, transform_function=__get_stat, stat_name='SpecialAbilityArgument'),
+        entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_ability_stat),
         entity.EntityDesignDetailProperty('Collection', True, omit_if_none=True, transform_function=__get_collection_name)
     ]
 }
