@@ -511,6 +511,7 @@ async def db_get_has_settings(guild_id: int) -> bool:
 
 
 async def db_get_prefix(guild_id: int) -> str:
+    await db_create_server_settings(guild_id)
     setting_names = ['prefix']
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None

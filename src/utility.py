@@ -276,12 +276,12 @@ def format_up_to_decimals(num: float, max_decimal_count: int = settings.DEFAULT_
     return result
 
 
-def get_wikia_link(page_name: str) -> str:
+async def get_wikia_link(page_name: str) -> str:
     page_name = '_'.join([part for part in page_name.split(' ')])
     page_name = '_'.join([part.lower().capitalize() for part in page_name.split('_')])
     result = f'{settings.WIKIA_BASE_ADDRESS}{page_name}'
 
-    if not check_hyperlink(result):
+    if not (await check_hyperlink(result)):
         page_name_split = page_name.split('_')
         if len(page_name_split) > 1:
             page_name = f'{page_name_split[0].upper()}_{"_".join(page_name_split[1:])}'
@@ -289,13 +289,13 @@ def get_wikia_link(page_name: str) -> str:
             page_name = page_name.upper()
     result = f'{settings.WIKIA_BASE_ADDRESS}{page_name}'
 
-    if not check_hyperlink(result):
+    if not (await check_hyperlink(result)):
         result = ''
 
     return result
 
 
-def check_hyperlink(hyperlink: str) -> bool:
+async def check_hyperlink(hyperlink: str) -> bool:
     if hyperlink:
         session: aiohttp.ClientSession
         async with aiohttp.ClientSession() as session:

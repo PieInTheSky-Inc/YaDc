@@ -313,12 +313,12 @@ def _get_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECI
         return ''
 
 
-def _get_wikia_link(room_name: str) -> str:
+async def _get_wikia_link(room_name: str) -> str:
     if room_name:
         room_name = room_name.split(' Lv')[0]
         room_name = '_'.join([part.lower().capitalize() for part in room_name.split(' ')])
-        result = util.get_wikia_link(room_name)
-        if util.check_hyperlink(result):
+        result = await util.get_wikia_link(room_name)
+        if await util.check_hyperlink(result):
             return f'<{result}>'
         else:
             return ''
@@ -595,7 +595,7 @@ async def get_room_details_from_name(room_name: str, as_embed: bool = settings.U
         if as_embed:
             return _get_room_info_as_embed(room_name, room_infos, rooms_designs_data, items_designs_data), True
         else:
-            return _get_room_info_as_text(room_name, room_infos, rooms_designs_data, items_designs_data), True
+            return (await _get_room_info_as_text(room_name, room_infos, rooms_designs_data, items_designs_data)), True
 
 
 def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
@@ -624,7 +624,7 @@ def _get_room_info_as_embed(room_name: str, room_infos: List[entity.EntityDesign
     return None
 
 
-def _get_room_info_as_text(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
+async def _get_room_info_as_text(room_name: str, room_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[str]:
     lines = [f'**Room stats for \'{room_name}\'**']
     room_infos_count = len(room_infos)
 
@@ -638,8 +638,10 @@ def _get_room_info_as_text(room_name: str, room_infos: List[entity.EntityDesignI
                 lines.extend(get_room_details_short_from_data_as_text(room_info))
             else:
                 lines.extend(get_room_details_from_data_as_text(room_info, items_designs_data))
+                wikia_link = await _get_wikia_link(room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME])
+                if wikia_link:
+                    lines.append(f'Wikia link = {wikia_link}')
                 lines.append(settings.EMPTY_LINE)
-
     return lines
 
 
@@ -730,8 +732,7 @@ async def init():
         ('Build cost', True, ['PriceString'], _get_build_cost, []),
         ('Build requirement', True, ['RequirementString'], _get_build_requirement, []),
         ('Grid types', True, ['SupportedGridTypes'], _get_is_allowed_in_extension_grids, []),
-        ('More info', True, ['Flags'], _convert_room_flags, []),
-        ('Wikia link', True, [ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME], _get_wikia_link, [])
+        ('More info', True, ['Flags'], _convert_room_flags, [])
     ]
 
 

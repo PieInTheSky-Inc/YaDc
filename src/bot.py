@@ -1004,7 +1004,7 @@ async def cmd_room(ctx: discord.ext.commands.Context, *, room_name: str):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
-        output, _ = await room.get_room_details_from_name(room_name)
+        output, room_found = await room.get_room_details_from_name(room_name)
     await util.post_output(ctx, output)
 
 
