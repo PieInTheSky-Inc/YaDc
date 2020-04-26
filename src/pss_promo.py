@@ -402,12 +402,12 @@ promotion_designs_retriever = entity.EntityDesignsRetriever(
 
 # ---------- Testing ----------
 
-if __name__ == '__main__':
-    test_promotions = ['alpaco']
-    for promotion_name in test_promotions:
-        os.system('clear')
-        result = await get_promotions_designs_info_by_name(promotion_name, as_embed=False)
-        for line in result[0]:
-            print(line)
-        print('')
-        result = ''
+#if __name__ == '__main__':
+#    test_promotions = ['alpaco']
+#    for promotion_name in test_promotions:
+#        os.system('clear')
+#        result = await get_promotions_designs_info_by_name(promotion_name, as_embed=False)
+#        for line in result[0]:
+#            print(line)
+#        print('')
+#        result = ''

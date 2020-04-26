@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from datetime import datetime, timedelta, timezone
+import calendar
+import datetime
 import json
 import os
 import pydrive.auth
@@ -10,15 +11,186 @@ import pydrive.files
 import random
 from threading import Lock
 import time
+from typing import Callable, Dict, List, Tuple, Union
 import urllib.parse
 import yaml
 
+import pss_entity as entity
+from pss_exception import InvalidParameter
+import pss_fleet as fleet
+import pss_user as user
 import utility as util
 
 
 
-class TourneyData():
-    def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: list, folder_id: str, service_account_file_path: str, settings_file_path: str):
+
+
+
+
+
+
+
+class TourneyData(object):
+    def __init__(self, raw_data: str):
+        data = json.loads(raw_data)
+        self.__fleets: entity.EntitiesDesignsData = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
+        self.__users: entity.EntitiesDesignsData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'])
+        self.__meta: Dict[str, object] = data['meta']
+        self.__data_date: datetime.datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
+        if not self.__meta.get('SchemaVersion', None):
+            self.__meta['SchemaVersion'] = 3
+
+
+    @property
+    def collected_in(self) -> float:
+        """
+        Number of seconds it took to collect the data.
+        """
+        return self.__meta['duration']
+
+    @property
+    def fleet_ids(self) -> List[str]:
+        return list(self.__fleets.keys())
+
+    @property
+    def fleets(self) -> entity.EntitiesDesignsData:
+        """
+        Copy of fleet data
+        """
+        return dict({key: dict(value) for key, value in self.__fleets.items()})
+
+    @property
+    def month(self) -> int:
+        """
+        Short for data_date.month
+        """
+        return self.__data_date.month
+
+    @property
+    def retrieved_at(self) -> datetime.datetime:
+        """
+        Point in time when the data collection started.
+        """
+        return self.__data_date
+
+    @property
+    def schema_version(self) -> int:
+        """
+        Data collection schema version. Use to determine which information is available for fleets and users.
+        """
+        return self.__meta['SchemaVersion']
+
+    @property
+    def user_ids(self) -> List[str]:
+        return list(self.__users.keys())
+
+    @property
+    def users(self) -> entity.EntitiesDesignsData:
+        """
+        Copy of user data
+        """
+        return dict({key: dict(value) for key, value in self.__users.items()})
+
+    @property
+    def year(self) -> int:
+        """
+        Short for data_date.year
+        """
+        return self.__data_date.year
+
+
+    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityDesignInfo:
+        """
+        Look up fleet by id
+        """
+        return dict(self.__fleets.get(fleet_id, None))
+
+
+    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesDesignsData:
+        """
+        Looks up fleets having the specified fleet_name in their name.
+        Case-insensitive.
+        """
+        result = {}
+        for current_fleet_id, current_fleet_data in self.__fleets.items():
+            current_fleet_name = current_fleet_data.get(user.USER_DESCRIPTION_PROPERTY_NAME, None)
+            if current_fleet_name and fleet_name.lower() in current_fleet_name.lower():
+                result[current_fleet_id] = dict(current_fleet_data)
+        return result
+
+
+    def get_user_data_by_id(self, user_id: str) -> entity.EntityDesignInfo:
+        """
+        Look up user by id
+        """
+        return dict(self.__users.get(user_id, None))
+
+
+    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesDesignsData:
+        """
+        Looks up users having the specified user_name in their name.
+        Case-insensitive.
+        """
+        result = {}
+        for current_user_id, current_user_data in self.__users.items():
+            current_user_name = current_user_data.get(user.USER_DESCRIPTION_PROPERTY_NAME, None)
+            if current_user_name and user_name.lower() in current_user_name.lower():
+                result[current_user_id] = dict(current_user_data)
+        return result
+
+
+    @staticmethod
+    def __create_fleet_dict_from_data_v3(fleet_data: list) -> dict:
+        result = {}
+        for i, entry in enumerate(fleet_data):
+            result[entry[0]] = {
+                'AllianceId': entry[0],
+                'AllianceName': entry[1],
+                'Score': entry[2]
+            }
+            if len(entry) == 4:
+                division_design_id = entry[3]
+            else:
+                if i >= 50:
+                    division_design_id = '4'
+                elif i >= 20:
+                    division_design_id = '3'
+                elif i >= 8:
+                    division_design_id = '2'
+                else:
+                    division_design_id = '1'
+            result[entry[0]]['DivisionDesignId'] = division_design_id
+        return result
+
+
+    @staticmethod
+    def __create_user_dict_from_data_v3(users: list, data: list) -> dict:
+        result = {}
+        users_dict = dict(users)
+        for entry in data:
+            result[entry[0]] = {
+                'Id': entry[0],
+                'AllianceId': entry[1],
+                'Trophy': entry[2],
+                'AllianceScore': entry[3],
+                'AllianceMembership': entry[4],
+                'AllianceJoinDate': entry[5],
+                'LastLoginDate': entry[6],
+                'Name': users_dict[entry[0]]
+            }
+        return result
+
+
+
+
+
+
+
+
+
+
+class TourneyDataClient():
+    def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: list, folder_id: str, service_account_file_path: str, settings_file_path: str, earliest_date: datetime):
         self._client_email: str = client_email
         self._client_id: str = client_id
         self._folder_id: str = folder_id
@@ -28,62 +200,86 @@ class TourneyData():
         self._scopes: list = list(scopes)
         self._service_account_file_path: str = service_account_file_path
         self._settings_file_path: str = settings_file_path
+        self.__earliest_date: datetime.datetime = earliest_date
 
         self.__READ_LOCK: Lock = Lock()
         self.__WRITE_LOCK: Lock = Lock()
-        self.__read_requestes: bool = False
         self.__write_requested: bool = False
         self.__reader_count: int = 0
 
-        self.__retrieved_date: datetime = None
-        self.__fleet_data: dict = None
-        self.__user_data: dict = None
-        self.__data_date: dict = None
+        self.__cache: Dict[int, Dict[int, TourneyData]] = {}
 
         self.__initialized = False
         self.__initialize()
 
 
-    def get_data(self) -> (dict, dict, datetime):
+    @property
+    def from_month(self) -> int:
+        return self.__earliest_date.month
+
+    @property
+    def from_year(self) -> int:
+        return self.__earliest_date.year
+
+    @property
+    def to_month(self) -> int:
+        return max(self.__cache.get(self.to_year, {}).keys())
+
+    @property
+    def to_year(self) -> int:
+        return max(self.__cache.keys())
+
+
+    def get_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
+        if year < self.from_year:
+            raise ValueError(f'There\'s no data from {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
+        if year == self.from_year:
+            if month < self.from_month:
+                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
+        if not initializing:
+            if year > self.to_year:
+                raise ValueError(f'There\'s no data from {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+            if year == self.to_year and month > self.to_month:
+                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+
+        result = self.__read_data(year, month)
+
+        if result is None:
+            result = self.__retrieve_data(year, month)
+            self.__cache_data(result)
+
+        return result
+
+
+    def get_latest_data(self, initializing: bool = False) -> TourneyData:
         utc_now = util.get_utcnow()
-        if self.__is_data_outdated(utc_now):
-            self.__update_data()
-
-        can_read = False
-        while not can_read:
-            can_read = not self.__get_write_requested()
-            if not can_read:
-                time.sleep(random.random())
-
-        self.__add_reader()
-        result = self.__read_data()
-        self.__remove_reader()
-        return result
-
-
-    def get_data_date(self) -> datetime:
-        self.__WRITE_LOCK.acquire()
-        result = self.__data_date
-        self.__WRITE_LOCK.release()
-        return result
-
-
-    def get_retrieved_date(self) -> datetime:
-        self.__WRITE_LOCK.acquire()
-        result = self.__retrieved_date
-        self.__WRITE_LOCK.release()
+        year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
+        result = self.get_data(year, month, initializing)
         return result
 
 
     def __add_reader(self) -> None:
-        self.__READ_LOCK.acquire()
-        self.__reader_count = self.__reader_count + 1
-        self.__READ_LOCK.release()
+        with self.__READ_LOCK:
+            self.__reader_count = self.__reader_count + 1
 
 
     def __assert_initialized(self) -> None:
         if self.__drive is None:
             raise Exception('The __drive object has not been initialized, yet!')
+
+
+    def __cache_data(self, tourney_data: TourneyData) -> bool:
+        self.__request_write()
+        can_write = False
+        while not can_write:
+            can_write = self.__get_reader_count() == 0
+            if not can_write:
+                time.sleep(random.random())
+            with self.__WRITE_LOCK:
+                self.__cache.setdefault(tourney_data.year, {})[tourney_data.month] = tourney_data
+                self.__write_requested = False
+            return True
+        return False
 
 
     def __create_service_account_credential_json(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, service_account_file_path: str) -> None:
@@ -122,12 +318,6 @@ class TourneyData():
         self.__initialize()
 
 
-    def __finish_write(self) -> None:
-        self.__WRITE_LOCK.acquire()
-        self.__write_requested = False
-        self.__WRITE_LOCK.release()
-
-
     def __get_first_file(self, file_name: str) -> pydrive.files.GoogleDriveFile:
         file_list = self.__drive.ListFile({'q': f"'{self._folder_id}' in parents and title = '{file_name}'"}).GetList()
         for file_def in file_list:
@@ -135,17 +325,26 @@ class TourneyData():
         return None
 
 
+    def __get_latest_file(self, year: int, month: int, day: int = None) -> pydrive.files.GoogleDriveFile:
+        file_name_part: str = f'{year:04d}{month:02d}'
+        if day is not None:
+            file_name += f'{day:02d}'
+        file_list = self.__drive.ListFile({'q': f'\'{self._folder_id}\' in parents and title contains \'pss-top-100_{file_name_part}\''}).GetList()
+        if file_list:
+            file_list = sorted(file_list, key=lambda f: f['title'], reverse=True)
+            return file_list[0]
+        return None
+
+
     def __get_reader_count(self) -> int:
-        self.__READ_LOCK.acquire()
-        result = self.__reader_count
-        self.__READ_LOCK.release()
+        with self.__READ_LOCK:
+            result = self.__reader_count
         return result
 
 
     def __get_write_requested(self) -> bool:
-        self.__WRITE_LOCK.acquire()
-        result = self.__write_requested
-        self.__WRITE_LOCK.release()
+        with self.__WRITE_LOCK:
+            result = self.__write_requested
         return result
 
 
@@ -156,121 +355,56 @@ class TourneyData():
         credentials = pydrive.auth.ServiceAccountCredentials.from_json_keyfile_name(self._service_account_file_path, self._scopes)
         self.__gauth.credentials = credentials
         self.__drive: pydrive.drive.GoogleDrive = pydrive.drive.GoogleDrive(self.__gauth)
-        self.__update_data(initializing=True)
+        self.get_latest_data(initializing=True)
         self.__initialized = True
 
 
-    def __is_data_outdated(self, utc_now: datetime) -> bool:
-        retrieved_date = self.get_retrieved_date()
-        result = retrieved_date is None or (retrieved_date < utc_now and (retrieved_date.month < utc_now.month or retrieved_date.year < utc_now.year))
-        return result
+    def __read_data(self, year: int, month: int) -> TourneyData:
+        can_read = False
+        while not can_read:
+            can_read = not self.__get_write_requested()
+            if not can_read:
+                time.sleep(random.random())
 
-
-    def __read_data(self) -> (dict, dict, datetime):
-        self.__WRITE_LOCK.acquire()
-        result = (dict(self.__fleet_data), dict(self.__user_data), self.__data_date)
-        self.__WRITE_LOCK.release()
+        self.__add_reader()
+        result = self.__cache.get(year, {}).get(month, None)
+        self.__remove_reader()
         return result
 
 
     def __remove_reader(self) -> None:
-        self.__READ_LOCK.acquire()
-        self.__reader_count = self.__reader_count - 1
-        self.__READ_LOCK.release()
+        with self.__READ_LOCK:
+            self.__reader_count = self.__reader_count - 1
 
 
     def __request_write(self) -> None:
-        self.__WRITE_LOCK.acquire()
-        self.__write_requested = True
-        self.__WRITE_LOCK.release()
+        with self.__WRITE_LOCK:
+            self.__write_requested = True
 
 
-    def __update_data(self, initializing: bool = False) -> bool:
-        if not initializing:
-            self.__initialize()
-
-        utc_now = util.get_utcnow()
-        g_file_name = TourneyData.__get_latest_file_name(utc_now)
-        g_file = self.__get_first_file(g_file_name)
+    def __retrieve_data(self, year: int, month: int) -> TourneyData:
+        g_file = self.__get_latest_file(year, month)
         raw_data = g_file.GetContentString()
-        data = json.loads(raw_data)
-        new_fleet_data = TourneyData.__create_fleet_dict_from_data(data['fleets'])
-        new_user_data = TourneyData.__create_user_dict_from_data(data['users'], data['data'])
-        data_date = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
-
-        self.__request_write()
-        can_write = False
-        while not can_write:
-            can_write = self.__get_reader_count() == 0
-            if not can_write:
-                time.sleep(random.random())
-            self.__write_data(new_fleet_data, new_user_data, utc_now, data_date)
-            self.__finish_write()
-            return True
-        return False
-
-
-    def __write_data(self, fleet_data: dict, user_data: dict, retrieved_date: datetime, data_date: datetime) -> None:
-        self.__WRITE_LOCK.acquire()
-        self.__fleet_data = fleet_data
-        self.__user_data = user_data
-        self.__retrieved_date = retrieved_date
-        self.__data_date = data_date
-        self.__WRITE_LOCK.release()
-
-
-    @staticmethod
-    def __create_fleet_dict_from_data(fleet_data: list) -> dict:
-        result = {}
-        for i, entry in enumerate(fleet_data):
-            result[entry[0]] = {
-                'AllianceId': entry[0],
-                'AllianceName': entry[1],
-                'Score': entry[2]
-            }
-            if len(entry) == 4:
-                division_design_id = entry[3]
-            else:
-                if i >= 50:
-                    division_design_id = 4
-                elif i >= 20:
-                    division_design_id = 3
-                elif i >= 8:
-                    division_design_id = 2
-                else:
-                    division_design_id = 1
-            result[entry[0]]['DivisionDesignId'] = division_design_id
+        result = TourneyData(raw_data)
         return result
 
 
     @staticmethod
-    def __create_user_dict_from_data(users: list, data: list) -> dict:
-        result = {}
-        users_dict = dict(users)
-        for entry in data:
-            result[entry[0]] = {
-                'Id': entry[0],
-                'AllianceId': entry[1],
-                'Trophy': entry[2],
-                'AllianceScore': entry[3],
-                'AllianceMembership': entry[4],
-                'AllianceJoinDate': entry[5],
-                'LastLoginDate': entry[6],
-                'Name': users_dict[entry[0]]
-            }
-        return result
-
-
-    @staticmethod
-    def __fix_filename_datetime(dt: datetime) -> datetime:
-        dt = datetime(dt.year, dt.month, 1, tzinfo=timezone.utc)
-        dt = dt - timedelta(minutes=1)
+    def __fix_filename_datetime(dt: datetime.datetime) -> datetime.datetime:
+        dt = datetime.datetime(dt.year, dt.month, 1, tzinfo=datetime.timezone.utc)
+        dt = dt - datetime.timedelta(minutes=1)
         return dt
 
 
     @staticmethod
-    def __get_latest_file_name(dt: datetime) -> str:
-        dt = TourneyData.__fix_filename_datetime(dt)
+    def __get_latest_file_name(dt: datetime.datetime) -> str:
+        dt = TourneyDataClient.__fix_filename_datetime(dt)
         timestamp = dt.strftime('%Y%m%d-%H%M%S')
         result = f'pss-top-100_{timestamp}.json'
         return result
+
+
+    @staticmethod
+    def __get_tourney_year_and_month(dt: datetime.datetime) -> (int, int):
+        dt = TourneyDataClient.__fix_filename_datetime(dt)
+        return dt.year, dt.month

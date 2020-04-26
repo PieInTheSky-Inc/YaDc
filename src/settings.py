@@ -57,7 +57,10 @@ PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
 
 
 SETTINGS_TABLE_NAME = 'settings'
-SETTINGS_TYPES = ['boolean','float','int','text','timestamputc']
+SETTINGS_TYPES = ['boolean', 'float', 'int', 'text', 'timestamputc']
+
+
+TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=12)
 
 
 USE_EMBEDS = False

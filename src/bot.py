@@ -55,7 +55,7 @@ sys.path.insert(0, PWD + '/src/')
 
 ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
-tournament_data = gdrive.TourneyData(
+tourney_data_client = gdrive.TourneyDataClient(
     settings.GDRIVE_PROJECT_ID,
     settings.GDRIVE_PRIVATE_KEY_ID,
     settings.GDRIVE_PRIVATE_KEY,
@@ -64,7 +64,8 @@ tournament_data = gdrive.TourneyData(
     settings.GDRIVE_SCOPES,
     settings.GDRIVE_FOLDER_ID,
     settings.GDRIVE_SERVICE_ACCOUNT_FILE,
-    settings.GDRIVE_SETTINGS_FILE
+    settings.GDRIVE_SETTINGS_FILE,
+    settings.TOURNAMENT_DATA_START_DATE
 )
 
 __COMMANDS = []
@@ -750,8 +751,8 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
                     output, _ = await pss_top.get_division_stars(division=division)
             else:
                 async with ctx.typing():
-                    (fleet_data, _, data_date) = tournament_data.get_data()
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=fleet_data, retrieved_date=data_date)
+                    tourney_data = tourney_data_client.get_latest_data()
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
             await util.post_output(ctx, output)
 
 
@@ -779,12 +780,13 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
         if exact_name:
             fleet_name = exact_name
         is_tourney_running = tourney.is_tourney_running()
-        (fleet_data, user_data, data_date) = tournament_data.get_data()
+        tourney_data = tourney_data_client.get_latest_data()
+        tourney_fleet_ids =tourney_data.fleet_ids
         fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
         if is_tourney_running:
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
         else:
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in fleet_data.keys()]
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in tourney_fleet_ids]
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -800,7 +802,7 @@ async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str)
                     fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
                     output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
                 else:
-                    output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, fleet_data, user_data, data_date)
+                    output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
             await util.post_output(ctx, output)
     else:
         if is_tourney_running:
@@ -1254,8 +1256,8 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
 
         if fleet_info:
             async with ctx.typing():
-                (fleet_data, user_data, data_date) = tournament_data.get_data()
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=fleet_data, user_data=user_data, data_date=data_date)
+                tourney_data = tourney_data_client.get_latest_data()
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=tourney_data.fleets, user_data=tourney_data.users, data_date=tourney_data.retrieved_at)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1940,6 +1942,25 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
                 output = [f'An unknown error ocurred while setting the prefix. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
 
+
+@bot.group(name='past', brief='Get historic data', aliases=['history'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_past(ctx: discord.ext.commands.Context):
+    pass
+
+
+@cmd_past.command(name='stars', brief='Get historic stars')
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_past_stars(ctx: discord.ext.commands.Context, month: int, year: int = None):
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        if year is None:
+            year = utc_now.year
+            if utc_now.month < month:
+                year -= 1
+        tourney_data = tourney_data_client.get_data(year, month)
+        output, _ = await pss_top.get_division_stars(division=None, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+    await util.post_output(ctx, output)
 
 
 
