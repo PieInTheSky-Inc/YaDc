@@ -727,25 +727,13 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     """
     if ctx.invoked_subcommand is None:
         called_subcommand = False
-        subcommands = ['fleet']
-        if division:
-            valid_division = division.lower() in [letter.lower() for letter in pss_top.ALLOWED_DIVISION_LETTERS]
-            for subcommand in subcommands:
-                subcommand_length = len(subcommand)
-                if division == subcommand:
-                    called_subcommand = True
-                    cmd = bot.get_command(f'stars {subcommand}')
-                    await ctx.invoke(cmd)
-                elif division.startswith(f'{subcommand} ') or not valid_division:
-                    called_subcommand = True
-                    cmd = bot.get_command(f'stars {subcommand}')
-                    if valid_division:
-                        args = str(division[subcommand_length:]).strip()
-                    else:
-                        args = division
-                    await ctx.invoke(cmd, fleet_name=args)
-
-        if not called_subcommand:
+        subcommand, kwargs = get_stars_subcommand('stars', division)
+        if subcommand:
+            if kwargs:
+                await ctx.invoke(subcommand, **kwargs)
+            else:
+                await ctx.invoke(subcommand)
+        else:
             if tourney.is_tourney_running():
                 async with ctx.typing():
                     output, _ = await pss_top.get_division_stars(division=division)
@@ -754,6 +742,26 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
                     tourney_data = tourney_data_client.get_latest_data()
                     output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
             await util.post_output(ctx, output)
+
+
+def get_stars_subcommand(command_name: str, division: str) -> (discord.ext.commands.Command, Dict[str, object]):
+    subcommands = ['fleet']
+    if division:
+        valid_division = division.lower() in [letter.lower() for letter in pss_top.ALLOWED_DIVISION_LETTERS]
+        for subcommand in subcommands:
+            subcommand_length = len(subcommand)
+            if division == subcommand:
+                cmd = bot.get_command(f'{command_name} {subcommand}')
+                return cmd, {}
+            elif division.startswith(f'{subcommand} ') or not valid_division:
+                cmd = bot.get_command(f'{command_name} {subcommand}')
+                kwargs = {}
+                if valid_division:
+                    kwargs['fleet_name'] = str(division[subcommand_length:]).strip()
+                else:
+                    kwargs['fleet_name'] = division
+                return cmd, kwargs
+    return None, {}
 
 
 @cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
@@ -1951,16 +1959,51 @@ async def cmd_past(ctx: discord.ext.commands.Context):
 
 @cmd_past.command(name='stars', brief='Get historic stars')
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_past_stars(ctx: discord.ext.commands.Context, month: int, year: int = None):
+async def cmd_past_stars(ctx: discord.ext.commands.Context, month: int, year: str, *, division: str = None):
     async with ctx.typing():
         utc_now = util.get_utcnow()
+        (month, year, (division,)) = retrieve_past_parameters(month, year, division)
+        month, year = retrieve_past_month_year(month, year, utc_now)
         if year is None:
             year = utc_now.year
             if utc_now.month < month:
                 year -= 1
         tourney_data = tourney_data_client.get_data(year, month)
-        output, _ = await pss_top.get_division_stars(division=None, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+        output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
     await util.post_output(ctx, output)
+
+
+
+
+
+def retrieve_past_parameters(month: int, year: int, *args) -> (int, int, Tuple[str, ...]):
+    if year is None and not args:
+        return month, None, (None,)
+
+    args = list(args)
+
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        args.insert(0, year)
+        year = None
+        if len(args) > 1:
+            if args[-1]:
+                args[-2] = f'{args[-2]} {args[-1]}'
+            args.pop()
+
+    return month, year, (tuple(args))
+
+
+def retrieve_past_month_year(month: int, year: int, utc_now: datetime.datetime) -> (int, int):
+    if not utc_now:
+        utc_now = util.get_utcnow()
+    if year is None:
+        year = utc_now.year
+        if utc_now.month < month:
+            year -= 1
+    return month, year
+
 
 
 
