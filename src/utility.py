@@ -7,6 +7,7 @@ import jellyfish
 import json
 import math
 import pytz
+import re
 import subprocess
 from typing import Dict, Iterable, List, Tuple, Union
 import urllib.parse
@@ -588,23 +589,25 @@ async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) ->
         return False
 
 
-def get_exact_args(ctx: discord.ext.commands.Context) -> str:
+def get_exact_args(ctx: discord.ext.commands.Context, additional_parameters: int = 0) -> str:
     try:
         if ctx.command.full_parent_name:
-            parent_command = f'{ctx.command.full_parent_name} '
+            full_parent_command = f'{ctx.prefix}{ctx.command.full_parent_name} '
         else:
-            parent_command = ''
-        full_parent_command = f'{ctx.prefix}{parent_command}'
-        command = f'{full_parent_command}{ctx.command.name} '
-        if not ctx.message.content.startswith(command):
-            for alias in ctx.command.aliases:
-                command = f'{full_parent_command}{alias} '
-                if ctx.message.content.startswith(command):
-                    break
-        args = str(ctx.message.content[len(command):])
-        return args
+            full_parent_command = f'{ctx.prefix}'
+        command_names = [ctx.command.name]
+        if ctx.command.aliases:
+            command_names.extend(ctx.command.aliases)
+        rx_command_names = '|'.join(command_names)
+        rx_command = f'{full_parent_command}({rx_command_names}) (.*? ){{{additional_parameters}}}'
+        rx_match = re.search(rx_command, ctx.message.content)
+        if rx_match is not None:
+            return str(ctx.message.content[len(rx_match.group(0)):])
+        else:
+            return ''
     except:
         return ''
+
 
 def get_next_day(utc_now: datetime = None) -> datetime:
     utc_now = utc_now or get_utcnow()
