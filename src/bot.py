@@ -23,6 +23,7 @@ from typing import Dict, List, Tuple, Union
 
 import emojis
 import gdrive
+from gdrive import TourneyDataClient
 import pagination
 import server_settings
 import settings
@@ -56,7 +57,7 @@ sys.path.insert(0, PWD + '/src/')
 
 ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
 
-tourney_data_client = gdrive.TourneyDataClient(
+tourney_data_client = TourneyDataClient(
     settings.GDRIVE_PROJECT_ID,
     settings.GDRIVE_PRIVATE_KEY_ID,
     settings.GDRIVE_PRIVATE_KEY,
@@ -1951,25 +1952,31 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
 @bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past(ctx: discord.ext.commands.Context, month: str, year: str = None):
+    """
+    Get historic tournament data.
+
+    Parameters:
+      month:
+    """
     pass
 
 
 @cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str, year: str = None, *, division: str = None):
+async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, year: str = None, *, division: str = None):
     async with ctx.typing():
         error = None
         utc_now = util.get_utcnow()
         output = []
 
-        (month, year, division) = __retrieve_past_parameters(month, year, division)
+        (month, year, division) = TourneyDataClient.retrieve_past_parameters(month, year, division)
         if not pss_top.is_valid_division_letter(division):
             subcommand = bot.get_command('past stars fleet')
             await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
         else:
-            month, year = __retrieve_past_month_year(month, year, utc_now)
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
-                tourney_data = tourney_data_client.get_data(int(year), int(month))
+                tourney_data = tourney_data_client.get_data(year, month)
             except ValueError as err:
                 error = str(err)
                 tourney_data = None
@@ -1984,16 +1991,18 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str, year: st
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     async with ctx.typing():
+        output = []
         error = None
         utc_now = util.get_utcnow()
-        (month, year, fleet_name) = __retrieve_past_parameters(month, year, fleet_name)
-        exact_name = util.get_exact_args(ctx, 1 if year is None else 2)
+        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(month, year, fleet_name)
+        args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
+        exact_name = util.get_exact_args(ctx, args_provided_count)
         if exact_name:
             fleet_name = exact_name
 
-        month, year = __retrieve_past_month_year(month, year, utc_now)
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
         try:
-            tourney_data = tourney_data_client.get_data(int(year), int(month))
+            tourney_data = tourney_data_client.get_data(year, month)
         except ValueError as err:
             error = str(err)
             tourney_data = None
@@ -2193,46 +2202,7 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 
 # ---------- Command Helper Functions ----------
 
-def __retrieve_past_parameters(month: str, year: str, *args) -> Tuple[str, ...]:
-    if year is None:
-        if args:
-            return (month, year, *args)
-        else:
-            return (month, None, None)
 
-    args = list(args)
-
-    try:
-        int(year)
-    except (TypeError, ValueError):
-        args.insert(0, year)
-        year = None
-        if len(args) > 1:
-            if args[-1]:
-                args[-2] = f'{args[-2]} {args[-1]}'
-            args.pop()
-
-    return (month, year, *args)
-
-
-def __retrieve_past_month_year(month: str, year: str, utc_now: datetime.datetime) -> (int, int):
-    month_names = {v.lower(): k for k, v in enumerate(calendar.month_abbr)}
-    month_abbrs = {v.lower(): k for k, v in enumerate(calendar.month_name)}
-    if not utc_now:
-        utc_now = util.get_utcnow()
-
-    temp_month = month_names.get(month.lower(), None)
-    temp_month = temp_month or month_abbrs.get(month.lower(), None)
-    if temp_month is None:
-        try:
-            temp_month = int(month)
-        except:
-            raise ValueError(f'Parameter month got an invalid value: {month}')
-    if year is None:
-        year = utc_now.year
-        if utc_now.month < temp_month:
-            year -= 1
-    return temp_month, year
 
 
 

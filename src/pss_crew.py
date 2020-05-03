@@ -276,7 +276,10 @@ def __calculate_stat_value(min_value: float, max_value: float, level: int, progr
 
 def __get_ability_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
     value = __get_stat(character_design_info, characters_designs_data, collections_designs_data, level, stat_name='SpecialAbilityArgument')
-    special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_design_info['SpecialAbilityType'], None)
+    if character_design_info['SpecialAbilityType']:
+        special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_design_info['SpecialAbilityType'], character_design_info['SpecialAbilityType'])
+    else:
+        special_ability is None
     if special_ability:
         result = f'{value} ({special_ability})'
     else:

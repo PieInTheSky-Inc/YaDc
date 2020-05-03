@@ -18,6 +18,7 @@ import yaml
 import pss_entity as entity
 from pss_exception import InvalidParameter
 import pss_fleet as fleet
+import pss_lookups as lookups
 import pss_user as user
 import utility as util
 
@@ -408,3 +409,53 @@ class TourneyDataClient():
     def __get_tourney_year_and_month(dt: datetime.datetime) -> (int, int):
         dt = TourneyDataClient.__fix_filename_datetime(dt)
         return dt.year, dt.month
+
+
+    @staticmethod
+    def retrieve_past_parameters(month: str, year: str, *args) -> Tuple[str, ...]:
+        if year is None:
+            if util.is_valid_month(month):
+                if args:
+                    return (month, year, *args)
+                else:
+                    return (month, None, None)
+            else:
+                year = month
+                month = None
+
+        args = list(args)
+
+        if year is not None:
+            try:
+                int(year)
+            except (TypeError, ValueError):
+                args.insert(0, year)
+                year = None
+                if len(args) > 1:
+                    if args[-1]:
+                        args[-2] = f'{args[-2]} {args[-1]}'
+                    args.pop()
+
+        return (month, year, *args)
+
+
+    @staticmethod
+    def retrieve_past_month_year(month: str, year: str, utc_now: datetime.datetime) -> (int, int):
+        if not utc_now:
+            utc_now = util.get_utcnow()
+
+        if month is None:
+            temp_month = (utc_now.month - 2) % 12 + 1
+        else:
+            temp_month = lookups.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = temp_month or lookups.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
+            if temp_month is None:
+                try:
+                    temp_month = int(month)
+                except:
+                    raise ValueError(f'Parameter month got an invalid value: {month}')
+        if year is None:
+            year = utc_now.year
+            if utc_now.month < temp_month:
+                year -= 1
+        return temp_month, int(year)
