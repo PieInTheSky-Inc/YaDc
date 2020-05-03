@@ -165,8 +165,10 @@ async def on_command_error(ctx: discord.ext.commands.Context, err: Exception) ->
         error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(commands)}?'
     elif isinstance(err, discord.ext.commands.CheckFailure):
         error_message = 'You don\'t have the required permissions in order to be able to use this command!'
-    elif isinstance(err, pss_exception.Error):
-        error_message = f'`{ctx.message.clean_content}`: {err.msg}'
+    elif isinstance(err, discord.ext.commands.CommandInvokeError):
+        if err.original:
+            if isinstance(err.original, pss_exception.Error):
+                error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
     else:
         if not isinstance(err, discord.ext.commands.MissingRequiredArgument):
             logging.getLogger().error(err, exc_info=True)
@@ -174,7 +176,8 @@ async def on_command_error(ctx: discord.ext.commands.Context, err: Exception) ->
         help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
         command = bot.get_command(help_args)
         await ctx.send_help(command)
-    await ctx.send(f'**Error**\n> {error_message}')
+    error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+    await ctx.send(f'**Error**\n{error_message}')
 
 
 @bot.event
@@ -1951,7 +1954,7 @@ async def cmd_settings_set_prefix(ctx: discord.ext.commands.Context, prefix: str
 
 @bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_past(ctx: discord.ext.commands.Context, month: str, year: str = None):
+async def cmd_past(ctx: discord.ext.commands.Context, month: str = None, year: str = None):
     """
     Get historic tournament data.
 
@@ -1970,20 +1973,23 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, y
         output = []
 
         (month, year, division) = TourneyDataClient.retrieve_past_parameters(month, year, division)
-        if not pss_top.is_valid_division_letter(division):
-            subcommand = bot.get_command('past stars fleet')
-            await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+        if month and (int(month) not in range(1, 13)):
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = tourney_data_client.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
-            if tourney_data:
-                output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
-            elif error:
-                output = [error]
+            if not pss_top.is_valid_division_letter(division):
+                subcommand = bot.get_command('past stars fleet')
+                await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+            else:
+                month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+                try:
+                    tourney_data = tourney_data_client.get_data(year, month)
+                except ValueError as err:
+                    error = str(err)
+                    tourney_data = None
+                if tourney_data:
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+                elif error:
+                    output = [error]
     await util.post_output(ctx, output)
 
 
@@ -1995,26 +2001,29 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
         error = None
         utc_now = util.get_utcnow()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(month, year, fleet_name)
-        args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-        exact_name = util.get_exact_args(ctx, args_provided_count)
-        if exact_name:
-            fleet_name = exact_name
-
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        try:
-            tourney_data = tourney_data_client.get_data(year, month)
-        except ValueError as err:
-            error = str(err)
-            tourney_data = None
-
-        if tourney_data is None:
-            fleet_infos = []
+        if month and (int(month) not in range(1, 13)):
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
-            tourney_fleet_ids = tourney_data.fleet_ids
-            fleet_infos = fleet.get_fleet_details_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
-            if not fleet_infos:
-                fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in tourney_fleet_ids]
+            args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
+            exact_name = util.get_exact_args(ctx, args_provided_count)
+            if exact_name:
+                fleet_name = exact_name
+
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                fleet_infos = []
+            else:
+                tourney_fleet_ids = tourney_data.fleet_ids
+                fleet_infos = fleet.get_fleet_details_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+                if not fleet_infos:
+                    fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
+                fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in tourney_fleet_ids]
 
     if fleet_infos:
         if len(fleet_infos) == 1:

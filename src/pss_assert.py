@@ -13,7 +13,7 @@ def valid_entity_name(name: str, parameter_name: str = None, min_length: int = s
 
 def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1, allowed_values: list = [], case_sensitive: bool = False):
     if not value:
-        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value='<empty>', min_length=min_length, valid_values=allowed_values)
+        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
 
     if allowed_values:
         valids = list(allowed_values)

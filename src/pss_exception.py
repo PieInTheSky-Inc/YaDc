@@ -7,30 +7,37 @@ import settings
 
 
 
-class Error(commands.CommandError):
+class Error(Exception):
     """Base class for exceptions in this module.
 
     Attributes:
         msg -- explanation of the error
     """
-    def __init__(self, value):
-        super.__init__(value)
-        self.msg = ''
+    def __init__(self, msg: str):
+        super().__init__()
+        self.__msg: str = msg or ''
+
+    @property
+    def msg(self) -> str:
+        return self.__msg
 
 
 class InvalidParameter(Error):
     """Exception raised for invalid parameters."""
     def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: List[str] = None):
         self.__parameter_name: str = parameter_name or '<unknown>'
-        self.__invalid_value: str = invalid_value or '<unknown>'
+        self.__invalid_value: str = invalid_value
         self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
         self.__valid_values: List[str] = valid_values or []
         self.__add_validity_hint: bool = min_length is not None or self.__valid_values
-        self.msg = self.__get_message()
+        super().__init__(self.__get_message())
 
 
     def __get_message(self) -> str:
-        result = f'Parameter `{self.__parameter_name}` received invalid value `{self.__invalid_value}`.'
+        if self.__invalid_value is None:
+            result = f'Parameter `{self.__parameter_name}` is mandatory.'
+        else:
+            result = f'Parameter `{self.__parameter_name}` received invalid value `{self.__invalid_value}`.'
         if self.__add_validity_hint:
             hints = []
             if self.__min_length > 1:
