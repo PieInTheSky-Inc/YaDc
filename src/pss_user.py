@@ -120,7 +120,7 @@ async def get_user_details_by_info(user_info: dict) -> list:
     logged_in = f'{util.format_excel_datetime(logged_in_date)} ({logged_in_ago})'
     pvp_win_rate = _calculate_win_rate(pvp_wins, pvp_losses, pvp_draws)
     status = lookups.get_lookup_value_or_default(lookups.USER_STATUS, ship_status, default=ship_status)
-    user_type = lookups.get_lookup_value_or_default(lookups.USER_TYPE, user_type, user_type)
+    user_type = lookups.get_lookup_value_or_default(lookups.USER_TYPE, user_type)
 
     lines = [f'**```{user_name}```**```']
     lines.append(f'Account created: {created}')
@@ -142,7 +142,8 @@ async def get_user_details_by_info(user_info: dict) -> list:
     lines.append(f'Defense win/lose/draw: {defense_wins}/{defense_losses}/{defense_draws} ({defense_win_rate:0.2f}%)')
     lines.append(f'Level: {level}')
     lines.append(f'Status: {status}')
-    lines.append(f'User type: {user_type}')
+    if user_type:
+        lines.append(f'User type: {user_type}')
 
     lines[-1] += '```'
 
