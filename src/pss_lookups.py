@@ -178,6 +178,7 @@ SPECIAL_ABILITIES_LOOKUP: Dict[str, str] = {
     'HealRoomHp': 'Urgent Repair',
     'HealSameRoomCharacters': 'Healing Rain',
     'HealSelfHp': 'First Aid',
+    'ProtectRoom': 'Stasis Shield',
     'SetFire': 'Arson'
 }
 
@@ -275,15 +276,10 @@ USER_STATUS: Dict[str, str] = {
 
 USER_TYPE: Dict[str, str] = {
     'Administrator': 'Administrator',
-    'Backer': 'Backer',
     'Banned': 'Banned',
     'Mission': 'NPC',
-    'Unverified': 'Unverified',
     'UserTypeAlliance': 'Starbase',
     'UserTypeCommunityManager': 'Community Manager',
-    'UserTypeJailBroken': 'Jailbroken / Rooted',
-    'UserTypePaying': 'Subscribed',
-    'Verified': 'Verified'
 }
 
 
