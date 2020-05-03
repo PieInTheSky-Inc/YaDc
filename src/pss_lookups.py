@@ -178,6 +178,7 @@ SPECIAL_ABILITIES_LOOKUP: Dict[str, str] = {
     'HealRoomHp': 'Urgent Repair',
     'HealSameRoomCharacters': 'Healing Rain',
     'HealSelfHp': 'First Aid',
+    'ProtectRoom': 'Stasis Shield',
     'SetFire': 'Arson'
 }
 
