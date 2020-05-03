@@ -250,6 +250,12 @@ async def get_fleet_users_by_info(fleet_info: dict) -> dict:
 
 # ---------- Stars ----------
 
+def get_fleet_details_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
+    fleet_name = fleet_name.lower()
+    result = [x for x in fleet_data.values() if fleet_name in x['AllianceName'].lower()]
+    return result
+
+
 def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None) -> list:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info['DivisionDesignId']]

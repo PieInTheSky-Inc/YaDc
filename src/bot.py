@@ -2012,6 +2012,8 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
         else:
             tourney_fleet_ids = tourney_data.fleet_ids
             fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
+            if not fleet_infos:
+                fleet_infos = fleet.get_fleet_details_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[fleet.FLEET_KEY_NAME] in tourney_fleet_ids]
 
     if fleet_infos:
