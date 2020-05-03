@@ -31,6 +31,24 @@ ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO
 
 
 
+# ---------- Helper functions ----------
+
+def is_valid_division_letter(div_letter: str) -> bool:
+    if div_letter is None:
+        result = True
+    else:
+        result = div_letter.lower() in [letter.lower() for letter in ALLOWED_DIVISION_LETTERS]
+    return result
+
+
+
+
+
+
+
+
+
+
 # ---------- Top 100 Alliances ----------
 
 async def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
