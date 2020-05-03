@@ -202,10 +202,10 @@ async def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.U
 
 def get_fleet_search_details(fleet_info: dict) -> str:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    fleet_trophies = fleet_info['Trophy']
+    fleet_trophies = fleet_info.get('Trophy', None)
     fleet_stars = fleet_info['Score']
     fleet_division = int(fleet_info['DivisionDesignId'])
-    trophies = f'  {emojis.trophy} {fleet_trophies}'
+    trophies = f'  {emojis.trophy} {fleet_trophies}' if fleet_trophies else ''
     if fleet_division > 0:
         stars = f'  {emojis.star} {fleet_stars}'
     else:
