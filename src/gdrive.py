@@ -388,7 +388,7 @@ class TourneyDataClient():
     def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
         if initializing is False:
             self.__initialize()
-        g_file = self.__get_latest_file(year, month)
+        g_file = self.__get_latest_file(year, month, initializing=initializing)
         raw_data = g_file.GetContentString()
         result = TourneyData(raw_data)
         return result
