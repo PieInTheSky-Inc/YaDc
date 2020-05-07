@@ -384,8 +384,8 @@ class TourneyDataClient():
             self.__write_requested = True
 
 
-    def __retrieve_data(self, year: int, month: int, initialiazing: bool = False) -> TourneyData:
-        if initialiazing is False:
+    def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
+        if initializing is False:
             self.__initialize()
         g_file = self.__get_latest_file(year, month)
         raw_data = g_file.GetContentString()
