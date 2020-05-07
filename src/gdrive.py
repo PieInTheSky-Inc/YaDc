@@ -327,6 +327,7 @@ class TourneyDataClient():
 
 
     def __get_latest_file(self, year: int, month: int, day: int = None) -> pydrive.files.GoogleDriveFile:
+        self.__initialize()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
             file_name += f'{day:02d}'
@@ -384,6 +385,7 @@ class TourneyDataClient():
 
 
     def __retrieve_data(self, year: int, month: int) -> TourneyData:
+        self.__initialize()
         g_file = self.__get_latest_file(year, month)
         raw_data = g_file.GetContentString()
         result = TourneyData(raw_data)
