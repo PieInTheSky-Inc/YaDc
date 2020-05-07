@@ -255,7 +255,7 @@ class TourneyDataClient():
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
         utc_now = util.get_utcnow()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
-        result = self.get_data(year, month, initializing)
+        result = self.get_data(year, month, initializing=initializing)
         return result
 
 
