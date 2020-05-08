@@ -746,25 +746,6 @@ async def cmd_stars(ctx: discord.ext.commands.Context, *, division: str = None):
     await util.post_output(ctx, output)
 
 
-def get_stars_subcommand(command_name: str, division: str, **kwargs) -> (discord.ext.commands.Command, Dict[str, object]):
-    subcommands = ['fleet']
-    if division:
-        valid_division = division.lower() in [letter.lower() for letter in pss_top.ALLOWED_DIVISION_LETTERS]
-        for subcommand in subcommands:
-            subcommand_length = len(subcommand)
-            if division == subcommand:
-                cmd = bot.get_command(f'{command_name} {subcommand}')
-                return cmd, {}
-            elif division.startswith(f'{subcommand} ') or not valid_division:
-                cmd = bot.get_command(f'{command_name} {subcommand}')
-                if valid_division:
-                    kwargs['fleet_name'] = str(division[subcommand_length:]).strip()
-                else:
-                    kwargs['fleet_name'] = division
-                return cmd, kwargs
-    return None, {}
-
-
 @cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_stars_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
