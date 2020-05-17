@@ -296,7 +296,10 @@ def __get_collection_name(character_design_info: entity.EntityDesignInfo, charac
 
 
 def __get_level(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
-    return str(level)
+    if level is None:
+        return None
+    else:
+        return str(level)
 
 
 def __get_slots(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
