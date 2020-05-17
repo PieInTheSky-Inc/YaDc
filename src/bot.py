@@ -1925,7 +1925,7 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, y
         output = []
 
         (month, year, division) = TourneyDataClient.retrieve_past_parameters(month, year, division)
-        if month and (int(month) not in range(1, 13)):
+        if month and not util.is_valid_month(month):
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
             if not pss_top.is_valid_division_letter(division):
