@@ -1963,7 +1963,7 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
         error = None
         utc_now = util.get_utcnow()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(month, year, fleet_name)
-        if month and (int(month) not in range(1, 13)):
+        if month and not util.is_valid_month(month):
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
             args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)

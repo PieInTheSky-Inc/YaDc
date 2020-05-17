@@ -416,31 +416,39 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_parameters(month: str, year: str, *args) -> Tuple[str, ...]:
-        if year is None:
-            if util.is_valid_month(month):
-                if args:
-                    return (month, year, *args)
+    def retrieve_past_parameters(*args) -> Tuple[str, ...]:
+        args = [arg for arg in args if arg is not None]
+        month = None
+        year = None
+        params = [None]
+
+        if args:
+            arg_count = len(args)
+            if arg_count == 1:
+                params = [args[0]]
+            elif arg_count == 2:
+                month = args[0]
+                try:
+                    year = int(args[1])
+                except (TypeError, ValueError):
+                    year = None
+                if year is None:
+                    params = [args[1]]
                 else:
-                    return (month, None, None)
-            else:
-                year = month
-                month = None
+                    year = str(year)
+            elif arg_count >= 3:
+                month = args[0]
+                try:
+                    year = int(args[1])
+                except (TypeError, ValueError):
+                    year = None
+                if year is None:
+                    params = args[1:]
+                else:
+                    year = str(year)
+                    params = args[2:]
 
-        args = list(args)
-
-        if year is not None:
-            try:
-                int(year)
-            except (TypeError, ValueError):
-                args.insert(0, year)
-                year = None
-                if len(args) > 1:
-                    if args[-1]:
-                        args[-2] = f'{args[-2]} {args[-1]}'
-                    args.pop()
-
-        return (month, year, *args)
+        return (month, year, *params)
 
 
     @staticmethod
