@@ -212,7 +212,7 @@ def get_bot_member_colour(bot, guild):
         bot_colour = bot_member.colour
         return bot_colour
     except:
-        return None
+        return discord.Embed.Empty
 
 
 def get_embed_field_def(title=None, text=None, inline=True):
