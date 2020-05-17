@@ -161,13 +161,13 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
         await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
 
 
-async def post_output_to_channel(text_channel: discord.TextChannel, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
-    if output and text_channel:
+async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+    if output and channel:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
         if output[0] == settings.EMPTY_LINE:
@@ -176,10 +176,10 @@ async def post_output_to_channel(text_channel: discord.TextChannel, output: list
         posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
-                await text_channel.send(post)
+                await channel.send(post)
 
 
-async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> list:
+async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
@@ -196,6 +196,11 @@ async def post_output_with_files(ctx: discord.ext.commands.Context, output: list
                         await ctx.send(content=post, files=files)
                     else:
                         await ctx.send(content=post)
+
+
+async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+    if output and ctx.author:
+        await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
 def create_embed(title, description=None, colour=None, fields=None):

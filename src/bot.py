@@ -1073,19 +1073,21 @@ async def cmd_about(ctx: discord.ext.commands.Context):
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_invite(ctx: discord.ext.commands.Context):
     """
-    Produces an invite link and sends it via DM.
+    Produces an invite link for this bot and sends it via DM.
 
     Usage:
       /invite
 
     Examples:
-      /invite - Produces an invite link and sends it via DM.
+      /invite - Produces an invite link for this bot and sends it via DM.
     """
-    if ctx.guild is None:
-        nick = bot.user.display_name
-    else:
-        nick = ctx.guild.me.display_name
-    await ctx.author.send(f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{bot.user.id}')
+    async with ctx.typing():
+        if ctx.guild is None:
+            nick = bot.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{bot.user.id}']
+    await util.dm_author(ctx, output)
     if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
         await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
 
@@ -1248,6 +1250,25 @@ async def cmd_player(ctx: discord.ext.commands.Context, *, player_name: str):
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
+
+
+@bot.command(brief='Invite to bot\'s support server', name='support')
+async def cmd_support(ctx: discord.ext.commands.Context):
+    """
+    Produces an invite link to the support server for this bot and sends it via DM.
+
+    Usage:
+      /support
+
+    Examples:
+      /support - Produces an invite link to the support server and sends it via DM.
+    """
+    async with ctx.typing():
+        about = core.read_about_file()
+        output = [about['support']]
+    await util.dm_author(ctx, output)
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
 
 
 
