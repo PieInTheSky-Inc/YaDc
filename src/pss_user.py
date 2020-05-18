@@ -8,6 +8,7 @@ import urllib.parse
 import emojis
 import pss_assert
 import pss_core as core
+import pss_entity as entity
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_ship as ship
@@ -127,12 +128,11 @@ async def get_user_details_by_info(user_info: dict) -> list:
     lines.append(f'Last login: {logged_in}')
     lines.append(f'Fleet: {fleet_name_and_rank}')
     if has_fleet:
-        lines.append(f'Joined fleet: {joined}')
-    lines.append(f'League: {league_name}')
-    lines.append(f'Trophies: {trophies}')
-    lines.append(f'Highest trophies: {highest_trophies}')
-    if has_fleet:
         lines.append(f'Division: {division}')
+        lines.append(f'Joined fleet: {joined}')
+    lines.append(f'Trophies: {trophies}')
+    lines.append(f'League: {league_name}')
+    lines.append(f'Highest trophies: {highest_trophies}')
     if stars != '0':
         lines.append(f'Stars: {stars}')
     if has_fleet:
@@ -154,6 +154,14 @@ async def _get_user_details_from_tournament_data(user_info: dict, user_data: dic
     user_id = user_info[USER_KEY_NAME]
     user_info['AllianceScore'] = user_data[user_id]['AllianceScore']
     return await get_user_details_by_info(user_info)
+
+
+async def get_user_infos_from_tournament_data(user_name: str, user_data: dict, fleet_data: dict) -> list:
+    user_name = user_name.lower()
+    result = [user_info for user_info in user_data.values() if user_name in user_info.get('Name', '').lower()]
+    if not result:
+        result = list((await _get_user_infos(user_name)).values())
+    return result
 
 
 
@@ -201,6 +209,71 @@ async def _get_user_infos(user_name: str) -> dict:
     user_data_raw = await core.get_data_from_path(path)
     user_infos = core.xmltree_to_dict3(user_data_raw)
     return user_infos
+
+
+def get_user_details_from_tourney_info(user_info: entity.EntityDesignInfo, fleet_infos: entity.EntitiesDesignsData, retrieved_at: datetime) -> list:
+    no_data = '<no data>'
+    no_fleet = '<no fleet>'
+    lines = []
+
+    user_name = user_info.get('Name', no_data)
+    fleet_id = user_info.get('AllianceId', '0')
+    fleet_info = fleet_infos.get(fleet_id, None)
+    trophies = user_info.get('Trophy', no_data)
+    stars = user_info.get('AllianceScore', no_data)
+    logged_in_at = user_info.get('LastLoginDate', None)
+    if logged_in_at:
+        logged_in_at = util.parse_pss_datetime(logged_in_at)
+        logged_in_ago = util.get_formatted_timedelta(logged_in_at - retrieved_at)
+        logged_in = f'{util.format_excel_datetime(logged_in_at)} ({logged_in_ago})'
+    else:
+        logged_in = no_data
+
+    if fleet_info is None:
+        fleet_name = no_data
+        joined_fleet_at = None
+        fleet_name_and_rank = None
+        division = None
+    else:
+        fleet_name = fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, no_data)
+
+        joined_fleet_at = user_info.get('AllianceJoinDate', None)
+        if joined_fleet_at:
+            joined_fleet_at = util.parse_pss_datetime(joined_fleet_at)
+            joined_fleet_ago = util.get_formatted_timedelta(joined_fleet_at - retrieved_at)
+            joined_fleet = f'{util.format_excel_datetime(joined_fleet_at)} ({joined_fleet_ago})'
+        else:
+            joined_fleet = no_data
+        fleet_rank = user_info.get('AllianceMembership', no_data)
+        fleet_name_and_rank = f'{fleet_name} ({fleet_rank})'
+        division_design_id = fleet_info.get('DivisionDesignId', None)
+        if division_design_id:
+            division = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, '-')
+        else:
+            division = None
+    if trophies == no_data:
+        league_name = no_data
+    else:
+        league_name = _get_league_from_trophies(int(trophies))
+
+    lines.append(f'**```{user_name}```**```')
+    lines.append(f'Last login: {logged_in}')
+    lines.append(f'Fleet: {fleet_name_and_rank}')
+    if division:
+        lines.append(f'Division: {division}')
+    if joined_fleet:
+        lines.append(f'Joined fleet: {joined_fleet}')
+    lines.append(f'Trophies: {trophies}')
+    lines.append(f'League: {league_name}')
+    lines.append(f'Stars: {stars}')
+
+    if retrieved_at is not None:
+        lines.append(f'```{util.get_historic_data_note(retrieved_at)}')
+    else:
+        lines[-1] += '```'
+
+    return lines
+
 
 
 

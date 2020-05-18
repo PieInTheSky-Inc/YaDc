@@ -2005,6 +2005,54 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
     await util.post_output(ctx, output)
 
 
+@cmd_past.command(name='player', brief='Get historic user data', aliases=['user'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(month, year, player_name)
+        if month and not util.is_valid_month(month):
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
+            exact_name = util.get_exact_args(ctx, args_provided_count)
+            if exact_name:
+                player_name = exact_name
+
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                user_infos = []
+            else:
+                tourney_user_ids = tourney_data.user_ids
+                user_infos = await user.get_user_infos_from_tournament_data(player_name, tourney_data.users, tourney_data.fleets)
+                if not user_infos:
+                    user_infos = await user.get_user_details_by_name(player_name)
+                user_infos = [user_info for user_info in user_infos if user_info[user.USER_KEY_NAME] in tourney_user_ids]
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = user.get_user_details_from_tourney_info(user_info, tourney_data.fleets, tourney_data.retrieved_at)
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'Could not find a user named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
 
 
 
