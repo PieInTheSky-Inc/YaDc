@@ -490,15 +490,15 @@ def is_guild_channel(channel: discord.abc.Messageable) -> bool:
 
 
 def get_ranking(ranking: str) -> str:
-    result = ranking
-    if ranking:
-        if ranking.endswith(('4', '5', '6', '7', '8', '9', '0', '11', '12', '13')):
+    result = str(ranking)
+    if result:
+        if result.endswith(('4', '5', '6', '7', '8', '9', '0', '11', '12', '13')):
             result += 'th'
-        elif ranking.endswith('1'):
+        elif result.endswith('1'):
             result += 'st'
-        elif ranking.endswith('2'):
+        elif result.endswith('2'):
             result += 'nd'
-        elif ranking.endswith('3'):
+        elif result.endswith('3'):
             result += 'rd'
     return result
 

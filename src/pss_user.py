@@ -11,6 +11,7 @@ import pss_core as core
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_ship as ship
+import pss_top as top
 import settings
 import utility as util
 
@@ -106,6 +107,14 @@ async def get_user_details_by_info(user_info: dict) -> list:
         fleet_name_and_rank = '<no fleet>'
         joined = '-'
 
+    ranking = None
+    if trophies >= 5000:
+        top_captains = await top.get_top_captains_dict()
+        for i, top_captain_id in enumerate(top_captains, 1):
+            if top_captain_id == user_id:
+                ranking = util.get_ranking(i)
+                break
+
     created_ago = util.get_formatted_timedelta(created_on_date - utc_now)
     created = f'{util.format_excel_datetime(created_on_date)} ({created_ago})'
     defense_win_rate = _calculate_win_rate(defense_wins, defense_losses, defense_draws)
@@ -123,6 +132,8 @@ async def get_user_details_by_info(user_info: dict) -> list:
     user_type = lookups.get_lookup_value_or_default(lookups.USER_TYPE, user_type)
 
     lines = [f'**```{user_name}```**```']
+    if ranking is not None:
+        lines.append(f'Ranking: {ranking}')
     lines.append(f'Account created: {created}')
     lines.append(f'Last login: {logged_in}')
     lines.append(f'Fleet: {fleet_name_and_rank}')

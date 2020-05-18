@@ -42,6 +42,14 @@ def is_valid_division_letter(div_letter: str) -> bool:
 
 
 
+async def get_top_captains_dict(skip: int = 0, take: int = 100) -> dict:
+    path = await _get_top_captains_path(skip, take)
+    raw_data = await core.get_data_from_path(path)
+    data = core.xmltree_to_dict3(raw_data)
+    return data
+
+
+
 
 
 
@@ -100,9 +108,7 @@ def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
 # ---------- Top 100 Captains ----------
 
 async def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    path = await _get_top_captains_path(take)
-    raw_data = await core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data)
+    data = await get_top_captains_dict(0, take)
     if as_embed:
         return _get_top_captains_as_embed(data, take), True
     else:
@@ -134,9 +140,10 @@ def _get_top_captains_as_text(captain_data: dict, take: int = 100):
     return lines
 
 
-async def _get_top_captains_path(take: int):
+async def _get_top_captains_path(skip: int, take: int):
+    skip += 1
     access_token = await login.DEVICES.get_access_token()
-    result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from=1&to={take}'
+    result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from={skip}&to={take}'
     return result
 
 
