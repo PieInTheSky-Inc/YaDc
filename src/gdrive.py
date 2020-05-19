@@ -3,6 +3,8 @@
 
 import calendar
 import datetime
+import discord
+import discord.ext.commands
 import json
 import os
 import pydrive.auth
@@ -416,39 +418,30 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_parameters(*args) -> Tuple[str, ...]:
-        args = [arg for arg in args if arg is not None]
-        month = None
-        year = None
-        params = [None]
+    def retrieve_past_parameters(ctx: discord.ext.commands.Context, month: str, year: str) -> Tuple[str, str]:
+        param = None
 
-        if args:
-            arg_count = len(args)
-            if arg_count == 1:
-                params = [args[0]]
-            elif arg_count == 2:
-                month = args[0]
+        if month is not None:
+            if year is not None:
                 try:
-                    year = int(args[1])
+                    int(year)
                 except (TypeError, ValueError):
                     year = None
-                if year is None:
-                    params = [args[1]]
-                else:
-                    year = str(year)
-            elif arg_count >= 3:
-                month = args[0]
+            if util.is_valid_month(month) is False:
                 try:
-                    year = int(args[1])
+                    year = int(month)
                 except (TypeError, ValueError):
                     year = None
-                if year is None:
-                    params = args[1:]
-                else:
+                if year is not None:
                     year = str(year)
-                    params = args[2:]
+                month = None
 
-        return (month, year, *params)
+        args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
+        param = util.get_exact_args(ctx, args_provided_count)
+        if not param:
+            param = None
+
+        return (month, year, param)
 
 
     @staticmethod

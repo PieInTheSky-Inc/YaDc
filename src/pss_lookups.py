@@ -120,8 +120,8 @@ GRID_TYPE_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
-MONTH_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_name)}
-MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_abbr)}
+MONTH_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_name) if k > 0}
+MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_abbr) if k > 0}
 
 
 PROGRESSION_TYPES: Dict[str, float] = {

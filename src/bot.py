@@ -1945,8 +1945,8 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, y
         utc_now = util.get_utcnow()
         output = []
 
-        (month, year, division) = TourneyDataClient.retrieve_past_parameters(month, year, division)
-        if month and not util.is_valid_month(month):
+        (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
             if not pss_top.is_valid_division_letter(division):
@@ -1983,15 +1983,10 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
         output = []
         error = None
         utc_now = util.get_utcnow()
-        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(month, year, fleet_name)
-        if month and not util.is_valid_month(month):
+        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
-            args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-            exact_name = util.get_exact_args(ctx, args_provided_count)
-            if exact_name:
-                fleet_name = exact_name
-
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
                 tourney_data = tourney_data_client.get_data(year, month)
@@ -2033,15 +2028,10 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
         output = []
         error = None
         utc_now = util.get_utcnow()
-        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(month, year, player_name)
-        if month and not util.is_valid_month(month):
+        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
-            args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-            exact_name = util.get_exact_args(ctx, args_provided_count)
-            if exact_name:
-                player_name = exact_name
-
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
                 tourney_data = tourney_data_client.get_data(year, month)
