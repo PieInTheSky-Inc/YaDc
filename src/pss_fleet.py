@@ -202,15 +202,18 @@ async def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.U
 
 def get_fleet_search_details(fleet_info: dict) -> str:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    fleet_name_current = fleet_info.get('CurrentAllianceName', None)
+    if fleet_name_current is not None:
+        fleet_name += f' (now: {fleet_name_current})'
+
+    details = []
     fleet_trophies = fleet_info.get('Trophy', None)
-    fleet_stars = fleet_info['Score']
-    fleet_division = int(fleet_info['DivisionDesignId'])
-    trophies = f'  {emojis.trophy} {fleet_trophies}' if fleet_trophies else ''
-    if fleet_division > 0:
-        stars = f'  {emojis.star} {fleet_stars}'
-    else:
-        stars = ''
-    result = f'{fleet_name}{trophies}{stars}'
+    fleet_stars = int(fleet_info.get('Score', '0'))
+    if fleet_trophies is not None:
+        details.append(f'{emojis.trophy} {fleet_trophies}')
+    if fleet_stars > 0:
+        details.append(f'{emojis.star} {fleet_stars}')
+    result = (f'{fleet_name} ' + ' '.join(details)).strip()
     return result
 
 
@@ -250,10 +253,18 @@ async def get_fleet_users_by_info(fleet_info: dict) -> dict:
 
 # ---------- Stars ----------
 
-def get_fleet_details_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
-    fleet_name = fleet_name.lower()
-    result = [x for x in fleet_data.values() if fleet_name in x['AllianceName'].lower()]
-    return result
+async def get_fleet_details_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
+    fleet_name_lower = fleet_name.lower()
+    result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
+    fleet_infos_current = await _get_fleet_infos_by_name(fleet_name)
+    for fleet_info in fleet_infos_current.values():
+        fleet_id = fleet_info[fleet.FLEET_KEY_NAME]
+        if fleet_id in fleet_data:
+            if fleet_id not in result:
+                result[fleet_id] = fleet_data[fleet_id]
+            if result[fleet_id][fleet.FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]:
+                result[fleet_id]['CurrentAllianceName'] = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
+    return list(result.values())
 
 
 def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None) -> list:
