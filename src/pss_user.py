@@ -166,7 +166,8 @@ async def get_user_infos_from_tournament_data(user_name: str, user_data: dict) -
         if user_id in user_data:
             if user_id not in result:
                 result[user_id] = user_data[user_id]
-            result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+            if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
+                result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
@@ -189,6 +190,10 @@ async def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE
 
 def get_user_search_details(user_info: dict) -> str:
     user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
+    user_name_current = user_info.get('CurrentName', None)
+    if user_name_current is not None:
+        user_name += f' (now: {user_name_current})'
+
     user_trophies = user_info.get('Trophy', '?')
     user_stars = int(user_info.get('AllianceScore', '0'))
 
