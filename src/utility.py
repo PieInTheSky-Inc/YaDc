@@ -180,22 +180,22 @@ async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Mem
 
 
 async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
-    if output:
-        if output[-1] == settings.EMPTY_LINE:
-            output = output[:-1]
-        if output[0] == settings.EMPTY_LINE:
-            output = output[1:]
+    if output or file_paths:
+        if output:
+            if output[-1] == settings.EMPTY_LINE:
+                output = output[:-1]
+            if output[0] == settings.EMPTY_LINE:
+                output = output[1:]
 
         posts = create_posts_from_lines(output, maximum_characters)
         last_post_index = len(posts) - 1
         files = [discord.File(file_path) for file_path in file_paths]
         if last_post_index >= 0:
             for i, post in enumerate(posts):
-                if post:
-                    if i == last_post_index:
-                        await ctx.send(content=post, files=files)
-                    else:
-                        await ctx.send(content=post)
+                if i == last_post_index and post or files:
+                    await ctx.send(content=post, files=files)
+                elif post:
+                    await ctx.send(content=post)
 
 
 async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
@@ -246,6 +246,9 @@ def create_posts_from_lines(lines, char_limit) -> list:
 
     if current_post:
         result.append(current_post)
+
+    if not result:
+        result = ['']
 
     return result
 

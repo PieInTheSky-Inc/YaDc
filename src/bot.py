@@ -29,11 +29,13 @@ import server_settings
 import settings
 import utility as util
 
+import excel
 import pss_assert
 import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
+import pss_entity as entity
 import pss_exception
 import pss_fleet as fleet
 import pss_item as item
@@ -2066,6 +2068,106 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
 
 
 
+
+
+@bot.group(name='raw', brief='Get raw data from the API', invoke_without_command=True, hidden=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw(ctx: discord.ext.commands.Context):
+    """
+    Get raw data from the Pixel Starships API.
+    Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    pass
+
+
+@cmd_raw.command(name='char', brief='Get raw crew data from the API', aliases=['crew', 'chars', 'crews'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_char(ctx: discord.ext.commands.Context):
+    """
+    Get raw character design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, crew.characters_designs_retriever, crew.CHARACTER_DESIGN_KEY_NAME, 'character_designs')
+
+
+@cmd_raw.command(name='collection', brief='Get raw collection data from the API', aliases=['coll', 'collections'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_collection(ctx: discord.ext.commands.Context):
+    """
+    Get raw collection design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, crew.collections_designs_retriever, crew.COLLECTION_DESIGN_KEY_NAME, 'collection_designs')
+
+
+@cmd_raw.command(name='item', brief='Get raw item data from the API', aliases=['items'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_item(ctx: discord.ext.commands.Context):
+    """
+    Get raw item design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, item.items_designs_retriever, item.ITEM_DESIGN_KEY_NAME, 'item_designs')
+
+
+@cmd_raw.command(name='research', brief='Get raw research data from the API', aliases=['researches'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_research(ctx: discord.ext.commands.Context):
+    """
+    Get raw research design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, research.researches_designs_retriever, research.RESEARCH_DESIGN_KEY_NAME, 'research_designs')
+
+
+@cmd_raw.group(name='room', brief='Get raw collection data from the API', aliases=['rooms'], invoke_without_command=True)
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_room(ctx: discord.ext.commands.Context):
+    """
+    Get raw room design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, room.rooms_designs_retriever, room.ROOM_DESIGN_KEY_NAME, 'room_designs')
+
+
+@cmd_raw_room.command(name='purchase', brief='Get raw collection data from the API', aliases=['purchases', 'levels', 'available'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_room_purchase(ctx: discord.ext.commands.Context):
+    """
+    Get raw room purchase design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, room.rooms_designs_purchases_retriever, room.ROOM_DESIGN_PURCHASE_KEY_NAME, 'room_purchase_designs')
+
+
+@cmd_raw.command(name='training', brief='Get raw collection data from the API', aliases=['trainings'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_training(ctx: discord.ext.commands.Context):
+    """
+    Get raw training design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    await __post_raw_spreadsheet(ctx, training.trainings_designs_retriever, training.TRAINING_DESIGN_KEY_NAME, 'training_designs')
+
+
+
+
+
+
+
+
+
+
+
 @bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
 @discord.ext.commands.is_owner()
 @discord.ext.commands.cooldown(rate=2*RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
@@ -2228,7 +2330,13 @@ async def cmd_device_select(ctx: discord.ext.commands.Context, device_key: str):
 
 # ---------- Command Helper Functions ----------
 
-
+async def __post_raw_spreadsheet(ctx: discord.ext.commands.Context, retriever: entity.EntityDesignsRetriever, key_name: str, file_prefix: str):
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        data = await retriever.get_data_dict3()
+        file_path = excel.create_xl_from_raw_data_dict(data, key_name, file_prefix, utc_now)
+    await util.post_output_with_files(ctx, [], [file_path])
+    os.remove(file_path)
 
 
 
