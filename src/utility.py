@@ -635,8 +635,8 @@ def is_valid_month(month: str) -> bool:
     result = month and (month in lookups.MONTH_NAME_TO_NUMBER or month in lookups.MONTH_SHORT_NAME_TO_NUMBER)
     if not result:
         try:
-            int(month)
-            result = True
+            month = int(month)
+            result = month >= 1 and month <= 12
         except (TypeError, ValueError):
             pass
     return result
