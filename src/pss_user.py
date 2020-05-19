@@ -183,24 +183,19 @@ async def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE
 
 def get_user_search_details(user_info: dict) -> str:
     user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
-    user_trophies = user_info['Trophy']
-    user_stars = user_info['AllianceScore']
-    if user_info['AllianceId'] != '0':
-        fleet_division = int(user_info['AllianceQualifyDivisionDesignId'])
-        fleet_name = user_info['AllianceName']
-    else:
-        fleet_division = 0
-        fleet_name = ''
-    trophies = f'{emojis.trophy} {user_trophies}'
-    if fleet_name:
-        fleet = f' (Fleet: {fleet_name})'
-    else:
-        fleet = ''
-    if fleet_division > 0:
-        stars = f'{emojis.star} {user_stars}'
-    else:
-        stars = ''
-    result = f'{user_name}{fleet}, {trophies}, {stars}'
+    user_trophies = user_info.get('Trophy', '?')
+    user_stars = int(user_info.get('AllianceScore', '0'))
+
+    details = []
+    if user_info.get(fleet.FLEET_KEY_NAME, '0') != '0':
+        fleet_name = user_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, None)
+        if fleet_name is not None:
+            details.append(f'({fleet_name})')
+
+    details.append(f'{emojis.trophy} {user_trophies}')
+    if user_stars > 0:
+        details.append(f'{emojis.star} {user_stars}')
+    result = f'{user_name} ' + ' '.join(details)
     return result
 
 
