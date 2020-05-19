@@ -54,6 +54,9 @@ import pss_user as user
 RATE = 5
 COOLDOWN = 15.0
 
+RAW_RATE = 1
+RAW_COOLDOWN = 60
+
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
 
@@ -2071,7 +2074,7 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
 
 
 @bot.group(name='raw', brief='Get raw data from the API', invoke_without_command=True, hidden=True)
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw(ctx: discord.ext.commands.Context):
     """
     Get raw data from the Pixel Starships API.
@@ -2083,7 +2086,7 @@ async def cmd_raw(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data from the API', aliases=['crew', 'chars', 'crews'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_char(ctx: discord.ext.commands.Context):
     """
     Get raw character design data from the PSS API.
@@ -2094,7 +2097,7 @@ async def cmd_raw_char(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.command(name='collection', brief='Get raw collection data from the API', aliases=['coll', 'collections'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_collection(ctx: discord.ext.commands.Context):
     """
     Get raw collection design data from the PSS API.
@@ -2105,7 +2108,7 @@ async def cmd_raw_collection(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.command(name='item', brief='Get raw item data from the API', aliases=['items'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_item(ctx: discord.ext.commands.Context):
     """
     Get raw item design data from the PSS API.
@@ -2116,7 +2119,7 @@ async def cmd_raw_item(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.command(name='research', brief='Get raw research data from the API', aliases=['researches'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_research(ctx: discord.ext.commands.Context):
     """
     Get raw research design data from the PSS API.
@@ -2127,7 +2130,7 @@ async def cmd_raw_research(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.group(name='room', brief='Get raw collection data from the API', aliases=['rooms'], invoke_without_command=True)
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_room(ctx: discord.ext.commands.Context):
     """
     Get raw room design data from the PSS API.
@@ -2138,7 +2141,7 @@ async def cmd_raw_room(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw_room.command(name='purchase', brief='Get raw collection data from the API', aliases=['purchases', 'levels', 'available'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_room_purchase(ctx: discord.ext.commands.Context):
     """
     Get raw room purchase design data from the PSS API.
@@ -2149,7 +2152,7 @@ async def cmd_raw_room_purchase(ctx: discord.ext.commands.Context):
 
 
 @cmd_raw.command(name='training', brief='Get raw collection data from the API', aliases=['trainings'])
-@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_training(ctx: discord.ext.commands.Context):
     """
     Get raw training design data from the PSS API.
