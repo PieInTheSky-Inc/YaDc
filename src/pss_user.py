@@ -12,6 +12,7 @@ import pss_entity as entity
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_ship as ship
+import pss_user as user
 import settings
 import utility as util
 
@@ -156,12 +157,17 @@ async def _get_user_details_from_tournament_data(user_info: dict, user_data: dic
     return await get_user_details_by_info(user_info)
 
 
-async def get_user_infos_from_tournament_data(user_name: str, user_data: dict, fleet_data: dict) -> list:
-    user_name = user_name.lower()
-    result = [user_info for user_info in user_data.values() if user_name in user_info.get('Name', '').lower()]
-    if not result:
-        result = list((await _get_user_infos(user_name)).values())
-    return result
+async def get_user_infos_from_tournament_data(user_name: str, user_data: dict) -> list:
+    user_name_lower = user_name.lower()
+    result = {user_id: user_info for (user_id, user_info) in user_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
+    user_infos_current = await _get_user_infos(user_name)
+    for user_info in user_infos_current.values():
+        user_id = user_info[user.USER_KEY_NAME]
+        if user_id in user_data:
+            if user_id not in result:
+                result[user_id] = user_data[user_id]
+            result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    return list(result.values())
 
 
 
@@ -212,11 +218,16 @@ def get_user_details_from_tourney_info(user_info: entity.EntityDesignInfo, fleet
     lines = []
 
     user_name = user_info.get('Name', no_data)
+    current_user_name = user_info.get('CurrentName', None)
     fleet_id = user_info.get('AllianceId', '0')
     fleet_info = fleet_infos.get(fleet_id, None)
     trophies = user_info.get('Trophy', no_data)
     stars = user_info.get('AllianceScore', no_data)
     logged_in_at = user_info.get('LastLoginDate', None)
+
+    if current_user_name is not None:
+        user_name = f'{user_name} (now: {current_user_name})'
+
     if logged_in_at:
         logged_in_at = util.parse_pss_datetime(logged_in_at)
         logged_in_ago = util.get_formatted_timedelta(logged_in_at - retrieved_at)
