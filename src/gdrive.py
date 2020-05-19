@@ -37,7 +37,7 @@ class TourneyData(object):
     def __init__(self, raw_data: str):
         data = json.loads(raw_data)
         self.__fleets: entity.EntitiesDesignsData = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
-        self.__users: entity.EntitiesDesignsData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'])
+        self.__users: entity.EntitiesDesignsData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
         self.__meta: Dict[str, object] = data['meta']
         self.__data_date: datetime.datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
         if not self.__meta.get('SchemaVersion', None):
@@ -145,7 +145,7 @@ class TourneyData(object):
     @staticmethod
     def __create_fleet_dict_from_data_v3(fleet_data: list) -> dict:
         result = {}
-        for i, entry in enumerate(fleet_data):
+        for i, entry in enumerate(fleet_data, 1):
             result[entry[0]] = {
                 'AllianceId': entry[0],
                 'AllianceName': entry[1],
@@ -154,11 +154,11 @@ class TourneyData(object):
             if len(entry) == 4:
                 division_design_id = entry[3]
             else:
-                if i >= 50:
+                if i > 50:
                     division_design_id = '4'
-                elif i >= 20:
+                elif i > 20:
                     division_design_id = '3'
-                elif i >= 8:
+                elif i > 8:
                     division_design_id = '2'
                 else:
                     division_design_id = '1'
@@ -167,13 +167,14 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v3(users: list, data: list) -> dict:
+    def __create_user_dict_from_data_v3(users: list, data: list, fleet_data: dict) -> dict:
         result = {}
         users_dict = dict(users)
         for entry in data:
+            fleet_id = entry[1]
             result[entry[0]] = {
                 'Id': entry[0],
-                'AllianceId': entry[1],
+                'AllianceId': fleet_id,
                 'Trophy': entry[2],
                 'AllianceScore': entry[3],
                 'AllianceMembership': entry[4],
@@ -181,6 +182,11 @@ class TourneyData(object):
                 'LastLoginDate': entry[6],
                 'Name': users_dict[entry[0]]
             }
+            if fleet_id and fleet_id != '0':
+                fleet_info = fleet_data.get(fleet_id, {})
+                for key, value in fleet_info.items():
+                    result[entry[0]][key] = value
+
         return result
 
 
