@@ -2047,7 +2047,7 @@ async def cmd_past_fleet(ctx: discord.ext.commands.Context, month: str, year: st
     elif error:
         output = [str(error)]
     else:
-        output = [f'Could not find a user named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
     await util.post_output(ctx, output)
 
 
