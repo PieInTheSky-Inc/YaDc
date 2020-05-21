@@ -65,9 +65,10 @@ def get_first_of_following_month(utcnow):
     return result
 
 
-def get_first_of_next_month():
-    utcnow = get_utcnow()
-    return get_first_of_following_month(utcnow)
+def get_first_of_next_month(utc_now: datetime = None):
+    if utc_now is None:
+        utc_now = get_utcnow()
+    return get_first_of_following_month(utc_now)
 
 
 def get_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True):

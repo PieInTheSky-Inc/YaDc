@@ -56,14 +56,14 @@ def embed_tourney_start(start_date, utc_now, colour=None):
     return result
 
 
-def get_current_tourney_start():
-    first_of_next_month = util.get_first_of_next_month()
+def get_current_tourney_start(utc_now: datetime = None):
+    first_of_next_month = util.get_first_of_next_month(utc_now)
     result = first_of_next_month + __A_WEEK_PRIOR
     return result
 
 
-def get_next_tourney_start():
-    next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month())
+def get_next_tourney_start(utc_now: datetime = None):
+    next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month(utc_now))
     result = next_first_of_next_month + __A_WEEK_PRIOR
     return result
 
@@ -76,9 +76,9 @@ def get_start_string(currently_running):
 
 
 def is_tourney_running(start_date=None, utc_now=None):
-    if not start_date:
-        start_date = get_current_tourney_start()
     if not utc_now:
         utc_now = util.get_utcnow()
+    if not start_date:
+        start_date = get_current_tourney_start(utc_now)
 
     return start_date < utc_now

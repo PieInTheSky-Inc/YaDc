@@ -77,7 +77,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
         'Account created': __get_timestamp_as_text(user_info, 'CreationDate', retrieved_at),
         'Last login': __get_timestamp_as_text(user_info, 'LastLoginDate', retrieved_at),
         'Fleet': __get_fleet_name_and_rank_as_text(user_info, fleet_info),
-        'Division': __get_division_name_as_text(fleet_info),
+        'Division': fleet.get_division_name_as_text(fleet_info),
         'Joined fleet': __get_fleet_joined_at_as_text(user_info, fleet_info, retrieved_at),
         'Trophies': __get_trophies_as_text(user_info),
         'League': __get_league_as_text(user_info),
@@ -94,7 +94,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
     lines = [f'**```{user_name}```**```']
     for detail_name, detail_value in details.items():
         if detail_value is not None:
-            lines.append(f'{detail_name}: {detail_value}')
+            lines.append(f'{detail_name} - {detail_value}')
 
     if is_past_data:
         lines.append(f'```{util.get_historic_data_note(retrieved_at)}')
@@ -147,15 +147,6 @@ def __get_crew_donated_as_text(user_info: entity.EntityDesignInfo, fleet_info: e
     result = None
     if fleet_info:
         result = user_info.get('CrewDonated')
-    return result
-
-
-def __get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
-    result = None
-    if fleet_info:
-        division_design_id = fleet_info.get('DivisionDesignId')
-        if division_design_id is not None and division_design_id != '0':
-            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
     return result
 
 

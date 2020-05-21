@@ -146,11 +146,7 @@ class TourneyData(object):
     def __create_fleet_dict_from_data_v3(fleet_data: list) -> dict:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
-            result[entry[0]] = {
-                'AllianceId': entry[0],
-                'AllianceName': entry[1],
-                'Score': entry[2]
-            }
+            alliance_id = entry[0]
             if len(entry) == 4:
                 division_design_id = entry[3]
             else:
@@ -162,7 +158,15 @@ class TourneyData(object):
                     division_design_id = '2'
                 else:
                     division_design_id = '1'
-            result[entry[0]]['DivisionDesignId'] = division_design_id
+            result[alliance_id] = {
+                'AllianceId': alliance_id,
+                'AllianceName': entry[1],
+                'Score': entry[2],
+                'DivisionDesignId': division_design_id
+            }
+        ranked_fleets_infos = sorted(sorted(result.values(), key=lambda fleet_info: int(fleet_info['Score']), reverse=True), key=lambda fleet_info: fleet_info['DivisionDesignId'])
+        for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
+            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
         return result
 
 
