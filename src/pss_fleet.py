@@ -223,15 +223,6 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
     fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES)
     file_paths = [fleet_sheet_path_current]
 
-    """if past_fleets_data and fleet_id in past_fleets_data.keys() and past_users_data and past_retrieved_at:
-        fleet_info = past_fleets_data[fleet_id]
-        fleet_name = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
-        fleet_users_infos = dict({user_id: user_info for user_id, user_info in past_users_data.items() if user_info['AllianceId'] == fleet_id})
-        fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, past_retrieved_at, fleet_name)
-        file_name = f'{fleet_name}_tournament-{past_retrieved_at.year}-{util.get_month_short_name(past_retrieved_at).lower()}.xlsx'
-        fleet_sheet_path_past = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, past_retrieved_at, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
-        file_paths.append(fleet_sheet_path_past)"""
-
     return post_content, file_paths
 
 
