@@ -339,7 +339,7 @@ class TourneyDataClient():
             self.__initialize()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
-            file_name += f'{day:02d}'
+            file_name_part += f'{day:02d}'
         file_list = self.__drive.ListFile({'q': f'\'{self._folder_id}\' in parents and title contains \'pss-top-100_{file_name_part}\''}).GetList()
         if file_list:
             file_list = sorted(file_list, key=lambda f: f['title'], reverse=True)
