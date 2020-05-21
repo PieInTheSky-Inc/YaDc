@@ -217,10 +217,6 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
 
     if is_past_data:
         retrieved_at = past_retrieved_at
-        fleet_info = past_fleets_data[fleet_id]
-        current_fleet_info = await _get_fleet_info_by_id(fleet_id)
-        if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
-            fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_users_infos = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
     else:
         retrieved_at = util.get_utcnow()
@@ -332,6 +328,8 @@ async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data:
         if fleet_id in fleet_data:
             if fleet_id not in result:
                 result[fleet_id] = fleet_data[fleet_id]
+            if result[fleet_id][fleet.FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]:
+                result[fleet_id]['CurrentAllianceName'] = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
