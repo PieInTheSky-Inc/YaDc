@@ -1910,7 +1910,7 @@ async def cmd_past(ctx: discord.ext.commands.Context, month: str = None, year: s
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, year: str = None, *, division: str = None):
     """
-    Get historic tournament division data.
+    Get historic tournament division stars data.
 
     Parameters:
     - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
@@ -1949,7 +1949,7 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, y
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
-    Get historic tournament fleet data.
+    Get historic tournament fleet stars data.
 
     Parameters:
     - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
@@ -1999,6 +1999,16 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
 @cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
     async with ctx.typing():
         output = []
         error = None
@@ -2044,6 +2054,16 @@ async def cmd_past_fleet(ctx: discord.ext.commands.Context, month: str, year: st
 @cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+    """
+    Get historic tournament player data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - player_name: Mandatory. The player for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
     async with ctx.typing():
         output = []
         error = None
@@ -2078,7 +2098,7 @@ async def cmd_past_player(ctx: discord.ext.commands.Context, month: str, year: s
     elif error:
         output = [str(error)]
     else:
-        output = [f'Could not find a user named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        output = [f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
     await util.post_output(ctx, output)
 
 
