@@ -114,6 +114,13 @@ GAS_COSTS_LOOKUP: List[int] = [
     507000, 552000, 604000, 650000, 715000]
 
 
+FLEET_TYPE_LOOKUP: Dict[bool, str] = {
+    None: None,
+    True: 'Private',
+    False: 'Public'
+}
+
+
 GRID_TYPE_MASK_LOOKUP: Dict[int, str] = {
     1: 'A',
     2: 'B'

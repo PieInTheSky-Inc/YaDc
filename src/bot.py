@@ -1197,7 +1197,8 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             fleet_name = exact_name
-        fleet_infos = await fleet.get_fleet_details_by_name(fleet_name)
+        fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+        i = 0
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1209,8 +1210,7 @@ async def cmd_fleet(ctx: discord.ext.commands.Context, *, fleet_name: str):
 
         if fleet_info:
             async with ctx.typing():
-                tourney_data = tourney_data_client.get_latest_data()
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, fleet_data=tourney_data.fleets, user_data=tourney_data.users, data_date=tourney_data.retrieved_at)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1936,7 +1936,7 @@ async def cmd_past(ctx: discord.ext.commands.Context, month: str = None, year: s
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, year: str = None, *, division: str = None):
     """
-    Get historic tournament division data.
+    Get historic tournament division stars data.
 
     Parameters:
     - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
@@ -1975,6 +1975,57 @@ async def cmd_past_stars(ctx: discord.ext.commands.Context, month: str = None, y
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
+    Get historic tournament fleet stars data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                fleet_infos = []
+            else:
+                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            async with ctx.typing():
+                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
+
+
+@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_past_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+    """
     Get historic tournament fleet data.
 
     Parameters:
@@ -2002,8 +2053,7 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
             if tourney_data is None:
                 fleet_infos = []
             else:
-                tourney_fleet_ids = tourney_data.fleet_ids
-                fleet_infos = await fleet.get_fleet_details_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -2015,7 +2065,11 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
 
         if fleet_info:
             async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at)
+            await util.post_output_with_files(ctx, output, file_paths)
+            for file_path in file_paths:
+                os.remove(file_path)
+            return
     elif error:
         output = [str(error)]
     else:
@@ -2023,9 +2077,19 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='player', brief='Get historic user data', aliases=['user'])
+@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+async def cmd_past_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+    """
+    Get historic tournament player data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - player_name: Mandatory. The player for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
     async with ctx.typing():
         output = []
         error = None
@@ -2044,8 +2108,7 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
             if tourney_data is None:
                 user_infos = []
             else:
-                tourney_user_ids = tourney_data.user_ids
-                user_infos = await user.get_user_infos_from_tournament_data(player_name, tourney_data.users)
+                user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -2057,11 +2120,11 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
 
         if user_info:
             async with ctx.typing():
-                output = user.get_user_details_from_tourney_info(user_info, tourney_data.fleets, tourney_data.retrieved_at)
+                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
     elif error:
         output = [str(error)]
     else:
-        output = [f'Could not find a user named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        output = [f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
     await util.post_output(ctx, output)
 
 

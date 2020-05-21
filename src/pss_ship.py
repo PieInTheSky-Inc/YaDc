@@ -46,11 +46,11 @@ __ship_designs_cache = PssCache(
 
 # ---------- Helper functions ----------
 
-async def get_inspect_ship_for_user(user_id: str) -> dict:
+async def get_inspect_ship_for_user(user_id: str) -> (dict, dict):
     inspect_ship_path = await _get_inspect_ship_base_path(user_id)
     inspect_ship_data = await core.get_data_from_path(inspect_ship_path)
     result = core.xmltree_to_dict2(inspect_ship_data)
-    return result
+    return result.get('User', None), result.get('Ship', None)
 
 
 async def get_ship_level(ship_info: dict, ship_design_data: dict = None) -> str:

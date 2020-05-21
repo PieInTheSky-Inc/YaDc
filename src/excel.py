@@ -2,6 +2,7 @@ from datetime import datetime
 import openpyxl
 
 import pss_entity as entity
+import pss_tournament as tourney
 import settings
 import utility as util
 
@@ -14,8 +15,6 @@ __BASE_TABLE_STYLE = openpyxl.worksheet.table.TableStyleInfo(name="TableStyleLig
 
 
 def create_xl_from_data(data: list, file_prefix: str, data_retrieval_date: datetime, column_formats: list, file_name: str = None) -> str:
-    if data_retrieval_date is None:
-        data_retrieval_date = util.get_utcnow()
     if file_name:
         save_to = file_name
     else:
@@ -71,9 +70,12 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
     return save_to
 
 
-def get_file_name(file_prefix: str, data_retrieval_date: datetime) -> str:
+def get_file_name(file_prefix: str, data_retrieved_at: datetime) -> str:
     file_prefix = file_prefix.replace(' ', '_')
-    file_timestamp = data_retrieval_date.strftime('%Y%m%d-%H%M%S')
+    if tourney.is_tourney_running(utc_now=data_retrieved_at):
+        file_timestamp = f'tournament-{data_retrieved_at.year}-{util.get_month_short_name(data_retrieved_at).lower()}'
+    else:
+        file_timestamp = data_retrieved_at.strftime('%Y%m%d-%H%M%S')
     result = f'{file_prefix}_{file_timestamp}.xlsx'
     return result
 

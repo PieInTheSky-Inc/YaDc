@@ -10,6 +10,7 @@ import emojis
 import excel
 import pss_assert
 import pss_core as core
+import pss_entity as entity
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
@@ -58,38 +59,103 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 # ---------- Helper functions ----------
 
-async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict) -> list:
-    fleet_info = await _get_fleet_info_by_id(fleet_info[FLEET_KEY_NAME])
+def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    description = fleet_info.get('AllianceDescription')
+    if description is not None:
+        result = description.strip()
+    return result
 
-    division_design_id = fleet_info['DivisionDesignId']
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    fleet_description = fleet_info['AllianceDescription'].strip()
-    member_count = int(fleet_info['NumberOfMembers'])
-    min_trophy_required = fleet_info['MinTrophyRequired']
-    ranking = util.get_ranking(fleet_info['Ranking'])
-    requires_approval = fleet_info['RequiresApproval'].lower() == 'true'
-    stars = int(fleet_info['Score'])
-    trophies = sum([int(user_info['Trophy']) for user_info in fleet_users_infos.values()])
 
-    if requires_approval:
-        fleet_type = 'Private'
+def get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    if fleet_info:
+        division_design_id = fleet_info.get('DivisionDesignId')
+        if division_design_id is not None and division_design_id != '0':
+            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
+    return result
+
+
+def __get_member_count(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+    result = None
+    member_count = fleet_info.get('NumberOfMembers')
+    if member_count is not None:
+        result = member_count
     else:
-        fleet_type = 'Public'
-    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
+        result = len(fleet_users_infos)
+    return result
+
+
+def __get_min_trophies(fleet_info: entity.EntityDesignInfo) -> str:
+    result = fleet_info.get('MinTrophyRequired')
+    return result
+
+
+def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
+    result = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
+    return result
+
+
+def __get_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    ranking = fleet_info.get('Ranking')
+    if ranking is not None and ranking != '0':
+        result = util.get_ranking(ranking)
+    return result
+
+
+def __get_stars(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    stars = fleet_info.get('Score')
+    if stars is not None and stars != '0':
+        result = stars
+    return result
+
+
+def __get_trophies(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+    result = None
+    member_count = fleet_info.get('Trophy')
+    if member_count is not None:
+        result = member_count
+    else:
+        result = sum(int(user_info.get('Trophy', '0')) for user_info in fleet_users_infos.values())
+    return result
+
+
+def __get_type_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    requires_approval = fleet_info.get('RequiresApproval')
+    if requires_approval is not None:
+        result = lookups.get_lookup_value_or_default(lookups.FLEET_TYPE_LOOKUP, requires_approval.lower() == 'true')
+    return result
+
+
+
+async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, retrieved_at: datetime = None, is_past_data: bool = False) -> list:
+    fleet_name = __get_name(fleet_info)
+    description = __get_description_as_text(fleet_info)
+
+    details = {
+        'Ranking': __get_ranking_as_text(fleet_info),
+        'Min trophies': __get_min_trophies(fleet_info),
+        'Members': __get_member_count(fleet_info, fleet_users_infos),
+        'Trophies': __get_trophies(fleet_info, fleet_users_infos),
+        'Division': get_division_name_as_text(fleet_info),
+        'Stars': __get_stars(fleet_info),
+        'Type': __get_type_as_text(fleet_info)
+    }
 
     lines = [f'**```{fleet_name}```**```']
-    if fleet_description:
-        lines.append(f'{fleet_description}``````')
-    lines.append(f'Ranking - {ranking}')
-    lines.append(f'Min trophies - {min_trophy_required}')
-    lines.append(f'Members - {member_count}')
-    lines.append(f'Trophies - {util.get_reduced_number_compact(trophies)}')
-    if division != '-':
-        lines.append(f'Division - {division}')
-        lines.append(f'Stars - {util.get_reduced_number_compact(stars)}')
-    lines.append(f'Type - {fleet_type}')
+    if description is not None:
+        lines.append(f'{description}``````')
+    for detail_name, detail_value in details.items():
+        if detail_value is not None:
+            lines.append(f'{detail_name} - {detail_value}')
 
-    lines[-1] += '```'
+    if is_past_data:
+        lines.append(f'```{util.get_historic_data_note(retrieved_at)}')
+    else:
+        lines[-1] += '```'
 
     return lines
 
@@ -137,30 +203,34 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, fleet_data: dict = None, user_data: dict = None, data_date: datetime = None) -> (list, list):
-    """Returns a list of lines for the post, as well as the path to the spreadsheet created"""
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> (list, list):
+    """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
-    retrieval_date = util.get_utcnow()
-    fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
-    if fleet_users_infos:
-        fleet_info = list(fleet_users_infos.values())[0]['Alliance']
-    else:
-        fleet_info = await _get_fleet_info_by_name(fleet_name)
+    is_past_data = past_fleets_data and past_users_data and past_retrieved_at
 
-    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieval_date)
-    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieval_date, FLEET_SHEET_COLUMN_TYPES)
+    if is_past_data:
+        retrieved_at = past_retrieved_at
+        fleet_info = past_fleets_data[fleet_id]
+        fleet_users_infos = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
+    else:
+        retrieved_at = util.get_utcnow()
+        fleet_info = await _get_fleet_info_by_id(fleet_id)
+        fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
+
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, retrieved_at=retrieved_at, is_past_data=is_past_data)
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
+    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES)
     file_paths = [fleet_sheet_path_current]
 
-    if fleet_data and fleet_id in fleet_data.keys() and user_data and data_date:
-        fleet_info = fleet_data[fleet_id]
+    """if past_fleets_data and fleet_id in past_fleets_data.keys() and past_users_data and past_retrieved_at:
+        fleet_info = past_fleets_data[fleet_id]
         fleet_name = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
-        fleet_users_infos = dict({user_id: user_info for user_id, user_info in user_data.items() if user_info['AllianceId'] == fleet_id})
-        fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, data_date, fleet_name)
-        file_name = f'{fleet_name}_tournament-{data_date.year}-{util.get_month_short_name(data_date).lower()}.xlsx'
-        fleet_sheet_path_past = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, data_date, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
-        file_paths.append(fleet_sheet_path_past)
+        fleet_users_infos = dict({user_id: user_info for user_id, user_info in past_users_data.items() if user_info['AllianceId'] == fleet_id})
+        fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, past_retrieved_at, fleet_name)
+        file_name = f'{fleet_name}_tournament-{past_retrieved_at.year}-{util.get_month_short_name(past_retrieved_at).lower()}.xlsx'
+        fleet_sheet_path_past = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, past_retrieved_at, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
+        file_paths.append(fleet_sheet_path_past)"""
 
     return post_content, file_paths
 
@@ -193,7 +263,7 @@ async def _get_search_fleet_users_base_path(fleet_id: str) -> str:
 
 # ---------- Alliance info ----------
 
-async def get_fleet_details_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
+async def get_fleet_infos_by_name(fleet_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
     pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
 
     fleet_infos = list((await _get_fleet_infos_by_name(fleet_name)).values())
@@ -253,7 +323,7 @@ async def get_fleet_users_by_info(fleet_info: dict) -> dict:
 
 # ---------- Stars ----------
 
-async def get_fleet_details_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
+async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
     fleet_name_lower = fleet_name.lower()
     result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
     fleet_infos_current = await _get_fleet_infos_by_name(fleet_name)
