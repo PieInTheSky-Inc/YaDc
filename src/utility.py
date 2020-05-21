@@ -105,7 +105,7 @@ def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
     return result
 
 
-def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True) -> str:
+def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True, include_seconds: bool = True) -> str:
     is_past = total_seconds < 0
     if is_past:
         total_seconds = abs(total_seconds)
@@ -115,23 +115,29 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
     weeks, days = divmod(days, 7)
     seconds = round(seconds)
     minutes = math.floor(minutes)
+    if not include_seconds:
+        minutes += 1
     hours = math.floor(hours)
     days = math.floor(days)
     weeks = math.floor(weeks)
+    result_parts = []
     result = ''
     print_weeks = weeks > 0
     print_days = print_weeks or days > 0
     print_hours = print_days or hours > 0
     print_minutes = print_hours or minutes > 0
     if print_weeks:
-        result += f'{weeks:d}w '
+        result_parts.append(f'{weeks:d}w')
     if print_days:
-        result += f'{days:d}d '
+        result_parts.append(f'{days:d}d')
     if print_hours:
-        result += f'{hours:d}h '
+        result_parts.append(f'{hours:d}h')
     if print_minutes:
-        result += f'{minutes:d}m '
-    result += f'{seconds:d}s'
+        result_parts.append(f'{minutes:d}m')
+    if not result_parts or include_seconds:
+        result_parts.append(f'{seconds:d}s')
+
+    result = ' '.join(result_parts)
 
     if include_relative_indicator:
         if is_past:
@@ -142,9 +148,9 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
 
 
 
-def get_formatted_timedelta(delta, include_relative_indicator=True):
+def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True):
     total_seconds = delta.total_seconds()
-    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator)
+    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
 
 
 def get_utcnow():
@@ -448,8 +454,11 @@ def url_escape(s: str) -> str:
     return s
 
 
-def format_excel_datetime(dt: datetime) -> str:
-    result = dt.strftime('%Y-%m-%d %H:%M:%S')
+def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
+    format_str = '%Y-%m-%d %H:%M'
+    if include_seconds:
+        format_str += ':%S'
+    result = dt.strftime(format_str)
     return result
 
 
