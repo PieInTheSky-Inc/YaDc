@@ -311,11 +311,7 @@ async def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE
 
 
 def get_user_search_details(user_info: dict) -> str:
-    user_name = user_info[USER_DESCRIPTION_PROPERTY_NAME]
-    user_name_current = user_info.get('CurrentName', None)
-    if user_name_current is not None:
-        user_name += f' (now: {user_name_current})'
-
+    user_name = __get_user_name_as_text(user_info)
     user_trophies = user_info.get('Trophy', '?')
     user_stars = int(user_info.get('AllianceScore', '0'))
 
