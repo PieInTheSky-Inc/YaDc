@@ -92,7 +92,13 @@ def __get_min_trophies(fleet_info: entity.EntityDesignInfo) -> str:
 
 
 def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
-    result = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
+    result = None
+    fleet_name = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
+    if fleet_name is not None:
+        result = fleet_name
+        current_name = fleet_info.get('CurrentAllianceName')
+        if current_name is not None:
+            result += f' (now: {current_name})'
     return result
 
 
@@ -206,18 +212,21 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
 async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> (list, list):
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     is_past_data = past_fleets_data and past_users_data and past_retrieved_at
 
     if is_past_data:
         retrieved_at = past_retrieved_at
         fleet_info = past_fleets_data[fleet_id]
+        current_fleet_info = await _get_fleet_info_by_id(fleet_id)
+        if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
+            fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_users_infos = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
     else:
         retrieved_at = util.get_utcnow()
         fleet_info = await _get_fleet_info_by_id(fleet_id)
         fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
 
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, retrieved_at=retrieved_at, is_past_data=is_past_data)
     fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
     fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES)
@@ -323,8 +332,6 @@ async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data:
         if fleet_id in fleet_data:
             if fleet_id not in result:
                 result[fleet_id] = fleet_data[fleet_id]
-            if result[fleet_id][fleet.FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]:
-                result[fleet_id]['CurrentAllianceName'] = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
