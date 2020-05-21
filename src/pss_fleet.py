@@ -253,7 +253,7 @@ async def get_fleet_users_by_info(fleet_info: dict) -> dict:
 
 # ---------- Stars ----------
 
-async def get_fleet_details_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
+async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data: dict) -> list:
     fleet_name_lower = fleet_name.lower()
     result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
     fleet_infos_current = await _get_fleet_infos_by_name(fleet_name)

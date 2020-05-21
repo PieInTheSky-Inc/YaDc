@@ -153,11 +153,12 @@ def get_utcnow():
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
     result = None
-    try:
-        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
-    except ValueError:
-        result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
-    result = pytz.utc.localize(result)
+    if pss_datetime is not None:
+        try:
+            result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
+        except ValueError:
+            result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
+        result = pytz.utc.localize(result)
     return result
 
 

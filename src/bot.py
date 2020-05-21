@@ -1976,8 +1976,7 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
             if tourney_data is None:
                 fleet_infos = []
             else:
-                tourney_fleet_ids = tourney_data.fleet_ids
-                fleet_infos = await fleet.get_fleet_details_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1997,9 +1996,16 @@ async def cmd_past_stars_fleet(ctx: discord.ext.commands.Context, month: str, ye
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='player', brief='Get historic user data', aliases=['user'])
+@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
 @discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+async def cmd_past_fleet(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
+    async with ctx.typing():
+        output = []
+
+
+@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
+@discord.ext.commands.cooldown(rate=RATE, per=COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_past_player(ctx: discord.ext.commands.Context, month: str, year: str = None, *, player_name: str = None):
     async with ctx.typing():
         output = []
         error = None
@@ -2018,8 +2024,7 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
             if tourney_data is None:
                 user_infos = []
             else:
-                tourney_user_ids = tourney_data.user_ids
-                user_infos = await user.get_user_infos_from_tournament_data(player_name, tourney_data.users)
+                user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -2031,7 +2036,7 @@ async def cmd_stars_player(ctx: discord.ext.commands.Context, month: str, year: 
 
         if user_info:
             async with ctx.typing():
-                output = user.get_user_details_from_tourney_info(user_info, tourney_data.fleets, tourney_data.retrieved_at)
+                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
     elif error:
         output = [str(error)]
     else:
