@@ -131,8 +131,8 @@ def __format_pvp_stats(wins: int, losses: int, draws: int) -> str:
 
 
 def __format_timestamp(timestamp: datetime, retrieved_at: datetime) -> str:
-    retrieved_ago = util.get_formatted_timedelta(timestamp - retrieved_at)
-    result = f'{util.format_excel_datetime(timestamp)} ({retrieved_ago})'
+    retrieved_ago = util.get_formatted_timedelta(timestamp - retrieved_at, include_seconds=False)
+    result = f'{util.format_excel_datetime(timestamp, include_seconds=False)} ({retrieved_ago})'
     return result
 
 
