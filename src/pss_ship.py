@@ -7,6 +7,7 @@ import re
 import pss_assert
 from cache import PssCache
 import pss_core as core
+import pss_entity as entity
 import pss_login as login
 import pss_lookups as lookups
 import settings
@@ -29,6 +30,13 @@ SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
 
 
 # ---------- Initilization ----------
+
+ships_designs_retriever = entity.EntityDesignsRetriever(
+    SHIP_DESIGN_BASE_PATH,
+    SHIP_DESIGN_KEY_NAME,
+    SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='ShipDesigns'
+)
 
 __ship_designs_cache = PssCache(
     SHIP_DESIGN_BASE_PATH,

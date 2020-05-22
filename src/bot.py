@@ -47,6 +47,7 @@ import pss_mission as mission
 import pss_promo as promo
 import pss_research as research
 import pss_room as room
+import pss_ship as ship
 import pss_tournament as tourney
 import pss_top
 import pss_training as training
@@ -2261,7 +2262,7 @@ async def cmd_raw_mission(ctx: discord.ext.commands.Context, mission_id: int = N
         await __post_raw_spreadsheet(ctx, mission.missions_designs_retriever, mission.MISSION_DESIGN_KEY_NAME, 'mission_designs')
 
 
-@cmd_raw.command(name='promotion', brief='Get raw promotion data from the API', aliases=['promo'])
+@cmd_raw.command(name='promotion', brief='Get raw promotion data from the API', aliases=['promo', 'promotions', 'promos'])
 @discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
 async def cmd_raw_promotion(ctx: discord.ext.commands.Context, promotion_id: int = None):
     """
@@ -2315,6 +2316,20 @@ async def cmd_raw_room_purchase(ctx: discord.ext.commands.Context, room_purchase
         await __post_raw_entity(ctx, room.rooms_designs_purchases_retriever, 'room purchase', str(room_purchase_id))
     else:
         await __post_raw_spreadsheet(ctx, room.rooms_designs_purchases_retriever, room.ROOM_DESIGN_PURCHASE_KEY_NAME, 'room_purchase_designs')
+
+
+@cmd_raw.command(name='ship', brief='Get raw ship data from the API', aliases=['ships'])
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_ship(ctx: discord.ext.commands.Context, ship_id: int = None):
+    """
+    Get raw ship design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    if ship_id:
+        await __post_raw_entity(ctx, ship.ships_designs_retriever, 'ship', str(ship_id))
+    else:
+        await __post_raw_spreadsheet(ctx, ship.ships_designs_retriever, ship.SHIP_DESIGN_KEY_NAME, 'ship_designs')
 
 
 @cmd_raw.command(name='training', brief='Get raw collection data from the API', aliases=['trainings'])

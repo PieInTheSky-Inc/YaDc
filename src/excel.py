@@ -102,13 +102,14 @@ def _fix_field(field: str):
             else:
                 return dt
         except (TypeError, ValueError):
-            try:
-                return int(field)
-            except (TypeError, ValueError):
+            if not (len(field) >= 2 and field.startswith('0')):
                 try:
-                    return float(field)
+                    return int(field)
                 except (TypeError, ValueError):
-                    pass
+                    try:
+                        return float(field)
+                    except (TypeError, ValueError):
+                        pass
         field_lower = field.lower().strip()
         if field_lower == 'false':
             return False
