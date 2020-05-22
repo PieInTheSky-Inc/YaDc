@@ -38,6 +38,7 @@ import pss_dropship as dropship
 import pss_entity as entity
 import pss_exception
 import pss_fleet as fleet
+import pss_gm as gm
 import pss_item as item
 import pss_login as login
 import pss_lookups as lookups
@@ -2112,6 +2113,45 @@ async def cmd_raw_collection(ctx: discord.ext.commands.Context, collection_id: i
         await __post_raw_entity(ctx, crew.collections_designs_retriever, 'collection', str(collection_id))
     else:
         await __post_raw_spreadsheet(ctx, crew.collections_designs_retriever, crew.COLLECTION_DESIGN_KEY_NAME, 'collection_designs')
+
+
+@cmd_raw.group(name='gm', brief='Get raw gm data from the API', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_gm(ctx: discord.ext.commands.Context):
+    """
+    Get raw gm design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    pass
+
+
+@cmd_raw_gm.command(name='system', brief='Get raw gm data from the API', aliases=['systems', 'star', 'stars'])
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_gm_system(ctx: discord.ext.commands.Context, star_system_id: int = None):
+    """
+    Get raw star system design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    if star_system_id:
+        await __post_raw_entity(ctx, gm.starsystem_designs_retriever, 'star system', str(star_system_id))
+    else:
+        await __post_raw_spreadsheet(ctx, gm.starsystem_designs_retriever, gm.STARSYSTEM_DESIGN_KEY_NAME, 'star_system_designs')
+
+
+@cmd_raw_gm.command(name='path', brief='Get raw gm data from the API', aliases=['paths', 'link', 'links'])
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_gm_link(ctx: discord.ext.commands.Context, star_system_link_id: int = None):
+    """
+    Get raw star system link design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    if star_system_link_id:
+        await __post_raw_entity(ctx, gm.starsystemlink_designs_retriever, 'star system link', str(star_system_link_id))
+    else:
+        await __post_raw_spreadsheet(ctx, gm.starsystemlink_designs_retriever, gm.STARSYSTEMLINK_DESIGN_KEY_NAME, 'star_system_link_designs')
 
 
 @cmd_raw.command(name='item', brief='Get raw item data from the API', aliases=['items'])
