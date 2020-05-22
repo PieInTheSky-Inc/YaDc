@@ -40,15 +40,6 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
 }
 
 
-DMG_TYPES: List[str] = [
-    'SystemDamage',
-    'CharacterDamage',
-    'ShieldDamage',
-    'HullDamage',
-    'DirectSystemDamage'
-]
-
-
 DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
     '-': '0',
     'A': '1',
@@ -57,8 +48,24 @@ DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
     'D': '4'
 }
 
+DIVISION_CUTOFF_LOOKUP: Dict[str, Tuple[int, int]] = {
+    '-': (-1, -1),
+    'A': (1, 8),
+    'B': (9, 20),
+    'C': (21, 50),
+    'D': (51, 100)
+}
 
 DIVISION_DESIGN_ID_TO_CHAR: Dict[str, str] = dict([(value, key) for key, value in DIVISION_CHAR_TO_DESIGN_ID.items()])
+
+
+DMG_TYPES: List[str] = [
+    'SystemDamage',
+    'CharacterDamage',
+    'ShieldDamage',
+    'HullDamage',
+    'DirectSystemDamage'
+]
 
 
 EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {

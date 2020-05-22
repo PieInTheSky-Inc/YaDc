@@ -67,6 +67,18 @@ def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
+def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+    result = None
+    division_name = get_division_name_as_text(fleet_info)
+    if division_name is not None and division_name != '-':
+        result = division_name
+        ranking = fleet_info.get('Ranking')
+        if ranking is not None and ranking != '0':
+            division_ranking = int(ranking) - lookups.DIVISION_CUTOFF_LOOKUP[division_name][0] + 1
+            result += f' ({util.get_ranking(division_ranking)})'
+    return result
+
+
 def get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     result = None
     if fleet_info:
@@ -146,7 +158,7 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
         'Min trophies': __get_min_trophies(fleet_info),
         'Members': __get_member_count(fleet_info, fleet_users_infos),
         'Trophies': __get_trophies(fleet_info, fleet_users_infos),
-        'Division': get_division_name_as_text(fleet_info),
+        'Division': __get_division_name_and_ranking_as_text(fleet_info),
         'Stars': __get_stars(fleet_info),
         'Type': __get_type_as_text(fleet_info)
     }
@@ -217,6 +229,10 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
 
     if is_past_data:
         retrieved_at = past_retrieved_at
+        if fleet_info.get('CurrentAllianceName') is None:
+            current_fleet_info = await _get_fleet_info_by_id(fleet_id)
+            if current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
+                fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_users_infos = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
     else:
         retrieved_at = util.get_utcnow()
