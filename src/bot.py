@@ -44,6 +44,7 @@ import pss_item as item
 import pss_login as login
 import pss_lookups as lookups
 import pss_mission as mission
+import pss_promo as promo
 import pss_research as research
 import pss_room as room
 import pss_tournament as tourney
@@ -2248,7 +2249,7 @@ async def cmd_raw_item(ctx: discord.ext.commands.Context, item_id: int = None):
 
 @cmd_raw.command(name='mission', brief='Get raw mission data from the API', aliases=['missions'])
 @discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
-async def cmd_raw_missions(ctx: discord.ext.commands.Context, mission_id: int = None):
+async def cmd_raw_mission(ctx: discord.ext.commands.Context, mission_id: int = None):
     """
     Get raw mission design data from the PSS API.
 
@@ -2258,6 +2259,20 @@ async def cmd_raw_missions(ctx: discord.ext.commands.Context, mission_id: int = 
         await __post_raw_entity(ctx, mission.missions_designs_retriever, 'mission', str(mission_id))
     else:
         await __post_raw_spreadsheet(ctx, mission.missions_designs_retriever, mission.MISSION_DESIGN_KEY_NAME, 'mission_designs')
+
+
+@cmd_raw.command(name='promotion', brief='Get raw promotion data from the API', aliases=['promo'])
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_promotion(ctx: discord.ext.commands.Context, promotion_id: int = None):
+    """
+    Get raw promotion design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    if promotion_id:
+        await __post_raw_entity(ctx, promo.promotion_designs_retriever, 'promotion', str(promotion_id))
+    else:
+        await __post_raw_spreadsheet(ctx, promo.promotion_designs_retriever, promo.PROMOTION_DESIGN_KEY_NAME, 'promotion_designs')
 
 
 @cmd_raw.command(name='research', brief='Get raw research data from the API', aliases=['researches'])
