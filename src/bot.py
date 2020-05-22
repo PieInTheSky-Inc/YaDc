@@ -2160,9 +2160,9 @@ async def cmd_raw_achievement(ctx: discord.ext.commands.Context, achievement_id:
     It may take a while for the bot to create the file, so be patient ;)
     """
     if achievement_id:
-        await __post_raw_entity(ctx, achievement.achievement_designs_retriever, 'achievement', str(achievement_id))
+        await __post_raw_entity(ctx, achievement.achievements_designs_retriever, 'achievement', str(achievement_id))
     else:
-        await __post_raw_spreadsheet(ctx, achievement.achievement_designs_retriever, achievement.ACHIEVEMENT_DESIGN_KEY_NAME, 'achievement_designs')
+        await __post_raw_spreadsheet(ctx, achievement.achievements_designs_retriever, achievement.ACHIEVEMENT_DESIGN_KEY_NAME, 'achievement_designs')
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data from the API', aliases=['crew', 'chars', 'crews'])
@@ -2213,9 +2213,9 @@ async def cmd_raw_gm_system(ctx: discord.ext.commands.Context, star_system_id: i
     It may take a while for the bot to create the file, so be patient ;)
     """
     if star_system_id:
-        await __post_raw_entity(ctx, gm.starsystem_designs_retriever, 'star system', str(star_system_id))
+        await __post_raw_entity(ctx, gm.star_systems_designs_retriever, 'star system', str(star_system_id))
     else:
-        await __post_raw_spreadsheet(ctx, gm.starsystem_designs_retriever, gm.STARSYSTEM_DESIGN_KEY_NAME, 'star_system_designs')
+        await __post_raw_spreadsheet(ctx, gm.star_systems_designs_retriever, gm.STARSYSTEM_DESIGN_KEY_NAME, 'star_system_designs')
 
 
 @cmd_raw_gm.command(name='path', brief='Get raw gm data from the API', aliases=['paths', 'link', 'links'])
@@ -2227,9 +2227,9 @@ async def cmd_raw_gm_link(ctx: discord.ext.commands.Context, star_system_link_id
     It may take a while for the bot to create the file, so be patient ;)
     """
     if star_system_link_id:
-        await __post_raw_entity(ctx, gm.starsystemlink_designs_retriever, 'star system link', str(star_system_link_id))
+        await __post_raw_entity(ctx, gm.star_system_links_designs_retriever, 'star system link', str(star_system_link_id))
     else:
-        await __post_raw_spreadsheet(ctx, gm.starsystemlink_designs_retriever, gm.STARSYSTEMLINK_DESIGN_KEY_NAME, 'star_system_link_designs')
+        await __post_raw_spreadsheet(ctx, gm.star_system_links_designs_retriever, gm.STARSYSTEMLINK_DESIGN_KEY_NAME, 'star_system_link_designs')
 
 
 @cmd_raw.command(name='item', brief='Get raw item data from the API', aliases=['items'])
@@ -2283,9 +2283,9 @@ async def cmd_raw_room(ctx: discord.ext.commands.Context, room_id: int = None):
     It may take a while for the bot to create the file, so be patient ;)
     """
     if room_id:
-        await __post_raw_entity(ctx, training.trainings_designs_retriever, 'room', str(room_id))
+        await __post_raw_entity(ctx, room.rooms_designs_retriever, 'room', str(room_id))
     else:
-        await __post_raw_spreadsheet(ctx, training.trainings_designs_retriever, room.ROOM_DESIGN_KEY_NAME, 'room_designs')
+        await __post_raw_spreadsheet(ctx, room.rooms_designs_retriever, room.ROOM_DESIGN_KEY_NAME, 'room_designs')
 
 
 @cmd_raw_room.command(name='purchase', brief='Get raw collection data from the API', aliases=['purchases'])
@@ -2297,9 +2297,9 @@ async def cmd_raw_room_purchase(ctx: discord.ext.commands.Context, room_purchase
     It may take a while for the bot to create the file, so be patient ;)
     """
     if room_purchase_id:
-        await __post_raw_entity(ctx, training.trainings_designs_retriever, 'room purchase', str(room_purchase_id))
+        await __post_raw_entity(ctx, room.rooms_designs_purchases_retriever, 'room purchase', str(room_purchase_id))
     else:
-        await __post_raw_spreadsheet(ctx, training.trainings_designs_retriever, room.ROOM_DESIGN_PURCHASE_KEY_NAME, 'room_purchase_designs')
+        await __post_raw_spreadsheet(ctx, room.rooms_designs_purchases_retriever, room.ROOM_DESIGN_PURCHASE_KEY_NAME, 'room_purchase_designs')
 
 
 @cmd_raw.command(name='training', brief='Get raw collection data from the API', aliases=['trainings'])
@@ -2523,10 +2523,10 @@ async def __post_raw_entity(ctx: discord.ext.commands.Context, retriever: entity
         data = await retriever.get_data_dict3()
         entity_design_info = data.get(entity_id, None)
         if entity_design_info is None:
-            output = [f'Could find raw {entity_name} data for id {entity_id}']
+            output = [f'Could not find raw **{entity_name}** data for id **{entity_id}**.']
         else:
             flat_entity = __flatten_raw_entity(entity_design_info)
-            output.append(f'Raw **{entity_name}** data for id **{entity_id}**```')
+            output.append(f'Raw **{entity_name}** data for id **{entity_id}**:```')
             for key, value in flat_entity.items():
                 output.append(f'{key} = {value}')
             output[-1] += '```'

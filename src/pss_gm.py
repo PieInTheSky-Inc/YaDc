@@ -28,14 +28,14 @@ STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
 
 # ---------- Initialization ----------
 
-starsystem_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+star_systems_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
     STARSYSTEM_DESIGN_BASE_PATH,
     STARSYSTEM_DESIGN_KEY_NAME,
     STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
     'StarSystemDesigns'
 )
 
-starsystemlink_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+star_system_links_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
     STARSYSTEMLINK_DESIGN_BASE_PATH,
     STARSYSTEMLINK_DESIGN_KEY_NAME,
     STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME,
