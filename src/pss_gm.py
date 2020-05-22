@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+import discord
+import os
+import re
+from typing import Callable, Dict, List, Optional, Tuple, Union
+
+import pss_assert
+from cache import PssCache
+import pss_core as core
+import pss_entity as entity
+import pss_lookups as lookups
+import resources
+import settings
+import utility as util
+
+
+
+
+
+# ---------- Constants ----------
+
+STARSYSTEM_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
+STARSYSTEM_DESIGN_KEY_NAME = 'StarSystemId'
+STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
+
+STARSYSTEMLINK_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
+STARSYSTEMLINK_DESIGN_KEY_NAME = 'StarSystemId'
+STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
+
+
+
+
+
+
+
+
+
+
+# ---------- Initialization ----------
+
+starsystem_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+    STARSYSTEM_DESIGN_BASE_PATH,
+    STARSYSTEM_DESIGN_KEY_NAME,
+    STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    'StarSystemDesigns'
+)
+
+starsystemlink_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+    STARSYSTEMLINK_DESIGN_BASE_PATH,
+    STARSYSTEMLINK_DESIGN_KEY_NAME,
+    STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    'StarSystemLinkDesigns'
+)
