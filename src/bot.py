@@ -30,6 +30,7 @@ import settings
 import utility as util
 
 import excel
+import pss_achievement as achievement
 import pss_assert
 import pss_core as core
 import pss_crew as crew
@@ -2148,6 +2149,20 @@ async def cmd_raw(ctx: discord.ext.commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     pass
+
+
+@cmd_raw.command(name='achievement', brief='Get raw achievement data from the API', aliases=['achievements'])
+@discord.ext.commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=discord.ext.commands.BucketType.user)
+async def cmd_raw_achievement(ctx: discord.ext.commands.Context, achievement_id: int = None):
+    """
+    Get raw achievement design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    if achievement_id:
+        await __post_raw_entity(ctx, achievement.achievement_designs_retriever, 'achievement', str(achievement_id))
+    else:
+        await __post_raw_spreadsheet(ctx, achievement.achievement_designs_retriever, achievement.ACHIEVEMENT_DESIGN_KEY_NAME, 'achievement_designs')
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data from the API', aliases=['crew', 'chars', 'crews'])
