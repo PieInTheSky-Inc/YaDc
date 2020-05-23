@@ -428,7 +428,7 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_parameters(ctx: discord.ext.commands.Context, month: str, year: str) -> Tuple[str, str]:
+    def retrieve_past_parameters(ctx: discord.ext.commands.Context, month: str, year: str) -> Tuple[str, str, str]:
         param = None
 
         if month is not None:
