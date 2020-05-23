@@ -962,7 +962,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     async with ctx.typing():
-        output, room_found = await room.get_room_details_from_name(room_name)
+        output, _ = await room.get_room_details_from_name(room_name)
     await util.post_output(ctx, output)
 
 
@@ -1203,7 +1203,6 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
         if exact_name:
             fleet_name = exact_name
         fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-        i = 0
 
     if fleet_infos:
         if len(fleet_infos) == 1:
