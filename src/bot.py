@@ -2352,6 +2352,28 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
     elif action == 'commands':
         output = [', '.join(sorted(bot.all_commands.keys()))]
         await util.post_output(ctx, output)
+    elif action == 'setting':
+        setting_name = params.replace(' ', '_').upper()
+        result = settings.__dict__.get(setting_name)
+        if result is None:
+            output = [f'Could not find a setting named `{params}`']
+        else:
+            if isinstance(result, str):
+                result = f'"{result}""'
+            elif isinstance(result, list):
+                for i, element in enumerate(result):
+                    if isinstance(element, str):
+                        result[i] = f'"{element}"'
+            elif isinstance(result, dict):
+                for key, value in result.items():
+                    result.pop(key)
+                    if isinstance(key, str):
+                        key = f'"{key}"'
+                    if isinstance(value, str):
+                        value = f'"{value}"'
+                    result[key] = value
+            output = [str(result)]
+        await util.post_output(ctx, output)
 
 
 @bot.group(brief='list available devices', name='device', hidden=True)

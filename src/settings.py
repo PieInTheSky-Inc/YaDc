@@ -57,7 +57,8 @@ PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
 
 
-RAW_COMMAND_USERS = json.loads(os.environ.get('RAW_COMMAND_USERS', '[]'))
+RAW_COMMAND_USERS_RAW = os.environ.get('RAW_COMMAND_USERS', '[]')
+RAW_COMMAND_USERS = json.loads(str(RAW_COMMAND_USERS_RAW))
 
 
 SETTINGS_TABLE_NAME = 'settings'
