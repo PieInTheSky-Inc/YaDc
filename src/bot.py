@@ -2359,7 +2359,7 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
             output = [f'Could not find a setting named `{params}`']
         else:
             if isinstance(result, str):
-                result = f'"{result}""'
+                result = f'"{result}"'
             elif isinstance(result, list):
                 for i, element in enumerate(result):
                     if isinstance(element, str):
