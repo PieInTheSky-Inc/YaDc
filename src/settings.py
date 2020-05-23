@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 
 
@@ -54,6 +55,9 @@ PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
 
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
+
+
+RAW_COMMAND_USERS = json.loads(os.environ.get('RAW_COMMAND_USERS', '[]'))
 
 
 SETTINGS_TABLE_NAME = 'settings'

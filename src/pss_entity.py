@@ -310,6 +310,19 @@ class EntityDesignsRetriever:
         )
 
 
+    @property
+    def base_path(self) -> str:
+        return self.__base_path
+
+    @property
+    def description_property_name(self) -> str:
+        return self.__description_property_name
+
+    @property
+    def key_name(self) -> str:
+        return self.__key_name
+
+
     async def get_data_dict3(self) -> Dict[str, Dict[str, object]]:
         return await self.__cache.get_data_dict3()
 
