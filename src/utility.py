@@ -50,6 +50,11 @@ def convert_ticks_to_seconds(ticks: int) -> float:
         return 0.0
 
 
+def convert_python_to_camel_case(s: str) -> str:
+    result = ''.join(word.title() for word in s.split('_'))
+    return result
+
+
 def shell_cmd(cmd):
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8')

@@ -45,6 +45,7 @@ import pss_login as login
 import pss_lookups as lookups
 import pss_mission as mission
 import pss_promo as promo
+import pss_raw as raw
 import pss_research as research
 import pss_room as room
 import pss_ship as ship
@@ -59,8 +60,8 @@ import pss_user as user
 RATE = 5
 COOLDOWN = 15.0
 
-RAW_RATE = 2
-RAW_COOLDOWN = 20.0
+RAW_RATE = 5
+RAW_COOLDOWN = 10.0
 
 PWD = os.getcwd()
 sys.path.insert(0, PWD + '/src/')
@@ -2154,35 +2155,35 @@ async def cmd_raw(ctx: commands.Context):
 
 @cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_achievement(ctx: commands.Context, achievement_id: int = None):
+async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
     """
     Get raw achievement design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
+    await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_char(ctx: commands.Context, char_id: int = None):
+async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     """
     Get raw character design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
+    await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
 
 
 @cmd_raw.command(name='collection', brief='Get raw collection data', aliases=['coll', 'collections'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_collection(ctx: commands.Context, collection_id: int = None):
+async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
     """
     Get raw collection design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
+    await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
 
 
 @cmd_raw.group(name='gm', brief='Get raw gm data', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
@@ -2198,112 +2199,112 @@ async def cmd_raw_gm(ctx: commands.Context):
 
 @cmd_raw_gm.command(name='system', brief='Get raw gm data', aliases=['systems', 'star', 'stars'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_system(ctx: commands.Context, star_system_id: int = None):
+async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
     """
     Get raw star system design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
+    await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
 
 
 @cmd_raw_gm.command(name='path', brief='Get raw gm data', aliases=['paths', 'link', 'links'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_link(ctx: commands.Context, star_system_link_id: int = None):
+async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
     """
     Get raw star system link design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
+    await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
 
 
 @cmd_raw.command(name='item', brief='Get raw item data', aliases=['items'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_item(ctx: commands.Context, item_id: int = None):
+async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     """
     Get raw item design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
+    await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
 
 
 @cmd_raw.command(name='mission', brief='Get raw mission data', aliases=['missions'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_mission(ctx: commands.Context, mission_id: int = None):
+async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     """
     Get raw mission design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
+    await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
 
 
 @cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_promotion(ctx: commands.Context, promotion_id: int = None):
+async def cmd_raw_promotion(ctx: commands.Context, *, promotion_id: str = None):
     """
     Get raw promotion design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promotion_id)
+    await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promotion_id)
 
 
 @cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_research(ctx: commands.Context, research_id: int = None):
+async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     """
     Get raw research design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
+    await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
 
 
 @cmd_raw.group(name='room', brief='Get raw collection data', aliases=['rooms'], invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room(ctx: commands.Context, room_id: int = None):
+async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     """
     Get raw room design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
+    await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
 
 
 @cmd_raw_room.command(name='purchase', brief='Get raw collection data', aliases=['purchases'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room_purchase(ctx: commands.Context, room_purchase_id: int = None):
+async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
     """
     Get raw room purchase design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
+    await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
 
 
 @cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ship(ctx: commands.Context, ship_id: int = None):
+async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     """
     Get raw ship design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
+    await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
 
 
 @cmd_raw.command(name='training', brief='Get raw collection data', aliases=['trainings'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_training(ctx: commands.Context, training_id: int = None):
+async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     """
     Get raw training design data from the PSS API.
 
     It may take a while for the bot to create the file, so be patient ;)
     """
-    await __post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
+    await raw.post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
 
 
 
@@ -2499,76 +2500,8 @@ async def cmd_device_select(ctx: commands.Context, device_key: str):
 
 # ---------- Command Helper Functions ----------
 
-def __flatten_raw_data(data: entity.EntitiesDesignsData) -> list:
-    flat_data = []
-    for row in data.values():
-        result_row = __flatten_raw_entity(row)
-        flat_data.append(result_row)
-    return flat_data
 
 
-def __flatten_raw_entity(entity_info: entity.EntityDesignInfo) -> dict:
-    result = {}
-    for field_name, field in entity_info.items():
-        if __should_include_raw_field(field):
-            if isinstance(field, dict):
-                for sub_field_name, sub_field in field.items():
-                    result[f'{field_name}.{sub_field_name}'] = sub_field
-            else:
-                result[field_name] = field
-    return result
-
-
-async def __post_raw_spreadsheet(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str):
-    async with ctx.typing():
-        entity_name = entity_name.replace(' ', '_')
-        utc_now = util.get_utcnow()
-        data = await retriever.get_data_dict3()
-        flattened_data = __flatten_raw_data(data)
-        file_path = excel.create_xl_from_raw_data_dict(flattened_data, retriever.key_name, f'{entity_name}_designs', utc_now)
-    await util.post_output_with_files(ctx, [], [file_path])
-    os.remove(file_path)
-
-
-async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str, entity_id: str):
-    async with ctx.typing():
-        output = []
-        data = await retriever.get_data_dict3()
-        entity_design_info = data.get(entity_id, None)
-        if entity_design_info is None:
-            output = [f'Could not find raw **{entity_name}** data for id **{entity_id}**.']
-        else:
-            flat_entity = __flatten_raw_entity(entity_design_info)
-            output.append(f'Raw **{entity_name}** data for id **{entity_id}**:```')
-            for key, value in flat_entity.items():
-                output.append(f'{key} = {value}')
-            output[-1] += '```'
-    await util.post_output(ctx, output)
-
-
-async def __post_raw_data(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str, entity_id: int):
-    if ctx.author.id in settings.RAW_COMMAND_USERS:
-        if entity_id:
-            await __post_raw_entity(ctx, retriever, entity_name, str(entity_id))
-        else:
-            await __post_raw_spreadsheet(ctx, retriever, entity_name)
-    else:
-        await ctx.send('You are not allowed to use this command. If you think this is an error, join the support server and contact the bot\'s author.')
-
-
-def __should_include_raw_field(field) -> bool:
-    # include properties which are:
-    #  - strings
-    #  - non-nested dicts
-    # don't include properties which are:
-    #  - nested dicts
-    if isinstance(field, str):
-        return True
-    if isinstance(field, dict):
-        if field and len(field) > 0:
-            field_sub_keys = [not isinstance(field[sub_key], dict) for sub_key in field.keys()]
-            return all(field_sub_keys)
-    return False
 
 
 

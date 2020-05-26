@@ -84,48 +84,69 @@ def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
     return result
 
 
-def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True) -> dict:
+def xmltree_to_raw_dict(raw_xml: str, fix_attributes: bool = True) -> dict:
+    root = xml.etree.ElementTree.fromstring(raw_xml)
+    result = _convert_xml_to_dict(root, include_root=True, fix_attrib=fix_attributes, preserve_lists=True)
+    return result
+
+
+def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True, fix_attrib: bool = True, preserve_lists: bool = False) -> Union[dict, list]:
     if root is None:
         return None
 
     result = {}
     if root.attrib:
         if include_root:
-            result[root.tag] = _fix_attrib(root.attrib)
+            if fix_attrib:
+                result[root.tag] = _fix_attrib(root.attrib)
+            else:
+                result[root.tag] = root.attrib
         else:
-            result = _fix_attrib(root.attrib)
+            if fix_attrib:
+                result = _fix_attrib(root.attrib)
+            else:
+                result = root.attrib
     elif include_root:
         result[root.tag] = {}
 
     # Retrieve all distinct names of sub tags
-    tag_count = _get_child_tag_count(root)
+    tag_count_map = _get_child_tag_count(root)
+    children_dict = {}
 
     for child in root:
         tag = child.tag
         key = None
-        if tag_count[tag] < 1:
-            continue
-        elif tag_count[tag] > 1:
-            if tag in data.ID_NAMES_INFO.keys():
-                id_attr_names = data.ID_NAMES_INFO[tag]
-                if id_attr_names:
-                    key = ''
-                    id_attr_values = []
-                    for id_attr_name in id_attr_names:
-                        id_attr_values.append(child.attrib[id_attr_name])
-                    id_attr_values = sorted(id_attr_values)
-                    key = '.'.join(id_attr_values)
-
+        if tag_count_map[tag] > 1:
+            id_attr_names = data.ID_NAMES_INFO.get(tag)
+            if id_attr_names:
+                id_attr_values = [child.attrib[id_attr_name] for id_attr_name in id_attr_names]
+                key = '.'.join(sorted(id_attr_values))
         if not key:
             key = tag
 
-        child_dict = _convert_xml_to_dict(child, False)
-        if include_root:
-            if key not in result[root.tag].keys():
-                result[root.tag][key] = child_dict
+        child_dict = _convert_xml_to_dict(child, include_root=False, fix_attrib=fix_attrib, preserve_lists=preserve_lists)
+        if key not in children_dict.keys():
+            children_dict[key] = child_dict
+
+    if children_dict:
+        if preserve_lists:
+            if len(children_dict) > 1:
+                children_list = list(children_dict.values())
+                if include_root:
+                    result[root.tag] = children_list
+                else:
+                    if result:
+                        result['Collection'] = children_list
+                    else:
+                        result = children_list
+            else:
+                result.setdefault(root.tag, {}).update(children_dict)
         else:
-            if key not in result.keys():
-                result[key] = child_dict
+            if include_root:
+                # keys get overwritten here
+                result[root.tag] = children_dict
+            else:
+                result.update(children_dict)
 
     return result
 

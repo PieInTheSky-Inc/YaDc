@@ -4,7 +4,10 @@
 from abc import ABC, abstractstaticmethod
 from collections import namedtuple
 import discord
+import json
 from typing import Callable, Dict, List, NamedTuple, Optional, Tuple, Union
+from xml.etree import ElementTree
+
 
 from cache import PssCache
 import pss_core as core
@@ -361,6 +364,31 @@ class EntityDesignsRetriever:
         entities_designs_data = entities_designs_data or await self.get_data_dict3()
         results = core.get_ids_from_property_value(entities_designs_data, self.__description_property_name, entity_name, fix_data_delegate=self.__fix_data_delegate)
         return results
+
+
+    async def get_raw_data(self) -> str:
+        return await self.__cache.get_raw_data()
+
+
+    async def get_raw_entity_design_info_by_id_as_xml(self, entity_id: str) -> str:
+        result = None
+        raw_data = await self.__cache.get_raw_data()
+        for element in ElementTree.fromstring(raw_data).iter():
+            element_id = element.attrib.get(self.__key_name)
+            if element_id:
+                result = ElementTree.tostring(element).decode("utf-8")
+                break
+        return result
+
+
+    async def get_raw_entity_design_info_by_id_as_json(self, entity_id: str, fix_xml_attributes: bool = False) -> str:
+        result = None
+        raw_xml = await self.get_raw_entity_design_info_by_id_as_xml(entity_id)
+        if raw_xml is not None:
+            result = core.xmltree_to_raw_dict(raw_xml, fix_attributes=True)
+        if result is not None:
+            result = json.dumps(result)
+        return result
 
 
     async def update_cache(self) -> None:
