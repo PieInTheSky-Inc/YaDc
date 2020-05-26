@@ -740,8 +740,20 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
     Notes:
       This command does not work outside of the tournament finals week.
     """
-    cmd = bot.get_command('past stars')
-    await ctx.invoke(cmd, month=None, year=None, division=division)
+    if tourney.is_tourney_running():
+        async with ctx.typing():
+            async with ctx.typing():
+                output = []
+                if not pss_top.is_valid_division_letter(division):
+                    subcommand = bot.get_command('stars fleet')
+                    await ctx.invoke(subcommand, fleet_name=division)
+                else:
+                    async with ctx.typing():
+                        output, _ = await pss_top.get_division_stars(division=division)
+            await util.post_output(ctx, output)
+    else:
+        cmd = bot.get_command('past stars')
+        await ctx.invoke(cmd, month=None, year=None, division=division)
 
 
 @cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
@@ -763,8 +775,32 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
     Notes:
       If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
     """
-    cmd = bot.get_command('past stars fleet')
-    await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
+    if tourney.is_tourney_running():
+        async with ctx.typing():
+            exact_name = util.get_exact_args(ctx)
+            if exact_name:
+                fleet_name = exact_name
+            fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
+
+        if fleet_infos:
+            if len(fleet_infos) == 1:
+                fleet_info = fleet_infos[0]
+            else:
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+                _, fleet_info = await paginator.wait_for_option_selection()
+
+            if fleet_info:
+                async with ctx.typing():
+                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
+                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
+                await util.post_output(ctx, output)
+        else:
+            await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+    else:
+        cmd = bot.get_command('past stars fleet')
+        await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
 
 
 @bot.command(brief='Show the dailies', name='daily')
