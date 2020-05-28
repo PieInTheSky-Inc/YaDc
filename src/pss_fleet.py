@@ -241,7 +241,8 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
 
     post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, retrieved_at=retrieved_at, is_past_data=is_past_data)
     fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
-    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES)
+    fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, consider_tourney=False)
+    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES, file_name=fleet_sheet_file_name)
     file_paths = [fleet_sheet_path_current]
 
     return post_content, file_paths
