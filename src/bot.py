@@ -98,7 +98,7 @@ async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
 
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     style = '{',
     datefmt = '%Y%m%d %H:%M:%S',
     format = '{asctime} [{levelname:<8}] {name}: {message}')
