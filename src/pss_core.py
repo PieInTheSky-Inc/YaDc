@@ -760,6 +760,8 @@ async def db_create_schema() -> bool:
 
 
 async def db_connect() -> bool:
+    __log_db_function_enter('db_connect')
+
     global DB_CONN
     if db_is_connected(DB_CONN) is False:
         try:
@@ -783,12 +785,16 @@ async def db_connect() -> bool:
 
 
 async def db_disconnect() -> None:
+    __log_db_function_enter('db_disconnect')
+
     global DB_CONN
     if db_is_connected(DB_CONN):
         await DB_CONN.close()
 
 
 async def db_execute(query: str, args: list = None) -> bool:
+    __log_db_function_enter('db_execute', query=f'\'{query}\'', args=args)
+
     async with DB_CONN.acquire() as connection:
         async with connection.transaction():
             if args:
@@ -798,6 +804,8 @@ async def db_execute(query: str, args: list = None) -> bool:
 
 
 async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
+    __log_db_function_enter('db_fetchall', query=f'\'{query}\'', args=args)
+
     if query and query[-1] != ';':
         query += ';'
     result: List[asyncpg.Record] = None
@@ -819,6 +827,8 @@ async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
 
 
 def db_get_column_list(column_definitions: list) -> str:
+    __log_db_function_enter('db_get_column_list', column_definitions=column_definitions)
+
     result = []
     for column_definition in column_definitions:
         result.append(util.db_get_column_definition(*column_definition))
@@ -826,6 +836,8 @@ def db_get_column_list(column_definitions: list) -> str:
 
 
 async def db_get_column_names(table_name: str) -> List[str]:
+    __log_db_function_enter('db_get_column_names', table_name=f'\'{table_name}\'')
+
     result = None
     query = f'SELECT column_name FROM information_schema.columns WHERE table_name = $1'
     result = await db_fetchall(query, [table_name])
@@ -835,17 +847,24 @@ async def db_get_column_names(table_name: str) -> List[str]:
 
 
 async def db_get_schema_version() -> str:
+    __log_db_function_enter('db_get_schema_version')
+
     result, _ = await db_get_setting('schema_version')
     return result or ''
 
 
 def db_is_connected(pool: asyncpg.pool.Pool) -> bool:
+    __log_db_function_enter('db_is_connected', pool=pool)
+
     if pool:
         return not (pool._closed or pool._closing)
     return False
 
 
 async def db_try_set_schema_version(version: str) -> bool:
+    __log_db_function_enter('db_try_set_schema_version', version=f'\'{version}\'')
+
+    print(f'+ db_try_set_schema_version(version=\'{version}\')')
     prior_version = await db_get_schema_version()
     utc_now = util.get_utcnow()
     if not prior_version:
@@ -857,6 +876,8 @@ async def db_try_set_schema_version(version: str) -> bool:
 
 
 async def db_try_create_table(table_name: str, column_definitions: list) -> bool:
+    __log_db_function_enter('db_try_create_table', table_name=f'\'{table_name}\'', column_definitions=column_definitions)
+
     column_list = db_get_column_list(column_definitions)
     query_create = f'CREATE TABLE {table_name} ({column_list});'
     success = False
@@ -871,6 +892,8 @@ async def db_try_create_table(table_name: str, column_definitions: list) -> bool
 
 
 async def db_try_execute(query: str, args: list = None, raise_db_error: bool = False) -> bool:
+    __log_db_function_enter('db_try_execute', query=f'\'{query}\'', args=args, raise_db_error=raise_db_error)
+
     if query and query[-1] != ';':
         query += ';'
     success = False
@@ -893,6 +916,8 @@ async def db_try_execute(query: str, args: list = None, raise_db_error: bool = F
 
 
 async def db_get_setting(setting_name: str) -> (object, datetime):
+    __log_db_function_enter('db_get_setting', setting_name=f'\'{setting_name}\'')
+
     modify_date: datetime = None
     query = f'SELECT * FROM settings WHERE settingname = $1'
     args = [setting_name]
@@ -913,6 +938,8 @@ async def db_get_setting(setting_name: str) -> (object, datetime):
 
 
 async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
+    __log_db_function_enter('db_set_setting', setting_name=f'\'{setting_name}\'', value=value, utc_now=utc_now)
+
     column_name = None
     if isinstance(value, bool):
         column_name = 'settingboolean'
@@ -944,6 +971,13 @@ def print_db_query_error(function_name: str, query: str, args: list, error: asyn
     else:
         args = ''
     print(f'[{function_name}] {error.__class__.__name__} while performing the query: {query}{args}\nMSG: {error}')
+
+
+def __log_db_function_enter(function_name: str, **kwargs):
+    if settings.PRINT_DEBUG_DB:
+        params = ', '.join([f'{k}={v}' for k, v in kwargs.items()])
+        print(f'+ {function_name}({params})')
+
 
 
 

@@ -2698,7 +2698,8 @@ def __should_include_raw_field(field) -> bool:
 
 
 def __log_command_use(ctx: commands.Context):
-    print(f'Invoked command: {ctx.message.content}')
+    if settings.PRINT_DEBUG_COMMAND:
+        print(f'Invoked command: {ctx.message.content}')
 
 
 
