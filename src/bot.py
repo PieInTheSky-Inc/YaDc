@@ -164,6 +164,8 @@ async def on_shard_ready():
 
 @bot.event
 async def on_command_error(ctx: commands.Context, err: Exception) -> None:
+    __log_command_use(ctx)
+
     error_message = str(err)
     if isinstance(err, commands.CommandOnCooldown):
         pass
