@@ -49,6 +49,9 @@ ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
 PREFIX_DEFAULT = '/'
 PRINT_DEBUG = False
+PRINT_DEBUG_DB = True
+PRINT_DEBUG_COMMAND = True
+PRINT_DEBUG_WEB_REQUESTS = False
 
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
