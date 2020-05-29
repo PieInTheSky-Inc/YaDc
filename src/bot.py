@@ -164,6 +164,8 @@ async def on_shard_ready():
 
 @bot.event
 async def on_command_error(ctx: commands.Context, err: Exception) -> None:
+    __log_command_use_error(ctx, err)
+
     error_message = str(err)
     if isinstance(err, commands.CommandOnCooldown):
         pass
@@ -2700,6 +2702,13 @@ def __should_include_raw_field(field) -> bool:
 def __log_command_use(ctx: commands.Context):
     if settings.PRINT_DEBUG_COMMAND:
         print(f'Invoked command: {ctx.message.content}')
+
+
+def __log_command_use_error(ctx: commands.Context, err: Exception):
+    if settings.PRINT_DEBUG_COMMAND:
+        print(f'Invoked command had an error: {ctx.message.content}')
+        if err:
+            print(str(err))
 
 
 
