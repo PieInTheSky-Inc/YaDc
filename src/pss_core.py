@@ -955,6 +955,7 @@ async def db_get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[ob
         db_setting_names = [setting_name for setting_name in setting_names if setting_name not in __settings_cache.keys()]
         result.update({setting_name: setting_value for setting_name, setting_value in __settings_cache.items() if setting_name in setting_names})
 
+    if not result:
         query = f'SELECT * FROM settings'
         if db_setting_names:
             where_strings = [f'settingname = ${i}' for i in range(1, len(db_setting_names) + 1, 1)]
