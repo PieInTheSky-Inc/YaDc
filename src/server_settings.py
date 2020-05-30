@@ -353,9 +353,7 @@ class AutoDailySettings():
         success = await db_update_daily_delete_on_change(self.guild_id, new_value)
         if success:
             self.__delete_on_change = new_value
-            return new_value
-        else:
-            return self.__delete_on_change
+        return success
 
 
 
