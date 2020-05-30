@@ -654,7 +654,7 @@ async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = 
         autodaily_settings_collection = [(await GUILD_SETTINGS.get(bot, guild_id))]
     else:
         autodaily_settings_collection = GUILD_SETTINGS.autodaily_settings
-    autodaily_settings_collection = [autodaily_settings for autodaily_settings in autodaily_settings_collection if autodaily_settings.channel is not None]
+    #autodaily_settings_collection = [autodaily_settings for autodaily_settings in autodaily_settings_collection if autodaily_settings.channel is not None]
     result = []
     for autodaily_settings in autodaily_settings_collection:
         if not (no_post_yet and autodaily_settings.latest_message_created_at):

@@ -265,6 +265,7 @@ async def post_dailies_loop() -> None:
                 await daily.db_set_daily_info(daily_info, utc_now)
         else:
             seconds_to_wait = util.get_seconds_to_wait(1)
+            #seconds_to_wait = 1
         await asyncio.sleep(seconds_to_wait)
 
 
@@ -301,7 +302,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         if can_post:
             can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
 
-        if can_post:
+        if can_post or latest_message is None:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
                 if latest_message.content == current_daily_message:
