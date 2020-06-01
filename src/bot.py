@@ -260,11 +260,9 @@ async def post_dailies_loop() -> None:
             print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed:
-            seconds_to_wait = 300.0
             if created_output or not autodaily_settings:
                 await daily.db_set_daily_info(daily_info, utc_now)
-        else:
-            seconds_to_wait = util.get_seconds_to_wait(1)
+        seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
 
 
