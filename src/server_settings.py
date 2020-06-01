@@ -4,7 +4,7 @@ import datetime
 import discord
 from discord.ext import commands
 from enum import IntEnum
-from typing import Callable, List, Union
+from typing import Callable, Dict, List, Union
 
 import pss_assert
 import pss_core as core
@@ -219,7 +219,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await _db_update_server_setting(self.guild_id, settings)
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
             self.__delete_on_change = None
@@ -237,7 +237,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await _db_update_server_setting(self.guild_id, settings)
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
             self.__latest_message_id = None
@@ -250,7 +250,7 @@ class AutoDailySettings():
         settings = {
             _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY
         }
-        success = await _db_update_server_setting(self.guild_id, settings)
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             self.__delete_on_change = None
         return success
@@ -262,7 +262,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await _db_update_server_setting(self.guild_id, settings)
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             self.__latest_message_id = None
             self.__latest_message_created_at = None
@@ -275,7 +275,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_NOTIFY_ID: None,
             _COLUMN_NAME_DAILY_NOTIFY_TYPE: None
         }
-        success = await _db_update_server_setting(self.guild_id, settings)
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             self.__notify = None
         return success
@@ -287,7 +287,7 @@ class AutoDailySettings():
                 _COLUMN_NAME_DAILY_CHANNEL_ID: channel.id,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None
             }
-            success = await _db_update_server_setting(self.guild_id, settings)
+            success = await _db_update_server_settings(self.guild_id, settings)
             if success:
                 self.__channel = channel
             return success
@@ -314,7 +314,7 @@ class AutoDailySettings():
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = None
 
         if settings:
-            success = await _db_update_server_setting(self.guild_id, settings)
+            success = await _db_update_server_settings(self.guild_id, settings)
             if success:
                 self.__latest_message_id = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
                 self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
@@ -339,7 +339,7 @@ class AutoDailySettings():
                     _COLUMN_NAME_DAILY_NOTIFY_ID: notify_id,
                     _COLUMN_NAME_DAILY_NOTIFY_TYPE: convert_from_autodaily_notify_type(notify_type)
                 }
-                success = await _db_update_server_setting(self.guild_id, settings)
+                success = await _db_update_server_settings(self.guild_id, settings)
                 if success:
                     self.notify = notify
                 return success
@@ -353,6 +353,47 @@ class AutoDailySettings():
         success = await db_update_daily_delete_on_change(self.guild_id, new_value)
         if success:
             self.__delete_on_change = new_value
+        return success
+
+
+    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, delete_on_change: bool = None, notify: Union[discord.Role, discord.User] = None) -> bool:
+        settings: Dict[str, object] = {}
+        update_channel = channel is not None and channel != self.channel
+        update_can_post = can_post is not None and can_post != self.can_post
+        update_latest_message = latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at
+        update_notify = notify is not None and notify != self.notify
+        update_delete_on_change = delete_on_change is not None or delete_on_change != self.delete_on_change
+        if update_channel:
+            settings[_COLUMN_NAME_DAILY_CHANNEL_ID] = channel.id
+        if update_can_post:
+            settings[_COLUMN_NAME_DAILY_CAN_POST] = can_post
+        if update_latest_message:
+            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
+            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
+            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
+        if update_notify:
+            if isinstance(notify, discord.Role):
+                notify_type = AutoDailyNotifyType.ROLE
+            elif isinstance(notify, discord.Member):
+                notify_type = AutoDailyNotifyType.USER
+            settings[_COLUMN_NAME_DAILY_NOTIFY_ID] = notify.id
+            settings[_COLUMN_NAME_DAILY_NOTIFY_TYPE] = convert_from_autodaily_notify_type(notify_type)
+        if update_delete_on_change:
+            settings[_COLUMN_NAME_DAILY_DELETE_ON_CHANGE] = delete_on_change
+        success = await _db_update_server_settings(self.guild_id, settings)
+        if success:
+            if update_channel:
+                self.__channel = channel
+            if update_can_post:
+                self.__can_post = settings[_COLUMN_NAME_DAILY_CAN_POST]
+            if update_latest_message:
+                self.__latest_message_id = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
+                self.__latest_message_created_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT]
+                self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
+            if update_notify:
+                self.__notify = notify
+            if update_delete_on_change:
+                self.__delete_on_change = settings[_COLUMN_NAME_DAILY_DELETE_ON_CHANGE]
         return success
 
 
@@ -434,7 +475,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_PREFIX: None
             }
-            success = await _db_update_server_setting(self.__guild_id, settings)
+            success = await _db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__prefix = None
             return success
@@ -447,7 +488,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_USE_PAGINATION: None
             }
-            success = await _db_update_server_setting(self.__guild_id, settings)
+            success = await _db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__use_pagination = None
             return success
@@ -460,7 +501,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_PREFIX: prefix
             }
-            success = await _db_update_server_setting(self.__guild_id, settings)
+            success = await _db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__prefix = prefix
             return success
@@ -477,7 +518,7 @@ class GuildSettings(object):
                 settings = {
                     _COLUMN_NAME_USE_PAGINATION: use_pagination
                 }
-                success = await _db_update_server_setting(self.id, settings)
+                success = await _db_update_server_settings(self.id, settings)
                 if success:
                     self.__use_pagination = use_pagination
                 return success
@@ -880,7 +921,7 @@ async def db_reset_autodaily_channel(guild_id: int) -> bool:
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
             }
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     return True
 
@@ -894,7 +935,7 @@ async def db_reset_autodaily_latest_message_id(guild_id: int) -> bool:
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
             }
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     return True
 
@@ -906,7 +947,7 @@ async def db_reset_autodaily_mode(guild_id: int) -> bool:
             settings = {
                 _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY
             }
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     return True
 
@@ -919,7 +960,7 @@ async def db_reset_autodaily_notify(guild_id: int) -> bool:
                 _COLUMN_NAME_DAILY_NOTIFY_ID: None,
                 _COLUMN_NAME_DAILY_NOTIFY_TYPE: None
             }
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     return True
 
@@ -937,7 +978,7 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
             }
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     return True
 
@@ -948,7 +989,7 @@ async def db_reset_prefix(guild_id: int) -> bool:
         settings = {
             _COLUMN_NAME_PREFIX: None
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -959,7 +1000,7 @@ async def db_reset_use_pagination(guild: discord.Guild) -> bool:
         settings = {
             _COLUMN_NAME_USE_PAGINATION: None
         }
-        success = await _db_update_server_setting(guild.id, settings)
+        success = await _db_update_server_settings(guild.id, settings)
         return success
     return True
 
@@ -998,7 +1039,7 @@ async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, ca
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message_modify_date
             if current_latest_message_create_date is None:
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
-        success = not settings or await _db_update_server_setting(guild_id, settings)
+        success = not settings or await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -1010,7 +1051,7 @@ async def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
             _COLUMN_NAME_DAILY_CHANNEL_ID: channel_id,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -1021,7 +1062,7 @@ async def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool
         settings = {
             _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: delete_on_change,
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -1044,7 +1085,7 @@ async def db_update_daily_latest_message(guild_id: int, message: discord.Message
             if new_day:
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = message.created_at
 
-            success = await _db_update_server_setting(guild_id, settings)
+            success = await _db_update_server_settings(guild_id, settings)
             return success
     else:
         success = await db_reset_autodaily_latest_message_id(guild_id)
@@ -1059,7 +1100,7 @@ async def db_update_daily_notify_settings(guild_id: int, notify_id: int, notify_
             _COLUMN_NAME_DAILY_NOTIFY_ID: notify_id,
             _COLUMN_NAME_DAILY_NOTIFY_TYPE: convert_from_autodaily_notify_type(notify_type)
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -1070,7 +1111,7 @@ async def db_update_prefix(guild_id: int, prefix: str) -> bool:
         settings = {
             _COLUMN_NAME_PREFIX: prefix
         }
-        success = await _db_update_server_setting(guild_id, settings)
+        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 
@@ -1081,7 +1122,7 @@ async def db_update_use_pagination(guild: discord.Guild, use_pagination: bool) -
         settings = {
             _COLUMN_NAME_USE_PAGINATION: use_pagination
         }
-        success = await _db_update_server_setting(guild.id, settings)
+        success = await _db_update_server_settings(guild.id, settings)
         return success
     return True
 
@@ -1143,16 +1184,19 @@ async def _db_get_server_setting(guild_id: int = None, setting_names: list = Non
         return None
 
 
-async def _db_update_server_setting(guild_id: int, settings: dict) -> bool:
-    set_names = []
-    set_values = [guild_id]
-    for i, (key, value) in enumerate(settings.items(), start=2):
-        set_names.append(f'{key} = ${i:d}')
-        set_values.append(value)
-    set_string = ', '.join(set_names)
-    query = f'UPDATE serversettings SET {set_string} WHERE guildid = $1'
-    success = await core.db_try_execute(query, set_values)
-    return success
+async def _db_update_server_settings(guild_id: int, settings: dict) -> bool:
+    if settings:
+        set_names = []
+        set_values = [guild_id]
+        for i, (key, value) in enumerate(settings.items(), start=2):
+            set_names.append(f'{key} = ${i:d}')
+            set_values.append(value)
+        set_string = ', '.join(set_names)
+        query = f'UPDATE serversettings SET {set_string} WHERE guildid = $1'
+        success = await core.db_try_execute(query, set_values)
+        return success
+    else:
+        return True
 
 
 

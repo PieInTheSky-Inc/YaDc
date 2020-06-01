@@ -265,7 +265,6 @@ async def post_dailies_loop() -> None:
                 await daily.db_set_daily_info(daily_info, utc_now)
         else:
             seconds_to_wait = util.get_seconds_to_wait(1)
-            #seconds_to_wait = 1
         await asyncio.sleep(seconds_to_wait)
 
 
@@ -273,15 +272,15 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message_id = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
             if posted:
                 posted_count += 1
                 await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
-            await server_settings.db_update_autodaily_settings(settings.guild.id, can_post=can_post, latest_message_id=latest_message_id, latest_message_modify_date=utc_now)
+            await settings.update(can_post=can_post, latest_message=latest_message)
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, str):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
     """
     Returns (posted, can_post, latest_message_id)
     """
@@ -302,7 +301,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         if can_post:
             can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
 
-        if can_post or latest_message is None:
+        if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
                 if latest_message.content == current_daily_message:
@@ -351,7 +350,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
             can_post = False
 
         if latest_message:
-            return posted, can_post, latest_message.id
+            return posted, can_post, latest_message
         else:
             return posted, can_post, None
     else:

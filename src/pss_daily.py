@@ -195,9 +195,8 @@ async def db_get_daily_info() -> Tuple[Dict, datetime]:
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
-    for key, value in daily_info.items():
-        setting_name = get_daily_info_setting_name(key)
-        result = await core.db_set_setting(setting_name, value, utc_now=utc_now) and result
+    settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
+    result = await core.db_set_settings(settings)
     if result:
         await __update_db_daily_info_cache()
     return result

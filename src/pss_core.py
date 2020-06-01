@@ -1007,6 +1007,51 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
     return success
 
 
+async def db_set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
+    __log_db_function_enter('db_set_settings', settings=settings)
+
+    utc_now = util.get_utcnow()
+    if settings:
+        query_lines = []
+        args = []
+        success = True
+        current_settings = await db_get_settings(settings.keys())
+        for setting_name, (value, modified_at) in settings.items():
+            query = ''
+            column_name = None
+            if isinstance(value, bool):
+                column_name = 'settingboolean'
+                value = util.db_convert_boolean(value)
+            elif isinstance(value, int):
+                column_name = 'settingint'
+            elif isinstance(value, float):
+                column_name = 'settingfloat'
+            elif isinstance(value, datetime):
+                column_name = 'settingtimestamptz'
+                value = util.db_convert_timestamp(value)
+            else:
+                column_name = 'settingtext'
+                value = util.db_convert_text(value)
+            current_value, modify_date = current_settings[setting_name]
+            modify_date = modify_date or utc_now
+
+            setting_name = util.db_convert_text(setting_name)
+            if current_value is None and modify_date is None:
+                query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ({value}, \'{modified_at}\', {setting_name});'
+            elif current_value != value:
+                query = f'UPDATE settings SET {column_name} = {value}, modifydate = \'{modified_at}\' WHERE settingname = {setting_name};'
+
+            if query:
+                query_lines.append(query)
+                args.extend([value, modified_at, setting_name])
+        success = not query_lines or await db_try_execute('\n'.join(query_lines))
+        if success:
+            __settings_cache.update(settings)
+        return success
+    else:
+        return True
+
+
 def print_db_query_error(function_name: str, query: str, args: list, error: asyncpg.exceptions.PostgresError) -> None:
     if args:
         args = f'\n{args}'
