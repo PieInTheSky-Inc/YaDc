@@ -136,7 +136,11 @@ class AutoDailySettings():
 
     @property
     def notify_type(self) -> AutoDailyNotifyType:
-        return self.__notify_type
+        if isinstance(self.notify, discord.Role):
+            notify_type = AutoDailyNotifyType.ROLE
+        elif isinstance(self.notify, (discord.Member, discord.User)):
+            notify_type = AutoDailyNotifyType.USER
+        return notify_type
 
 
     def get_pretty_settings(self) -> List[str]:
@@ -332,7 +336,7 @@ class AutoDailySettings():
             notify_id = notify.id
             if isinstance(notify, discord.Role):
                 notify_type = AutoDailyNotifyType.ROLE
-            elif isinstance(notify, discord.Member):
+            elif isinstance(notify, (discord.Member, discord.User)):
                 notify_type = AutoDailyNotifyType.USER
             else:
                 raise TypeError(f'Could not set autodaily notify: the provided mention is neither a role nor a user"')
