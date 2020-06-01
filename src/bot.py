@@ -1570,11 +1570,11 @@ async def cmd_prefix(ctx: commands.Context):
     """
     __log_command_use(ctx)
 
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = [f'Prefix for this server/channel is: `{guild_settings.prefix}`']
-        await util.post_output(ctx, output)
+    channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
+        output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
+    await util.post_output(ctx, output)
 
 
 
