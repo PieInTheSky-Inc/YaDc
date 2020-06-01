@@ -918,23 +918,63 @@ async def db_try_execute(query: str, args: list = None, raise_db_error: bool = F
 async def db_get_setting(setting_name: str) -> (object, datetime):
     __log_db_function_enter('db_get_setting', setting_name=f'\'{setting_name}\'')
 
-    modify_date: datetime = None
-    query = f'SELECT * FROM settings WHERE settingname = $1'
-    args = [setting_name]
-    try:
-        records = await db_fetchall(query, args)
-    except Exception as error:
-        print_db_query_error('db_get_setting', query, args, error)
-        records = []
-    if records:
-        result = records[0]
-        modify_date = result[1]
-        for field in result[2:]:
-            if field:
-                return (field, modify_date)
-        return (None, modify_date)
+    if __settings_cache is None or setting_name not in __settings_cache.keys():
+        modify_date: datetime = None
+        query = f'SELECT * FROM settings WHERE settingname = $1'
+        args = [setting_name]
+        try:
+            records = await db_fetchall(query, args)
+        except Exception as error:
+            print_db_query_error('db_get_setting', query, args, error)
+            records = []
+        if records:
+            result = records[0]
+            modify_date = result[1]
+            value = None
+            for field in result[2:]:
+                if field:
+                    value = field
+                    break
+            setting = (value, modify_date)
+            __settings_cache[setting_name] = setting
+            return setting
+        else:
+            return (None, None)
     else:
-        return (None, None)
+        return __settings_cache[setting_name]
+
+
+async def db_get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[object, datetime]]:
+    __log_db_function_enter('db_get_settings', setting_names=setting_names)
+    setting_names = setting_names or []
+    result = {setting_name: (None, None) for setting_name in setting_names}
+
+    if __settings_cache is None:
+        db_setting_names = setting_names
+    else:
+        db_setting_names = [setting_name for setting_name in setting_names if setting_name not in __settings_cache.keys()]
+        result.update({setting_name: setting_value for setting_name, setting_value in __settings_cache.items() if setting_name in setting_names})
+
+    if not result:
+        query = f'SELECT * FROM settings'
+        if db_setting_names:
+            where_strings = [f'settingname = ${i}' for i in range(1, len(db_setting_names) + 1, 1)]
+            where_string = ' OR '.join(where_strings)
+            query += f' WHERE {where_string}'
+            records = await db_fetchall(query, args=db_setting_names)
+        else:
+            records = await db_fetchall(query)
+
+        for record in records:
+            setting_name = record[0]
+            modify_date = record[1]
+            value = None
+            for field in record[2:]:
+                if field:
+                    value = field
+                    break
+            result[setting_name] = (value, modify_date)
+    return result
 
 
 async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
@@ -962,7 +1002,54 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
     elif setting != value:
         query = f'UPDATE settings SET {column_name} = $1, modifydate = $2 WHERE settingname = $3'
     success = not query or await db_try_execute(query, [value, utc_now, setting_name])
+    if success:
+        __settings_cache[setting_name] = value
     return success
+
+
+async def db_set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
+    __log_db_function_enter('db_set_settings', settings=settings)
+
+    utc_now = util.get_utcnow()
+    if settings:
+        query_lines = []
+        args = []
+        success = True
+        current_settings = await db_get_settings(settings.keys())
+        for setting_name, (value, modified_at) in settings.items():
+            query = ''
+            column_name = None
+            if isinstance(value, bool):
+                column_name = 'settingboolean'
+                value = util.db_convert_boolean(value)
+            elif isinstance(value, int):
+                column_name = 'settingint'
+            elif isinstance(value, float):
+                column_name = 'settingfloat'
+            elif isinstance(value, datetime):
+                column_name = 'settingtimestamptz'
+                value = util.db_convert_timestamp(value)
+            else:
+                column_name = 'settingtext'
+                value = util.db_convert_text(value)
+            current_value, modify_date = current_settings[setting_name]
+            modify_date = modify_date or utc_now
+
+            setting_name = util.db_convert_text(setting_name)
+            if current_value is None and modify_date is None:
+                query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ({value}, \'{modified_at}\', {setting_name});'
+            elif current_value != value:
+                query = f'UPDATE settings SET {column_name} = {value}, modifydate = \'{modified_at}\' WHERE settingname = {setting_name};'
+
+            if query:
+                query_lines.append(query)
+                args.extend([value, modified_at, setting_name])
+        success = not query_lines or await db_try_execute('\n'.join(query_lines))
+        if success:
+            __settings_cache.update(settings)
+        return success
+    else:
+        return True
 
 
 def print_db_query_error(function_name: str, query: str, args: list, error: asyncpg.exceptions.PostgresError) -> None:
@@ -991,6 +1078,15 @@ def __log_db_function_enter(function_name: str, **kwargs):
 
 # ---------- Initialization ----------
 
+__settings_cache: Dict[str, Tuple[object, datetime]] = None
+
+
+async def __init_caches():
+    global __settings_cache
+    __settings_cache = await db_get_settings()
+
+
 async def init():
+    await __init_caches()
     await db_connect()
     await init_db()
