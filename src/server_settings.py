@@ -341,7 +341,7 @@ class AutoDailySettings():
                 }
                 success = await _db_update_server_settings(self.guild_id, settings)
                 if success:
-                    self.notify = notify
+                    self.__notify = notify
                 return success
             return True
         else:
