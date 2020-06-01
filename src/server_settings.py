@@ -460,7 +460,10 @@ class GuildSettings(object):
 
     @property
     def use_pagination(self) -> bool:
-        return self.__use_pagination or app_settings.DEFAULT_USE_EMOJI_PAGINATOR
+        if self.__use_pagination is None:
+            return app_settings.DEFAULT_USE_EMOJI_PAGINATOR
+        else:
+            return self.__use_pagination
 
 
     async def reset(self) -> (bool, bool, bool):
@@ -510,19 +513,19 @@ class GuildSettings(object):
 
     async def set_use_pagination(self, use_pagination: bool) -> bool:
         if use_pagination is None:
-            return await toggle_use_pagination(self.id)
+            use_pagination = not (self.__use_pagination or app_settings.DEFAULT_USE_EMOJI_PAGINATOR)
         else:
             pss_assert.valid_parameter_value(use_pagination, 'use_pagination', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
             use_pagination = convert_from_on_off(use_pagination)
-            if not self.__use_pagination or use_pagination != self.__use_pagination:
-                settings = {
-                    _COLUMN_NAME_USE_PAGINATION: use_pagination
-                }
-                success = await _db_update_server_settings(self.id, settings)
-                if success:
-                    self.__use_pagination = use_pagination
-                return success
-            return True
+        if self.__use_pagination is None or use_pagination != self.__use_pagination:
+            settings = {
+                _COLUMN_NAME_USE_PAGINATION: use_pagination
+            }
+            success = await _db_update_server_settings(self.id, settings)
+            if success:
+                self.__use_pagination = use_pagination
+            return success
+        return True
 
 
 
