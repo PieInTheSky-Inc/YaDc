@@ -1917,9 +1917,9 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily notify settings', name='notify')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: Union[discord.Role, discord.Member]):
+async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: Union[discord.Role, discord.Member] = None):
     """
-    Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role.
+    Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role. If nothing is being specified, this setting will be reset.
 
     You need the 'Manage Server' permission to use this command.
     This command can only be used on Discord servers/guilds.
@@ -1934,14 +1934,17 @@ async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: U
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-        success = await autodaily_settings.set_notify(mention)
-    if success:
-        await ctx.invoke(bot.get_command('settings autodaily notify'))
+    if mention is None:
+        await ctx.invoke(bot.get_command('settings reset autodaily notify'))
     else:
-        output = [f'Could not set notify on autodaily settings for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
+        async with ctx.typing():
+            autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
+            success = await autodaily_settings.set_notify(mention)
+        if success:
+            await ctx.invoke(bot.get_command('settings autodaily notify'))
+        else:
+            output = [f'Could not set notify on autodaily settings for this server. Please try again or contact the bot\'s author.']
+            await util.post_output(ctx, output)
 
 
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
