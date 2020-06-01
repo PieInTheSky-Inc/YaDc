@@ -23,10 +23,12 @@ _VALID_PAGINATION_SWITCH_VALUES = {
     'true': True,
     '1': True,
     'yes': True,
+    '👍': True,
     'off': False,
     'false': False,
     '0': False,
-    'no': False
+    'no': False,
+    '👎': False
 }
 
 
@@ -513,7 +515,11 @@ class GuildSettings(object):
 
     async def set_use_pagination(self, use_pagination: bool) -> bool:
         if use_pagination is None:
-            use_pagination = not (self.__use_pagination or app_settings.DEFAULT_USE_EMOJI_PAGINATOR)
+            if self.__use_pagination is None:
+                use_pagination = app_settings.DEFAULT_USE_EMOJI_PAGINATOR
+            else:
+                use_pagination = self.__use_pagination
+            use_pagination = not use_pagination
         else:
             pss_assert.valid_parameter_value(use_pagination, 'use_pagination', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
             use_pagination = convert_from_on_off(use_pagination)
