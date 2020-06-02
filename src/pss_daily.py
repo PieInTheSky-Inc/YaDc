@@ -164,8 +164,8 @@ def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
         return autodaily_settings
     result = {}
     for autodaily_setting in autodaily_settings:
-        if autodaily_setting.guild.id not in result.keys():
-            result[autodaily_setting.guild.id] = autodaily_setting
+        if autodaily_setting.id and autodaily_setting.id not in result.keys():
+            result[autodaily_setting.id] = autodaily_setting
     return list(result.values())
 
 
