@@ -429,10 +429,17 @@ class GuildSettings(object):
             channel = bot.get_channel(daily_channel_id)
         except Exception as error:
             channel = None
+            print(f'Could not get channel for id {daily_channel_id}: {error}')
+        if channel is None and daily_channel_id is not None:
+            print(f'Could not get channel for id {daily_channel_id}')
+
         try:
             self.__guild = bot.get_guild(self.__guild_id)
         except Exception as error:
             self.__guild = None
+            print(f'Could not get guild for id {self.__guild_id}: {error}')
+        if self.__guild is None and self.__guild_id is not None:
+            print(f'Could not get channel for id {daily_channel_id}')
 
         notify = None
         if daily_notify_id and daily_notify_type and self.__guild:
