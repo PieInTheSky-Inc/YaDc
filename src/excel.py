@@ -44,7 +44,7 @@ def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetim
 def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, file_prefix: str, data_retrieved_at: datetime.datetime = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = util.get_utcnow()
-    save_to = get_file_name(file_prefix, data_retrieved_at)
+    save_to = get_file_name(file_prefix, data_retrieved_at, consider_tourney=False)
 
     header_names = []
     for row in flattened_data:
@@ -73,9 +73,9 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
     return save_to
 
 
-def get_file_name(file_prefix: str, data_retrieved_at: datetime) -> str:
+def get_file_name(file_prefix: str, data_retrieved_at: datetime, consider_tourney: bool = True) -> str:
     file_prefix = file_prefix.replace(' ', '_')
-    if tourney.is_tourney_running(utc_now=data_retrieved_at):
+    if consider_tourney and tourney.is_tourney_running(utc_now=data_retrieved_at):
         file_timestamp = f'tournament-{data_retrieved_at.year}-{util.get_month_short_name(data_retrieved_at).lower()}'
     else:
         file_timestamp = data_retrieved_at.strftime('%Y%m%d-%H%M%S')

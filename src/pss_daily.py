@@ -55,6 +55,8 @@ DAILY_INFO_FIELDS_TO_CHECK = [
     'SaleType'
 ]
 
+DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
+
 
 
 
@@ -162,8 +164,8 @@ def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
         return autodaily_settings
     result = {}
     for autodaily_setting in autodaily_settings:
-        if autodaily_setting.guild.id not in result.keys():
-            result[autodaily_setting.guild.id] = autodaily_setting
+        if autodaily_setting.guild_id and autodaily_setting.guild_id not in result.keys():
+            result[autodaily_setting.guild_id] = autodaily_setting
     return list(result.values())
 
 
@@ -177,26 +179,26 @@ async def update_daily_channel(guild_id: int, channel_id: int = None, latest_mes
 
 
 async def db_get_daily_info() -> Tuple[Dict, datetime]:
-    result = {}
-    modify_dates = []
-    for daily_info_field in DAILY_INFO_FIELDS:
-        setting_name = get_daily_info_setting_name(daily_info_field)
-        value, modify_date = await core.db_get_setting(setting_name)
-        if modify_date:
-            modify_dates.append(modify_date)
-        if value:
-            result[daily_info_field] = value
-    if result and modify_dates:
-        return (result, max(modify_dates))
+    if __daily_info_cache is None:
+        result = {}
+        modify_dates = []
+        daily_settings = await core.db_get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
+        result = {DB_DAILY_INFO_COLUMN_NAMES.get(db_setting_name, db_setting_name): details[0] for db_setting_name, details in daily_settings.items()}
+        modify_dates = [details[1] for details in daily_settings.values() if details[1] is not None]
+        if result and modify_dates:
+            return (result, max(modify_dates))
+        else:
+            return ({}, None)
     else:
-        return (dict(), None)
+        return (__daily_info_cache, __daily_info_modified_at)
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
-    for key, value in daily_info.items():
-        setting_name = get_daily_info_setting_name(key)
-        result = await core.db_set_setting(setting_name, value, utc_now=utc_now) and result
+    settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
+    result = await core.db_set_settings(settings)
+    if result:
+        await __update_db_daily_info_cache()
     return result
 
 
@@ -266,3 +268,26 @@ def __mock_get_daily_info_2():
     }
     return result
 
+
+
+
+
+
+
+
+
+
+# ---------- Initialization ----------
+
+__daily_info_cache: dict = None
+__daily_info_modified_at: datetime
+
+
+async def __update_db_daily_info_cache():
+    global __daily_info_cache
+    global __daily_info_modified_at
+    __daily_info_cache, __daily_info_modified_at = await db_get_daily_info()
+
+
+async def init():
+    await __update_db_daily_info_cache()

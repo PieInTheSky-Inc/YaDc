@@ -16,10 +16,11 @@ BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions
 
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
-DEFAULT_PRODUCTION_SERVER = 'api.pixelstarships.com'
-DEFAULT_FLOAT_PRECISION = 1
-DEFAULT_MODE_REPOST_AUTODAILY = True
-DEFAULT_USE_EMOJI_PAGINATOR = True
+DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
+DEFAULT_FLOAT_PRECISION: int = 1
+DEFAULT_MODE_REPOST_AUTODAILY: bool = True
+DEFAULT_PREFIX: str = '/'
+DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 
 EMPTY_LINE = '\u200b'
@@ -47,8 +48,10 @@ MIN_ENTITY_NAME_LENGTH = 3
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
-PREFIX_DEFAULT = '/'
 PRINT_DEBUG = False
+PRINT_DEBUG_DB = True
+PRINT_DEBUG_COMMAND = True
+PRINT_DEBUG_WEB_REQUESTS = False
 
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
@@ -70,7 +73,7 @@ TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=
 
 USE_EMBEDS = False
 
-VERSION = '1.2.8.5'
+VERSION = '1.2.8.7'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'

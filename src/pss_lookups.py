@@ -40,6 +40,9 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
 }
 
 
+DELETE_ON_CHANGE_ORDER = [True, None, False]
+
+
 DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
     '-': '0',
     'A': '1',
@@ -335,3 +338,14 @@ def get_lookup_value_or_default(lookup: object, key: object, default: object = N
     else:
         result = default
     return result
+
+
+def select_next_element(lookup: list, current_element: object) -> object:
+    if lookup is None:
+        return None
+    elif lookup:
+        index_of_current_element = lookup.index(current_element)
+        index_of_next_element = (index_of_current_element + 1) % len(lookup)
+        return lookup[index_of_next_element]
+    else:
+        return current_element
