@@ -137,10 +137,10 @@ class AutoDailySettings():
     @property
     def notify_type(self) -> AutoDailyNotifyType:
         if isinstance(self.notify, discord.Role):
-            notify_type = AutoDailyNotifyType.ROLE
+            return AutoDailyNotifyType.ROLE
         elif isinstance(self.notify, (discord.Member, discord.User)):
-            notify_type = AutoDailyNotifyType.USER
-        return notify_type
+            return AutoDailyNotifyType.USER
+        return None
 
 
     def get_pretty_settings(self) -> List[str]:
@@ -711,14 +711,16 @@ async def fix_prefixes() -> bool:
 
 
 async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+    utc_now = util.get_utcnow()
     if guild_id:
         autodaily_settings_collection = [(await GUILD_SETTINGS.get(bot, guild_id))]
     else:
-        autodaily_settings_collection = GUILD_SETTINGS.autodaily_settings
-    #autodaily_settings_collection = [autodaily_settings for autodaily_settings in autodaily_settings_collection if autodaily_settings.channel is not None]
+        autodaily_settings_collection = [settings for settings in GUILD_SETTINGS.autodaily_settings if settings.channel is not None]
     result = []
     for autodaily_settings in autodaily_settings_collection:
-        if not (no_post_yet and autodaily_settings.latest_message_created_at):
+        # if either:
+        #  - no_post_yet and not
+        if not (no_post_yet and autodaily_settings.latest_message_created_at and autodaily_settings.latest_message_created_at.day == utc_now.day):
             result.append(autodaily_settings)
     return result
 
@@ -1244,3 +1246,4 @@ GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 async def init(bot: commands.Bot):
     await fix_prefixes()
     await GUILD_SETTINGS.init(bot)
+    i = 0
