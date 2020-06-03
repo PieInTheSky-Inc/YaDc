@@ -1,5 +1,7 @@
 import datetime
 import openpyxl
+import openpyxl.utils.dataframe
+import pandas
 
 import pss_entity as entity
 import pss_tournament as tourney
@@ -46,26 +48,19 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
         data_retrieved_at = util.get_utcnow()
     save_to = get_file_name(file_prefix, data_retrieved_at, consider_tourney=False)
 
-    header_names = []
-    for row in flattened_data:
-        for key in row:
-            if key not in header_names:
-                header_names.append(key)
-
     wb = openpyxl.Workbook()
-    ws = wb.active
+    ws: openpyxl.worksheet.worksheet.Worksheet = wb.active
+    df = pandas.DataFrame(flattened_data)
+    for (columnName, columnData) in df.iteritems():
+        if 'datetime64' in columnData.dtype.name:
+            df[columnName] = df[columnName].dt.tz_convert(None)
 
-    ws.append(header_names)
-    for row in flattened_data:
-        for field_name, field in row.items():
-            row[field_name] = _fix_field(field)
-        ws.append(list(row.values()))
+    for i, row in enumerate(openpyxl.utils.dataframe.dataframe_to_rows(df, index=False, header=True)):
+        if i < 1:
+            print(row)
+        ws.append(row)
 
-    col_count = len(list(ws.columns)) - 1
-    row_count = len(list(ws.rows)) - 1
-
-    ref = _convert_to_ref(col_count, row_count)
-    table = openpyxl.worksheet.table.Table(displayName='tbl', ref=ref)
+    table = openpyxl.worksheet.table.Table(displayName='tbl', ref=_get_ref_for_df(df))
     table.tableStyleInfo = __BASE_TABLE_STYLE
     ws.add_table(table)
 
@@ -93,14 +88,21 @@ def _convert_to_ref(column_count: int, row_count: int, column_start: int = 0, ro
     return result
 
 
+def _get_ref_for_df(df: pandas.DataFrame, column_start: int = 0, row_start: int = 0, zero_based: bool = True) -> str:
+    col_count = len(df.columns) - 1
+    row_count = len(df.index)
+    ref = _convert_to_ref(col_count, row_count, column_start=column_start, row_start=row_start, zero_based=zero_based)
+    return ref
+
+
 def _fix_field(field: str):
     if field:
         try:
             dt = util.parse_pss_datetime(field)
             if dt < __EARLIEST_EXCEL_DATETIME:
-                return __EARLIEST_EXCEL_DATETIME
-            else:
-                return dt
+                dt = __EARLIEST_EXCEL_DATETIME
+            dt.replace(tzinfo=None)
+            return dt
         except (TypeError, ValueError):
             if not (len(field) >= 2 and field.startswith('0')):
                 try:

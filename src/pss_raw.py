@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 import json
 import os
+import time
+from typing import Callable, Dict, List, Tuple, Union
 
 import excel
 import pss_core as core
@@ -14,27 +16,27 @@ import settings
 import utility as util
 
 
-def __flatten_raw_dict(raw_dict: dict) -> list:
+def __flatten_raw_dict_for_excel(raw_dict: dict) -> list:
     # create one row per entity_info
     # if entity_info got a prop with children (a list):
     #   multiply entity_info times children count
     #   add respective child info
-    result = []
     entity = {}
+    result = []
     children = []
     for key, value in raw_dict.items():
         if isinstance(value, dict):
-            sub_dict = __flatten_raw_dict(value)
-            entity.update(sub_dict)
+            children.extend(__flatten_raw_dict_for_excel(value))
         elif isinstance(value, list):
             for child in value:
-                child = {f'{key[:-1]}.{k}': v for k, v in child.items()}
-                flat_child = __flatten_raw_dict(child)
-                children.extend(__flatten_raw_dict(flat_child))
+                children.extend(__flatten_raw_dict_for_excel(child))
         else:
-            entity[key] = value
+            entity[key] = excel._fix_field(value)
     if children:
-        result = [dict(entity).update(child) for child in children]
+        for child in children:
+            result_entity = dict(entity)
+            result_entity.update(child)
+            result.append(result_entity)
     else:
         result = [entity]
     return result
@@ -73,9 +75,14 @@ async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityDesigns
             data = json.dumps(raw_data_dict)
             file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
         else:
-            #flattened_data = __flatten_raw_dict(raw_data_dict)
-            flattened_data = __flatten_raw_data(raw_data)
+            #flattened_data = __flatten_raw_data(raw_data)
+            start = time.perf_counter()
+            flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
+            time1 = time.perf_counter() - start
             file_path = excel.create_xl_from_raw_data_dict(flattened_data, retriever.key_name, file_name_prefix, retrieved_at)
+            time2 = time.perf_counter() - start
+            print(f'Flattening the data took {time1:.2f} seconds.')
+            print(f'Creating the excel sheet took {time2:.2f} seconds.')
     await util.post_output_with_files(ctx, [], [file_path])
     os.remove(file_path)
 
