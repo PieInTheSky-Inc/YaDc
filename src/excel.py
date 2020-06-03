@@ -55,7 +55,7 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
         if 'datetime64' in columnData.dtype.name:
             df[columnName] = df[columnName].dt.tz_convert(None)
 
-    for i, row in enumerate(openpyxl.utils.dataframe.dataframe_to_rows(df, index=False, header=True)):
+    for row in openpyxl.utils.dataframe.dataframe_to_rows(df, index=False, header=True):
         ws.append(row)
 
     table = openpyxl.worksheet.table.Table(displayName='tbl', ref=_get_ref_for_df(df))
