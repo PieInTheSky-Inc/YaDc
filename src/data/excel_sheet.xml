@@ -1,0 +1,2036 @@
+<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetPr>
+<outlinePr summaryBelow="1" summaryRight="1" />
+<pageSetUpPr />
+</sheetPr>
+<sheetViews>
+<sheetView workbookViewId="0">
+<selection activeCell="A1" sqref="A1" />
+</sheetView>
+</sheetViews>
+<sheetFormatPr baseColWidth="8" defaultRowHeight="15" />
+<sheetData>
+<row r="1">
+<c r="A1" t="inlineStr">
+<is>
+<t>version</t>
+</is>
+</c>
+<c r="B1" t="inlineStr">
+<is>
+<t>PromotionDesignId</t>
+</is>
+</c>
+<c r="C1" t="inlineStr">
+<is>
+<t>Name</t>
+</is>
+</c>
+<c r="D1" t="inlineStr">
+<is>
+<t>PromotionType</t>
+</is>
+</c>
+<c r="E1" t="inlineStr">
+<is>
+<t>PurchaseMask</t>
+</is>
+</c>
+<c r="F1" t="inlineStr">
+<is>
+<t>Title</t>
+</is>
+</c>
+<c r="G1" t="inlineStr">
+<is>
+<t>SubTitle</t>
+</is>
+</c>
+<c r="H1" t="inlineStr">
+<is>
+<t>Description</t>
+</is>
+</c>
+<c r="I1" t="inlineStr">
+<is>
+<t>RewardString</t>
+</is>
+</c>
+<c r="J1" t="inlineStr">
+<is>
+<t>StarbuxBonusPercentage</t>
+</is>
+</c>
+<c r="K1" t="inlineStr">
+<is>
+<t>ResourceConversionDiscountPercentage</t>
+</is>
+</c>
+<c r="L1" t="inlineStr">
+<is>
+<t>RewardStoreDiscountPercentage</t>
+</is>
+</c>
+<c r="M1" t="inlineStr">
+<is>
+<t>SpeedUpDiscountPercentage</t>
+</is>
+</c>
+<c r="N1" t="inlineStr">
+<is>
+<t>ExtraCrewDraws</t>
+</is>
+</c>
+<c r="O1" t="inlineStr">
+<is>
+<t>Flags</t>
+</is>
+</c>
+<c r="P1" t="inlineStr">
+<is>
+<t>OrderIndex</t>
+</is>
+</c>
+<c r="Q1" t="inlineStr">
+<is>
+<t>RequirementString</t>
+</is>
+</c>
+<c r="R1" t="inlineStr">
+<is>
+<t>XPBonusPercentage</t>
+</is>
+</c>
+<c r="S1" t="inlineStr">
+<is>
+<t>BackgroundSpriteId</t>
+</is>
+</c>
+<c r="T1" t="inlineStr">
+<is>
+<t>SpriteId</t>
+</is>
+</c>
+<c r="U1" t="inlineStr">
+<is>
+<t>IconSpriteId</t>
+</is>
+</c>
+<c r="V1" t="inlineStr">
+<is>
+<t>RequiredPromotionDesignId</t>
+</is>
+</c>
+<c r="W1" t="inlineStr">
+<is>
+<t>TitleSpriteId</t>
+</is>
+</c>
+<c r="X1" t="inlineStr">
+<is>
+<t>CloseButtonSpriteId</t>
+</is>
+</c>
+<c r="Y1" t="inlineStr">
+<is>
+<t>ButtonSpriteId</t>
+</is>
+</c>
+<c r="Z1" t="inlineStr">
+<is>
+<t>FromDate</t>
+</is>
+</c>
+<c r="AA1" t="inlineStr">
+<is>
+<t>ToDate</t>
+</is>
+</c>
+<c r="AB1" t="inlineStr">
+<is>
+<t>BonusFrameSpriteId</t>
+</is>
+</c>
+</row>
+<row r="2">
+<c r="A2" t="n">
+<v>234</v>
+</c>
+<c r="B2" t="n">
+<v>1</v>
+</c>
+<c r="C2" t="inlineStr">
+<is>
+<t>First Time Offer</t>
+</is>
+</c>
+<c r="D2" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E2" t="n">
+<v>31</v>
+</c>
+<c r="F2" t="inlineStr">
+<is>
+<t>First Time Deposit Bonus</t>
+</is>
+</c>
+<c r="G2" t="inlineStr">
+<is>
+<t>One time only offer!</t>
+</is>
+</c>
+<c r="H2" t="inlineStr">
+<is>
+<t>Kickstart your galactic adventure with a bonus Roborob Hero and extra Starbux pack!</t>
+</is>
+</c>
+<c r="I2" t="inlineStr">
+<is>
+<t>character:21|starbux:200|research:10</t>
+</is>
+</c>
+<c r="J2" t="n">
+<v>0</v>
+</c>
+<c r="K2" t="n">
+<v>0</v>
+</c>
+<c r="L2" t="n">
+<v>0</v>
+</c>
+<c r="M2" t="n">
+<v>0</v>
+</c>
+<c r="N2" t="n">
+<v>0</v>
+</c>
+<c r="O2" t="n">
+<v>3</v>
+</c>
+<c r="P2" t="n">
+<v>100</v>
+</c>
+<c r="Q2" t="inlineStr" />
+<c r="R2" t="n">
+<v>0</v>
+</c>
+<c r="S2" t="n">
+<v>10837</v>
+</c>
+<c r="T2" t="n">
+<v>10839</v>
+</c>
+<c r="U2" t="n">
+<v>10853</v>
+</c>
+<c r="V2" t="n">
+<v>0</v>
+</c>
+<c r="W2" t="n">
+<v>10838</v>
+</c>
+<c r="X2" t="n">
+<v>10851</v>
+</c>
+<c r="Y2" t="n">
+<v>10840</v>
+</c>
+<c r="Z2" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA2" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB2" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="3">
+<c r="A3" t="n">
+<v>234</v>
+</c>
+<c r="B3" t="n">
+<v>12</v>
+</c>
+<c r="C3" t="inlineStr">
+<is>
+<t>Bronze</t>
+</is>
+</c>
+<c r="D3" t="inlineStr">
+<is>
+<t>VIP</t>
+</is>
+</c>
+<c r="E3" t="n">
+<v>31</v>
+</c>
+<c r="F3" t="inlineStr">
+<is>
+<t>Bronze Tier Guest</t>
+</is>
+</c>
+<c r="G3" t="inlineStr">
+<is>
+<t>Bronze Perks</t>
+</is>
+</c>
+<c r="H3" t="inlineStr">
+<is>
+<t>As a bronze tier guest, receive an extra 5% bonus Starbux with all deposits.</t>
+</is>
+</c>
+<c r="I3" t="inlineStr" />
+<c r="J3" t="n">
+<v>5</v>
+</c>
+<c r="K3" t="n">
+<v>0</v>
+</c>
+<c r="L3" t="n">
+<v>0</v>
+</c>
+<c r="M3" t="n">
+<v>0</v>
+</c>
+<c r="N3" t="n">
+<v>0</v>
+</c>
+<c r="O3" t="n">
+<v>4</v>
+</c>
+<c r="P3" t="n">
+<v>0</v>
+</c>
+<c r="Q3" t="inlineStr">
+<is>
+<t>purchaseRewardPoints&gt;0</t>
+</is>
+</c>
+<c r="R3" t="n">
+<v>0</v>
+</c>
+<c r="S3" t="n">
+<v>0</v>
+</c>
+<c r="T3" t="n">
+<v>0</v>
+</c>
+<c r="U3" t="n">
+<v>10844</v>
+</c>
+<c r="V3" t="n">
+<v>0</v>
+</c>
+<c r="W3" t="n">
+<v>0</v>
+</c>
+<c r="X3" t="n">
+<v>0</v>
+</c>
+<c r="Y3" t="n">
+<v>0</v>
+</c>
+<c r="Z3" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA3" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB3" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="4">
+<c r="A4" t="n">
+<v>234</v>
+</c>
+<c r="B4" t="n">
+<v>13</v>
+</c>
+<c r="C4" t="inlineStr">
+<is>
+<t>Silver</t>
+</is>
+</c>
+<c r="D4" t="inlineStr">
+<is>
+<t>VIP</t>
+</is>
+</c>
+<c r="E4" t="n">
+<v>31</v>
+</c>
+<c r="F4" t="inlineStr">
+<is>
+<t>Silver Tier Guest</t>
+</is>
+</c>
+<c r="G4" t="inlineStr">
+<is>
+<t>Silver Perks</t>
+</is>
+</c>
+<c r="H4" t="inlineStr">
+<is>
+<t>In addition to bronze perks, receive 5% discount at the Reward Store and extra Starbar capacity.</t>
+</is>
+</c>
+<c r="I4" t="inlineStr" />
+<c r="J4" t="n">
+<v>5</v>
+</c>
+<c r="K4" t="n">
+<v>0</v>
+</c>
+<c r="L4" t="n">
+<v>5</v>
+</c>
+<c r="M4" t="n">
+<v>0</v>
+</c>
+<c r="N4" t="n">
+<v>2</v>
+</c>
+<c r="O4" t="n">
+<v>4</v>
+</c>
+<c r="P4" t="n">
+<v>1</v>
+</c>
+<c r="Q4" t="inlineStr">
+<is>
+<t>purchaseRewardPoints&gt;20</t>
+</is>
+</c>
+<c r="R4" t="n">
+<v>0</v>
+</c>
+<c r="S4" t="n">
+<v>0</v>
+</c>
+<c r="T4" t="n">
+<v>0</v>
+</c>
+<c r="U4" t="n">
+<v>10845</v>
+</c>
+<c r="V4" t="n">
+<v>0</v>
+</c>
+<c r="W4" t="n">
+<v>0</v>
+</c>
+<c r="X4" t="n">
+<v>0</v>
+</c>
+<c r="Y4" t="n">
+<v>0</v>
+</c>
+<c r="Z4" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA4" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB4" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="5">
+<c r="A5" t="n">
+<v>234</v>
+</c>
+<c r="B5" t="n">
+<v>14</v>
+</c>
+<c r="C5" t="inlineStr">
+<is>
+<t>Gold</t>
+</is>
+</c>
+<c r="D5" t="inlineStr">
+<is>
+<t>VIP</t>
+</is>
+</c>
+<c r="E5" t="n">
+<v>31</v>
+</c>
+<c r="F5" t="inlineStr">
+<is>
+<t>Gold Tier Guest</t>
+</is>
+</c>
+<c r="G5" t="inlineStr">
+<is>
+<t>Gold Perks</t>
+</is>
+</c>
+<c r="H5" t="inlineStr">
+<is>
+<t>As a gold level guest, get 10% discount when converting resources and extra Starbar Capacity.</t>
+</is>
+</c>
+<c r="I5" t="inlineStr" />
+<c r="J5" t="n">
+<v>5</v>
+</c>
+<c r="K5" t="n">
+<v>10</v>
+</c>
+<c r="L5" t="n">
+<v>5</v>
+</c>
+<c r="M5" t="n">
+<v>0</v>
+</c>
+<c r="N5" t="n">
+<v>4</v>
+</c>
+<c r="O5" t="n">
+<v>4</v>
+</c>
+<c r="P5" t="n">
+<v>2</v>
+</c>
+<c r="Q5" t="inlineStr">
+<is>
+<t>purchaseRewardPoints&gt;50</t>
+</is>
+</c>
+<c r="R5" t="n">
+<v>0</v>
+</c>
+<c r="S5" t="n">
+<v>0</v>
+</c>
+<c r="T5" t="n">
+<v>0</v>
+</c>
+<c r="U5" t="n">
+<v>10846</v>
+</c>
+<c r="V5" t="n">
+<v>0</v>
+</c>
+<c r="W5" t="n">
+<v>0</v>
+</c>
+<c r="X5" t="n">
+<v>0</v>
+</c>
+<c r="Y5" t="n">
+<v>0</v>
+</c>
+<c r="Z5" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA5" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB5" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="6">
+<c r="A6" t="n">
+<v>234</v>
+</c>
+<c r="B6" t="n">
+<v>15</v>
+</c>
+<c r="C6" t="inlineStr">
+<is>
+<t>Platinum</t>
+</is>
+</c>
+<c r="D6" t="inlineStr">
+<is>
+<t>VIP</t>
+</is>
+</c>
+<c r="E6" t="n">
+<v>31</v>
+</c>
+<c r="F6" t="inlineStr">
+<is>
+<t>Platinum Tier Guest</t>
+</is>
+</c>
+<c r="G6" t="inlineStr">
+<is>
+<t>Platinum Perks</t>
+</is>
+</c>
+<c r="H6" t="inlineStr">
+<is>
+<t>As a platinum level guest, rushing construction costs 10% less Starbux.</t>
+</is>
+</c>
+<c r="I6" t="inlineStr" />
+<c r="J6" t="n">
+<v>5</v>
+</c>
+<c r="K6" t="n">
+<v>10</v>
+</c>
+<c r="L6" t="n">
+<v>5</v>
+</c>
+<c r="M6" t="n">
+<v>0</v>
+</c>
+<c r="N6" t="n">
+<v>4</v>
+</c>
+<c r="O6" t="n">
+<v>4</v>
+</c>
+<c r="P6" t="n">
+<v>3</v>
+</c>
+<c r="Q6" t="inlineStr">
+<is>
+<t>purchaseRewardPoints&gt;140</t>
+</is>
+</c>
+<c r="R6" t="n">
+<v>0</v>
+</c>
+<c r="S6" t="n">
+<v>0</v>
+</c>
+<c r="T6" t="n">
+<v>0</v>
+</c>
+<c r="U6" t="n">
+<v>10847</v>
+</c>
+<c r="V6" t="n">
+<v>0</v>
+</c>
+<c r="W6" t="n">
+<v>0</v>
+</c>
+<c r="X6" t="n">
+<v>0</v>
+</c>
+<c r="Y6" t="n">
+<v>0</v>
+</c>
+<c r="Z6" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA6" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB6" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="7">
+<c r="A7" t="n">
+<v>234</v>
+</c>
+<c r="B7" t="n">
+<v>16</v>
+</c>
+<c r="C7" t="inlineStr">
+<is>
+<t>Diamond</t>
+</is>
+</c>
+<c r="D7" t="inlineStr">
+<is>
+<t>VIP</t>
+</is>
+</c>
+<c r="E7" t="n">
+<v>31</v>
+</c>
+<c r="F7" t="inlineStr">
+<is>
+<t>Diamond Tier Guest</t>
+</is>
+</c>
+<c r="G7" t="inlineStr">
+<is>
+<t>Diamond Perks</t>
+</is>
+</c>
+<c r="H7" t="inlineStr">
+<is>
+<t>As a diamond level guest, crews get 10% extra XP during combat.</t>
+</is>
+</c>
+<c r="I7" t="inlineStr" />
+<c r="J7" t="n">
+<v>5</v>
+</c>
+<c r="K7" t="n">
+<v>10</v>
+</c>
+<c r="L7" t="n">
+<v>5</v>
+</c>
+<c r="M7" t="n">
+<v>10</v>
+</c>
+<c r="N7" t="n">
+<v>4</v>
+</c>
+<c r="O7" t="n">
+<v>4</v>
+</c>
+<c r="P7" t="n">
+<v>4</v>
+</c>
+<c r="Q7" t="inlineStr">
+<is>
+<t>purchaseRewardPoints&gt;240</t>
+</is>
+</c>
+<c r="R7" t="n">
+<v>10</v>
+</c>
+<c r="S7" t="n">
+<v>0</v>
+</c>
+<c r="T7" t="n">
+<v>0</v>
+</c>
+<c r="U7" t="n">
+<v>10848</v>
+</c>
+<c r="V7" t="n">
+<v>0</v>
+</c>
+<c r="W7" t="n">
+<v>0</v>
+</c>
+<c r="X7" t="n">
+<v>0</v>
+</c>
+<c r="Y7" t="n">
+<v>0</v>
+</c>
+<c r="Z7" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA7" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB7" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="8">
+<c r="A8" t="n">
+<v>234</v>
+</c>
+<c r="B8" t="n">
+<v>17</v>
+</c>
+<c r="C8" t="inlineStr">
+<is>
+<t>Easter Promotion</t>
+</is>
+</c>
+<c r="D8" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E8" t="n">
+<v>31</v>
+</c>
+<c r="F8" t="inlineStr">
+<is>
+<t>Easter Sale</t>
+</is>
+</c>
+<c r="G8" t="inlineStr">
+<is>
+<t>One time only offer!</t>
+</is>
+</c>
+<c r="H8" t="inlineStr">
+<is>
+<t>Grab a Bonus Pet Rabbit when purchasing a Roll of Starbux.</t>
+</is>
+</c>
+<c r="I8" t="inlineStr">
+<is>
+<t>item:712</t>
+</is>
+</c>
+<c r="J8" t="n">
+<v>0</v>
+</c>
+<c r="K8" t="n">
+<v>0</v>
+</c>
+<c r="L8" t="n">
+<v>0</v>
+</c>
+<c r="M8" t="n">
+<v>0</v>
+</c>
+<c r="N8" t="n">
+<v>0</v>
+</c>
+<c r="O8" t="n">
+<v>7</v>
+</c>
+<c r="P8" t="n">
+<v>-1</v>
+</c>
+<c r="Q8" t="inlineStr">
+<is>
+<t>shipLevel&gt;30</t>
+</is>
+</c>
+<c r="R8" t="n">
+<v>0</v>
+</c>
+<c r="S8" t="n">
+<v>12092</v>
+</c>
+<c r="T8" t="n">
+<v>12093</v>
+</c>
+<c r="U8" t="n">
+<v>12097</v>
+</c>
+<c r="V8" t="n">
+<v>0</v>
+</c>
+<c r="W8" t="n">
+<v>12095</v>
+</c>
+<c r="X8" t="n">
+<v>12272</v>
+</c>
+<c r="Y8" t="n">
+<v>10840</v>
+</c>
+<c r="Z8" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA8" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AB8" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="9">
+<c r="A9" t="n">
+<v>234</v>
+</c>
+<c r="B9" t="n">
+<v>18</v>
+</c>
+<c r="C9" t="inlineStr">
+<is>
+<t>Summer Beach Party</t>
+</is>
+</c>
+<c r="D9" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E9" t="n">
+<v>4</v>
+</c>
+<c r="F9" t="inlineStr">
+<is>
+<t>Summer Beach Party</t>
+</is>
+</c>
+<c r="G9" t="inlineStr">
+<is>
+<t>Limited time offer!</t>
+</is>
+</c>
+<c r="H9" t="inlineStr">
+<is>
+<t>The summer sun is out! Celebrate with with a free Pool Kit and other goodies for a limited time!</t>
+</is>
+</c>
+<c r="I9" t="inlineStr">
+<is>
+<t>character:119|item:327|item:748</t>
+</is>
+</c>
+<c r="J9" t="n">
+<v>0</v>
+</c>
+<c r="K9" t="n">
+<v>0</v>
+</c>
+<c r="L9" t="n">
+<v>0</v>
+</c>
+<c r="M9" t="n">
+<v>0</v>
+</c>
+<c r="N9" t="n">
+<v>0</v>
+</c>
+<c r="O9" t="n">
+<v>7</v>
+</c>
+<c r="P9" t="n">
+<v>2</v>
+</c>
+<c r="Q9" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R9" t="n">
+<v>0</v>
+</c>
+<c r="S9" t="n">
+<v>12724</v>
+</c>
+<c r="T9" t="n">
+<v>12725</v>
+</c>
+<c r="U9" t="n">
+<v>12732</v>
+</c>
+<c r="V9" t="n">
+<v>0</v>
+</c>
+<c r="W9" t="n">
+<v>12728</v>
+</c>
+<c r="X9" t="n">
+<v>12729</v>
+</c>
+<c r="Y9" t="n">
+<v>12727</v>
+</c>
+<c r="Z9" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA9" s="1" t="n">
+<v>43678</v>
+</c>
+<c r="AB9" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="10">
+<c r="A10" t="n">
+<v>234</v>
+</c>
+<c r="B10" t="n">
+<v>19</v>
+</c>
+<c r="C10" t="inlineStr">
+<is>
+<t>Chinese Valentine</t>
+</is>
+</c>
+<c r="D10" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E10" t="n">
+<v>28</v>
+</c>
+<c r="F10" t="inlineStr">
+<is>
+<t>Chinese Valentine</t>
+</is>
+</c>
+<c r="G10" t="inlineStr">
+<is>
+<t>Limited time offer!</t>
+</is>
+</c>
+<c r="H10" t="inlineStr">
+<is>
+<t>Magpie &lt;3</t>
+</is>
+</c>
+<c r="I10" t="inlineStr">
+<is>
+<t>item:782|item:784|item:679</t>
+</is>
+</c>
+<c r="J10" t="n">
+<v>0</v>
+</c>
+<c r="K10" t="n">
+<v>0</v>
+</c>
+<c r="L10" t="n">
+<v>0</v>
+</c>
+<c r="M10" t="n">
+<v>0</v>
+</c>
+<c r="N10" t="n">
+<v>0</v>
+</c>
+<c r="O10" t="n">
+<v>7</v>
+</c>
+<c r="P10" t="n">
+<v>2</v>
+</c>
+<c r="Q10" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R10" t="n">
+<v>0</v>
+</c>
+<c r="S10" t="n">
+<v>12795</v>
+</c>
+<c r="T10" t="n">
+<v>12796</v>
+</c>
+<c r="U10" t="n">
+<v>12794</v>
+</c>
+<c r="V10" t="n">
+<v>0</v>
+</c>
+<c r="W10" t="n">
+<v>12798</v>
+</c>
+<c r="X10" t="n">
+<v>12800</v>
+</c>
+<c r="Y10" t="n">
+<v>12799</v>
+</c>
+<c r="Z10" s="1" t="n">
+<v>36743</v>
+</c>
+<c r="AA10" s="1" t="n">
+<v>43692</v>
+</c>
+<c r="AB10" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="11">
+<c r="A11" t="n">
+<v>234</v>
+</c>
+<c r="B11" t="n">
+<v>20</v>
+</c>
+<c r="C11" t="inlineStr">
+<is>
+<t>Harvest Moon Festival</t>
+</is>
+</c>
+<c r="D11" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E11" t="n">
+<v>28</v>
+</c>
+<c r="F11" t="inlineStr">
+<is>
+<t>Harvest Moon Festival</t>
+</is>
+</c>
+<c r="G11" t="inlineStr">
+<is>
+<t>Limited time offer!</t>
+</is>
+</c>
+<c r="H11" t="inlineStr">
+<is>
+<t>Celebrate the Harvest Moon Festival with a free Lunar College room and other treats!</t>
+</is>
+</c>
+<c r="I11" t="inlineStr">
+<is>
+<t>character:346|item:641|item:804|item:805</t>
+</is>
+</c>
+<c r="J11" t="n">
+<v>0</v>
+</c>
+<c r="K11" t="n">
+<v>0</v>
+</c>
+<c r="L11" t="n">
+<v>0</v>
+</c>
+<c r="M11" t="n">
+<v>0</v>
+</c>
+<c r="N11" t="n">
+<v>0</v>
+</c>
+<c r="O11" t="n">
+<v>7</v>
+</c>
+<c r="P11" t="n">
+<v>2</v>
+</c>
+<c r="Q11" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R11" t="n">
+<v>0</v>
+</c>
+<c r="S11" t="n">
+<v>12966</v>
+</c>
+<c r="T11" t="n">
+<v>12967</v>
+</c>
+<c r="U11" t="n">
+<v>12955</v>
+</c>
+<c r="V11" t="n">
+<v>0</v>
+</c>
+<c r="W11" t="n">
+<v>12969</v>
+</c>
+<c r="X11" t="n">
+<v>12971</v>
+</c>
+<c r="Y11" t="n">
+<v>12970</v>
+</c>
+<c r="Z11" s="1" t="n">
+<v>43717</v>
+</c>
+<c r="AA11" s="1" t="n">
+<v>43723</v>
+</c>
+<c r="AB11" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="12">
+<c r="A12" t="n">
+<v>234</v>
+</c>
+<c r="B12" t="n">
+<v>21</v>
+</c>
+<c r="C12" t="inlineStr">
+<is>
+<t>Golden Week Promo</t>
+</is>
+</c>
+<c r="D12" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E12" t="n">
+<v>28</v>
+</c>
+<c r="F12" t="inlineStr">
+<is>
+<t>Golden Week Promo</t>
+</is>
+</c>
+<c r="G12" t="inlineStr">
+<is>
+<t>With Stash, Case, or Vault of Starbux Purchase!</t>
+</is>
+</c>
+<c r="H12" t="inlineStr">
+<is>
+<t>Bonus Sango Crews with Stash, Case, or Vault of Starbux!</t>
+</is>
+</c>
+<c r="I12" t="inlineStr">
+<is>
+<t>character:89|character:93|character:95</t>
+</is>
+</c>
+<c r="J12" t="n">
+<v>0</v>
+</c>
+<c r="K12" t="n">
+<v>0</v>
+</c>
+<c r="L12" t="n">
+<v>0</v>
+</c>
+<c r="M12" t="n">
+<v>0</v>
+</c>
+<c r="N12" t="n">
+<v>0</v>
+</c>
+<c r="O12" t="n">
+<v>7</v>
+</c>
+<c r="P12" t="n">
+<v>2</v>
+</c>
+<c r="Q12" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R12" t="n">
+<v>0</v>
+</c>
+<c r="S12" t="n">
+<v>10837</v>
+</c>
+<c r="T12" t="n">
+<v>13001</v>
+</c>
+<c r="U12" t="n">
+<v>2195</v>
+</c>
+<c r="V12" t="n">
+<v>0</v>
+</c>
+<c r="W12" t="n">
+<v>10838</v>
+</c>
+<c r="X12" t="n">
+<v>10851</v>
+</c>
+<c r="Y12" t="n">
+<v>10840</v>
+</c>
+<c r="Z12" s="1" t="n">
+<v>43739</v>
+</c>
+<c r="AA12" s="1" t="n">
+<v>43746</v>
+</c>
+<c r="AB12" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="13">
+<c r="A13" t="n">
+<v>234</v>
+</c>
+<c r="B13" t="n">
+<v>22</v>
+</c>
+<c r="C13" t="inlineStr">
+<is>
+<t>Halloween Promo</t>
+</is>
+</c>
+<c r="D13" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E13" t="n">
+<v>28</v>
+</c>
+<c r="F13" t="inlineStr">
+<is>
+<t>HalllllllloWeeeeeen</t>
+</is>
+</c>
+<c r="G13" t="inlineStr">
+<is>
+<t>Ends at 12/Nov/2019 0:00 (UTC)</t>
+</is>
+</c>
+<c r="H13" t="inlineStr">
+<is>
+<t>Ends at 12/Nov/2019 0:00 (UTC)</t>
+</is>
+</c>
+<c r="I13" t="inlineStr">
+<is>
+<t>character:122|room:506|item:812</t>
+</is>
+</c>
+<c r="J13" t="n">
+<v>0</v>
+</c>
+<c r="K13" t="n">
+<v>0</v>
+</c>
+<c r="L13" t="n">
+<v>0</v>
+</c>
+<c r="M13" t="n">
+<v>0</v>
+</c>
+<c r="N13" t="n">
+<v>0</v>
+</c>
+<c r="O13" t="n">
+<v>7</v>
+</c>
+<c r="P13" t="n">
+<v>2</v>
+</c>
+<c r="Q13" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R13" t="n">
+<v>0</v>
+</c>
+<c r="S13" t="n">
+<v>13066</v>
+</c>
+<c r="T13" t="n">
+<v>13067</v>
+</c>
+<c r="U13" t="n">
+<v>13101</v>
+</c>
+<c r="V13" t="n">
+<v>0</v>
+</c>
+<c r="W13" t="n">
+<v>13069</v>
+</c>
+<c r="X13" t="n">
+<v>13071</v>
+</c>
+<c r="Y13" t="n">
+<v>13068</v>
+</c>
+<c r="Z13" s="1" t="n">
+<v>43767</v>
+</c>
+<c r="AA13" s="1" t="n">
+<v>43781</v>
+</c>
+<c r="AB13" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="14">
+<c r="A14" t="n">
+<v>234</v>
+</c>
+<c r="B14" t="n">
+<v>23</v>
+</c>
+<c r="C14" t="inlineStr">
+<is>
+<t>Ship Level 5 Bonus Offer</t>
+</is>
+</c>
+<c r="D14" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E14" t="n">
+<v>30</v>
+</c>
+<c r="F14" t="inlineStr">
+<is>
+<t>Ship Level 5 Bonus Offer</t>
+</is>
+</c>
+<c r="G14" t="inlineStr">
+<is>
+<t>One time only offer!</t>
+</is>
+</c>
+<c r="H14" t="inlineStr">
+<is>
+<t>To celebrate command of your Level 5 Starship! Get an extra Rocky and some bonus goodies!</t>
+</is>
+</c>
+<c r="I14" t="inlineStr">
+<is>
+<t>character:102|starbux:200|research:140</t>
+</is>
+</c>
+<c r="J14" t="n">
+<v>0</v>
+</c>
+<c r="K14" t="n">
+<v>0</v>
+</c>
+<c r="L14" t="n">
+<v>0</v>
+</c>
+<c r="M14" t="n">
+<v>0</v>
+</c>
+<c r="N14" t="n">
+<v>0</v>
+</c>
+<c r="O14" t="n">
+<v>3</v>
+</c>
+<c r="P14" t="n">
+<v>105</v>
+</c>
+<c r="Q14" t="inlineStr">
+<is>
+<t>shipLevel&gt;4</t>
+</is>
+</c>
+<c r="R14" t="n">
+<v>0</v>
+</c>
+<c r="S14" t="n">
+<v>10837</v>
+</c>
+<c r="T14" t="n">
+<v>13155</v>
+</c>
+<c r="U14" t="n">
+<v>13184</v>
+</c>
+<c r="V14" t="n">
+<v>0</v>
+</c>
+<c r="W14" t="n">
+<v>10838</v>
+</c>
+<c r="X14" t="n">
+<v>10851</v>
+</c>
+<c r="Y14" t="n">
+<v>10840</v>
+</c>
+<c r="Z14" s="1" t="n">
+<v>36526</v>
+</c>
+<c r="AA14" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB14" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="15">
+<c r="A15" t="n">
+<v>234</v>
+</c>
+<c r="B15" t="n">
+<v>24</v>
+</c>
+<c r="C15" t="inlineStr">
+<is>
+<t>Thanksgiving Promo</t>
+</is>
+</c>
+<c r="D15" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E15" t="n">
+<v>30</v>
+</c>
+<c r="F15" t="inlineStr">
+<is>
+<t>Thanksgiving</t>
+</is>
+</c>
+<c r="G15" t="inlineStr">
+<is>
+<t xml:space="preserve">Thanksgiving events end at 3/Dec 0:00 </t>
+</is>
+</c>
+<c r="H15" t="inlineStr">
+<is>
+<t>Thanks giving</t>
+</is>
+</c>
+<c r="I15" t="inlineStr">
+<is>
+<t>character:355|item:343</t>
+</is>
+</c>
+<c r="J15" t="n">
+<v>0</v>
+</c>
+<c r="K15" t="n">
+<v>0</v>
+</c>
+<c r="L15" t="n">
+<v>0</v>
+</c>
+<c r="M15" t="n">
+<v>0</v>
+</c>
+<c r="N15" t="n">
+<v>0</v>
+</c>
+<c r="O15" t="n">
+<v>3</v>
+</c>
+<c r="P15" t="n">
+<v>103</v>
+</c>
+<c r="Q15" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R15" t="n">
+<v>0</v>
+</c>
+<c r="S15" t="n">
+<v>10837</v>
+</c>
+<c r="T15" t="n">
+<v>13200</v>
+</c>
+<c r="U15" t="n">
+<v>13188</v>
+</c>
+<c r="V15" t="n">
+<v>0</v>
+</c>
+<c r="W15" t="n">
+<v>10838</v>
+</c>
+<c r="X15" t="n">
+<v>10851</v>
+</c>
+<c r="Y15" t="n">
+<v>10840</v>
+</c>
+<c r="Z15" s="1" t="n">
+<v>43794</v>
+</c>
+<c r="AA15" s="1" t="n">
+<v>43802</v>
+</c>
+<c r="AB15" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="16">
+<c r="A16" t="n">
+<v>234</v>
+</c>
+<c r="B16" t="n">
+<v>25</v>
+</c>
+<c r="C16" t="inlineStr">
+<is>
+<t>Christmas Promo</t>
+</is>
+</c>
+<c r="D16" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E16" t="n">
+<v>30</v>
+</c>
+<c r="F16" t="inlineStr">
+<is>
+<t>Christmas</t>
+</is>
+</c>
+<c r="G16" t="inlineStr">
+<is>
+<t xml:space="preserve">Christmas events end at 12/Jan 0:00 </t>
+</is>
+</c>
+<c r="H16" t="inlineStr">
+<is>
+<t>Merry Christmas!</t>
+</is>
+</c>
+<c r="I16" t="inlineStr">
+<is>
+<t>character:358|item:832|item:539</t>
+</is>
+</c>
+<c r="J16" t="n">
+<v>0</v>
+</c>
+<c r="K16" t="n">
+<v>0</v>
+</c>
+<c r="L16" t="n">
+<v>0</v>
+</c>
+<c r="M16" t="n">
+<v>0</v>
+</c>
+<c r="N16" t="n">
+<v>0</v>
+</c>
+<c r="O16" t="n">
+<v>3</v>
+</c>
+<c r="P16" t="n">
+<v>103</v>
+</c>
+<c r="Q16" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R16" t="n">
+<v>0</v>
+</c>
+<c r="S16" t="n">
+<v>13256</v>
+</c>
+<c r="T16" t="n">
+<v>13257</v>
+</c>
+<c r="U16" t="n">
+<v>13225</v>
+</c>
+<c r="V16" t="n">
+<v>0</v>
+</c>
+<c r="W16" t="n">
+<v>13259</v>
+</c>
+<c r="X16" t="n">
+<v>13260</v>
+</c>
+<c r="Y16" t="n">
+<v>13258</v>
+</c>
+<c r="Z16" s="1" t="n">
+<v>43813</v>
+</c>
+<c r="AA16" s="1" t="n">
+<v>43842</v>
+</c>
+<c r="AB16" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="17">
+<c r="A17" t="n">
+<v>234</v>
+</c>
+<c r="B17" t="n">
+<v>26</v>
+</c>
+<c r="C17" t="inlineStr">
+<is>
+<t>Lunar New Year Promo</t>
+</is>
+</c>
+<c r="D17" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E17" t="n">
+<v>30</v>
+</c>
+<c r="F17" t="inlineStr">
+<is>
+<t>Lunar New Year</t>
+</is>
+</c>
+<c r="G17" t="inlineStr">
+<is>
+<t xml:space="preserve">Lunar New Year events end at 9/Feb 0:00 </t>
+</is>
+</c>
+<c r="H17" t="inlineStr">
+<is>
+<t xml:space="preserve">Lunar New Year events end at 9/Feb 0:00 </t>
+</is>
+</c>
+<c r="I17" t="inlineStr">
+<is>
+<t>character:361|character:266|item:267</t>
+</is>
+</c>
+<c r="J17" t="n">
+<v>0</v>
+</c>
+<c r="K17" t="n">
+<v>0</v>
+</c>
+<c r="L17" t="n">
+<v>0</v>
+</c>
+<c r="M17" t="n">
+<v>0</v>
+</c>
+<c r="N17" t="n">
+<v>0</v>
+</c>
+<c r="O17" t="n">
+<v>3</v>
+</c>
+<c r="P17" t="n">
+<v>103</v>
+</c>
+<c r="Q17" t="inlineStr">
+<is>
+<t>shipLevel&gt;4 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R17" t="n">
+<v>0</v>
+</c>
+<c r="S17" t="n">
+<v>13256</v>
+</c>
+<c r="T17" t="n">
+<v>13505</v>
+</c>
+<c r="U17" t="n">
+<v>13369</v>
+</c>
+<c r="V17" t="n">
+<v>0</v>
+</c>
+<c r="W17" t="n">
+<v>13259</v>
+</c>
+<c r="X17" t="n">
+<v>13260</v>
+</c>
+<c r="Y17" t="n">
+<v>13258</v>
+</c>
+<c r="Z17" s="1" t="n">
+<v>43851</v>
+</c>
+<c r="AA17" s="1" t="n">
+<v>43870</v>
+</c>
+<c r="AB17" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="18">
+<c r="A18" t="n">
+<v>234</v>
+</c>
+<c r="B18" t="n">
+<v>27</v>
+</c>
+<c r="C18" t="inlineStr">
+<is>
+<t>Galaxy Bank</t>
+</is>
+</c>
+<c r="D18" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E18" t="n">
+<v>64</v>
+</c>
+<c r="F18" t="inlineStr">
+<is>
+<t>Galaxy Bank</t>
+</is>
+</c>
+<c r="G18" t="inlineStr">
+<is>
+<t>Welcome to the Galaxy Bank</t>
+</is>
+</c>
+<c r="H18" t="inlineStr">
+<is>
+<t>Browse through the daily sales at your leisure.</t>
+</is>
+</c>
+<c r="I18" t="inlineStr">
+<is>
+<t>starbux:1</t>
+</is>
+</c>
+<c r="J18" t="n">
+<v>0</v>
+</c>
+<c r="K18" t="n">
+<v>0</v>
+</c>
+<c r="L18" t="n">
+<v>0</v>
+</c>
+<c r="M18" t="n">
+<v>0</v>
+</c>
+<c r="N18" t="n">
+<v>0</v>
+</c>
+<c r="O18" t="n">
+<v>0</v>
+</c>
+<c r="P18" t="n">
+<v>200</v>
+</c>
+<c r="Q18" t="inlineStr">
+<is>
+<t>shipLevel&gt;1 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R18" t="n">
+<v>0</v>
+</c>
+<c r="S18" t="n">
+<v>13944</v>
+</c>
+<c r="T18" t="n">
+<v>13945</v>
+</c>
+<c r="U18" t="n">
+<v>13369</v>
+</c>
+<c r="V18" t="n">
+<v>0</v>
+</c>
+<c r="W18" t="n">
+<v>10838</v>
+</c>
+<c r="X18" t="n">
+<v>10851</v>
+</c>
+<c r="Y18" t="n">
+<v>10840</v>
+</c>
+<c r="Z18" s="1" t="n">
+<v>43851</v>
+</c>
+<c r="AA18" s="1" t="n">
+<v>43870</v>
+</c>
+<c r="AB18" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="19">
+<c r="A19" t="n">
+<v>234</v>
+</c>
+<c r="B19" t="n">
+<v>28</v>
+</c>
+<c r="C19" t="inlineStr">
+<is>
+<t>Ship Level 7 Bonus Offer</t>
+</is>
+</c>
+<c r="D19" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E19" t="n">
+<v>30</v>
+</c>
+<c r="F19" t="inlineStr">
+<is>
+<t>Ship Level 7 Bonus Offer</t>
+</is>
+</c>
+<c r="G19" t="inlineStr">
+<is>
+<t>One time only offer!</t>
+</is>
+</c>
+<c r="H19" t="inlineStr">
+<is>
+<t>Congratulations! You can build a Hangar! Now all you need is a flight suit and the Purr-fect pilot!</t>
+</is>
+</c>
+<c r="I19" t="inlineStr">
+<is>
+<t>character:365|item:690|item:691|item:692</t>
+</is>
+</c>
+<c r="J19" t="n">
+<v>0</v>
+</c>
+<c r="K19" t="n">
+<v>0</v>
+</c>
+<c r="L19" t="n">
+<v>0</v>
+</c>
+<c r="M19" t="n">
+<v>0</v>
+</c>
+<c r="N19" t="n">
+<v>0</v>
+</c>
+<c r="O19" t="n">
+<v>3</v>
+</c>
+<c r="P19" t="n">
+<v>107</v>
+</c>
+<c r="Q19" t="inlineStr">
+<is>
+<t>shipLevel&gt;6 &amp;&amp; purchaseRewardPoints&gt;5</t>
+</is>
+</c>
+<c r="R19" t="n">
+<v>0</v>
+</c>
+<c r="S19" t="n">
+<v>13256</v>
+</c>
+<c r="T19" t="n">
+<v>13964</v>
+</c>
+<c r="U19" t="n">
+<v>13980</v>
+</c>
+<c r="V19" t="n">
+<v>0</v>
+</c>
+<c r="W19" t="n">
+<v>13259</v>
+</c>
+<c r="X19" t="n">
+<v>13260</v>
+</c>
+<c r="Y19" t="n">
+<v>13258</v>
+</c>
+<c r="Z19" s="1" t="n">
+<v>43918</v>
+</c>
+<c r="AA19" s="1" t="n">
+<v>73051</v>
+</c>
+<c r="AB19" t="n">
+<v>0</v>
+</c>
+</row>
+<row r="20">
+<c r="A20" t="n">
+<v>234</v>
+</c>
+<c r="B20" t="n">
+<v>29</v>
+</c>
+<c r="C20" t="inlineStr">
+<is>
+<t>Easter Promotion</t>
+</is>
+</c>
+<c r="D20" t="inlineStr">
+<is>
+<t>FirstPurchase</t>
+</is>
+</c>
+<c r="E20" t="n">
+<v>30</v>
+</c>
+<c r="F20" t="inlineStr">
+<is>
+<t>Easter Sale</t>
+</is>
+</c>
+<c r="G20" t="inlineStr">
+<is>
+<t>One time only offer!</t>
+</is>
+</c>
+<c r="H20" t="inlineStr">
+<is>
+<t>Grab a Bonus Pet Rabbit when purchasing a Roll of Starbux.</t>
+</is>
+</c>
+<c r="I20" t="inlineStr">
+<is>
+<t>item:712|character:346</t>
+</is>
+</c>
+<c r="J20" t="n">
+<v>0</v>
+</c>
+<c r="K20" t="n">
+<v>0</v>
+</c>
+<c r="L20" t="n">
+<v>0</v>
+</c>
+<c r="M20" t="n">
+<v>0</v>
+</c>
+<c r="N20" t="n">
+<v>0</v>
+</c>
+<c r="O20" t="n">
+<v>3</v>
+</c>
+<c r="P20" t="n">
+<v>101</v>
+</c>
+<c r="Q20" t="inlineStr">
+<is>
+<t>shipLevel&gt;4</t>
+</is>
+</c>
+<c r="R20" t="n">
+<v>0</v>
+</c>
+<c r="S20" t="n">
+<v>12092</v>
+</c>
+<c r="T20" t="n">
+<v>12093</v>
+</c>
+<c r="U20" t="n">
+<v>12097</v>
+</c>
+<c r="V20" t="n">
+<v>0</v>
+</c>
+<c r="W20" t="n">
+<v>12095</v>
+</c>
+<c r="X20" t="n">
+<v>12272</v>
+</c>
+<c r="Y20" t="n">
+<v>10840</v>
+</c>
+<c r="Z20" s="1" t="n">
+<v>43928</v>
+</c>
+<c r="AA20" s="1" t="n">
+<v>43938</v>
+</c>
+<c r="AB20" t="n">
+<v>0</v>
+</c>
+</row>
+</sheetData>
+<pageMargins bottom="1" footer="0.5" header="0.5" left="0.75" right="0.75" top="1" />
+<tableParts count="1">
+<tablePart r:id="rId1" />
+</tableParts>
+</worksheet>
