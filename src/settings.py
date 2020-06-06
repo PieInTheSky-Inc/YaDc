@@ -18,7 +18,6 @@ DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_FLOAT_PRECISION: int = 1
-DEFAULT_MODE_REPOST_AUTODAILY: bool = True
 DEFAULT_PREFIX: str = '/'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
@@ -48,10 +47,10 @@ MIN_ENTITY_NAME_LENGTH = 3
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
-PRINT_DEBUG = False
-PRINT_DEBUG_DB = True
-PRINT_DEBUG_COMMAND = True
-PRINT_DEBUG_WEB_REQUESTS = False
+PRINT_DEBUG = int(os.environ.get('PRINT_DEBUG', '0'))
+PRINT_DEBUG_DB = int(os.environ.get('PRINT_DEBUG_DB', '0'))
+PRINT_DEBUG_COMMAND = int(os.environ.get('PRINT_DEBUG_COMMAND', '0'))
+PRINT_DEBUG_WEB_REQUESTS = int(os.environ.get('PRINT_DEBUG_WEB_REQUESTS', '0'))
 
 PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
 PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
