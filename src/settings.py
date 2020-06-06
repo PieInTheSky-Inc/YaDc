@@ -18,7 +18,6 @@ DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
 DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_FLOAT_PRECISION: int = 1
-DEFAULT_MODE_REPOST_AUTODAILY: bool = True
 DEFAULT_PREFIX: str = '/'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 

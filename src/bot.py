@@ -270,7 +270,7 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
             if posted:
                 posted_count += 1
                 await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
@@ -278,7 +278,7 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
     """
     Returns (posted, can_post, latest_message_id)
     """
@@ -288,10 +288,10 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
 
-        if delete_on_change is None or delete_on_change is True:
-            post_new = True
-        else:
+        if change_mode == server_settings.AutoDailyChangeMode.EDIT:
             post_new = False
+        else:
+            post_new = True
 
         can_post = True
         latest_message: discord.Message = None
@@ -304,7 +304,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                 latest_message_id = latest_message.id
                 if latest_message.content == current_daily_message:
                     post_new = False
-                elif delete_on_change is True:
+                elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
                         await latest_message.delete()
                         latest_message = None
@@ -317,7 +317,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                     except Exception as err:
                         print(f'[post_autodaily] {error_msg_delete}: {err}')
                         can_post = False
-                elif delete_on_change is False:
+                elif change_mode == server_settings.AutoDailyChangeMode.EDIT:
                     try:
                         await latest_message.edit(content=current_daily_message)
                         posted = True
@@ -1905,7 +1905,7 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
 
     async with ctx.typing():
         autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-        success = await autodaily_settings.toggle_daily_delete_on_change()
+        success = await autodaily_settings.toggle_change_mode()
     if success:
         await ctx.invoke(bot.get_command('settings autodaily changemode'))
     else:

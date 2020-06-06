@@ -38,7 +38,7 @@ _COLUMN_NAME_DAILY_CHANNEL_ID: str = 'dailychannelid'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: str = 'dailylatestmessageid'
 _COLUMN_NAME_USE_PAGINATION: str = 'usepagination'
 _COLUMN_NAME_PREFIX: str = 'prefix'
-_COLUMN_NAME_DAILY_DELETE_ON_CHANGE: str = 'dailydeleteonchange'
+_COLUMN_NAME_DAILY_CHANGE_MODE: str = 'dailychangemode'
 _COLUMN_NAME_DAILY_NOTIFY_ID: str = 'dailynotifyid'
 _COLUMN_NAME_DAILY_NOTIFY_TYPE: str = 'dailynotifytype'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: str = 'dailylatestmessagecreatedate'
@@ -61,19 +61,19 @@ class AutoDailyNotifyType(IntEnum):
 
 
 class AutoDailyChangeMode(IntEnum):
-    POST_NEW = 1
-    DELETE_AND_POST_NEW = 2
-    EDIT = 4
+    POST_NEW = 1 # Formerly None
+    DELETE_AND_POST_NEW = 2 # Formerly True
+    EDIT = 3 # Formerly False
 
 
 
 
 
 class AutoDailySettings():
-    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, delete_on_change: bool, notify: Union[discord.Member, discord.Role], latest_message_created_at: datetime.datetime, latest_message_modified_at: datetime.datetime):
+    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, notify: Union[discord.Member, discord.Role], latest_message_created_at: datetime.datetime, latest_message_modified_at: datetime.datetime):
         self.__can_post: bool = can_post
         self.__channel: discord.TextChannel = channel
-        self.__delete_on_change: bool = delete_on_change
+        self.__change_mode: AutoDailyChangeMode = change_mode or AutoDailyChangeMode.POST_NEW
         self.__guild: discord.Guild = guild
         self.__latest_message_id: int = latest_message_id or None
         self.__latest_message_created_at: datetime.datetime = latest_message_created_at or None
@@ -92,6 +92,10 @@ class AutoDailySettings():
         return self.__can_post
 
     @property
+    def change_mode(self) -> AutoDailyChangeMode:
+        return self.__change_mode
+
+    @property
     def channel(self) -> discord.TextChannel:
         return self.__channel
 
@@ -101,10 +105,6 @@ class AutoDailySettings():
             return self.channel.id
         else:
             return None
-
-    @property
-    def delete_on_change(self) -> bool:
-        return self.__delete_on_change
 
     @property
     def guild(self) -> discord.Guild:
@@ -150,7 +150,7 @@ class AutoDailySettings():
 
 
     def get_pretty_settings(self) -> List[str]:
-        if self.channel_id is not None or self.delete_on_change is not None or self.notify_id is not None:
+        if self.channel_id is not None or self.change_mode is not None or self.notify_id is not None:
             result = []
             result.extend(self.get_pretty_setting_channel())
             result.extend(self.get_pretty_setting_changemode())
@@ -177,7 +177,7 @@ class AutoDailySettings():
 
 
     def _get_pretty_mode(self) -> str:
-        result = convert_to_edit_delete(self.delete_on_change)
+        result = convert_to_edit_delete(self.change_mode)
         return result
 
 
@@ -225,7 +225,7 @@ class AutoDailySettings():
         settings = {
             _COLUMN_NAME_DAILY_CHANNEL_ID: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
-            _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY,
+            _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE,
             _COLUMN_NAME_DAILY_NOTIFY_ID: None,
             _COLUMN_NAME_DAILY_NOTIFY_TYPE: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
@@ -260,7 +260,7 @@ class AutoDailySettings():
 
     async def reset_daily_delete_on_change(self) -> bool:
         settings = {
-            _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY
+            _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE
         }
         success = await _db_update_server_settings(self.guild_id, settings)
         if success:
@@ -360,21 +360,25 @@ class AutoDailySettings():
             return False
 
 
-    async def toggle_daily_delete_on_change(self) -> bool:
-        new_value = lookups.select_next_element(lookups.DELETE_ON_CHANGE_ORDER, self.__delete_on_change)
-        success = await db_update_daily_delete_on_change(self.guild_id, new_value)
+    async def toggle_change_mode(self) -> bool:
+        int_value = int(self.change_mode)
+        new_value = AutoDailyChangeMode((int_value % 3) + 1)
+        settings = {
+            _COLUMN_NAME_DAILY_CHANGE_MODE: new_value
+        }
+        success = await _db_update_server_settings(self.guild_id, settings)
         if success:
-            self.__delete_on_change = new_value
+            self.__change_mode = new_value
         return success
 
 
-    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, delete_on_change: bool = None, notify: Union[discord.Role, discord.User] = None) -> bool:
+    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, notify: Union[discord.Role, discord.User] = None) -> bool:
         settings: Dict[str, object] = {}
         update_channel = channel is not None and channel != self.channel
         update_can_post = can_post is not None and can_post != self.can_post
         update_latest_message = latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at
         update_notify = notify is not None and notify != self.notify
-        update_delete_on_change = delete_on_change is not None or delete_on_change != self.delete_on_change
+        update_change_mode = change_mode is not None and change_mode != self.change_mode
         if update_channel:
             settings[_COLUMN_NAME_DAILY_CHANNEL_ID] = channel.id
         if update_can_post:
@@ -390,8 +394,8 @@ class AutoDailySettings():
                 notify_type = AutoDailyNotifyType.USER
             settings[_COLUMN_NAME_DAILY_NOTIFY_ID] = notify.id
             settings[_COLUMN_NAME_DAILY_NOTIFY_TYPE] = convert_from_autodaily_notify_type(notify_type)
-        if update_delete_on_change:
-            settings[_COLUMN_NAME_DAILY_DELETE_ON_CHANGE] = delete_on_change
+        if update_change_mode:
+            settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = change_mode
         success = await _db_update_server_settings(self.guild_id, settings)
         if success:
             if update_channel:
@@ -404,8 +408,8 @@ class AutoDailySettings():
                 self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
             if update_notify:
                 self.__notify = notify
-            if update_delete_on_change:
-                self.__delete_on_change = settings[_COLUMN_NAME_DAILY_DELETE_ON_CHANGE]
+            if update_change_mode:
+                self.__delete_on_change = settings[_COLUMN_NAME_DAILY_CHANGE_MODE]
         return success
 
 
@@ -425,7 +429,7 @@ class GuildSettings(object):
         daily_channel_id = row.get(_COLUMN_NAME_DAILY_CHANNEL_ID)
         can_post_daily = row.get(_COLUMN_NAME_DAILY_CAN_POST)
         daily_latest_message_id = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
-        daily_post_mode = row.get(_COLUMN_NAME_DAILY_DELETE_ON_CHANGE)
+        daily_post_mode = row.get(_COLUMN_NAME_DAILY_CHANGE_MODE)
         daily_notify_id = row.get(_COLUMN_NAME_DAILY_NOTIFY_ID)
         daily_notify_type = convert_to_autodaily_notify_type(row.get(_COLUMN_NAME_DAILY_NOTIFY_TYPE))
         daily_latest_message_created_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
@@ -689,13 +693,15 @@ def convert_to_on_off(value: bool) -> str:
         return '<NOT SET>'
 
 
-def convert_to_edit_delete(value: bool) -> str:
-    if value is True:
+def convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
+    if value == AutoDailyChangeMode.DELETE_AND_POST_NEW:
         return 'Delete daily post and post new daily on change.'
-    elif value is False:
+    elif value == AutoDailyChangeMode.EDIT:
         return 'Edit daily post on change.'
-    else:
+    elif value == AutoDailyChangeMode.POST_NEW:
         return 'Post new daily on change.'
+    else:
+        return '<not specified>'
 
 
 async def fix_prefixes() -> bool:
@@ -795,7 +801,7 @@ async def toggle_daily_delete_on_change(guild_id: int) -> bool:
         new_value = True
     else:
         new_value = False
-    success = await db_update_daily_delete_on_change(guild_id, new_value)
+    success = await db_update_daily_change_mode(guild_id, new_value)
     if success:
         return new_value
     else:
@@ -830,7 +836,7 @@ async def db_create_server_settings(guild_id: int) -> bool:
         return True
     else:
         query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ($1, $2)'
-        success = await core.db_try_execute(query, [guild_id, app_settings.DEFAULT_MODE_REPOST_AUTODAILY])
+        success = await core.db_try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
         return success
 
 
@@ -851,7 +857,7 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
     if only_guild_ids:
         setting_names = [_COLUMN_NAME_GUILD_ID]
     else:
-        setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_DELETE_ON_CHANGE, _COLUMN_NAME_DAILY_NOTIFY_ID, _COLUMN_NAME_DAILY_NOTIFY_TYPE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
+        setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_CHANGE_MODE, _COLUMN_NAME_DAILY_NOTIFY_ID, _COLUMN_NAME_DAILY_NOTIFY_TYPE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
     settings = await _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
     for setting in settings:
@@ -888,7 +894,7 @@ async def db_get_daily_channel_id(guild_id: int) -> int:
 
 
 async def db_get_daily_delete_on_change(guild_id: int) -> bool:
-    setting_names = [_COLUMN_NAME_DAILY_DELETE_ON_CHANGE]
+    setting_names = [_COLUMN_NAME_DAILY_CHANGE_MODE]
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None if result else None
 
@@ -973,7 +979,7 @@ async def db_reset_autodaily_mode(guild_id: int) -> bool:
     for current_setting in current_autodaily_settings:
         if current_setting is not None:
             settings = {
-                _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY
+                _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE
             }
             success = await _db_update_server_settings(guild_id, settings)
             return success
@@ -1000,7 +1006,7 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
             settings = {
                 _COLUMN_NAME_DAILY_CHANNEL_ID: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
-                _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: app_settings.DEFAULT_MODE_REPOST_AUTODAILY,
+                _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE,
                 _COLUMN_NAME_DAILY_NOTIFY_ID: None,
                 _COLUMN_NAME_DAILY_NOTIFY_TYPE: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
@@ -1058,7 +1064,7 @@ async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, ca
         if latest_message_id is not None:
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message_id
         if delete_on_change is not None:
-            settings[_COLUMN_NAME_DAILY_DELETE_ON_CHANGE] = delete_on_change
+            settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = delete_on_change
         if notify_id is not None:
             settings[_COLUMN_NAME_DAILY_NOTIFY_ID] = notify_id
         if notify_type is not None:
@@ -1084,11 +1090,11 @@ async def db_update_daily_channel_id(guild_id: int, channel_id: int) -> bool:
     return True
 
 
-async def db_update_daily_delete_on_change(guild_id: int, delete_on_change: bool) -> bool:
-    current_daily_delete_on_change = await db_get_daily_delete_on_change(guild_id)
-    if not current_daily_delete_on_change or delete_on_change != current_daily_delete_on_change:
+async def db_update_daily_change_mode(guild_id: int, change_mode: AutoDailyChangeMode) -> bool:
+    current_daily_change_mode = await db_get_daily_delete_on_change(guild_id)
+    if not current_daily_change_mode or change_mode != current_daily_change_mode:
         settings = {
-            _COLUMN_NAME_DAILY_DELETE_ON_CHANGE: delete_on_change,
+            _COLUMN_NAME_DAILY_CHANGE_MODE: change_mode,
         }
         success = await _db_update_server_settings(guild_id, settings)
         return success
@@ -1234,9 +1240,11 @@ async def _db_update_server_settings(guild_id: int, settings: dict) -> bool:
 
 
 
-# ---------- Initialization ----------
+# ---------- Initialization & DEFAULT ----------
 
 GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
+
+DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.POST_NEW
 
 
 

@@ -456,6 +456,9 @@ async def init_db():
     if not (await db_update_schema('1.2.8.0', db_update_schema_v_1_2_8_0)):
         return
 
+    if not (await db_update_schema('1.2.9.0', db_update_schema_v_1_2_9_0)):
+        return
+
     success_serversettings = await db_try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -478,6 +481,43 @@ async def db_update_schema(version: str, update_function: Callable) -> bool:
     success = await update_function()
     if not success:
         print(f'[db_update_schema] DB initialization failed upon upgrading the DB schema to version {version}.')
+    return success
+
+
+async def db_update_schema_v_1_2_9_0() -> bool:
+    schema_version = await db_get_schema_version()
+    if schema_version:
+        compare_1290 = util.compare_versions(schema_version, '1.2.9.0')
+        compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
+        if compare_1290 <= 0:
+            return True
+        elif compare_1280 > 0:
+            return False
+
+    print(f'[db_update_schema_v_1_2_9_0] Updating database schema from v1.2.8.0 to v1.2.9.0')
+
+    query_add_column = f'ALTER TABLE serversettings ADD COLUMN dailychangemode INT;'
+    success_add_column = await db_try_execute(query_add_column)
+    if not success_add_column:
+        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to add column \'dailychangemode\'!')
+        return False
+
+    query_lines_move_data = [f'UPDATE serversettings SET dailychangemode = 1 WHERE dailydeleteonchange IS NULL;']
+    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 2 WHERE dailydeleteonchange = {util.db_convert_boolean(True)};')
+    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 3 WHERE dailydeleteonchange = {util.db_convert_boolean(False)};')
+    query_move_data = '\n'.join(query_lines_move_data)
+    success_move_data = await db_try_execute(query_move_data)
+    if not success_move_data:
+        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to convert and copy data from column \'dailydeleteonchange\' into column \'dailychangemode\'!')
+        return False
+
+    query_drop_column = f'ALTER TABLE DROP COLUMN IF EXISTS dailydeleteonchange;'
+    success_drop_column = await db_try_execute(query_drop_column)
+    if not success_drop_column:
+        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to drop column \'dailydeleteonchange\'!')
+        return False
+
+    success = await db_try_set_schema_version('1.2.9.0')
     return success
 
 
