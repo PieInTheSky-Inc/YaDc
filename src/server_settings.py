@@ -60,6 +60,12 @@ class AutoDailyNotifyType(IntEnum):
     ROLE = 2
 
 
+class AutoDailyChangeMode(IntEnum):
+    POST_NEW = 1
+    DELETE_AND_POST_NEW = 2
+    EDIT = 4
+
+
 
 
 
