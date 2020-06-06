@@ -372,11 +372,11 @@ class AutoDailySettings():
         return success
 
 
-    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, notify: Union[discord.Role, discord.User] = None) -> bool:
+    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, notify: Union[discord.Role, discord.User] = None, store_now_as_created_at: bool = False) -> bool:
         settings: Dict[str, object] = {}
         update_channel = channel is not None and channel != self.channel
         update_can_post = can_post is not None and can_post != self.can_post
-        update_latest_message = latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at
+        update_latest_message = (latest_message is None and store_now_as_created_at) or (latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at)
         update_notify = notify is not None and notify != self.notify
         update_change_mode = change_mode is not None and change_mode != self.change_mode
         if update_channel:
@@ -384,9 +384,12 @@ class AutoDailySettings():
         if update_can_post:
             settings[_COLUMN_NAME_DAILY_CAN_POST] = can_post
         if update_latest_message:
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
+            if store_now_as_created_at:
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = util.get_utcnow()
+            else:
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
         if update_notify:
             if isinstance(notify, discord.Role):
                 notify_type = AutoDailyNotifyType.ROLE
@@ -401,11 +404,11 @@ class AutoDailySettings():
             if update_channel:
                 self.__channel = channel
             if update_can_post:
-                self.__can_post = settings[_COLUMN_NAME_DAILY_CAN_POST]
+                self.__can_post = settings.get(_COLUMN_NAME_DAILY_CAN_POST)
             if update_latest_message:
-                self.__latest_message_id = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
-                self.__latest_message_created_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT]
-                self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
+                self.__latest_message_id = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
+                self.__latest_message_created_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
+                self.__latest_message_modified_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
             if update_notify:
                 self.__notify = notify
             if update_change_mode:
