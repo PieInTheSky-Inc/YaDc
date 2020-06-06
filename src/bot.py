@@ -280,7 +280,7 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
 
 async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
     """
-    Returns (posted, can_post, latest_message_id)
+    Returns (posted, can_post, latest_message)
     """
     posted = False
     if text_channel and current_daily_message:
