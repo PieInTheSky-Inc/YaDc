@@ -2259,7 +2259,7 @@ async def cmd_raw(ctx: commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('raw')
 
 
 @cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
@@ -2283,7 +2283,7 @@ async def cmd_raw_ai(ctx: commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('raw ai')
 
 
 @cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
@@ -2343,7 +2343,7 @@ async def cmd_raw_gm(ctx: commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('raw gm')
 
 
 @cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
