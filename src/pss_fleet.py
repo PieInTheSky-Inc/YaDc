@@ -34,6 +34,8 @@ FLEET_SHEET_COLUMN_NAMES = [
     'Trophies',
     'Stars',
     'Join Date',
+    'Crew Donated',
+    'Crew Borrowed',
     'Logged in ago',
     'Joined ago'
 ]
@@ -46,6 +48,8 @@ FLEET_SHEET_COLUMN_TYPES = [
     settings.EXCEL_COLUMN_FORMAT_NUMBER,
     settings.EXCEL_COLUMN_FORMAT_NUMBER,
     settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    settings.EXCEL_COLUMN_FORMAT_NUMBER,
     None,
     None
 ]
@@ -214,6 +218,8 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             int(user_info['Trophy']),
             int(user_info['AllianceScore']),
             util.convert_pss_timestamp_to_excel(user_info['AllianceJoinDate']),
+            int(user_info.get('CrewDonated', '0')),
+            int(user_info.get('CrewReceived', '0')),
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False)
         ]
