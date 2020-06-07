@@ -2309,7 +2309,7 @@ async def cmd_raw_gm(ctx: commands.Context):
     pass
 
 
-@cmd_raw_gm.command(name='system', brief='Get raw gm data', aliases=['systems', 'star', 'stars'])
+@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_system(ctx: commands.Context, star_system_id: int = None):
     """
@@ -2321,7 +2321,7 @@ async def cmd_raw_gm_system(ctx: commands.Context, star_system_id: int = None):
     await __post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
 
 
-@cmd_raw_gm.command(name='path', brief='Get raw gm data', aliases=['paths', 'link', 'links'])
+@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_link(ctx: commands.Context, star_system_link_id: int = None):
     """
@@ -2381,7 +2381,7 @@ async def cmd_raw_research(ctx: commands.Context, research_id: int = None):
     await __post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
 
 
-@cmd_raw.group(name='room', brief='Get raw collection data', aliases=['rooms'], invoke_without_command=True)
+@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room(ctx: commands.Context, room_id: int = None):
     """
@@ -2393,7 +2393,7 @@ async def cmd_raw_room(ctx: commands.Context, room_id: int = None):
     await __post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
 
 
-@cmd_raw_room.command(name='purchase', brief='Get raw collection data', aliases=['purchases'])
+@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room_purchase(ctx: commands.Context, room_purchase_id: int = None):
     """
@@ -2417,7 +2417,7 @@ async def cmd_raw_ship(ctx: commands.Context, ship_id: int = None):
     await __post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
 
 
-@cmd_raw.command(name='training', brief='Get raw collection data', aliases=['trainings'])
+@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_training(ctx: commands.Context, training_id: int = None):
     """
