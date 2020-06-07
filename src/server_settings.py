@@ -474,7 +474,7 @@ class GuildSettings(object):
 
     @property
     def id(self) -> int:
-        return self.__guild.id
+        return self.__guild_id
 
     @property
     def pretty_use_pagination(self) -> str:
@@ -569,7 +569,7 @@ class GuildSettings(object):
 
 class GuildSettingsCollection():
     def __init__(self):
-        self.__data: dict = {}
+        self.__data: Dict[int, GuildSettings] = {}
 
 
     @property
@@ -580,7 +580,12 @@ class GuildSettingsCollection():
     async def create_guild_settings(self, bot: commands.Bot, guild_id: int) -> bool:
         success = await db_create_server_settings(guild_id)
         if success:
-            self.__data[guild_id] = GuildSettings(bot, _db_get_server_settings(guild_id))
+            new_server_settings = await _db_get_server_settings(guild_id)
+            if new_server_settings:
+                self.__data[guild_id] = GuildSettings(bot, new_server_settings[0])
+            else:
+                print(f'WARNING: guild settings have been created, but could not be retrieved for guild_id: {guild_id}')
+                return False
         return success
 
 
@@ -593,13 +598,25 @@ class GuildSettingsCollection():
 
     async def get(self, bot: commands.Bot, guild_id: int) -> GuildSettings:
         if guild_id not in self.__data:
-            self.create_guild_settings(bot, guild_id)
+            await self.create_guild_settings(bot, guild_id)
         return self.__data[guild_id]
 
 
     async def init(self, bot: commands.Bot):
         for server_settings in (await _db_get_server_settings()):
             self.__data[server_settings[_COLUMN_NAME_GUILD_ID]] = GuildSettings(bot, server_settings)
+
+
+    def items(self) -> 'dict_items':
+        return self.__data.items()
+
+
+    def keys(self) -> 'dict_keys':
+        return self.__data.keys()
+
+
+    def values(self) -> 'dict_values':
+        return self.__data.values()
 
 
 
@@ -657,6 +674,19 @@ async def _prepare_create_autodaily_settings(guild_id: int) -> list:
 
 
 # ---------- Functions ----------
+
+async def clean_up_invalid_server_settings(bot: commands.Bot) -> None:
+    """
+    Removes server settings for all guilds the bot is not part of anymore.
+    """
+    if GUILD_SETTINGS is None:
+        raise Exception(f'The guild settings have not been initialized, yet!')
+
+    current_guilds = bot.guilds
+    invalid_guild_ids = [guild_settings.id for guild_settings in GUILD_SETTINGS.values() if guild_settings.guild is None or guild_settings.guild not in current_guilds]
+    for invalid_guild_id in invalid_guild_ids:
+        await GUILD_SETTINGS.delete_guild_settings(invalid_guild_id)
+
 
 def convert_from_autodaily_notify_type(notify_type: AutoDailyNotifyType) -> int:
     if notify_type:
@@ -838,19 +868,19 @@ async def db_create_server_settings(guild_id: int) -> bool:
     if await db_get_has_settings(guild_id):
         return True
     else:
-        query = f'INSERT INTO serversettings (guildid, dailydeleteonchange) VALUES ($1, $2)'
+        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
         success = await core.db_try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
         return success
 
 
 async def db_delete_server_settings(guild_id: int) -> bool:
-    query = f'DELETE FROM serversettings WHERE guildid = $1'
+    query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
     success = await core.db_try_execute(query, [guild_id])
     return success
 
 
 async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> list:
-    wheres = ['(dailychannelid IS NOT NULL or dailynotifyid IS NOT NULL)']
+    wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL or {_COLUMN_NAME_DAILY_NOTIFY_ID} IS NOT NULL)']
     if guild_id is not None:
         wheres.append(util.db_get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
     if can_post is not None:
@@ -1178,7 +1208,7 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
     additional_wheres = additional_wheres or []
     wheres = []
     if guild_id is not None:
-        wheres.append(f'guildid = $1')
+        wheres.append(f'{_COLUMN_NAME_GUILD_ID} = $1')
 
     if setting_names:
         setting_string = ', '.join(setting_names)
@@ -1229,7 +1259,7 @@ async def _db_update_server_settings(guild_id: int, settings: dict) -> bool:
             set_names.append(f'{key} = ${i:d}')
             set_values.append(value)
         set_string = ', '.join(set_names)
-        query = f'UPDATE serversettings SET {set_string} WHERE guildid = $1'
+        query = f'UPDATE serversettings SET {set_string} WHERE {_COLUMN_NAME_GUILD_ID} = $1'
         success = await core.db_try_execute(query, set_values)
         return success
     else:

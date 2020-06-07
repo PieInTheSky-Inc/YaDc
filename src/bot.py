@@ -129,6 +129,7 @@ async def on_ready() -> None:
     await core.init()
     schema_version = await core.db_get_schema_version()
     await server_settings.init(bot)
+    await server_settings.clean_up_invalid_server_settings(bot)
     await login.init()
     await daily.init()
 
