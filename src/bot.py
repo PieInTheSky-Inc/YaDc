@@ -32,6 +32,7 @@ import settings
 import utility as util
 
 import pss_achievement as achievement
+import pss_ai as ai
 import pss_assert
 import pss_core as core
 import pss_crew as crew
@@ -2271,6 +2272,42 @@ async def cmd_raw_achievement(ctx: commands.Context, achievement_id: int = None)
     """
     __log_command_use(ctx)
     await __post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
+
+
+@cmd_raw.group(name='ai', brief='Get raw ai data')
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai(ctx: commands.Context):
+    """
+    Get raw ai design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    pass
+
+
+@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
+    """
+    Get raw ai action design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    await __post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
+
+
+@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
+    """
+    Get raw ai condition design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    await __post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
