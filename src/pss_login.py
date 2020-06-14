@@ -247,6 +247,7 @@ class DeviceCollection():
             tried_devices: int = 0
             while tried_devices < self.count:
                 current = self.current
+                current_can_login_until = current.can_login_until
                 try:
                     tried_devices += 1
                     result = await current.get_access_token()
@@ -259,7 +260,7 @@ class DeviceCollection():
                 current = self.current
             if result is None:
                 raise LoginError('Cannot get access token. No device has been able to retrieve one!')
-            if current is not None:
+            if current is not None and current_can_login_until != current.can_login_until:
                 await _db_try_update_device(current)
             return result
 
