@@ -6,6 +6,7 @@ from discord.ext import commands
 from enum import IntEnum
 from typing import Callable, Dict, List, Union
 
+import database as db
 import pss_assert
 import pss_core as core
 import pss_lookups as lookups
@@ -869,13 +870,13 @@ async def db_create_server_settings(guild_id: int) -> bool:
         return True
     else:
         query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
-        success = await core.db_try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
+        success = await db.db_try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
         return success
 
 
 async def db_delete_server_settings(guild_id: int) -> bool:
     query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
-    success = await core.db_try_execute(query, [guild_id])
+    success = await db.db_try_execute(query, [guild_id])
     return success
 
 
@@ -1222,12 +1223,12 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
     if where:
         query = f'SELECT {setting_string} FROM serversettings WHERE {where}'
         if guild_id is not None:
-            records = await core.db_fetchall(query, [guild_id])
+            records = await db.db_fetchall(query, [guild_id])
         else:
-            records = await core.db_fetchall(query)
+            records = await db.db_fetchall(query)
     else:
         query = f'SELECT {setting_string} FROM serversettings'
-        records = await core.db_fetchall(query)
+        records = await db.db_fetchall(query)
     if records:
         return records
     else:
@@ -1260,7 +1261,7 @@ async def _db_update_server_settings(guild_id: int, settings: dict) -> bool:
             set_values.append(value)
         set_string = ', '.join(set_names)
         query = f'UPDATE serversettings SET {set_string} WHERE {_COLUMN_NAME_GUILD_ID} = $1'
-        success = await core.db_try_execute(query, set_values)
+        success = await db.db_try_execute(query, set_values)
         return success
     else:
         return True

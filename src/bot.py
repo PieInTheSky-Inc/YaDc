@@ -21,6 +21,7 @@ import time
 from threading import Lock
 from typing import Dict, List, Tuple, Union
 
+import database as db
 import emojis
 import excel
 import gdrive
@@ -127,8 +128,8 @@ async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
-    await core.init()
-    schema_version = await core.db_get_schema_version()
+    await db.init()
+    schema_version = await db.get_schema_version()
     await server_settings.init(bot)
     await server_settings.clean_up_invalid_server_settings(bot)
     await login.init()
@@ -2485,13 +2486,13 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        await core.init_db()
+        await db.init_schema()
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
         try:
-            result = await core.db_fetchall(query)
+            result = await db.fetchall(query)
             error = None
         except Exception as error:
             result = []
@@ -2504,7 +2505,7 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
             await ctx.send('The query didn\'t return any results.')
     elif action == 'query' and params:
         query = f'{params}'
-        success = await core.db_try_execute(query)
+        success = await db.try_execute(query)
         if not success:
             await ctx.send(f'The query \'{params}\' failed.')
         else:

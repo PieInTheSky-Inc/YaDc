@@ -34,34 +34,34 @@ USING_LOOKUP = {
 }
 
 
-async def init_db():
-    success_create_schema = await db_create_schema()
+async def init_schema():
+    success_create_schema = await create_schema()
     if not success_create_schema:
-        print('[init_db] DB initialization failed upon creating the DB schema.')
+        print('[init_schema] DB initialization failed upon creating the DB schema.')
         return
 
-    if not (await db_update_schema('1.2.2.0', db_update_schema_v_1_2_2_0)):
+    if not (await update_schema('1.2.2.0', update_schema_v_1_2_2_0)):
         return
 
-    if not (await db_update_schema('1.2.4.0', db_update_schema_v_1_2_4_0)):
+    if not (await update_schema('1.2.4.0', update_schema_v_1_2_4_0)):
         return
 
-    if not (await db_update_schema('1.2.5.0', db_update_schema_v_1_2_5_0)):
+    if not (await update_schema('1.2.5.0', update_schema_v_1_2_5_0)):
         return
 
-    if not (await db_update_schema('1.2.6.0', db_update_schema_v_1_2_6_0)):
+    if not (await update_schema('1.2.6.0', update_schema_v_1_2_6_0)):
         return
 
-    if not (await db_update_schema('1.2.7.0', db_update_schema_v_1_2_7_0)):
+    if not (await update_schema('1.2.7.0', db_update_schema_v_1_2_7_0)):
         return
 
-    if not (await db_update_schema('1.2.8.0', db_update_schema_v_1_2_8_0)):
+    if not (await update_schema('1.2.8.0', update_schema_v_1_2_8_0)):
         return
 
-    if not (await db_update_schema('1.2.9.0', db_update_schema_v_1_2_9_0)):
+    if not (await update_schema('1.2.9.0', update_schema_v_1_2_9_0)):
         return
 
-    success_serversettings = await db_try_create_table('serversettings', [
+    success_serversettings = await try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
         ('dailycanpost', 'BOOLEAN', False, False),
@@ -73,21 +73,21 @@ async def init_db():
         ('dailynotifytype', 'TEXT', False, False)
     ])
     if not success_serversettings:
-        print('[init_db] DB initialization failed upon creating the table \'serversettings\'.')
+        print('[init_schema] DB initialization failed upon creating the table \'serversettings\'.')
         return
 
-    print('[init_db] DB initialization succeeded')
+    print('[init_schema] DB initialization succeeded')
 
 
-async def db_update_schema(version: str, update_function: Callable) -> bool:
+async def update_schema(version: str, update_function: Callable) -> bool:
     success = await update_function()
     if not success:
-        print(f'[db_update_schema] DB initialization failed upon upgrading the DB schema to version {version}.')
+        print(f'[update_schema] DB initialization failed upon upgrading the DB schema to version {version}.')
     return success
 
 
-async def db_update_schema_v_1_2_9_0() -> bool:
-    schema_version = await db_get_schema_version()
+async def update_schema_v_1_2_9_0() -> bool:
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1290 = util.compare_versions(schema_version, '1.2.9.0')
         compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
@@ -96,34 +96,34 @@ async def db_update_schema_v_1_2_9_0() -> bool:
         elif compare_1280 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_9_0] Updating database schema from v1.2.8.0 to v1.2.9.0')
+    print(f'[update_schema_v_1_2_9_0] Updating database schema from v1.2.8.0 to v1.2.9.0')
 
     query_add_column = f'ALTER TABLE serversettings ADD COLUMN dailychangemode INT;'
-    success_add_column = await db_try_execute(query_add_column)
+    success_add_column = await try_execute(query_add_column)
     if not success_add_column:
-        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to add column \'dailychangemode\'!')
+        print(f'[update_schema_v_1_2_9_0] ERROR: Failed to add column \'dailychangemode\'!')
         return False
 
     query_lines_move_data = [f'UPDATE serversettings SET dailychangemode = 1 WHERE dailydeleteonchange IS NULL;']
     query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 2 WHERE dailydeleteonchange = {util.db_convert_boolean(True)};')
     query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 3 WHERE dailydeleteonchange = {util.db_convert_boolean(False)};')
     query_move_data = '\n'.join(query_lines_move_data)
-    success_move_data = await db_try_execute(query_move_data)
+    success_move_data = await try_execute(query_move_data)
     if not success_move_data:
-        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to convert and copy data from column \'dailydeleteonchange\' into column \'dailychangemode\'!')
+        print(f'[update_schema_v_1_2_9_0] ERROR: Failed to convert and copy data from column \'dailydeleteonchange\' into column \'dailychangemode\'!')
         return False
 
     query_drop_column = f'ALTER TABLE DROP COLUMN IF EXISTS dailydeleteonchange;'
-    success_drop_column = await db_try_execute(query_drop_column)
+    success_drop_column = await try_execute(query_drop_column)
     if not success_drop_column:
-        print(f'[db_update_schema_v_1_2_9_0] ERROR: Failed to drop column \'dailydeleteonchange\'!')
+        print(f'[update_schema_v_1_2_9_0] ERROR: Failed to drop column \'dailydeleteonchange\'!')
         return False
 
-    success = await db_try_set_schema_version('1.2.9.0')
+    success = await try_set_schema_version('1.2.9.0')
     return success
 
 
-async def db_update_schema_v_1_2_8_0() -> bool:
+async def update_schema_v_1_2_8_0() -> bool:
     column_definitions_serversettings = [
         ('guildid', 'BIGINT', True, True),
         ('dailychannelid', 'BIGINT', False, False),
@@ -132,7 +132,7 @@ async def db_update_schema_v_1_2_8_0() -> bool:
         ('dailynotifytype', 'INT', False, False)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
         compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
@@ -141,7 +141,7 @@ async def db_update_schema_v_1_2_8_0() -> bool:
         elif compare_1270 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_8_0] Updating database schema from v1.2.7.0 to v1.2.8.0')
+    print(f'[update_schema_v_1_2_8_0] Updating database schema from v1.2.7.0 to v1.2.8.0')
 
     query_lines = ['ALTER TABLE serversettings']
     for column_name, new_column_type, _, _ in column_definitions_serversettings:
@@ -153,9 +153,9 @@ async def db_update_schema_v_1_2_8_0() -> bool:
     query_lines[-1] = query_lines[-1].replace(',', ';')
 
     query = '\n'.join(query_lines)
-    success = await db_try_execute(query)
+    success = await try_execute(query)
     if success:
-        success = await db_try_set_schema_version('1.2.8.0')
+        success = await try_set_schema_version('1.2.8.0')
     return success
 
 
@@ -166,7 +166,7 @@ async def db_update_schema_v_1_2_7_0() -> bool:
         ('loginuntil', 'TIMESTAMPTZ', False, False)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
         compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
@@ -175,21 +175,21 @@ async def db_update_schema_v_1_2_7_0() -> bool:
         elif compare_1260 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_7_0] Updating database schema from v1.2.6.0 to v1.2.7.0')
+    print(f'[update_schema_v_1_2_8_0] Updating database schema from v1.2.6.0 to v1.2.7.0')
 
-    success = await db_try_create_table('devices', column_definitions_devices)
+    success = await try_create_table('devices', column_definitions_devices)
     if success:
-        success = await db_try_set_schema_version('1.2.7.0')
+        success = await try_set_schema_version('1.2.7.0')
     return success
 
 
-async def db_update_schema_v_1_2_6_0() -> bool:
+async def update_schema_v_1_2_6_0() -> bool:
     column_definitions_serversettings = [
         ('dailylatestmessagecreatedate', 'TIMESTAMPTZ', False, False),
         ('dailylatestmessagemodifydate', 'TIMESTAMPTZ', False, False)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
         compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
@@ -198,7 +198,7 @@ async def db_update_schema_v_1_2_6_0() -> bool:
         elif compare_1250 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_6_0] Updating database schema from v1.2.5.0 to v1.2.6.0')
+    print(f'[update_schema_v_1_2_6_0] Updating database schema from v1.2.5.0 to v1.2.6.0')
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions_serversettings:
@@ -206,19 +206,19 @@ async def db_update_schema_v_1_2_6_0() -> bool:
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
-    success = await db_try_execute(query)
+    success = await try_execute(query)
     if success:
-        success = await db_try_set_schema_version('1.2.6.0')
+        success = await try_set_schema_version('1.2.6.0')
     return success
 
 
-async def db_update_schema_v_1_2_5_0() -> bool:
+async def update_schema_v_1_2_5_0() -> bool:
     column_definitions = [
         ('dailynotifyid', 'TEXT', False, False),
         ('dailynotifytype', 'TEXT', False, False)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
         compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
@@ -227,7 +227,7 @@ async def db_update_schema_v_1_2_5_0() -> bool:
         elif compare_1240 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_5_0] Updating database schema from v1.2.4.0 to v1.2.5.0')
+    print(f'[update_schema_v_1_2_5_0] Updating database schema from v1.2.4.0 to v1.2.5.0')
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
@@ -235,18 +235,18 @@ async def db_update_schema_v_1_2_5_0() -> bool:
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
-    success = await db_try_execute(query)
+    success = await try_execute(query)
     if success:
-        success = await db_try_set_schema_version('1.2.5.0')
+        success = await try_set_schema_version('1.2.5.0')
     return success
 
 
-async def db_update_schema_v_1_2_4_0() -> bool:
+async def update_schema_v_1_2_4_0() -> bool:
     column_definitions = [
         ('dailydeleteonchange', 'BOOLEAN', False, False, None)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
         compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
@@ -255,7 +255,7 @@ async def db_update_schema_v_1_2_4_0() -> bool:
         elif compare_1220 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_4_0] Updating database schema from v1.2.2.0 to v1.2.4.0')
+    print(f'[update_schema_v_1_2_4_0] Updating database schema from v1.2.2.0 to v1.2.4.0')
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
@@ -263,17 +263,17 @@ async def db_update_schema_v_1_2_4_0() -> bool:
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
 
     query = '\n'.join(query_lines)
-    success = await db_try_execute(query)
+    success = await try_execute(query)
     if success:
         utc_now = util.get_utcnow()
         daily_info = await daily.get_daily_info()
         success = await daily.db_set_daily_info(daily_info, utc_now)
         if success:
-            success = await db_try_set_schema_version('1.2.4.0')
+            success = await try_set_schema_version('1.2.4.0')
     return success
 
 
-async def db_update_schema_v_1_2_2_0() -> bool:
+async def update_schema_v_1_2_2_0() -> bool:
     query_lines = []
     rename_columns = {
         'channelid': 'dailychannelid',
@@ -288,7 +288,7 @@ async def db_update_schema_v_1_2_2_0() -> bool:
         ('prefix', 'TEXT', False, False)
     ]
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
         compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
@@ -297,16 +297,16 @@ async def db_update_schema_v_1_2_2_0() -> bool:
         elif compare_1000 > 0:
             return False
 
-    print(f'[db_update_schema_v_1_2_2_0] Updating database schema from v1.0.0.0 to v1.2.2.0')
+    print(f'[update_schema_v_1_2_2_0] Updating database schema from v1.0.0.0 to v1.2.2.0')
 
     query = 'ALTER TABLE IF EXISTS daily RENAME TO serversettings'
     try:
-        success = await db_try_execute(query, raise_db_error=True)
+        success = await try_execute(query, raise_db_error=True)
     except Exception as error:
         success = False
-        print_db_query_error('db_update_schema_v_1_2_2_0', query, None, error)
+        print_db_query_error('update_schema_v_1_2_2_0', query, None, error)
     if success:
-        column_names = await db_get_column_names('serversettings')
+        column_names = await get_column_names('serversettings')
         column_names = [column_name.lower() for column_name in column_names]
         for name_from, name_to in rename_columns.items():
             if name_from in column_names:
@@ -323,27 +323,27 @@ async def db_update_schema_v_1_2_2_0() -> bool:
 
         query = '\n'.join(query_lines)
         if query:
-            success = await db_try_execute(query)
+            success = await try_execute(query)
         else:
             success = True
         if success:
             query_lines = []
-            column_names = await db_get_column_names('serversettings')
+            column_names = await get_column_names('serversettings')
             column_names = [column_name.lower() for column_name in column_names]
             for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
                 if column_name not in column_names:
                     query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
             query = '\n'.join(query_lines)
             if query:
-                success = await db_try_execute(query)
+                success = await try_execute(query)
             else:
                 success = True
             if success:
-                success = await db_try_set_schema_version('1.2.2.0')
+                success = await try_set_schema_version('1.2.2.0')
     return success
 
 
-async def db_create_schema() -> bool:
+async def create_schema() -> bool:
     column_definitions_settings = [
         ('settingname', 'TEXT', True, True),
         ('modifydate', 'TIMESTAMPTZ', False, True),
@@ -360,35 +360,35 @@ async def db_create_schema() -> bool:
     ]
     query_server_settings = 'SELECT * FROM serversettings'
 
-    schema_version = await db_get_schema_version()
+    schema_version = await get_schema_version()
     if schema_version:
         compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
         if compare_1000 <= 0:
             return True
 
-    print(f'[db_create_schema] Creating database schema v1.0.0.0')
+    print(f'[create_schema] Creating database schema v1.0.0.0')
 
-    success_settings = await db_try_create_table('settings', column_definitions_settings)
+    success_settings = await try_create_table('settings', column_definitions_settings)
     if not success_settings:
-        print('[init_db] DB initialization failed upon creating the table \'settings\'.')
+        print('[create_schema] DB initialization failed upon creating the table \'settings\'.')
 
     create_daily = False
     try:
-        _ = await db_fetchall(query_server_settings)
+        _ = await fetchall(query_server_settings)
     except asyncpg.exceptions.UndefinedTableError:
         create_daily = True
 
     if create_daily:
-        success_daily = await db_try_create_table('daily', column_definitions_daily)
+        success_daily = await try_create_table('daily', column_definitions_daily)
     else:
         success_daily = True
 
     if success_daily is False:
-        print('[init_db] DB initialization failed upon creating the table \'daily\'.')
+        print('[create_schema] DB initialization failed upon creating the table \'daily\'.')
 
     success = success_settings and success_daily
     if success:
-        success = await db_try_set_schema_version('1.0.0.0')
+        success = await try_set_schema_version('1.0.0.0')
     return success
 
 
@@ -401,11 +401,11 @@ async def db_create_schema() -> bool:
 
 
 
-async def db_connect() -> bool:
-    __log_db_function_enter('db_connect')
+async def connect() -> bool:
+    __log_db_function_enter('connect')
 
     global DB_CONN
-    if db_is_connected(DB_CONN) is False:
+    if is_connected(DB_CONN) is False:
         try:
             DB_CONN = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
             return True
@@ -420,22 +420,22 @@ async def db_connect() -> bool:
         #        return False
         except Exception as error:
             error_name = error.__class__.__name__
-            print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
+            print(f'[connect] {error_name} occurred while establishing connection: {error}')
             return False
     else:
         return True
 
 
-async def db_disconnect() -> None:
-    __log_db_function_enter('db_disconnect')
+async def disconnect() -> None:
+    __log_db_function_enter('disconnect')
 
     global DB_CONN
-    if db_is_connected(DB_CONN):
+    if is_connected(DB_CONN):
         await DB_CONN.close()
 
 
-async def db_execute(query: str, args: list = None) -> bool:
-    __log_db_function_enter('db_execute', query=f'\'{query}\'', args=args)
+async def execute(query: str, args: list = None) -> bool:
+    __log_db_function_enter('execute', query=f'\'{query}\'', args=args)
 
     async with DB_CONN.acquire() as connection:
         async with connection.transaction():
@@ -445,13 +445,13 @@ async def db_execute(query: str, args: list = None) -> bool:
                 await connection.execute(query)
 
 
-async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
-    __log_db_function_enter('db_fetchall', query=f'\'{query}\'', args=args)
+async def fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
+    __log_db_function_enter('fetchall', query=f'\'{query}\'', args=args)
 
     if query and query[-1] != ';':
         query += ';'
     result: List[asyncpg.Record] = None
-    if await db_connect():
+    if await connect():
         try:
             async with DB_CONN.acquire() as connection:
                 async with connection.transaction():
@@ -462,14 +462,14 @@ async def db_fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
         except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
             raise pg_error
         except Exception as error:
-            print_db_query_error('db_fetchall', query, args, error)
+            print_db_query_error('fetchall', query, args, error)
     else:
-        print('[db_fetchall] could not connect to db')
+        print('[fetchall] could not connect to db')
     return result
 
 
-def db_get_column_list(column_definitions: list) -> str:
-    __log_db_function_enter('db_get_column_list', column_definitions=column_definitions)
+def get_column_list(column_definitions: list) -> str:
+    __log_db_function_enter('get_column_list', column_definitions=column_definitions)
 
     result = []
     for column_definition in column_definitions:
@@ -477,97 +477,96 @@ def db_get_column_list(column_definitions: list) -> str:
     return ', '.join(result)
 
 
-async def db_get_column_names(table_name: str) -> List[str]:
-    __log_db_function_enter('db_get_column_names', table_name=f'\'{table_name}\'')
+async def get_column_names(table_name: str) -> List[str]:
+    __log_db_function_enter('get_column_names', table_name=f'\'{table_name}\'')
 
     result = None
     query = f'SELECT column_name FROM information_schema.columns WHERE table_name = $1'
-    result = await db_fetchall(query, [table_name])
+    result = await fetchall(query, [table_name])
     if result:
         result = [record[0] for record in result]
     return result
 
 
-async def db_get_schema_version() -> str:
-    __log_db_function_enter('db_get_schema_version')
+async def get_schema_version() -> str:
+    __log_db_function_enter('get_schema_version')
 
-    result, _ = await db_get_setting('schema_version')
+    result, _ = await get_setting('schema_version')
     return result or ''
 
 
-def db_is_connected(pool: asyncpg.pool.Pool) -> bool:
-    __log_db_function_enter('db_is_connected', pool=pool)
+def is_connected(pool: asyncpg.pool.Pool) -> bool:
+    __log_db_function_enter('is_connected', pool=pool)
 
     if pool:
         return not (pool._closed or pool._closing)
     return False
 
 
-async def db_try_set_schema_version(version: str) -> bool:
-    __log_db_function_enter('db_try_set_schema_version', version=f'\'{version}\'')
+async def try_set_schema_version(version: str) -> bool:
+    __log_db_function_enter('try_set_schema_version', version=f'\'{version}\'')
 
-    print(f'+ db_try_set_schema_version(version=\'{version}\')')
-    prior_version = await db_get_schema_version()
+    prior_version = await get_schema_version()
     utc_now = util.get_utcnow()
     if not prior_version:
         query = f'INSERT INTO settings (modifydate, settingtext, settingname) VALUES ($1, $2, $3)'
     else:
         query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
-    success = await db_try_execute(query, [utc_now, version, 'schema_version'])
+    success = await try_execute(query, [utc_now, version, 'schema_version'])
     return success
 
 
-async def db_try_create_table(table_name: str, column_definitions: list) -> bool:
-    __log_db_function_enter('db_try_create_table', table_name=f'\'{table_name}\'', column_definitions=column_definitions)
+async def try_create_table(table_name: str, column_definitions: list) -> bool:
+    __log_db_function_enter('try_create_table', table_name=f'\'{table_name}\'', column_definitions=column_definitions)
 
-    column_list = db_get_column_list(column_definitions)
+    column_list = get_column_list(column_definitions)
     query_create = f'CREATE TABLE {table_name} ({column_list});'
     success = False
-    if await db_connect():
+    if await connect():
         try:
-            success = await db_try_execute(query_create, raise_db_error=True)
+            success = await try_execute(query_create, raise_db_error=True)
         except asyncpg.exceptions.DuplicateTableError:
             success = True
     else:
-        print('[db_try_create_table] could not connect to db')
+        print('[try_create_table] could not connect to db')
     return success
 
 
-async def db_try_execute(query: str, args: list = None, raise_db_error: bool = False) -> bool:
-    __log_db_function_enter('db_try_execute', query=f'\'{query}\'', args=args, raise_db_error=raise_db_error)
+async def try_execute(query: str, args: list = None, raise_db_error: bool = False) -> bool:
+    __log_db_function_enter('try_execute', query=f'\'{query}\'', args=args, raise_db_error=raise_db_error)
 
     if query and query[-1] != ';':
         query += ';'
     success = False
-    if await db_connect():
+    if await connect():
         try:
-            await db_execute(query, args)
+            await execute(query, args)
             success = True
         except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
             if raise_db_error:
                 raise pg_error
             else:
-                print_db_query_error('db_try_execute', query, args, pg_error)
+                print_db_query_error('try_execute', query, args, pg_error)
                 success = False
         except Exception as error:
-            print_db_query_error('db_try_execute', query, args, error)
+            print_db_query_error('try_execute', query, args, error)
             success = False
     else:
-        print('[db_try_execute] could not connect to db')
+        print('[try_execute] could not connect to db')
     return success
 
 
-async def db_get_setting(setting_name: str) -> (object, datetime):
-    __log_db_function_enter('db_get_setting', setting_name=f'\'{setting_name}\'')
+async def get_setting(setting_name: str) -> (object, datetime):
+    __log_db_function_enter('get_setting', setting_name=f'\'{setting_name}\'')
 
     if __settings_cache is None or setting_name not in __settings_cache.keys():
         modify_date: datetime = None
         query = f'SELECT * FROM settings WHERE settingname = $1'
         args = [setting_name]
         try:
-            records = await db_fetchall(query, args)
+            records = await fetchall(query, args)
         except Exception as error:
-            print_db_query_error('db_get_setting', query, args, error)
+            print_db_query_error('get_setting', query, args, error)
             records = []
         if records:
             result = records[0]
@@ -586,8 +585,8 @@ async def db_get_setting(setting_name: str) -> (object, datetime):
         return __settings_cache[setting_name]
 
 
-async def db_get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[object, datetime]]:
-    __log_db_function_enter('db_get_settings', setting_names=setting_names)
+async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[object, datetime]]:
+    __log_db_function_enter('get_settings', setting_names=setting_names)
     setting_names = setting_names or []
     result = {setting_name: (None, None) for setting_name in setting_names}
 
@@ -603,9 +602,9 @@ async def db_get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[ob
             where_strings = [f'settingname = ${i}' for i in range(1, len(db_setting_names) + 1, 1)]
             where_string = ' OR '.join(where_strings)
             query += f' WHERE {where_string}'
-            records = await db_fetchall(query, args=db_setting_names)
+            records = await fetchall(query, args=db_setting_names)
         else:
-            records = await db_fetchall(query)
+            records = await fetchall(query)
 
         for record in records:
             setting_name = record[0]
@@ -619,8 +618,8 @@ async def db_get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[ob
     return result
 
 
-async def db_set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
-    __log_db_function_enter('db_set_setting', setting_name=f'\'{setting_name}\'', value=value, utc_now=utc_now)
+async def set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
+    __log_db_function_enter('set_setting', setting_name=f'\'{setting_name}\'', value=value, utc_now=utc_now)
 
     column_name = None
     if isinstance(value, bool):
@@ -635,7 +634,7 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
         column_name = 'settingtext'
 
     success = True
-    setting, modify_date = await db_get_setting(setting_name)
+    setting, modify_date = await get_setting(setting_name)
     if utc_now is None:
         utc_now = util.get_utcnow()
     query = ''
@@ -643,21 +642,21 @@ async def db_set_setting(setting_name: str, value: object, utc_now: datetime = N
         query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ($1, $2, $3)'
     elif setting != value:
         query = f'UPDATE settings SET {column_name} = $1, modifydate = $2 WHERE settingname = $3'
-    success = not query or await db_try_execute(query, [value, utc_now, setting_name])
+    success = not query or await try_execute(query, [value, utc_now, setting_name])
     if success:
         __settings_cache[setting_name] = value
     return success
 
 
-async def db_set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
-    __log_db_function_enter('db_set_settings', settings=settings)
+async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
+    __log_db_function_enter('set_settings', settings=settings)
 
     utc_now = util.get_utcnow()
     if settings:
         query_lines = []
         args = []
         success = True
-        current_settings = await db_get_settings(settings.keys())
+        current_settings = await get_settings(settings.keys())
         for setting_name, (value, modified_at) in settings.items():
             query = ''
             column_name = None
@@ -686,7 +685,7 @@ async def db_set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
             if query:
                 query_lines.append(query)
                 args.extend([value, modified_at, setting_name])
-        success = not query_lines or await db_try_execute('\n'.join(query_lines))
+        success = not query_lines or await try_execute('\n'.join(query_lines))
         if success:
             __settings_cache.update(settings)
         return success
@@ -723,10 +722,10 @@ __settings_cache: Dict[str, Tuple[object, datetime]] = None
 
 async def __init_caches():
     global __settings_cache
-    __settings_cache = await db_get_settings()
+    __settings_cache = await get_settings()
 
 
 async def init():
     await __init_caches()
-    await db_connect()
-    await init_db()
+    await connect()
+    await init_schema()

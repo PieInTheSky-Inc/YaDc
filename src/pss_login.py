@@ -5,6 +5,7 @@ import random
 from threading import Lock
 from typing import List
 
+import database as db
 import pss_core as core
 import utility as util
 
@@ -328,7 +329,7 @@ def create_device_checksum(device_key: str) -> str:
 
 async def _db_get_device(device_key: str) -> Device:
     query = f'SELECT * FROM devices WHERE key = $1'
-    rows = await core.db_fetchall(query, [device_key])
+    rows = await db.fetchall(query, [device_key])
     if rows:
         row = rows[0]
         result = Device(*row)
@@ -339,7 +340,7 @@ async def _db_get_device(device_key: str) -> Device:
 
 async def _db_get_devices() -> List[Device]:
     query = f'SELECT * FROM devices;'
-    rows = await core.db_fetchall(query)
+    rows = await db.fetchall(query)
     if rows:
         result = [Device(*row) for row in rows]
     else:
@@ -349,13 +350,13 @@ async def _db_get_devices() -> List[Device]:
 
 async def _db_try_create_device(device: Device) -> bool:
     query = f'INSERT INTO devices VALUES ($1, $2, $3)'
-    success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
+    success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
 
 
 async def _db_try_delete_device(device: Device) -> bool:
     query = f'DELETE FROM devices WHERE key = $1'
-    success = await core.db_try_execute(query, [device.key])
+    success = await db.try_execute(query, [device.key])
     return success
 
 
@@ -370,7 +371,7 @@ async def _db_try_store_device(device: Device) -> bool:
 
 async def _db_try_update_device(device: Device) -> bool:
     query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
-    success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
+    success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
 
 

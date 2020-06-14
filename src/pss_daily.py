@@ -8,6 +8,7 @@ import os
 import random
 from typing import Dict, List, Tuple
 
+import database as db
 import pss_core as core
 import server_settings
 import utility as util
@@ -182,7 +183,7 @@ async def db_get_daily_info() -> Tuple[Dict, datetime]:
     if __daily_info_cache is None:
         result = {}
         modify_dates = []
-        daily_settings = await core.db_get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
+        daily_settings = await db.get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
         result = {DB_DAILY_INFO_COLUMN_NAMES.get(db_setting_name, db_setting_name): details[0] for db_setting_name, details in daily_settings.items()}
         modify_dates = [details[1] for details in daily_settings.values() if details[1] is not None]
         if result and modify_dates:
@@ -196,7 +197,7 @@ async def db_get_daily_info() -> Tuple[Dict, datetime]:
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     result = True
     settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
-    result = await core.db_set_settings(settings)
+    result = await db.set_settings(settings)
     if result:
         await __update_db_daily_info_cache()
     return result
