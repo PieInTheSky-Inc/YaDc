@@ -15,7 +15,7 @@ import utility as util
 
 # ---------- Constants ----------
 
-DB_CONN: asyncpg.pool.Pool = None
+CONNECTION_POOL: asyncpg.pool.Pool = None
 
 
 
@@ -404,10 +404,10 @@ async def create_schema() -> bool:
 async def connect() -> bool:
     __log_db_function_enter('connect')
 
-    global DB_CONN
-    if is_connected(DB_CONN) is False:
+    global CONNECTION_POOL
+    if is_connected(CONNECTION_POOL) is False:
         try:
-            DB_CONN = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
+            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
             return True
         #except ValueError:
         #    try:
@@ -429,15 +429,15 @@ async def connect() -> bool:
 async def disconnect() -> None:
     __log_db_function_enter('disconnect')
 
-    global DB_CONN
-    if is_connected(DB_CONN):
-        await DB_CONN.close()
+    global CONNECTION_POOL
+    if is_connected(CONNECTION_POOL):
+        await CONNECTION_POOL.close()
 
 
 async def execute(query: str, args: list = None) -> bool:
     __log_db_function_enter('execute', query=f'\'{query}\'', args=args)
 
-    async with DB_CONN.acquire() as connection:
+    async with CONNECTION_POOL.acquire() as connection:
         async with connection.transaction():
             if args:
                 await connection.execute(query, *args)
@@ -453,7 +453,7 @@ async def fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
     result: List[asyncpg.Record] = None
     if await connect():
         try:
-            async with DB_CONN.acquire() as connection:
+            async with CONNECTION_POOL.acquire() as connection:
                 async with connection.transaction():
                     if args:
                         result = await connection.fetch(query, *args)
