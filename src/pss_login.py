@@ -61,7 +61,9 @@ class Device():
         self.__set_access_token_expiry()
         self.__user: dict = None
         self.__token_lock: Lock = Lock()
+        self.__update_lock: Lock = Lock()
         self.__login_path: str = f'UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
+        self.__can_login_until_changed: bool = False
 
 
     @property
@@ -102,7 +104,16 @@ class Device():
                     await self.__login()
                 else:
                     raise LoginError('Cannot login currently. Please try again later.')
-        return self.__access_token
+            return self.__access_token
+
+
+    async def update_device(self) -> bool:
+        with self.__update_lock:
+            if self.__can_login_until_changed:
+                self.__can_login_until_changed = False
+                result = await _db_try_update_device(self)
+                return result
+            return True
 
 
     async def __login(self) -> None:
@@ -148,6 +159,7 @@ class Device():
             next_day = util.get_next_day(self.__can_login_until) - ONE_SECOND
             login_until = last_login + FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
+            self.__can_login_until_changed = True
 
 
 
