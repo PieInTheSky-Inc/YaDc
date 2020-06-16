@@ -1,8 +1,8 @@
 import aiohttp
+from asyncio import Lock
 import datetime
 import hashlib
 import random
-from threading import Lock
 from typing import List
 
 import database as db
@@ -98,17 +98,28 @@ class Device():
         """
         Returns a valid access token. If there's no valid access token related to this Device, this method will attempt to log in and retrieve an access token via the PSS API.
         """
-        with self.__token_lock:
+        util.dbg_prnt(f'+ get_access_token(self={self.key})')
+        async with self.__token_lock:
+            util.dbg_prnt(f'[get_access_token] aquired token lock')
             if self.access_token_expired:
+                util.dbg_prnt(f'[get_access_token] access token is expired')
                 if self.can_login:
+                    util.dbg_prnt(f'[get_access_token] can log in. logging in')
                     await self.__login()
+                    util.dbg_prnt(f'[get_access_token] logged in')
                 else:
+                    util.dbg_prnt(f'[get_access_token] can\'t login')
                     raise LoginError('Cannot login currently. Please try again later.')
-            return self.__access_token
-
+            else:
+                util.dbg_prnt(f'[get_access_token] access token is NOT expired')
+            result = self.__access_token
+            util.dbg_prnt(f'[get_access_token] retrieved access token: {result}')
+        util.dbg_prnt(f'[get_access_token] released token lock')
+        util.dbg_prnt(f'- get_access_token: {result}')
+        return result
 
     async def update_device(self) -> bool:
-        with self.__update_lock:
+        async with self.__update_lock:
             if self.__can_login_until_changed:
                 self.__can_login_until_changed = False
                 result = await _db_try_update_device(self)
@@ -117,34 +128,52 @@ class Device():
 
 
     async def __login(self) -> None:
+        util.dbg_prnt(f'+ __login(self={self.key})')
         utc_now = util.get_utcnow()
         if not self.__key:
             self.__key = create_device_key()
+            util.dbg_prnt(f'[__login] created device key: {self.__key}')
         if not self.__checksum:
             self.__checksum = create_device_checksum(self.__key)
+            util.dbg_prnt(f'[__login] created checksum: {self.__checksum}')
 
         base_url = await core.get_base_url()
         url = f'{base_url}{self.__login_path}'
+        util.dbg_prnt(f'[__login] retrieved login url: {url}')
         utc_now = util.get_utcnow()
+        util.dbg_prnt(f'[__login] retrieved utc now')
         async with aiohttp.ClientSession() as session:
+            util.dbg_prnt(f'[__login] retrieved ClientSession')
             async with session.post(url) as response:
+                util.dbg_prnt(f'[__login] posted request and retrieved response')
                 data = await response.text(encoding='utf-8')
+                util.dbg_prnt(f'[__login] retrieved data')
 
         result = core.convert_raw_xml_to_dict(data)
+        util.dbg_prnt(f'[__login] converted data to dict')
         self.__last_login = utc_now
+        util.dbg_prnt(f'[__login] set __last_login: {utc_now}')
         if 'UserService' in result.keys():
+            util.dbg_prnt(f'[__login] found key \'UserService\' in data')
             user = result['UserService']['UserLogin']['User']
+            util.dbg_prnt(f'[__login] retrieved user data')
 
             if user.get('Name', None):
+                util.dbg_prnt(f'[__login] found key \'Name\' in user data. Device is already in use.')
                 self.__user = None
                 self.__access_token = None
                 raise DeviceInUseError('Cannot login. The device is already in use.')
+            util.dbg_prnt(f'[__login] device is not in use')
             self.__user = user
+            util.dbg_prnt(f'[__login] stored user data')
             self.__access_token = result['UserService']['UserLogin']['accessToken']
+            util.dbg_prnt(f'[__login] retrieved and stored access token: {self.__access_token}')
             self.__set_can_login_until(utc_now)
         else:
+            util.dbg_prnt(f'[__login] didn\'t find key \'UserService\' in data')
             self.__access_token = None
         self.__set_access_token_expiry()
+        util.dbg_prnt(f'- __login(self={self.key})')
 
 
     def __set_access_token_expiry(self) -> None:
@@ -155,11 +184,17 @@ class Device():
 
 
     def __set_can_login_until(self, last_login: datetime.datetime) -> None:
+        util.dbg_prnt(f'+ __set_can_login_until(self={self.__key}, last_login={last_login})')
+        util.dbg_prnt(f'[__set_can_login_until] self.__can_login_until: {self.__can_login_until}')
         if not self.__can_login_until or last_login > self.__can_login_until:
+            util.dbg_prnt(f'[__set_can_login_until] setting last login')
             next_day = util.get_next_day(self.__can_login_until) - ONE_SECOND
             login_until = last_login + FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
             self.__can_login_until_changed = True
+            util.dbg_prnt(f'[__set_can_login_until] set can_login_until to: {self.__can_login_until}')
+        util.dbg_prnt(f'- __set_can_login_until')
+
 
 
 
@@ -252,7 +287,7 @@ class DeviceCollection():
 
 
     async def get_access_token(self) -> str:
-        with self.__token_lock:
+        async with self.__token_lock:
             if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
             result: str = None

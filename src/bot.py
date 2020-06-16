@@ -18,7 +18,6 @@ import pytz
 import re
 import sys
 import time
-from threading import Lock
 from typing import Dict, List, Tuple, Union
 
 import database as db

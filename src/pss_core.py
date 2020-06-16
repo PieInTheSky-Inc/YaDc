@@ -11,7 +11,6 @@ import json
 import psycopg2
 from psycopg2 import errors as db_error
 import re
-from threading import Lock
 from typing import Callable, Dict, List, Tuple, Union
 import xml.etree.ElementTree
 
