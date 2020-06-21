@@ -78,6 +78,31 @@ def filter_items_designs_details_for_equipment(items_designs_details: List[ItemD
     return result
 
 
+def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
+    if not slot and not stat:
+        pass
+    elif slot and not stat:
+        stat = slot.lower()
+        slot = None
+    else:
+        slot = slot.lower()
+        stat = stat.lower()
+        temp_stat = f'{slot} {stat}'.strip()
+        if temp_stat in lookups.STAT_TYPES_LOOKUP:
+            slot = None
+            stat = temp_stat
+        else:
+            if slot in lookups.STAT_TYPES_LOOKUP and stat in lookups.EQUIPMENT_SLOTS_LOOKUP:
+                slot, stat = (stat, slot)
+            elif ' ' in stat:
+                split_stat = stat.split(' ')
+                temp_slot = f'{slot} {split_stat[0]}'
+                temp_stat = ' '.join(split_stat[1:])
+                if temp_slot in lookups.STAT_TYPES_LOOKUP and temp_stat in lookups.EQUIPMENT_SLOTS_LOOKUP:
+                    slot, stat = temp_stat, temp_slot
+    return slot, stat
+
+
 def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
     result = item_design_details.get_details_as_text_short()
     return ''.join(result)
@@ -185,10 +210,10 @@ def _get_stat_filter(stat: str) -> str:
 
 
 def _get_slot_filter(slot: str, any_slot: bool) -> List[str]:
-    slot = slot.lower()
     if any_slot:
         result = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
     else:
+        slot = slot.lower()
         result = [lookups.EQUIPMENT_SLOTS_LOOKUP[slot]]
     return result
 
@@ -558,7 +583,7 @@ _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (fo
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
 async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
+    pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys(), allow_none_or_empty=True)
     pss_assert.valid_parameter_value(stat, 'stat', allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
 
     items_designs_details = await items_designs_retriever.get_data_dict3()
@@ -566,7 +591,7 @@ async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMB
     if error:
         return error, False
 
-    any_slot = slot == 'all' or slot == 'any'
+    any_slot = not slot or slot == 'all' or slot == 'any'
     slot_filter = _get_slot_filter(slot, any_slot)
     stat_filter = _get_stat_filter(stat)
     best_items = _get_best_items_designs(slot_filter, stat_filter, items_designs_details)
@@ -597,13 +622,12 @@ def _get_best_items_designs(slot_filter: List[str], stat_filter: str, items_desi
 
 
 def _get_best_items_error(slot: str, stat: str) -> list:
-    if not slot:
-        return [f'You must specify an equipment slot!', _SLOTS_AVAILABLE]
     if not stat:
         return [f'You must specify a stat!', _STATS_AVAILABLE]
-    slot = slot.lower()
-    if slot not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys() and slot not in ['all', 'any']:
-        return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE]
+    if slot:
+        slot = slot.lower()
+        if slot not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys() and slot not in ['all', 'any']:
+            return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE]
     if stat.lower() not in lookups.STAT_TYPES_LOOKUP.keys():
         return [f'The specified stat is not valid!', _STATS_AVAILABLE]
 
