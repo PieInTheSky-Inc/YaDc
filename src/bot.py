@@ -670,7 +670,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
 
 @bot.command(brief='Get best items for a slot', name='best')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_best(ctx: commands.Context, slot: str, stat: str):
+async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
     """
     Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
@@ -687,6 +687,25 @@ async def cmd_best(ctx: commands.Context, slot: str, stat: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
+        item_name = slot
+        if stat is not None:
+            item_name += f' {stat}'
+        item_name = item_name.strip()
+        items_designs_details = await item.get_items_designs_details_by_name(item_name)
+        found_matching_items = items_designs_details and len(items_designs_details) > 0
+        items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+        if items_designs_details:
+            if len(items_designs_details) == 1:
+                item_design_details = items_designs_details[0]
+            else:
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
+                _, item_design_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_design_details)
+        else:
+            if found_matching_items:
+                raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
+
         output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 

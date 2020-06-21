@@ -73,6 +73,31 @@ class ItemDesignDetails(entity.EntityDesignDetails):
 
 # ---------- Helper functions ----------
 
+def filter_items_designs_details_for_equipment(items_designs_details: List[ItemDesignDetails]) -> List[ItemDesignDetails]:
+    result = [item_design_details for item_design_details in items_designs_details if __get_item_slot(item_design_details.entity_design_info, None) is not None]
+    return result
+
+
+def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
+    result = item_design_details.get_details_as_text_short()
+    return ''.join(result)
+
+
+async def get_items_designs_details_by_name(item_name: str, sorted: bool = True) -> List[ItemDesignDetails]:
+    items_designs_data = await items_designs_retriever.get_data_dict3()
+    item_infos = _get_item_infos_by_name(item_name, items_designs_data)
+    if sorted:
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+    result = __create_base_design_data_list_from_infos(item_infos, items_designs_data)
+    return result
+
+
+def get_slot_and_stat_type(item_design_details: ItemDesignDetails) -> Tuple[str, str]:
+    slot = __get_item_slot(item_design_details.entity_design_info, None)
+    stat = item_design_details.entity_design_info['EnhancementType']
+    return slot, stat
+
+
 def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
