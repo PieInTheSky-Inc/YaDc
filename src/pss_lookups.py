@@ -239,8 +239,12 @@ STAT_TYPES_LOOKUP: Dict[str, str] = {
     'eng': 'Engine',
     'weapon': 'Weapon',
     'wpn': 'Weapon',
-    'fire resistance': 'FireResistance',
     'fire': 'FireResistance',
+    'fireresistance': 'FireResistance',
+    'fireres': 'FireResistance',
+    'fire res': 'FireResistance',
+    'fire resistance': 'FireResistance',
+    'fr': 'FireResistance',
 }
 
 

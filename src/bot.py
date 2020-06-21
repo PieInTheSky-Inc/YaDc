@@ -676,24 +676,33 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
 
     Usage:
       /best [slot] [stat]
+      /best [item name]
 
     Parameters:
-      slot: the equipment slot. Use 'all' or 'any' to get info for all slots. Mandatory. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
+      slot: the equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
       stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
+      item name: an item's name, whose slot and stat will be used to look up best data.
 
     Examples:
       /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
       /best all hp - Prints all equipment items for all slots providing a HP bonus.
+      /best hp - Prints all equipment items for all slots providing a HP bonus.
+      /best storm lance - Prints all equipment items for the same slot and stat as a Storm Lance.
     """
     __log_command_use(ctx)
     async with ctx.typing():
         item_name = slot
         if stat is not None:
             item_name += f' {stat}'
-        item_name = item_name.strip()
-        items_designs_details = await item.get_items_designs_details_by_name(item_name)
-        found_matching_items = items_designs_details and len(items_designs_details) > 0
-        items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+        item_name = item_name.strip().lower()
+
+        if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
+            items_designs_details = await item.get_items_designs_details_by_name(item_name)
+            found_matching_items = items_designs_details and len(items_designs_details) > 0
+            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+        else:
+            items_designs_details = []
+            found_matching_items = False
         if items_designs_details:
             if len(items_designs_details) == 1:
                 item_design_details = items_designs_details[0]
@@ -706,6 +715,7 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
             if found_matching_items:
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
+        slot, stat = item.fix_slot_and_stat(slot, stat)
         output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 
