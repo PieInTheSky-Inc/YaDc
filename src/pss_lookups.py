@@ -81,6 +81,16 @@ EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
+EQUIPMENT_SLOTS_ORDER_LOOKUP: List[str] = [
+    'EquipmentHead',
+    'EquipmentAccessory',
+    'EquipmentBody',
+    'EquipmentWeapon',
+    'EquipmentLeg',
+    'EquipmentPet'
+]
+
+
 EQUIPMENT_SLOTS_LOOKUP: Dict[str, str] = {
     'head': 'EquipmentHead',
     'hat': 'EquipmentHead',

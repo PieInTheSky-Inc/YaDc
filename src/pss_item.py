@@ -664,7 +664,10 @@ def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, 
 def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[str]:
     result = []
 
-    for group_name, group in items_designs_details_groups.items():
+    group_names_sorted = sorted(items_designs_details_groups.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_ORDER_LOOKUP.index(x))
+
+    for group_name in group_names_sorted:
+        group = items_designs_details_groups[group_name]
         slot = _get_pretty_slot(group_name)
         result.append(settings.EMPTY_LINE)
         result.append(_get_best_title(stat, slot))
