@@ -26,6 +26,8 @@ ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
+CANNOT_BE_SOLD = 'This item can\'t be sold'
+
 
 
 
@@ -123,6 +125,15 @@ def get_slot_and_stat_type(item_design_details: ItemDesignDetails) -> Tuple[str,
     return slot, stat
 
 
+def __get_can_sell(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        result = None
+    return result
+
+
 def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
@@ -146,7 +157,7 @@ def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: enti
 def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
-        result = 'This item cannot be sold'
+        result = CANNOT_BE_SOLD
     else:
         fair_price = item_info['FairPrice']
         market_price = item_info['MarketPrice']
@@ -161,8 +172,12 @@ def __get_enhancement_value(item_info: entity.EntityDesignInfo, items_designs_da
 
 
 def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    market_price = item_info['MarketPrice']
-    result = f'{market_price} bux'
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        market_price = item_info['MarketPrice']
+        result = f'{market_price} bux'
     return result
 
 
@@ -702,7 +717,8 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'description': entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity),
     'base': [
         entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot),
+        entity.EntityDesignDetailProperty('CanSell', False, transform_function=__get_can_sell)
     ],
     'best': [
         entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
