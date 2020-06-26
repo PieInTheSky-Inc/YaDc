@@ -980,7 +980,7 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
 
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top(ctx: commands.Context, count: int = 100):
+async def cmd_top(ctx: commands.Context, *, count: str = '100'):
     """
     Prints either top fleets or captains. Prints top 100 fleets by default.
 
@@ -995,7 +995,24 @@ async def cmd_top(ctx: commands.Context, count: int = 100):
       /top 30 - prints top 30 fleets."""
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        cmd = bot.get_command(f'top fleets')
+        if ' ' in count:
+            split_count = count.split(' ')
+            try:
+                count = int(split_count[0])
+                command = split_count[1]
+            except:
+                try:
+                    count = int(split_count[1])
+                    command = split_count[0]
+                except:
+                    raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+        else:
+            try:
+                count = int(count)
+            except:
+                raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+            command = 'fleets'
+        cmd = bot.get_command(f'top {command}')
         await ctx.invoke(cmd, count=count)
 
 
@@ -1006,13 +1023,15 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
 
     Usage:
       /top fleets <count>
+      /top <count> fleets
 
     Parameters:
       count: The number of rows to be printed. Optional.
 
     Examples:
       /top fleets - prints top 100 fleets.
-      /top fleets 30 - prints top 30 fleets."""
+      /top fleets 30 - prints top 30 fleets.
+      /top 30 fleets - prints top 30 fleets."""
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await pss_top.get_top_fleets(count)
@@ -1026,13 +1045,15 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
 
     Usage:
       /top captains <count>
+      /top <count> captains
 
     Parameters:
       count: The number of rows to be printed. Optional.
 
     Examples:
       /top captains - prints top 100 captains.
-      /top captains 30 - prints top 30 captains."""
+      /top captains 30 - prints top 30 captains.
+      /top 30 captains - prints top 30 captains."""
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await pss_top.get_top_captains(count)
