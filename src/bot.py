@@ -1866,7 +1866,8 @@ async def cmd_settings_set(ctx: commands.Context):
       Refer to sub-command help.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set')
 
 
 @cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
@@ -1879,7 +1880,8 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     This command can only be used on Discord servers/guilds.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
+    await ctx.send_help('settings set autodaily')
+
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
@@ -2067,7 +2069,7 @@ async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
     You need to use one of the subcommands.
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('past')
 
 
 @cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
