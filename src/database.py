@@ -101,7 +101,7 @@ async def update_schema_v_1_3_0_0() -> bool:
 
     print(f'[update_schema_v_1_3_0_0] Updating database schema from v1.2.9.0 to v1.3.0.0')
 
-    query_add_column = f'ALTER TABLE serversettings ADD COLUMN botnewschannelid INT;'
+    query_add_column = f'ALTER TABLE serversettings ADD COLUMN botnewschannelid BIGINT;'
     success_add_column = await try_execute(query_add_column)
     if not success_add_column:
         print(f'[update_schema_v_1_3_0_0] ERROR: Failed to add column \'botnewschannelid\' to table \'serversettings\'!')
