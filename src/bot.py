@@ -2309,7 +2309,18 @@ async def cmd_raw(ctx: commands.Context):
     Get raw data from the Pixel Starships API.
     Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
 
+    Usage:
+      /raw [subcommand] <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await ctx.send_help('raw')
@@ -2321,7 +2332,18 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
     """
     Get raw achievement design data from the PSS API.
 
+    Usage:
+      /raw achievement <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
@@ -2333,7 +2355,18 @@ async def cmd_raw_ai(ctx: commands.Context):
     """
     Get raw ai design data from the PSS API.
 
+    Usage:
+      /raw ai [subcommand] <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await ctx.send_help('raw ai')
@@ -2345,10 +2378,21 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     """
     Get raw ai action design data from the PSS API.
 
+    Usage:
+      /raw ai action <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
-    await __post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
+    await raw.post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
 
 
 @cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
@@ -2357,10 +2401,21 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
     """
     Get raw ai condition design data from the PSS API.
 
+    Usage:
+      /raw ai condition <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
-    await __post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
+    await raw.post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
@@ -2369,7 +2424,18 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     """
     Get raw character design data from the PSS API.
 
+    Usage:
+      /raw char <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
@@ -2381,7 +2447,18 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
     """
     Get raw collection design data from the PSS API.
 
+    Usage:
+      /raw collection <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
@@ -2393,7 +2470,18 @@ async def cmd_raw_gm(ctx: commands.Context):
     """
     Get raw gm design data from the PSS API.
 
+    Usage:
+      /raw gm [subcommand] <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await ctx.send_help('raw gm')
@@ -2405,7 +2493,18 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
     """
     Get raw star system design data from the PSS API.
 
+    Usage:
+      /raw gm system <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
@@ -2417,7 +2516,18 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
     """
     Get raw star system link design data from the PSS API.
 
+    Usage:
+      /raw gm path <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
@@ -2429,7 +2539,18 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     """
     Get raw item design data from the PSS API.
 
+    Usage:
+      /raw item <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
@@ -2441,7 +2562,18 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     """
     Get raw mission design data from the PSS API.
 
+    Usage:
+      /raw mission <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
@@ -2449,14 +2581,25 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
 
 @cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_promotion(ctx: commands.Context, *, promotion_id: str = None):
+async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     """
     Get raw promotion design data from the PSS API.
 
+    Usage:
+      /raw promotion <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
-    await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promotion_id)
+    await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promo_id)
 
 
 @cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
@@ -2465,7 +2608,18 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     """
     Get raw research design data from the PSS API.
 
+    Usage:
+      /raw research <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
@@ -2477,7 +2631,18 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     """
     Get raw room design data from the PSS API.
 
+    Usage:
+      /raw room <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
@@ -2489,19 +2654,41 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
     """
     Get raw room purchase design data from the PSS API.
 
+    Usage:
+      /raw room purchase <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
 
 
-@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships'])
+@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships', 'hull', 'hulls'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     """
     Get raw ship design data from the PSS API.
 
+    Usage:
+      /raw ship <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
@@ -2513,7 +2700,18 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     """
     Get raw training design data from the PSS API.
 
+    Usage:
+      /raw training <id> <switch>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
+      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+      All parameters are optional.
+
     It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
