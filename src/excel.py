@@ -48,8 +48,10 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
         data_retrieved_at = util.get_utcnow()
     save_to = get_file_name(file_prefix, data_retrieved_at, consider_tourney=False)
 
-    wb = openpyxl.Workbook()
-    ws: openpyxl.worksheet.worksheet.Worksheet = wb.active
+    #wb = openpyxl.Workbook()
+    #ws: openpyxl.worksheet.worksheet.Worksheet = wb.active
+    wb = openpyxl.Workbook(write_only=True)
+    ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()
     df = pandas.DataFrame(flattened_data)
     for (columnName, columnData) in df.iteritems():
         if 'datetime64' in columnData.dtype.name:
@@ -60,6 +62,9 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
 
     table = openpyxl.worksheet.table.Table(displayName='tbl', ref=_get_ref_for_df(df))
     table.tableStyleInfo = __BASE_TABLE_STYLE
+    table._initialise_columns()
+    for cell, col in zip(df.columns, table.tableColumns):
+        col.name = str(cell)
     ws.add_table(table)
 
     wb.save(save_to)
