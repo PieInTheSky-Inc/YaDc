@@ -2014,7 +2014,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
       /settings set pages <switch>
 
     Parameters:
-      switch: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
 
     Notes:
       If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
@@ -2310,11 +2310,11 @@ async def cmd_raw(ctx: commands.Context):
     Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
 
     Usage:
-      /raw [subcommand] <id> <switch>
+      /raw [subcommand] <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2334,11 +2334,11 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
     Get raw achievement design data from the PSS API.
 
     Usage:
-      /raw achievement <id> <switch>
+      /raw achievement <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2358,11 +2358,11 @@ async def cmd_raw_ai(ctx: commands.Context):
     Get raw ai design data from the PSS API.
 
     Usage:
-      /raw ai [subcommand] <id> <switch>
+      /raw ai [subcommand] <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2382,11 +2382,11 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     Get raw ai action design data from the PSS API.
 
     Usage:
-      /raw ai action <id> <switch>
+      /raw ai action <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2406,11 +2406,11 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
     Get raw ai condition design data from the PSS API.
 
     Usage:
-      /raw ai condition <id> <switch>
+      /raw ai condition <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2430,11 +2430,11 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     Get raw character design data from the PSS API.
 
     Usage:
-      /raw char <id> <switch>
+      /raw char <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2454,11 +2454,11 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
     Get raw collection design data from the PSS API.
 
     Usage:
-      /raw collection <id> <switch>
+      /raw collection <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2478,11 +2478,11 @@ async def cmd_raw_gm(ctx: commands.Context):
     Get raw gm design data from the PSS API.
 
     Usage:
-      /raw gm [subcommand] <id> <switch>
+      /raw gm [subcommand] <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2502,11 +2502,11 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
     Get raw star system design data from the PSS API.
 
     Usage:
-      /raw gm system <id> <switch>
+      /raw gm system <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2526,11 +2526,11 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
     Get raw star system link design data from the PSS API.
 
     Usage:
-      /raw gm path <id> <switch>
+      /raw gm path <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2550,11 +2550,11 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     Get raw item design data from the PSS API.
 
     Usage:
-      /raw item <id> <switch>
+      /raw item <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2574,11 +2574,11 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     Get raw mission design data from the PSS API.
 
     Usage:
-      /raw mission <id> <switch>
+      /raw mission <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2598,11 +2598,11 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     Get raw promotion design data from the PSS API.
 
     Usage:
-      /raw promotion <id> <switch>
+      /raw promotion <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2622,11 +2622,11 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     Get raw research design data from the PSS API.
 
     Usage:
-      /raw research <id> <switch>
+      /raw research <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2646,11 +2646,11 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     Get raw room design data from the PSS API.
 
     Usage:
-      /raw room <id> <switch>
+      /raw room <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2670,11 +2670,11 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
     Get raw room purchase design data from the PSS API.
 
     Usage:
-      /raw room purchase <id> <switch>
+      /raw room purchase <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2694,11 +2694,11 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     Get raw ship design data from the PSS API.
 
     Usage:
-      /raw ship <id> <switch>
+      /raw ship <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
@@ -2718,11 +2718,11 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     Get raw training design data from the PSS API.
 
     Usage:
-      /raw training <id> <switch>
+      /raw training <id> <format>
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
-      switch: A string determining the file type to be returned. These are valid values:
+      format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
               If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
