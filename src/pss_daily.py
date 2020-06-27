@@ -179,8 +179,8 @@ async def update_daily_channel(guild_id: int, channel_id: int = None, latest_mes
     return success
 
 
-async def db_get_daily_info() -> Tuple[Dict, datetime]:
-    if __daily_info_cache is None:
+async def db_get_daily_info(skip_cache: bool = False) -> Tuple[Dict, datetime]:
+    if __daily_info_cache is None or skip_cache:
         result = {}
         modify_dates = []
         daily_settings = await db.get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
@@ -195,12 +195,12 @@ async def db_get_daily_info() -> Tuple[Dict, datetime]:
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
-    result = True
+    success = True
     settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
-    result = await db.set_settings(settings)
-    if result:
+    success = await db.set_settings(settings)
+    if success:
         await __update_db_daily_info_cache()
-    return result
+    return success
 
 
 
@@ -287,7 +287,7 @@ __daily_info_modified_at: datetime
 async def __update_db_daily_info_cache():
     global __daily_info_cache
     global __daily_info_modified_at
-    __daily_info_cache, __daily_info_modified_at = await db_get_daily_info()
+    __daily_info_cache, __daily_info_modified_at = await db_get_daily_info(skip_cache=True)
 
 
 async def init():
