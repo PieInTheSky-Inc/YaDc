@@ -140,7 +140,10 @@ async def post_raw_data(ctx: commands.Context, retriever: entity.EntityDesignsRe
                 entity_id = entity_id.replace('--xml', '').strip()
                 mode = 'xml'
         if entity_id:
-            entity_id = int(entity_id)
+            try:
+                entity_id = int(entity_id)
+            except:
+                raise ValueError(f'Invalid parameter specified: `{entity_id}` is not a valid entity id!')
         if entity_id:
             await __post_raw_entity(ctx, retriever, entity_name, str(entity_id), mode, retrieved_at)
         else:
