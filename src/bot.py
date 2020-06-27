@@ -2314,9 +2314,10 @@ async def cmd_raw(ctx: commands.Context):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2337,9 +2338,10 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2360,9 +2362,10 @@ async def cmd_raw_ai(ctx: commands.Context):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2383,9 +2386,10 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2406,9 +2410,10 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2429,9 +2434,10 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2452,9 +2458,10 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2475,9 +2482,10 @@ async def cmd_raw_gm(ctx: commands.Context):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2498,9 +2506,10 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2521,9 +2530,10 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2544,9 +2554,10 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2567,9 +2578,10 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2590,9 +2602,10 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2613,9 +2626,10 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2636,9 +2650,10 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2659,9 +2674,10 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2682,9 +2698,10 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
@@ -2705,9 +2722,10 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
 
     Parameters:
       id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
-      switch: A string determining the file type to be returned. If this parameter is omitted, an Excel spreadsheet will be created. These are valid values:
+      switch: A string determining the file type to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
       All parameters are optional.
 
     It may take a while for the bot to create the file, so be patient ;)
