@@ -44,6 +44,7 @@ _COLUMN_NAME_DAILY_NOTIFY_ID: str = 'dailynotifyid'
 _COLUMN_NAME_DAILY_NOTIFY_TYPE: str = 'dailynotifytype'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: str = 'dailylatestmessagecreatedate'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: str = 'dailylatestmessagemodifydate'
+_COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
 
 
 
@@ -430,6 +431,11 @@ class GuildSettings(object):
         self.__guild_id: int = row.get(_COLUMN_NAME_GUILD_ID)
         self.__prefix: str = row.get(_COLUMN_NAME_PREFIX)
         self.__use_pagination: bool = row.get(_COLUMN_NAME_USE_PAGINATION)
+        self.__bot_news_channel_id: int = row.get(_COLUMN_NAME_BOT_NEWS_CHANNEL_ID)
+
+        self.__guild: discord.Guild = None
+        self.__bot_news_channel: discord.TextChannel = None
+
         daily_channel_id = row.get(_COLUMN_NAME_DAILY_CHANNEL_ID)
         can_post_daily = row.get(_COLUMN_NAME_DAILY_CAN_POST)
         daily_latest_message_id = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
@@ -455,6 +461,14 @@ class GuildSettings(object):
         if self.__guild is None and self.__guild_id is not None:
             print(f'Could not get channel for id {daily_channel_id}')
 
+        try:
+            self.__bot_news_channel = bot.get_channel(self.__bot_news_channel_id)
+        except Exception as error:
+            self.__bot_news_channel = None
+            print(f'Could not get channel for id {self.__bot_news_channel_id}: {error}')
+        if self.__bot_news_channel is None and self.__bot_news_channel_id is not None:
+            print(f'Could not get channel for id {self.__bot_news_channel_id}')
+
         notify = None
         if daily_notify_id and daily_notify_type and self.__guild:
             if daily_notify_type == AutoDailyNotifyType.USER:
@@ -468,6 +482,14 @@ class GuildSettings(object):
     @property
     def autodaily(self) -> AutoDailySettings:
         return self.__autodaily_settings
+
+    @property
+    def bot_news_channel(self) -> discord.TextChannel:
+        return self.__bot_news_channel
+
+    @property
+    def bot_news_channel_id(self) -> int:
+        return self.__bot_news_channel_id
 
     @property
     def guild(self) -> discord.Guild:
@@ -493,11 +515,34 @@ class GuildSettings(object):
             return self.__use_pagination
 
 
-    async def reset(self) -> (bool, bool, bool):
+    def get_pretty_bot_news_channel(self) -> List[str]:
+        if self.bot_news_channel:
+            result = [f'Bot news channel: {self.bot_news_channel.mention}']
+        else:
+            result = [f'Bot news channel: `<not configured>`']
+        return result
+
+
+    async def reset(self) -> Tuple[bool, bool, bool, bool]:
         success_prefix = await self.reset_prefix()
         success_pagination = await self.reset_use_pagination()
         success_autodaily = await self.autodaily.reset()
-        return success_prefix, success_pagination, success_autodaily
+        success_bot_channel = await self.reset_bot_news_channel()
+        return success_prefix, success_pagination, success_autodaily, success_bot_channel
+
+
+    async def reset_bot_news_channel(self) -> bool:
+        if self.__bot_news_channel_id:
+            settings = {
+                _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: None
+            }
+            success = await _db_update_server_settings(self.__guild_id, settings)
+            if success:
+                self.__bot_news_channel_id = None
+                self.__bot_news_channel = None
+            return success
+        else:
+            return True
 
 
     async def reset_prefix(self) -> bool:
@@ -521,6 +566,21 @@ class GuildSettings(object):
             success = await _db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__use_pagination = None
+            return success
+        return True
+
+
+    async def set_bot_news_channel(self, channel: discord.TextChannel) -> bool:
+        if channel is None:
+            raise ValueError('You need to provide a text channel mention to this command!')
+        if not self.__bot_news_channel_id or self.__bot_news_channel_id != channel.id:
+            settings = {
+                _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: channel.id
+            }
+            success = await _db_update_server_settings(self.__guild_id, settings)
+            if success:
+                self.__bot_news_channel_id = channel.id
+                self.__bot_news_channel = channel
             return success
         return True
 

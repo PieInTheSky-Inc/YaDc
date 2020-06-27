@@ -61,6 +61,9 @@ async def init_schema():
     if not (await update_schema('1.2.9.0', update_schema_v_1_2_9_0)):
         return
 
+    if not (await update_schema('1.3.0.0', update_schema_v_1_3_0_0)):
+        return
+
     success_serversettings = await try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -86,6 +89,42 @@ async def update_schema(version: str, update_function: Callable) -> bool:
     return success
 
 
+async def update_schema_v_1_3_0_0() -> bool:
+    schema_version = await get_schema_version()
+    if schema_version:
+        compare_1300 = util.compare_versions(schema_version, '1.3.0.0')
+        compare_1290 = util.compare_versions(schema_version, '1.2.9.0')
+        if compare_1300 <= 0:
+            return True
+        elif compare_1290 > 0:
+            return False
+
+    print(f'[update_schema_v_1_3_0_0] Updating database schema from v1.2.9.0 to v1.3.0.0')
+
+    query_add_column = f'ALTER TABLE serversettings ADD COLUMN botnewschannelid INT;'
+    success_add_column = await try_execute(query_add_column)
+    if not success_add_column:
+        print(f'[update_schema_v_1_3_0_0] ERROR: Failed to add column \'botnewschannelid\' to table \'serversettings\'!')
+        return False
+
+    column_definitions_sales = [
+        ('id', 'SERIAL', True, True),
+        ('limitedcatalogargument', 'INT', False, False),
+        ('limitedcatalogtype', 'TEXT', False, False),
+        ('limitedcatalogcurrencytype', 'TEXT', False, False),
+        ('limitedcatalogcurrencyamount', 'INT', False, False),
+        ('limitedcatalogmaxtotal', 'INT', False, False),
+        ('limitedcatalogexpirydate', 'TIMESTAMP', False, False)
+    ]
+    success_create_table = await try_create_table('sales', column_definitions_sales)
+    if not success_create_table:
+        print(f'[update_schema_v_1_3_0_0] ERROR: Failed to add table \'sales\'!')
+        return False
+
+    success = await try_set_schema_version('1.3.0.0')
+    return success
+
+
 async def update_schema_v_1_2_9_0() -> bool:
     schema_version = await get_schema_version()
     if schema_version:
@@ -101,7 +140,7 @@ async def update_schema_v_1_2_9_0() -> bool:
     query_add_column = f'ALTER TABLE serversettings ADD COLUMN dailychangemode INT;'
     success_add_column = await try_execute(query_add_column)
     if not success_add_column:
-        print(f'[update_schema_v_1_2_9_0] ERROR: Failed to add column \'dailychangemode\'!')
+        print(f'[update_schema_v_1_2_9_0] ERROR: Failed to add column \'dailychangemode\' to table \'serversettings\'!')
         return False
 
     query_lines_move_data = [f'UPDATE serversettings SET dailychangemode = 1 WHERE dailydeleteonchange IS NULL;']

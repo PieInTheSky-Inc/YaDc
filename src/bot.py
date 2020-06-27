@@ -1559,6 +1559,20 @@ async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_get.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_botnews(ctx: commands.Context):
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
+            output = guild_settings.get_pretty_bot_news_channel()
+        await util.post_output(ctx, output)
+
+
 @cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: commands.Context):
@@ -1798,6 +1812,26 @@ async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_reset.command(brief='Reset bot news channel', name='botnews', aliases=['botchannel'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
+            success = await guild_settings.reset_bot_news_channel()
+            if success:
+                output = ['Successfully removed the bot news channel.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the bot news channel setting for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
 @cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: commands.Context):
@@ -1905,7 +1939,6 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     await ctx.send_help('settings set autodaily')
 
 
-
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
@@ -1998,6 +2031,22 @@ async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: U
         else:
             output = [f'Could not set notify on autodaily settings for this server. Please try again or contact the bot\'s author.']
             await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(brief='Set the bot news channel', name='botnews', aliases=['botchannel'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
+        success = await guild_settings.set_bot_news_channel(text_channel)
+    if success:
+        await ctx.invoke(bot.get_command('settings botnews'))
+    else:
+        output = [f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
 
 
 @cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
