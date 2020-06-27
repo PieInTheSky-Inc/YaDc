@@ -1,10 +1,11 @@
 import aiohttp
+from asyncio import Lock
 import datetime
 import hashlib
 import random
-from threading import Lock
 from typing import List
 
+import database as db
 import pss_core as core
 import utility as util
 
@@ -60,7 +61,9 @@ class Device():
         self.__set_access_token_expiry()
         self.__user: dict = None
         self.__token_lock: Lock = Lock()
+        self.__update_lock: Lock = Lock()
         self.__login_path: str = f'UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
+        self.__can_login_until_changed: bool = False
 
 
     @property
@@ -95,13 +98,22 @@ class Device():
         """
         Returns a valid access token. If there's no valid access token related to this Device, this method will attempt to log in and retrieve an access token via the PSS API.
         """
-        with self.__token_lock:
+        async with self.__token_lock:
             if self.access_token_expired:
                 if self.can_login:
                     await self.__login()
                 else:
                     raise LoginError('Cannot login currently. Please try again later.')
-        return self.__access_token
+            return self.__access_token
+
+
+    async def update_device(self) -> bool:
+        async with self.__update_lock:
+            if self.__can_login_until_changed:
+                self.__can_login_until_changed = False
+                result = await _db_try_update_device(self)
+                return result
+            return True
 
 
     async def __login(self) -> None:
@@ -147,6 +159,8 @@ class Device():
             next_day = util.get_next_day(self.__can_login_until) - ONE_SECOND
             login_until = last_login + FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
+            self.__can_login_until_changed = True
+
 
 
 
@@ -239,7 +253,7 @@ class DeviceCollection():
 
 
     async def get_access_token(self) -> str:
-        with self.__token_lock:
+        async with self.__token_lock:
             if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
             result: str = None
@@ -247,6 +261,7 @@ class DeviceCollection():
             tried_devices: int = 0
             while tried_devices < self.count:
                 current = self.current
+                current_can_login_until = current.can_login_until
                 try:
                     tried_devices += 1
                     result = await current.get_access_token()
@@ -259,7 +274,7 @@ class DeviceCollection():
                 current = self.current
             if result is None:
                 raise LoginError('Cannot get access token. No device has been able to retrieve one!')
-            if current is not None:
+            if current is not None and current_can_login_until != current.can_login_until:
                 await _db_try_update_device(current)
             return result
 
@@ -327,7 +342,7 @@ def create_device_checksum(device_key: str) -> str:
 
 async def _db_get_device(device_key: str) -> Device:
     query = f'SELECT * FROM devices WHERE key = $1'
-    rows = await core.db_fetchall(query, [device_key])
+    rows = await db.fetchall(query, [device_key])
     if rows:
         row = rows[0]
         result = Device(*row)
@@ -338,7 +353,7 @@ async def _db_get_device(device_key: str) -> Device:
 
 async def _db_get_devices() -> List[Device]:
     query = f'SELECT * FROM devices;'
-    rows = await core.db_fetchall(query)
+    rows = await db.fetchall(query)
     if rows:
         result = [Device(*row) for row in rows]
     else:
@@ -348,13 +363,13 @@ async def _db_get_devices() -> List[Device]:
 
 async def _db_try_create_device(device: Device) -> bool:
     query = f'INSERT INTO devices VALUES ($1, $2, $3)'
-    success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
+    success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
 
 
 async def _db_try_delete_device(device: Device) -> bool:
     query = f'DELETE FROM devices WHERE key = $1'
-    success = await core.db_try_execute(query, [device.key])
+    success = await db.try_execute(query, [device.key])
     return success
 
 
@@ -369,7 +384,7 @@ async def _db_try_store_device(device: Device) -> bool:
 
 async def _db_try_update_device(device: Device) -> bool:
     query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
-    success = await core.db_try_execute(query, [device.key, device.checksum, device.can_login_until])
+    success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
 
 

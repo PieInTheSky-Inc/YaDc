@@ -26,6 +26,8 @@ ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
+CANNOT_BE_SOLD = 'This item can\'t be sold'
+
 
 
 
@@ -73,6 +75,65 @@ class ItemDesignDetails(entity.EntityDesignDetails):
 
 # ---------- Helper functions ----------
 
+def filter_items_designs_details_for_equipment(items_designs_details: List[ItemDesignDetails]) -> List[ItemDesignDetails]:
+    result = [item_design_details for item_design_details in items_designs_details if __get_item_slot(item_design_details.entity_design_info, None) is not None]
+    return result
+
+
+def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
+    if not slot and not stat:
+        pass
+    elif slot and not stat:
+        stat = slot.lower()
+        slot = None
+    else:
+        slot = slot.lower()
+        stat = stat.lower()
+        temp_stat = f'{slot} {stat}'.strip()
+        if temp_stat in lookups.STAT_TYPES_LOOKUP:
+            slot = None
+            stat = temp_stat
+        else:
+            if slot in lookups.STAT_TYPES_LOOKUP and stat in lookups.EQUIPMENT_SLOTS_LOOKUP:
+                slot, stat = (stat, slot)
+            elif ' ' in stat:
+                split_stat = stat.split(' ')
+                temp_slot = f'{slot} {split_stat[0]}'
+                temp_stat = ' '.join(split_stat[1:])
+                if temp_slot in lookups.STAT_TYPES_LOOKUP and temp_stat in lookups.EQUIPMENT_SLOTS_LOOKUP:
+                    slot, stat = temp_stat, temp_slot
+    return slot, stat
+
+
+def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
+    result = item_design_details.get_details_as_text_short()
+    return ''.join(result)
+
+
+async def get_items_designs_details_by_name(item_name: str, sorted: bool = True) -> List[ItemDesignDetails]:
+    items_designs_data = await items_designs_retriever.get_data_dict3()
+    item_infos = _get_item_infos_by_name(item_name, items_designs_data)
+    if sorted:
+        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+    result = __create_base_design_data_list_from_infos(item_infos, items_designs_data)
+    return result
+
+
+def get_slot_and_stat_type(item_design_details: ItemDesignDetails) -> Tuple[str, str]:
+    slot = __get_item_slot(item_design_details.entity_design_info, None)
+    stat = item_design_details.entity_design_info['EnhancementType']
+    return slot, stat
+
+
+def __get_can_sell(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        result = None
+    return result
+
+
 def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
@@ -96,7 +157,7 @@ def __get_item_slot(item_info: entity.EntityDesignInfo, items_designs_data: enti
 def __get_item_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
-        result = 'This item cannot be sold'
+        result = CANNOT_BE_SOLD
     else:
         fair_price = item_info['FairPrice']
         market_price = item_info['MarketPrice']
@@ -111,8 +172,12 @@ def __get_enhancement_value(item_info: entity.EntityDesignInfo, items_designs_da
 
 
 def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    market_price = item_info['MarketPrice']
-    result = f'{market_price} bux'
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        market_price = item_info['MarketPrice']
+        result = f'{market_price} bux'
     return result
 
 
@@ -160,10 +225,10 @@ def _get_stat_filter(stat: str) -> str:
 
 
 def _get_slot_filter(slot: str, any_slot: bool) -> List[str]:
-    slot = slot.lower()
     if any_slot:
         result = list(lookups.EQUIPMENT_SLOTS_LOOKUP.values())
     else:
+        slot = slot.lower()
         result = [lookups.EQUIPMENT_SLOTS_LOOKUP[slot]]
     return result
 
@@ -533,7 +598,7 @@ _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (fo
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
 async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys())
+    pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys(), allow_none_or_empty=True)
     pss_assert.valid_parameter_value(stat, 'stat', allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
 
     items_designs_details = await items_designs_retriever.get_data_dict3()
@@ -541,7 +606,7 @@ async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMB
     if error:
         return error, False
 
-    any_slot = slot == 'all' or slot == 'any'
+    any_slot = not slot or slot == 'all' or slot == 'any'
     slot_filter = _get_slot_filter(slot, any_slot)
     stat_filter = _get_stat_filter(stat)
     best_items = _get_best_items_designs(slot_filter, stat_filter, items_designs_details)
@@ -572,13 +637,12 @@ def _get_best_items_designs(slot_filter: List[str], stat_filter: str, items_desi
 
 
 def _get_best_items_error(slot: str, stat: str) -> list:
-    if not slot:
-        return [f'You must specify an equipment slot!', _SLOTS_AVAILABLE]
     if not stat:
         return [f'You must specify a stat!', _STATS_AVAILABLE]
-    slot = slot.lower()
-    if slot not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys() and slot not in ['all', 'any']:
-        return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE]
+    if slot:
+        slot = slot.lower()
+        if slot not in lookups.EQUIPMENT_SLOTS_LOOKUP.keys() and slot not in ['all', 'any']:
+            return [f'The specified equipment slot is not valid!', _SLOTS_AVAILABLE]
     if stat.lower() not in lookups.STAT_TYPES_LOOKUP.keys():
         return [f'The specified stat is not valid!', _STATS_AVAILABLE]
 
@@ -600,7 +664,10 @@ def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, 
 def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[str]:
     result = []
 
-    for group_name, group in items_designs_details_groups.items():
+    group_names_sorted = sorted(items_designs_details_groups.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_ORDER_LOOKUP.index(x))
+
+    for group_name in group_names_sorted:
+        group = items_designs_details_groups[group_name]
         slot = _get_pretty_slot(group_name)
         result.append(settings.EMPTY_LINE)
         result.append(_get_best_title(stat, slot))
@@ -653,7 +720,8 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'description': entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity),
     'base': [
         entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot)
+        entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot),
+        entity.EntityDesignDetailProperty('CanSell', False, transform_function=__get_can_sell)
     ],
     'best': [
         entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),

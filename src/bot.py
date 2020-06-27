@@ -18,9 +18,9 @@ import pytz
 import re
 import sys
 import time
-from threading import Lock
 from typing import Dict, List, Tuple, Union
 
+import database as db
 import emojis
 import excel
 import gdrive
@@ -32,6 +32,7 @@ import settings
 import utility as util
 
 import pss_achievement as achievement
+import pss_ai as ai
 import pss_assert
 import pss_core as core
 import pss_crew as crew
@@ -127,9 +128,10 @@ async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
-    await core.init()
-    schema_version = await core.db_get_schema_version()
+    await db.init()
+    schema_version = await db.get_schema_version()
     await server_settings.init(bot)
+    await server_settings.clean_up_invalid_server_settings(bot)
     await login.init()
     await daily.init()
 
@@ -271,17 +273,17 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.delete_on_change, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
             if posted:
                 posted_count += 1
                 await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
-            await settings.update(can_post=can_post, latest_message=latest_message)
+            await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, delete_on_change: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
     """
-    Returns (posted, can_post, latest_message_id)
+    Returns (posted, can_post, latest_message)
     """
     posted = False
     if text_channel and current_daily_message:
@@ -289,10 +291,10 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
 
-        if delete_on_change is None or delete_on_change is True:
-            post_new = True
-        else:
+        if change_mode == server_settings.AutoDailyChangeMode.EDIT:
             post_new = False
+        else:
+            post_new = True
 
         can_post = True
         latest_message: discord.Message = None
@@ -305,7 +307,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                 latest_message_id = latest_message.id
                 if latest_message.content == current_daily_message:
                     post_new = False
-                elif delete_on_change is True:
+                elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
                         await latest_message.delete()
                         latest_message = None
@@ -318,7 +320,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                     except Exception as err:
                         print(f'[post_autodaily] {error_msg_delete}: {err}')
                         can_post = False
-                elif delete_on_change is False:
+                elif change_mode == server_settings.AutoDailyChangeMode.EDIT:
                     try:
                         await latest_message.edit(content=current_daily_message)
                         posted = True
@@ -669,23 +671,52 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
 
 @bot.command(brief='Get best items for a slot', name='best')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_best(ctx: commands.Context, slot: str, stat: str):
+async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
     """
     Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
     Usage:
       /best [slot] [stat]
+      /best [item name]
 
     Parameters:
-      slot: the equipment slot. Use 'all' or 'any' to get info for all slots. Mandatory. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
+      slot: the equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
       stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
+      item name: an item's name, whose slot and stat will be used to look up best data.
 
     Examples:
       /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
       /best all hp - Prints all equipment items for all slots providing a HP bonus.
+      /best hp - Prints all equipment items for all slots providing a HP bonus.
+      /best storm lance - Prints all equipment items for the same slot and stat as a Storm Lance.
     """
     __log_command_use(ctx)
     async with ctx.typing():
+        item_name = slot
+        if stat is not None:
+            item_name += f' {stat}'
+        item_name = item_name.strip().lower()
+
+        if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
+            items_designs_details = await item.get_items_designs_details_by_name(item_name)
+            found_matching_items = items_designs_details and len(items_designs_details) > 0
+            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+        else:
+            items_designs_details = []
+            found_matching_items = False
+        if items_designs_details:
+            if len(items_designs_details) == 1:
+                item_design_details = items_designs_details[0]
+            else:
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
+                _, item_design_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_design_details)
+        else:
+            if found_matching_items:
+                raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
+
+        slot, stat = item.fix_slot_and_stat(slot, stat)
         output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 
@@ -950,7 +981,7 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
 
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top(ctx: commands.Context, count: int = 100):
+async def cmd_top(ctx: commands.Context, *, count: str = '100'):
     """
     Prints either top fleets or captains. Prints top 100 fleets by default.
 
@@ -965,7 +996,24 @@ async def cmd_top(ctx: commands.Context, count: int = 100):
       /top 30 - prints top 30 fleets."""
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        cmd = bot.get_command(f'top fleets')
+        if ' ' in count:
+            split_count = count.split(' ')
+            try:
+                count = int(split_count[0])
+                command = split_count[1]
+            except:
+                try:
+                    count = int(split_count[1])
+                    command = split_count[0]
+                except:
+                    raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+        else:
+            try:
+                count = int(count)
+            except:
+                raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+            command = 'fleets'
+        cmd = bot.get_command(f'top {command}')
         await ctx.invoke(cmd, count=count)
 
 
@@ -976,13 +1024,15 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
 
     Usage:
       /top fleets <count>
+      /top <count> fleets
 
     Parameters:
       count: The number of rows to be printed. Optional.
 
     Examples:
       /top fleets - prints top 100 fleets.
-      /top fleets 30 - prints top 30 fleets."""
+      /top fleets 30 - prints top 30 fleets.
+      /top 30 fleets - prints top 30 fleets."""
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await pss_top.get_top_fleets(count)
@@ -996,13 +1046,15 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
 
     Usage:
       /top captains <count>
+      /top <count> captains
 
     Parameters:
       count: The number of rows to be printed. Optional.
 
     Examples:
       /top captains - prints top 100 captains.
-      /top captains 30 - prints top 30 captains."""
+      /top captains 30 - prints top 30 captains.
+      /top 30 captains - prints top 30 captains."""
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await pss_top.get_top_captains(count)
@@ -1836,7 +1888,8 @@ async def cmd_settings_set(ctx: commands.Context):
       Refer to sub-command help.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set')
 
 
 @cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
@@ -1849,7 +1902,8 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     This command can only be used on Discord servers/guilds.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
+    await ctx.send_help('settings set autodaily')
+
 
 
 @cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
@@ -1906,7 +1960,7 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
 
     async with ctx.typing():
         autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-        success = await autodaily_settings.toggle_daily_delete_on_change()
+        success = await autodaily_settings.toggle_change_mode()
     if success:
         await ctx.invoke(bot.get_command('settings autodaily changemode'))
     else:
@@ -2037,7 +2091,7 @@ async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
     You need to use one of the subcommands.
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('past')
 
 
 @cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
@@ -2258,7 +2312,7 @@ async def cmd_raw(ctx: commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('raw')
 
 
 @cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
@@ -2271,6 +2325,42 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
+
+
+@cmd_raw.group(name='ai', brief='Get raw ai data')
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai(ctx: commands.Context):
+    """
+    Get raw ai design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    await ctx.send_help('raw ai')
+
+
+@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
+    """
+    Get raw ai action design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    await __post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
+
+
+@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
+    """
+    Get raw ai condition design data from the PSS API.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    """
+    __log_command_use(ctx)
+    await __post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
 
 
 @cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
@@ -2306,10 +2396,10 @@ async def cmd_raw_gm(ctx: commands.Context):
     It may take a while for the bot to create the file, so be patient ;)
     """
     __log_command_use(ctx)
-    pass
+    await ctx.send_help('raw gm')
 
 
-@cmd_raw_gm.command(name='system', brief='Get raw gm data', aliases=['systems', 'star', 'stars'])
+@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
     """
@@ -2321,7 +2411,7 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
     await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
 
 
-@cmd_raw_gm.command(name='path', brief='Get raw gm data', aliases=['paths', 'link', 'links'])
+@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
     """
@@ -2381,7 +2471,7 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
 
 
-@cmd_raw.group(name='room', brief='Get raw collection data', aliases=['rooms'], invoke_without_command=True)
+@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     """
@@ -2393,7 +2483,7 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
 
 
-@cmd_raw_room.command(name='purchase', brief='Get raw collection data', aliases=['purchases'])
+@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
     """
@@ -2417,7 +2507,7 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
 
 
-@cmd_raw.command(name='training', brief='Get raw collection data', aliases=['trainings'])
+@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     """
@@ -2448,13 +2538,13 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         txt = util.get_formatted_datetime(utcnow)
         await ctx.send(txt)
     elif action == 'init':
-        await core.init_db()
+        await db.init_schema()
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
     elif (action == 'select' or action == 'selectall') and params:
         query = f'SELECT {params}'
         try:
-            result = await core.db_fetchall(query)
+            result = await db.fetchall(query)
             error = None
         except Exception as error:
             result = []
@@ -2467,7 +2557,7 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
             await ctx.send('The query didn\'t return any results.')
     elif action == 'query' and params:
         query = f'{params}'
-        success = await core.db_try_execute(query)
+        success = await db.try_execute(query)
         if not success:
             await ctx.send(f'The query \'{params}\' failed.')
         else:

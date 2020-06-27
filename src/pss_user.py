@@ -10,6 +10,7 @@ import pss_assert
 import pss_core as core
 import pss_entity as entity
 import pss_fleet as fleet
+import pss_login as login
 import pss_lookups as lookups
 import pss_ship as ship
 import pss_top as top
@@ -23,6 +24,8 @@ import utility as util
 SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
 USER_KEY_NAME = 'Id'
 USER_DESCRIPTION_PROPERTY_NAME = 'Name'
+
+INSPECT_SHIP_BASE_PATH = f'ShipService/InspectShip2'
 
 LEAGUE_BASE_PATH = f'LeagueService/ListLeagues2?accessToken='
 LEAGUE_INFO_KEY_NAME = 'LeagueId'
@@ -115,13 +118,20 @@ async def get_user_infos_from_tournament_data_by_name(user_name: str, user_data:
     user_name_lower = user_name.lower()
     result = {user_id: user_info for (user_id, user_info) in user_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
     user_infos_current = await _get_user_infos(user_name)
-    for user_info in user_infos_current.values():
-        user_id = user_info[user.USER_KEY_NAME]
-        if user_id in user_data:
-            if user_id not in result:
-                result[user_id] = user_data[user_id]
-            if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    if user_infos_current:
+        for user_info in user_infos_current.values():
+            user_id = user_info[user.USER_KEY_NAME]
+            if user_id in user_data:
+                user_info = await __get_user_info_by_id(user_id)
+                if user_id not in result:
+                    result[user_id] = user_data[user_id]
+                if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
+                    result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    else:
+        for tournament_user_id, tournament_user_info in result.items():
+            user_info = await __get_user_info_by_id(tournament_user_id)
+            if result[tournament_user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
+                result[tournament_user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
@@ -182,6 +192,12 @@ def __get_fleet_name_and_rank_as_text(user_info: entity.EntityDesignInfo, fleet_
             result = '<data error>'
     else:
         result = '<no fleet>'
+    return result
+
+
+async def __get_inspect_ship_path(user_id: int) -> str:
+    access_token = await login.DEVICES.get_access_token()
+    result = f'{INSPECT_SHIP_BASE_PATH}?userId={user_id}&accessToken={access_token}'
     return result
 
 
@@ -254,6 +270,15 @@ def __get_trophies_as_text(user_info: entity.EntityDesignInfo) -> str:
         if highest_trophies is not None:
             result += f' (highest: {highest_trophies})'
     return result
+
+
+async def __get_user_info_by_id(user_id: int) -> entity.EntityDesignInfo:
+    path = await __get_inspect_ship_path(user_id)
+    inspect_ship_info_raw = await core.get_data_from_path(path)
+    inspect_ship_info = core.convert_raw_xml_to_dict(inspect_ship_info_raw)
+    result = inspect_ship_info['ShipService']['InspectShip']['User']
+    return result
+
 
 
 def __get_user_type_as_text(user_info: entity.EntityDesignInfo) -> str:

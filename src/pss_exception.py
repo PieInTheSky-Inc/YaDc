@@ -24,12 +24,14 @@ class Error(Exception):
 
 class InvalidParameter(Error):
     """Exception raised for invalid parameters."""
-    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: List[str] = None):
+    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False):
         self.__parameter_name: str = parameter_name or '<unknown>'
         self.__invalid_value: str = invalid_value
         self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
         self.__valid_values: List[str] = valid_values or []
         self.__add_validity_hint: bool = min_length is not None or self.__valid_values
+        if allow_none_or_empty:
+            self.__valid_values.append('<empty>')
         super().__init__(self.__get_message())
 
 

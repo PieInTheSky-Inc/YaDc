@@ -9,6 +9,7 @@ import math
 import pytz
 import re
 import subprocess
+from threading import get_ident
 from typing import Dict, Iterable, List, Tuple, Union
 import urllib.parse
 
@@ -238,8 +239,8 @@ def get_embed_field_def(title=None, text=None, inline=True):
 
 
 def dbg_prnt(text: str) -> None:
-    if settings.PRINT_DEBUG is True:
-        print(f'[{get_utcnow()}]: {text}')
+    if settings.PRINT_DEBUG:
+        print(f'[{get_utcnow()}][{get_ident()}]: {text}')
 
 
 def create_posts_from_lines(lines, char_limit) -> list:

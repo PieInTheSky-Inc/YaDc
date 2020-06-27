@@ -81,6 +81,16 @@ EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
+EQUIPMENT_SLOTS_ORDER_LOOKUP: List[str] = [
+    'EquipmentHead',
+    'EquipmentAccessory',
+    'EquipmentBody',
+    'EquipmentWeapon',
+    'EquipmentLeg',
+    'EquipmentPet'
+]
+
+
 EQUIPMENT_SLOTS_LOOKUP: Dict[str, str] = {
     'head': 'EquipmentHead',
     'hat': 'EquipmentHead',
@@ -239,8 +249,12 @@ STAT_TYPES_LOOKUP: Dict[str, str] = {
     'eng': 'Engine',
     'weapon': 'Weapon',
     'wpn': 'Weapon',
-    'fire resistance': 'FireResistance',
     'fire': 'FireResistance',
+    'fireresistance': 'FireResistance',
+    'fireres': 'FireResistance',
+    'fire res': 'FireResistance',
+    'fire resistance': 'FireResistance',
+    'fr': 'FireResistance',
 }
 
 
