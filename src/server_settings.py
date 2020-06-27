@@ -4,7 +4,7 @@ import datetime
 import discord
 from discord.ext import commands
 from enum import IntEnum
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 
 import database as db
 import pss_assert

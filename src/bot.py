@@ -1446,6 +1446,7 @@ async def cmd_settings(ctx: commands.Context):
 
             output = [f'**```Server settings for {ctx.guild.name}```**']
             output.extend(guild_settings.autodaily.get_pretty_settings())
+            output.extend(guild_settings.get_pretty_bot_news_channel())
             output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
             output.append(f'Prefix = {guild_settings.prefix}')
         await util.post_output(ctx, output)
@@ -1559,7 +1560,7 @@ async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
+@cmd_settings.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_botnews(ctx: commands.Context):
     __log_command_use(ctx)
@@ -2040,6 +2041,8 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
     await __assert_settings_command_valid(ctx)
 
     async with ctx.typing():
+        if text_channel is None:
+            text_channel = ctx.channel
         guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
         success = await guild_settings.set_bot_news_channel(text_channel)
     if success:
