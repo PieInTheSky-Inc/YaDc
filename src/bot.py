@@ -172,8 +172,9 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
     error_message = str(err)
+    retry_after = None
     if isinstance(err, commands.CommandOnCooldown):
-        pass
+        retry_after = err.retry_after
     elif isinstance(err, commands.CommandNotFound):
         prefix = await server_settings.get_prefix(bot, ctx.message)
         invoked_with = ctx.invoked_with.split(' ')[0]
@@ -194,7 +195,10 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
         command = bot.get_command(help_args)
         await ctx.send_help(command)
     error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-    await ctx.send(f'**Error**\n{error_message}')
+    if retry_after:
+        await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+    else:
+        await ctx.send(f'**Error**\n{error_message}')
 
 
 @bot.event
