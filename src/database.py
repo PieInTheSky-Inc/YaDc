@@ -114,7 +114,7 @@ async def update_schema_v_1_3_0_0() -> bool:
         ('limitedcatalogcurrencytype', 'TEXT', False, False),
         ('limitedcatalogcurrencyamount', 'INT', False, False),
         ('limitedcatalogmaxtotal', 'INT', False, False),
-        ('limitedcatalogexpirydate', 'TIMESTAMP', False, False)
+        ('limitedcatalogexpirydate', 'TIMESTAMPTZ', False, False)
     ]
     success_create_table = await try_create_table('sales', column_definitions_sales)
     if not success_create_table:
@@ -657,6 +657,24 @@ async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[objec
     return result
 
 
+async def get_sales_info(expiry_date: datetime = None) -> List[Dict[str, Union[int, str, datetime]]]:
+    __log_db_function_enter('get_sales_info')
+
+    args = []
+    query = 'SELECT * FROM sales'
+    if expiry_date is not None:
+        query += f' WHERE limitedcatalogexpirydate = $1'
+        args.append(expiry_date)
+    else:
+        query += ' ORDER BY limitedcatalogexpirydate DESC limit 31'
+    records = await fetchall(query, args)
+    if records:
+        result = [dict(record) for record in records]
+    else:
+        result = []
+    return result
+
+
 async def set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
     __log_db_function_enter('set_setting', setting_name=f'\'{setting_name}\'', value=value, utc_now=utc_now)
 
@@ -712,11 +730,11 @@ async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
             else:
                 column_name = 'settingtext'
                 value = util.db_convert_text(value)
-            current_value, modify_date = current_settings[setting_name]
-            modify_date = modify_date or utc_now
+            current_value, db_modify_date = current_settings[setting_name]
+            modify_date = db_modify_date or utc_now
 
             setting_name = util.db_convert_text(setting_name)
-            if current_value is None and modify_date is None:
+            if current_value is None and db_modify_date is None:
                 query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ({value}, \'{modified_at}\', {setting_name});'
             elif current_value != value:
                 query = f'UPDATE settings SET {column_name} = {value}, modifydate = \'{modified_at}\' WHERE settingname = {setting_name};'
@@ -730,6 +748,30 @@ async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
         return success
     else:
         return True
+
+
+async def update_sales_info(sales_info: dict) -> bool:
+    __log_db_function_enter('update_sales_info', sales_info=sales_info)
+
+    db_sales_infos = await get_sales_info(expiry_date=sales_info['LimitedCatalogExpiryDate'])
+    column_names = []
+    placeholders = []
+    set_fields = []
+    args = []
+    for i, column_name in enumerate(sales_info, start=1):
+        column_name = column_name.lower()
+        column_names.append(column_name)
+        placeholders.append(f'${i}')
+        set_fields.append(f'{column_name} = ${i}')
+        args.append(sales_info[column_name])
+
+    if db_sales_infos:
+        current_sales_info = db_sales_infos[0]
+        query = f'UPDATE sales SET {", ".join(set_fields)} WHERE id = {current_sales_info.id}'
+    else:
+        query = f'INSERT INTO sales ({", ".join(column_names)}) VALUES ({", ".join(placeholders)})'
+    success = await try_execute(query, args)
+    return success
 
 
 def print_db_query_error(function_name: str, query: str, args: list, error: asyncpg.exceptions.PostgresError) -> None:
