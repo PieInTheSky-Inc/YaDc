@@ -637,6 +637,10 @@ class GuildSettingsCollection():
     def autodaily_settings(self) -> List[AutoDailySettings]:
         return [guild_settings.autodaily for guild_settings in self.__data.values()]
 
+    @property
+    def bot_news_channels(self) -> List[discord.TextChannel]:
+        return [guild_settings.bot_news_channel for guild_settings in self.__data.values() if guild_settings.bot_news_channel is not None]
+
 
     async def create_guild_settings(self, bot: commands.Bot, guild_id: int) -> bool:
         success = await db_create_server_settings(guild_id)

@@ -2857,6 +2857,44 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await util.post_output(ctx, output)
 
 
+@bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'])
+@commands.is_owner()
+async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
+    """
+    Sends an embed to all guilds which have a bot news channel configured.
+
+    Usage:
+      /sendnews [--<property_key>=<property_value> ...]
+
+    Available property keys:
+      title:   The title of the news.
+      content: The contents of the news.
+
+    Example:
+      /sendnews --title=This is a title. --content=This is the content.
+    """
+    __log_command_use(ctx)
+
+    if not news:
+        return
+
+    async with ctx.typing():
+        split_news = news.split('--')
+        news_parts = {key: value.strip() for key, value in [part.split('=', maxsplit=1) for part in split_news if '=' in part]}
+        if 'title' not in news_parts:
+            raise ValueError('You need to specify a title!')
+        avatar_url = bot.user.avatar_url
+        for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
+            embed_colour = util.get_bot_member_colour(bot, bot_news_channel.guild)
+            embed: discord.Embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+            embed.set_thumbnail(url=avatar_url)
+            await bot_news_channel.send(embed=embed)
+        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
+        embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+        embed.set_thumbnail(url=avatar_url)
+    await ctx.send(embed=embed)
+
+
 @bot.group(brief='list available devices', name='device', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
