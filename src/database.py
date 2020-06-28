@@ -759,15 +759,16 @@ async def update_sales_info(sales_info: dict) -> bool:
     set_fields = []
     args = []
     for i, column_name in enumerate(sales_info, start=1):
+        args.append(sales_info[column_name])
         column_name = column_name.lower()
         column_names.append(column_name)
         placeholders.append(f'${i}')
         set_fields.append(f'{column_name} = ${i}')
-        args.append(sales_info[column_name])
 
     if db_sales_infos:
         current_sales_info = db_sales_infos[0]
-        query = f'UPDATE sales SET {", ".join(set_fields)} WHERE id = {current_sales_info.id}'
+        current_sales_info_id = current_sales_info['id']
+        query = f'UPDATE sales SET {", ".join(set_fields)} WHERE id = {current_sales_info_id}'
     else:
         query = f'INSERT INTO sales ({", ".join(column_names)}) VALUES ({", ".join(placeholders)})'
     success = await try_execute(query, args)

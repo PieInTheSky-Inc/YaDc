@@ -35,6 +35,7 @@ DAILY_INFO_FIELDS = [
     'LimitedCatalogArgument',
     'LimitedCatalogCurrencyAmount',
     'LimitedCatalogCurrencyType',
+    'LimitedCatalogExpiryDate',
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
     'News',
@@ -55,6 +56,15 @@ DAILY_INFO_FIELDS_TO_CHECK = [
     'SaleQuantity',
     'SaleType'
 ]
+
+SALES_DAILY_INFO_FIELDS = {
+    'LimitedCatalogArgument': int,
+    'LimitedCatalogCurrencyAmount': int,
+    'LimitedCatalogCurrencyType': str,
+    'LimitedCatalogExpiryDate': util.parse_pss_datetime,
+    'LimitedCatalogMaxTotal': int,
+    'LimitedCatalogType': str
+}
 
 DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
 
@@ -194,13 +204,27 @@ async def db_get_daily_info(skip_cache: bool = False) -> Tuple[Dict, datetime]:
         return (__daily_info_cache, __daily_info_modified_at)
 
 
+async def db_get_sales_info(skip_cache: bool = False) -> List[Dict]:
+    if __sales_info_cache is None or skip_cache:
+        result = await db.get_sales_info()
+        return result or None
+    else:
+        return __sales_info_cache
+
+
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
     success = True
     settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
-    success = await db.set_settings(settings)
-    if success:
+    settings_success = await db.set_settings(settings)
+    if settings_success:
         await __update_db_daily_info_cache()
-    return success
+
+    sales_info = {key: value(daily_info[key]) for key, value in SALES_DAILY_INFO_FIELDS.items()}
+    sales_success = await db.update_sales_info(sales_info)
+    if sales_success:
+        await __update_db_sales_info_cache()
+
+    return settings_success and sales_success
 
 
 
@@ -282,6 +306,7 @@ def __mock_get_daily_info_2():
 
 __daily_info_cache: dict = None
 __daily_info_modified_at: datetime
+__sales_info_cache: dict = None
 
 
 async def __update_db_daily_info_cache():
@@ -290,5 +315,11 @@ async def __update_db_daily_info_cache():
     __daily_info_cache, __daily_info_modified_at = await db_get_daily_info(skip_cache=True)
 
 
+async def __update_db_sales_info_cache():
+    global __sales_info_cache
+    __sales_info_cache = await db_get_sales_info(skip_cache=True)
+
+
 async def init():
     await __update_db_daily_info_cache()
+    await __update_db_sales_info_cache()

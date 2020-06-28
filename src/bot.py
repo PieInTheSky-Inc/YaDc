@@ -269,6 +269,7 @@ async def post_dailies_loop() -> None:
         if has_daily_changed:
             if created_output or not autodaily_settings:
                 await daily.db_set_daily_info(daily_info, utc_now)
+
         seconds_to_wait = util.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
 
