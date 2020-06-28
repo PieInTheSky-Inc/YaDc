@@ -1567,6 +1567,19 @@ async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
 @cmd_settings.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_botnews(ctx: commands.Context):
+    """
+    Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings botnews
+      /settings botchannel
+
+    Examples:
+      /settings botnews - Gets the channel configured for this server to receive bot news.
+    """
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
@@ -1820,6 +1833,19 @@ async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
 @cmd_settings_reset.command(brief='Reset bot news channel', name='botnews', aliases=['botchannel'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
+    """
+    Resets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset botnews
+      /settings reset botchannel
+
+    Examples:
+      /settings reset botnews - Removes the channel '#announcements' from the list of channels to receive bot news.
+    """
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
@@ -2040,7 +2066,20 @@ async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: U
 
 @cmd_settings_set.command(brief='Set the bot news channel', name='botnews', aliases=['botchannel'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
+async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel=None):
+    """
+    Sets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set botnews <text channel mention>
+      /settings set botchannel <text channel mention>
+
+    Examples:
+      /settings set botnews #announcements - Sets the channel '#announcements' to receive bot news.
+    """
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
