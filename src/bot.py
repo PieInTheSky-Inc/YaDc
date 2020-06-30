@@ -2853,27 +2853,6 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await db.init_schema()
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
-    elif (action == 'select' or action == 'selectall') and params:
-        query = f'SELECT {params}'
-        try:
-            result = await db.fetchall(query)
-            error = None
-        except Exception as error:
-            result = []
-        if error:
-            await ctx.send(f'The query \'{params}\' failed.')
-        elif result:
-            await ctx.send(f'The query \'{params}\' has been executed successfully.')
-            await ctx.send(result)
-        else:
-            await ctx.send('The query didn\'t return any results.')
-    elif action == 'query' and params:
-        query = f'{params}'
-        success = await db.try_execute(query)
-        if not success:
-            await ctx.send(f'The query \'{params}\' failed.')
-        else:
-            await ctx.send(f'The query \'{params}\' has been executed successfully.')
     elif action == 'commands':
         output = [', '.join(sorted(bot.all_commands.keys()))]
         await util.post_output(ctx, output)
@@ -2901,7 +2880,39 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await util.post_output(ctx, output)
 
 
-@bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'])
+@bot.command(brief='Try to execute a DB query', name='dbquery', hidden=True)
+@commands.is_owner()
+async def cmd_query(ctx: commands.Context, *, query: str):
+    async with ctx.typing():
+        success = await db.try_execute(query)
+    if not success:
+        await ctx.send(f'The query \'{query}\' failed.')
+    else:
+        await ctx.send(f'The query \'{query}\' has been executed successfully.')
+
+
+@bot.command(brief='Try to select from DB', name='dbselect', hidden=True)
+@commands.is_owner()
+async def cmd_query(ctx: commands.Context, *, query: str):
+    async with ctx.typing():
+        if not query.lower().startswith('select '):
+            query = f'SELECT {query}'
+        try:
+            result = await db.fetchall(query)
+            error = None
+        except Exception as error:
+            result = []
+    if error:
+        await ctx.send(f'The query \'{query}\' failed.')
+    elif result:
+        await ctx.send(f'The query \'{query}\' has been executed successfully.')
+        await ctx.send(result)
+    else:
+        await ctx.send(f'The query \'{query}\' didn\'t return any results.')
+
+
+
+@bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'], hidden=True)
 @commands.is_owner()
 async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
     """
