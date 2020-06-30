@@ -77,7 +77,18 @@ DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_n
 
 
 
-# ---------- ----------
+# ---------- Sales ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Utilities ----------
 
 async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
@@ -114,16 +125,6 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
         db_daily_info.pop('News', None)
         return not util.dicts_equal(daily_info, db_daily_info)
 
-
-
-
-
-
-
-
-
-
-# ---------- Utilities ----------
 
 def convert_to_daily_info(dropship_info: dict) -> dict:
     result = {}
