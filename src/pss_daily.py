@@ -79,6 +79,9 @@ DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_n
 
 # ---------- Sales ----------
 
+async def __get_sales():
+    pass
+
 
 
 
@@ -205,9 +208,9 @@ async def db_get_daily_info(skip_cache: bool = False) -> Tuple[Dict, datetime]:
         return (__daily_info_cache, __daily_info_modified_at)
 
 
-async def db_get_sales_info(skip_cache: bool = False) -> List[Dict]:
+async def db_get_sales_infos(skip_cache: bool = False) -> List[Dict]:
     if __sales_info_cache is None or skip_cache:
-        result = await db.get_sales_info()
+        result = await db.get_sales_infos()
         return result or None
     else:
         return __sales_info_cache

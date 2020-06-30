@@ -657,8 +657,8 @@ async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[objec
     return result
 
 
-async def get_sales_info(expiry_date: datetime = None) -> List[Dict[str, Union[int, str, datetime]]]:
-    __log_db_function_enter('get_sales_info')
+async def get_sales_infos(expiry_date: datetime = None) -> List[Dict[str, Union[int, str, datetime]]]:
+    __log_db_function_enter('get_sales_infos')
 
     args = []
     query = 'SELECT * FROM sales'
