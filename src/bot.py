@@ -2880,9 +2880,15 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await util.post_output(ctx, output)
 
 
-@bot.command(brief='Try to execute a DB query', name='dbquery', hidden=True)
+@bot.group(brief='DB commands', name='db', hidden=True, invoke_without_command=True)
 @commands.is_owner()
-async def cmd_query(ctx: commands.Context, *, query: str):
+async def cmd_db(ctx: commands.Context):
+    await ctx.send_help('db')
+
+
+@cmd_db.command(brief='Try to execute a DB query', name='query', hidden=True)
+@commands.is_owner()
+async def cmd_db_query(ctx: commands.Context, *, query: str):
     async with ctx.typing():
         success = await db.try_execute(query)
     if not success:
@@ -2891,9 +2897,9 @@ async def cmd_query(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
 
 
-@bot.command(brief='Try to select from DB', name='dbselect', hidden=True)
+@cmd_db.command(brief='Try to select from DB', name='select', hidden=True)
 @commands.is_owner()
-async def cmd_query(ctx: commands.Context, *, query: str):
+async def cmd_db_select(ctx: commands.Context, *, query: str):
     async with ctx.typing():
         if not query.lower().startswith('select '):
             query = f'SELECT {query}'
@@ -2906,7 +2912,8 @@ async def cmd_query(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' failed.')
     elif result:
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
-        await ctx.send(result)
+        result = [str(record) for record in result]
+        await util.post_output(result)
     else:
         await ctx.send(f'The query \'{query}\' didn\'t return any results.')
 
