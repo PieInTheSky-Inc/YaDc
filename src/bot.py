@@ -2913,7 +2913,7 @@ async def cmd_db_select(ctx: commands.Context, *, query: str):
     elif result:
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
         result = [str(record) for record in result]
-        await util.post_output(result)
+        await util.post_output(ctx, result)
     else:
         await ctx.send(f'The query \'{query}\' didn\'t return any results.')
 
