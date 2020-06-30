@@ -79,8 +79,18 @@ DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_n
 
 # ---------- Sales ----------
 
-async def __get_sales():
-    pass
+async def get_sales_details(utc_now: datetime = None) -> List[str]:
+    if utc_now is None:
+        utc_now = util.get_utcnow()
+
+    sales_infos = await db_get_sales_infos()
+    result = []
+    for sales_info in sales_infos:
+        entity_id = sales_info['LimitedCatalogArgument']
+        entity_type = sales_info['LimitedCatalogType']
+        currency_type = sales_info['LimitedCatalogCurrencyType']
+        currency_amount = int(sales_info['LimitedCatalogCurrencyAmount'])
+        expiry_date = util.parse_pss_datetime(sales_info['LimitedCatalogExpiryDate'])
 
 
 
