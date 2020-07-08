@@ -189,12 +189,16 @@ def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInf
     return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['base'], None, __properties['base'], items_designs_data)
 
 
+def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['best'], None, __properties['best'], items_designs_data, prefix='> ')
+
+
 def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
     return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['price'], None, __properties['price'], items_designs_data)
 
 
-def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['best'], None, __properties['best'], items_designs_data, prefix='> ')
+def __create_base_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
+    return [__create_base_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
 def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
@@ -203,10 +207,6 @@ def __create_best_design_data_list_from_infos(items_designs_infos: List[entity.E
 
 def __create_price_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
     return [__create_price_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
-
-
-def __create_base_design_data_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
-    return [__create_base_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
 def __get_key_for_best_items_sort(item_info: dict) -> str:
