@@ -417,7 +417,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
                 return collections_designs_details.get_details_as_embed(), True
             else:
                 long_details = []
-                for i, collection_design_details in enumerate(collections_designs_details):
+                for collection_design_details in collections_designs_details:
                     long_details.extend(collection_design_details.get_details_as_text_short())
                 return long_details, True
         else:
