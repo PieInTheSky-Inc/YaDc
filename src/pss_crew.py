@@ -251,19 +251,19 @@ def __get_collection_name(character_design_info: entity.EntityDesignInfo, charac
     return result
 
 
-def __get_collection_character_count(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_collection_member_count(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = len(chars_designs_infos)
     return f'{result} members'
 
 
-def __get_collection_character_names(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_collection_member_names(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
     result.sort()
-    return ', '.join(result) + f' ({len(chars_designs_infos)} members)'
+    return ', '.join(result)
 
 
 def __get_collection_hyperlink(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -288,6 +288,13 @@ def __get_level(character_design_info: entity.EntityDesignInfo, characters_desig
         return None
     else:
         return str(level)
+
+
+def __get_members_count_display_name(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = f'Members ({len(chars_designs_infos)})'
+    return result
 
 
 def __get_min_max_combo(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -408,9 +415,13 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
     else:
         collections_designs_infos.append(await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data))
 
-    if not print_all and collections_designs_infos is None:
-        return [f'Could not find a collection named **{collection_name}**.'], False
+    if collections_designs_infos is None:
+        if print_all:
+            return [f'An error occured upon retrieving collection info. Please try again later.'], False
+        else:
+            return [f'Could not find a collection named **{collection_name}**.'], False
     else:
+        collections_designs_infos = sorted(collections_designs_infos, key=lambda x: x[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME])
         collections_designs_details = [__create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data) for collection_design_info in collections_designs_infos]
         if print_all:
             if as_embed:
@@ -419,6 +430,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
                 long_details = []
                 for collection_design_details in collections_designs_details:
                     long_details.extend(collection_design_details.get_details_as_text_short())
+                long_details.append(__get_collection_hyperlink(None, None, None))
                 return long_details, True
         else:
             if as_embed:
@@ -648,12 +660,12 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'collection_long': [
         entity.EntityDesignDetailProperty('Combo Min...Max', True, omit_if_none=True, transform_function=__get_min_max_combo),
         entity.EntityDesignDetailProperty(__get_collection_perk, True, omit_if_none=True, transform_function=__get_enhancement),
-        entity.EntityDesignDetailProperty('Members', True, omit_if_none=True, transform_function=__get_collection_character_names),
+        entity.EntityDesignDetailProperty(__get_members_count_display_name, True, omit_if_none=True, transform_function=__get_collection_member_names),
         entity.EntityDesignDetailProperty('Hyperlink', False, omit_if_none=True, transform_function=__get_collection_hyperlink)
     ],
     'collection_short': [
         entity.EntityDesignDetailProperty('Perk', False, omit_if_none=True, transform_function=__get_collection_perk),
-        entity.EntityDesignDetailProperty('Member count', False, omit_if_none=True, transform_function=__get_collection_character_count)
+        entity.EntityDesignDetailProperty('Member count', False, omit_if_none=True, transform_function=__get_collection_member_count)
     ]
 }
 
