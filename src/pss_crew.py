@@ -349,22 +349,6 @@ def __get_stat_value(min_value: float, max_value: float, level: int, progression
 
 
 
-async def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
-    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
-    chars_designs_data = await characters_designs_retriever.get_data_dict3()
-    chars_designs_infos = [chars_designs_data[char_id] for char_id in chars_designs_data.keys() if chars_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
-    result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
-    result.sort()
-    return result
-
-
-
-
-
-
-
-
-
 
 # ---------- Crew info ----------
 
