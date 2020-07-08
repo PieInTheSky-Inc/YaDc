@@ -44,12 +44,12 @@ CalculatedEntityDesignDetailProperty = namedtuple('CalculatedEntityDesignDetailP
 
 class EntityDesignDetailProperty(object):
     def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData], str]], force_display_name: bool, omit_if_none: bool = False, entity_property_name: str = None, transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None, **transform_kwargs):
+        self.__display_name: str = None
+        self.__display_name_function: Callable[[EntityDesignInfo, EntitiesDesignsData], str] = None
         if isinstance(display_name, str):
-            self.__display_name: str = display_name
-            self.__display_name_function: Callable[[list], str] = None
-        elif isinstance(display_name, Callable[[list], str]):
-            self.__display_name: str = None
-            self.__display_name_function: Callable[[list], str] = display_name
+            self.__display_name = display_name
+        elif callable(display_name):
+            self.__display_name_function = display_name
         else:
             raise TypeError('The display_name must either be of type \'str\' or \'Callable[[EntityDesignInfo, EntitiesDesignsData], str]\'.')
 
