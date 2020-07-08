@@ -251,12 +251,19 @@ def __get_collection_name(character_design_info: entity.EntityDesignInfo, charac
     return result
 
 
+def __get_collection_character_count(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = len(chars_designs_infos)
+    return f'{result} members'
+
+
 def __get_collection_character_names(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
     result.sort()
-    return ', '.join(result)
+    return ', '.join(result) + f' ({len(chars_designs_infos)} members)'
 
 
 def __get_collection_hyperlink(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -390,20 +397,34 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
 # ---------- Collection Info ----------
 
 async def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(collection_name)
+    pss_assert.valid_entity_name(collection_name, parameter_name='collection_name', allow_none_or_empty=True)
 
+    print_all = not collection_name
     collections_designs_data = await collections_designs_retriever.get_data_dict3()
     characters_designs_data = await characters_designs_retriever.get_data_dict3()
-    collection_design_info = await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
+    collections_designs_infos = []
+    if print_all:
+        collections_designs_infos = collections_designs_data.values()
+    else:
+        collections_designs_infos.append(await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data))
 
-    if collection_design_info is None:
+    if not print_all and collections_designs_infos is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
-        collection_design_details = __create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data)
-        if as_embed:
-            return collection_design_details.get_details_as_embed(), True
+        collections_designs_details = [__create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data) for collection_design_info in collections_designs_infos]
+        if print_all:
+            if as_embed:
+                return collections_designs_details.get_details_as_embed(), True
+            else:
+                long_details = []
+                for i, collection_design_details in enumerate(collections_designs_details):
+                    long_details.extend(collection_design_details.get_details_as_text_short())
+                return long_details, True
         else:
-            return collection_design_details.get_details_as_text_long(), True
+            if as_embed:
+                return collections_designs_details[0].get_details_as_embed(), True
+            else:
+                return collections_designs_details[0].get_details_as_text_long(), True
 
 
 
@@ -627,11 +648,12 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'collection_long': [
         entity.EntityDesignDetailProperty('Combo Min...Max', True, omit_if_none=True, transform_function=__get_min_max_combo),
         entity.EntityDesignDetailProperty(__get_collection_perk, True, omit_if_none=True, transform_function=__get_enhancement),
-        entity.EntityDesignDetailProperty('Characters', True, omit_if_none=True, transform_function=__get_collection_character_names),
+        entity.EntityDesignDetailProperty('Members', True, omit_if_none=True, transform_function=__get_collection_character_names),
         entity.EntityDesignDetailProperty('Hyperlink', False, omit_if_none=True, transform_function=__get_collection_hyperlink)
     ],
     'collection_short': [
-        entity.EntityDesignDetailProperty('Perk', False, omit_if_none=True, transform_function=__get_collection_perk)
+        entity.EntityDesignDetailProperty('Perk', False, omit_if_none=True, transform_function=__get_collection_perk),
+        entity.EntityDesignDetailProperty('Member count', False, omit_if_none=True, transform_function=__get_collection_character_count)
     ]
 }
 

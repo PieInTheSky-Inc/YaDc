@@ -752,18 +752,19 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
 
 @bot.command(brief='Get collections', name='collection', aliases=['coll'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_collection(ctx: commands.Context, *, collection_name: str):
+async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
-    Get the details on a specific collection.
+    Get the details on a specific collection. If the collection name is omitted, it will display all collections.
 
     Usage:
-      /collection [collection_name]
+      /collection <collection_name>
 
     Parameters:
       collection_name: The name of the collection to get details on.
 
     Examples:
       /collection_name savy - Will print information on a collection having 'savy' in its name.
+      /collection - Will print less information on all collections.
 
     Notes:
       This command will only print stats for the collection with the best matching collection_name.
