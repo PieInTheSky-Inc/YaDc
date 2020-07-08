@@ -3,7 +3,7 @@
 
 from datetime import timedelta
 import discord
-from typing import Callable, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 from cache import PssCache
 import emojis
@@ -22,93 +22,7 @@ TRAINING_DESIGN_BASE_PATH = 'TrainingService/ListAllTrainingDesigns2?languageKey
 TRAINING_DESIGN_KEY_NAME = 'TrainingDesignId'
 TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
 
-
-
-
-
-
-
-
-
-
-# ---------- Classes ----------
-
-class LegacyTrainingDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, training_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData):
-        required_room_level = training_info['RequiredRoomLevel']
-        training_rank = int(training_info['Rank'])
-        training_id = training_info[TRAINING_DESIGN_KEY_NAME]
-
-        stats = []
-        stats.extend(lookups.STATS_LEFT)
-        stats.extend(lookups.STATS_RIGHT)
-        training_item_details = item.get_item_details_short_by_training_id(training_id, items_designs_data)
-        room_name, _ = _get_room_names(training_rank)
-        if room_name:
-            room_name = f'{room_name} lvl {required_room_level}'
-        stat_chances = _get_stat_chances(stats, training_info)
-        xp_stat = _get_stat_chance_as_text(*_get_stat_chance('Xp', training_info, guaranteed=True))
-        stat_chances.append(xp_stat)
-
-        self.__chances: str = ' '.join(stat_chances)
-        self.__cost: str = _get_cost_as_text(training_info)
-        self.__duration: str = _get_duration_as_text(training_info)
-        self.__fatigue: str = _get_fatigue_as_text(training_info)
-        self.__required_research: str = research.get_research_name_from_id(training_info['RequiredResearchDesignId'], researches_designs_data)
-        self.__room_name: str = room_name
-        self.__training_item_details: str = ', '.join(training_item_details)
-
-        details_long: List[Tuple[str, str]] = [
-            ('Duration', self.__duration),
-            ('Cost', self.__cost),
-            ('Fatigue', self.__fatigue),
-            ('Training room', self.__room_name),
-            ('Research required', self.__required_research),
-            ('Consumable', self.__training_item_details),
-            ('Results', self.__chances)
-        ]
-        details_short: List[Tuple[str, str, bool]] = [
-            (None, self.__chances, False)
-        ]
-
-        super().__init__(
-            name=training_info[TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=training_info['TrainingDescription'],
-            details_long=details_long,
-            details_short=details_short
-        )
-
-
-    @property
-    def chances(self) -> str:
-        return self.__chances
-
-    @property
-    def cost(self) -> str:
-        return self.__cost
-
-    @property
-    def duration(self) -> str:
-        return list(self.__duration)
-
-    @property
-    def fatigue(self) -> str:
-        return self.__fatigue
-
-    @property
-    def required_research(self) -> str:
-        return self.__required_research
-
-    @property
-    def room_name(self) -> str:
-        return self.__room_name
-
-    @property
-    def training_item_details(self) -> str:
-        return self.__training_item_details
-
-
-
+BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
 
 
@@ -124,10 +38,11 @@ class LegacyTrainingDetails(entity.LegacyEntityDesignDetails):
 async def get_training_details_from_name(training_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(training_name)
 
-    training_infos = await trainings_designs_retriever.get_entities_designs_infos_by_name(training_name)
+    trainings_designs_data = await trainings_designs_retriever.get_data_dict3()
+    training_infos = await trainings_designs_retriever.get_entities_designs_infos_by_name(training_name, trainings_designs_data)
     items_designs_data = await item.items_designs_retriever.get_data_dict3()
     researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
-    trainings_details = [LegacyTrainingDetails(training_info, items_designs_data, researches_designs_data) for training_info in training_infos]
+    trainings_details = __create_training_design_details_list_from_infos(training_infos, trainings_designs_data, items_designs_data, researches_designs_data)
 
     if not training_infos:
         return [f'Could not find a training named **{training_name}**.'], False
@@ -138,12 +53,12 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
             return _get_training_info_as_text(training_name, trainings_details), True
 
 
-def _get_training_info_as_embed(training_name: str, trainings_details: List[LegacyTrainingDetails]) -> discord.Embed:
+def _get_training_info_as_embed(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> discord.Embed:
     result = [training_details.get_details_as_embed() for training_details in trainings_details]
     return result
 
 
-def _get_training_info_as_text(training_name: str, trainings_details: List[LegacyTrainingDetails]) -> List[str]:
+def _get_training_info_as_text(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> List[str]:
     trainings_details_count = len(trainings_details)
 
     lines = [f'Training stats for **{training_name}**']
@@ -168,9 +83,17 @@ def _get_training_info_as_text(training_name: str, trainings_details: List[Legac
 
 # ---------- Helper functions ----------
 
-def _get_cost_as_text(training_info: dict) -> str:
-    cost = int(training_info['MineralCost'])
-    if cost > 0:
+def __create_training_design_details_from_info(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(training_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['long'], trainings_designs_data, items_designs_data, researches_designs_data)
+
+
+def __create_training_design_details_list_from_infos(trainings_designs_infos: List[entity.EntityDesignInfo], trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntitiesDesignsData]:
+    return [__create_training_design_details_from_info(training_design_info, trainings_designs_data, items_designs_data, researches_designs_data) for training_design_info in trainings_designs_infos]
+
+
+def __get_costs(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    cost = int(training_design_info['MineralCost'])
+    if cost:
         cost_compact = util.get_reduced_number_compact(cost)
         result = f'{cost_compact} {emojis.pss_min_big}'
     else:
@@ -178,22 +101,73 @@ def _get_cost_as_text(training_info: dict) -> str:
     return result
 
 
-def _get_duration_as_text(training_info: dict) -> str:
-    seconds = int(training_info['Duration'])
-    if seconds > 0:
+def __get_duration(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    seconds = int(training_design_info['Duration'])
+    if seconds:
         result = util.get_formatted_duration(seconds, include_relative_indicator=False)
     else:
         result = 'Instant'
     return result
 
 
-def _get_fatigue_as_text(training_info: dict) -> str:
-    fatigue = int(training_info['Fatigue'])
-    if fatigue > 0:
+def __get_fatigue(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    fatigue = int(training_design_info['Fatigue'])
+    if fatigue:
         result = f'{fatigue}h'
     else:
         result = None
     return result
+
+
+def __get_required_research(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    required_research_id = training_design_info['RequiredResearchDesignId']
+    result = research.get_research_name_from_id(required_research_id, researches_designs_data)
+    return result
+
+
+def __get_stat_chances(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    chances = []
+    max_chance_value = 0
+    result = []
+    for stat_name in BASE_STATS:
+        stat_chance = _get_stat_chance(stat_name, training_design_info)
+        if stat_chance is not None:
+            chances.append(stat_chance)
+
+    if chances:
+        chance_values = [stat_chance[2] for stat_chance in chances]
+        max_chance_value = max(chance_values)
+        result = [_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance_value]
+        result.extend([_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance_value])
+
+    xp_stat_chance = _get_stat_chance('Xp', training_design_info, guaranteed=True)
+    result.append(_get_stat_chance_as_text(*xp_stat_chance))
+
+    return ' '.join(result)
+
+
+def __get_training_item_name(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    training_id = training_design_info[TRAINING_DESIGN_KEY_NAME]
+    result = item.get_item_details_short_by_training_id(training_id, items_designs_data)
+    return ''.join(result)
+
+
+def __get_training_room(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    required_room_level = training_design_info['RequiredRoomLevel']
+    training_room_type = int(training_design_info['Rank'])
+    room_name, _ = _get_room_names(training_room_type)
+    if room_name:
+        result = f'{room_name} lvl {required_room_level}'
+    else:
+        result = None
+    return result
+
+
+
+
+
+
+
 
 
 def _get_key_for_training_sort(training_info: dict, trainings_designs_data: dict) -> str:
@@ -220,24 +194,6 @@ def _get_parents(training_info: dict, trainings_designs_data: dict) -> list:
         return []
 
 
-def _get_stat_chances(stat_names: list, training_info: dict) -> list:
-    chances = []
-    max_chance_value = 0
-    result = []
-    for stat_name in stat_names:
-        stat_chance = _get_stat_chance(stat_name, training_info)
-        if stat_chance is not None:
-            chances.append(stat_chance)
-
-    if chances:
-        chance_values = [stat_chance[2] for stat_chance in chances]
-        max_chance_value = max(chance_values)
-        result = [_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance_value]
-        result.extend([_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance_value])
-
-    return result
-
-
 def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = False) -> (str, str, str, str):
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
@@ -255,11 +211,8 @@ def _get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, s
     return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
 
 
-def _get_room_names(rank: int) -> Tuple[str, str]:
-    if rank in lookups.TRAINING_RANK_ROOM_LOOKUP.keys():
-        return lookups.TRAINING_RANK_ROOM_LOOKUP[rank]
-    else:
-        return (None, None)
+def _get_room_names(training_room_type: int) -> Tuple[str, str]:
+    return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
 
 
 
@@ -279,3 +232,21 @@ trainings_designs_retriever = entity.EntityDesignsRetriever(
     cache_name='TrainingDesigns',
     sorted_key_function=_get_key_for_training_sort
 )
+
+
+__properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
+    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='TrainingDescription'),
+    'long': [
+        entity.EntityDesignDetailProperty('Duration', True, omit_if_none=True, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('Cost', True, omit_if_none=True, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Fatigue', True, omit_if_none=True, transform_function=__get_fatigue),
+        entity.EntityDesignDetailProperty('Training room', True, omit_if_none=True, transform_function=__get_training_room),
+        entity.EntityDesignDetailProperty('Research required', True, omit_if_none=True, transform_function=__get_required_research),
+        entity.EntityDesignDetailProperty('Consumable', True, omit_if_none=True, transform_function=__get_training_item_name),
+        entity.EntityDesignDetailProperty('Results', True, omit_if_none=True, transform_function=__get_stat_chances)
+    ],
+    'short': [
+        entity.EntityDesignDetailProperty('Level', False, omit_if_none=True, transform_function=__get_stat_chances),
+    ]
+}
