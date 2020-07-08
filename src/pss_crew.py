@@ -46,58 +46,6 @@ __prestige_to_cache_dict = {}
 
 # ---------- Classes ----------
 
-class LegacyCollectionDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, collection_design_info: dict, collection_chars_names: dict):
-        collection_perk = collection_design_info['EnhancementType']
-        collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
-        min_combo = collection_design_info['MinCombo']
-        max_combo = collection_design_info['MaxCombo']
-        base_enhancement_value = collection_design_info['BaseEnhancementValue']
-        step_enhancement_value = collection_design_info['StepEnhancementValue']
-
-        self.__characters: str = ', '.join(collection_chars_names)
-        self.__min_max_combo = f'{min_combo}...{max_combo}'
-        self.__enhancement = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
-
-        details_long: List[Tuple[str, str]] = [
-            ('Combo Min...Max', self.__min_max_combo),
-            (collection_perk, self.__enhancement),
-            ('Characters', self.__characters)
-        ]
-        details_short: List[Tuple[str, str, bool]] = [
-        ]
-
-        super().__init__(
-            name=collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=collection_design_info['CollectionDescription'],
-            details_long=details_long,
-            details_short=details_short,
-            hyperlink='https://pixelstarships.fandom.com/wiki/Category:Crew_Collections'
-        )
-
-
-    @property
-    def characters(self) -> str:
-        return self.__characters
-
-    @property
-    def min_max_combo(self) -> str:
-        return self.__min_max_combo
-
-    @property
-    def enhancement(self) -> str:
-        return self.__enhancement
-
-
-
-
-
-
-
-
-
-
-
 class LegacyPrestigeDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
         self.__char_design_name: str = char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -258,11 +206,19 @@ class LegacyPrestigeToDetails(LegacyPrestigeDetails):
 # ---------- Helper functions ----------
 
 def __create_character_design_details_from_info(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> entity.EntityDesignDetails:
-    return entity.EntityDesignDetails(character_design_info, __properties['title'], __properties['description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_designs_data, collections_designs_data, level=level)
+    return entity.EntityDesignDetails(character_design_info, __properties['character_title'], __properties['character_description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_designs_data, collections_designs_data, level=level)
 
 
-def __create_character_design_data_list_from_infos(character_design_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> List[entity.EntitiesDesignsData]:
-    return [__create_character_design_details_from_info(character_design_info, characters_designs_data, collections_designs_data, level) for character_design_info in character_design_infos]
+def __create_character_design_data_list_from_infos(characters_designs_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> List[entity.EntitiesDesignsData]:
+    return [__create_character_design_details_from_info(character_design_info, characters_designs_data, collections_designs_data, level) for character_design_info in characters_designs_infos]
+
+
+def __create_collection_design_details_from_info(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(collection_design_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_long'], __properties['collection_short'], __properties['collection_long'], collections_designs_data, characters_designs_data)
+
+
+def __create_collection_design_data_list_from_infos(collections_designs_infos: List[entity.EntityDesignInfo], collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData) -> List[entity.EntitiesDesignsData]:
+    return [__create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data) for collection_design_info in collections_designs_infos]
 
 
 
@@ -295,11 +251,43 @@ def __get_collection_name(character_design_info: entity.EntityDesignInfo, charac
     return result
 
 
+def __get_collection_character_names(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
+    result.sort()
+    return ', '.join(result)
+
+
+def __get_collection_hyperlink(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    return '<https://pixelstarships.fandom.com/wiki/Category:Crew_Collections>'
+
+
+def __get_collection_perk(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    enhancement_type = collection_design_info['EnhancementType']
+    result = lookups.COLLECTION_PERK_LOOKUP.get(enhancement_type, enhancement_type)
+    return result
+
+
+def __get_enhancement(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    base_enhancement_value = collection_design_info['BaseEnhancementValue']
+    step_enhancement_value = collection_design_info['StepEnhancementValue']
+    result = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
+    return result
+
+
 def __get_level(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
     if level is None:
         return None
     else:
         return str(level)
+
+
+def __get_min_max_combo(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    min_combo = collection_design_info['MinCombo']
+    max_combo = collection_design_info['MaxCombo']
+    result = f'{min_combo}...{max_combo}'
+    return result
 
 
 def __get_slots(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -405,13 +393,13 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
     pss_assert.valid_entity_name(collection_name)
 
     collections_designs_data = await collections_designs_retriever.get_data_dict3()
+    characters_designs_data = await characters_designs_retriever.get_data_dict3()
     collection_design_info = await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
 
     if collection_design_info is None:
         return [f'Could not find a collection named **{collection_name}**.'], False
     else:
-        collection_chars_names = await _get_collection_chars_designs_infos(collection_design_info)
-        collection_design_details = LegacyCollectionDesignDetails(collection_design_info, collection_chars_names)
+        collection_design_details = __create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data)
         if as_embed:
             return collection_design_details.get_details_as_embed(), True
         else:
@@ -608,8 +596,8 @@ collections_designs_retriever = entity.EntityDesignsRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
-    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription'),
+    'character_title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'character_description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription'),
     'character_long': [
         entity.EntityDesignDetailProperty('Level', True, omit_if_none=True, transform_function=__get_level),
         entity.EntityDesignDetailProperty('Rarity', True, entity_property_name='Rarity'),
@@ -633,6 +621,17 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_ability_stat),
         entity.EntityDesignDetailProperty('Collection', True, omit_if_none=True, transform_function=__get_collection_name)
+    ],
+    'collection_title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'collection_description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CollectionDescription'),
+    'collection_long': [
+        entity.EntityDesignDetailProperty('Combo Min...Max', True, omit_if_none=True, transform_function=__get_min_max_combo),
+        entity.EntityDesignDetailProperty(__get_collection_perk, True, omit_if_none=True, transform_function=__get_enhancement),
+        entity.EntityDesignDetailProperty('Characters', True, omit_if_none=True, transform_function=__get_collection_character_names),
+        entity.EntityDesignDetailProperty('Hyperlink', False, omit_if_none=True, transform_function=__get_collection_hyperlink)
+    ],
+    'collection_short': [
+        entity.EntityDesignDetailProperty('Perk', False, omit_if_none=True, transform_function=__get_collection_perk)
     ]
 }
 
