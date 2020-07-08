@@ -1,15 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
 import os
 import random
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import database as db
 import pss_core as core
+import pss_item as item
+import pss_crew as crew
+import pss_lookups as lookups
+import pss_research as research
+import pss_room as room
 import server_settings
 import utility as util
 
@@ -68,6 +73,13 @@ SALES_DAILY_INFO_FIELDS = {
 
 DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
 
+LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
+    'item': item.get_item_design_details_by_id,
+    'character': crew.get_char_design_details_by_id,
+    'research': research.get_research_design_details_by_id,
+    'room': room.get_room_design_details_by_id
+}
+
 
 
 
@@ -83,14 +95,22 @@ async def get_sales_details(utc_now: datetime = None) -> List[str]:
     if utc_now is None:
         utc_now = util.get_utcnow()
 
-    sales_infos = await db_get_sales_infos()
     result = []
-    for sales_info in sales_infos:
-        entity_id = sales_info['LimitedCatalogArgument']
-        entity_type = sales_info['LimitedCatalogType']
-        currency_type = sales_info['LimitedCatalogCurrencyType']
-        currency_amount = int(sales_info['LimitedCatalogCurrencyAmount'])
-        expiry_date = util.parse_pss_datetime(sales_info['LimitedCatalogExpiryDate'])
+    db_sales_infos = await db_get_sales_infos()
+    sales_infos = []
+    for db_sales_info in db_sales_infos:
+        expiry_date = util.parse_pss_datetime(db_sales_info['LimitedCatalogExpiryDate'])
+        if utc_now >= expiry_date:
+            entity_id = int(db_sales_info['LimitedCatalogArgument'])
+            entity_type = db_sales_info['LimitedCatalogType']
+            currency_type = lookups.CURRENCY_EMOJI_LOOKUP[db_sales_info['LimitedCatalogCurrencyType']]
+            currency_amount = int(db_sales_info['LimitedCatalogCurrencyAmount'])
+            expires_in = (utc_now - expiry_date).days
+            # Depending on entity type, get short details
+            # Add details and expires_in
+
+    sales_infos = sorted(sales_infos, key=lambda x: x['expires_in'])
+    # Create output like: {expires_in} - details
 
 
 
@@ -331,7 +351,7 @@ async def __update_db_daily_info_cache():
 
 async def __update_db_sales_info_cache():
     global __sales_info_cache
-    __sales_info_cache = await db_get_sales_info(skip_cache=True)
+    __sales_info_cache = await db_get_sales_infos(skip_cache=True)
 
 
 async def init():
