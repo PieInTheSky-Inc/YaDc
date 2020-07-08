@@ -29,84 +29,19 @@ RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
 
 
 
-# ---------- Classes ----------
-
-class LegacyResearchDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, research_info: dict, researches_designs_data: dict):
-        self.__cost: str = _get_costs_from_research_info(research_info)
-        self.__research_time_seconds: int = int(research_info['ResearchTime'])
-        self.__required_lab_level: str = research_info['RequiredLabLevel']
-        self.__required_research_design_id: str = research_info['RequiredResearchDesignId']
-
-        self.__research_timedelta: timedelta = timedelta(seconds=self.__research_time_seconds)
-        self.__duration: int = util.get_formatted_timedelta(self.__research_timedelta, include_relative_indicator=False)
-        if self.__required_research_design_id != '0':
-            self.__required_research_name = researches_designs_data[self.__required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-        else:
-            self.__required_research_name = None
-
-        details_long: List[Tuple[str, str]] = [
-            ('Cost', self.__cost),
-            ('Duration', self.__duration),
-            ('Required LAB lvl', self.__required_lab_level),
-            ('Required Research', self.__required_research_name)
-        ]
-        details_short: List[Tuple[str, str, bool]] = [
-            (None, self.__cost, False),
-            (None, self.__duration, False),
-            ('LAB lvl', self.__required_lab_level, False)
-        ]
-
-        super().__init__(
-            name=research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=research_info['ResearchDescription'],
-            details_long=details_long,
-            details_short=details_short
-        )
-
-
-    @property
-    def cost(self) -> str:
-        return self.__cost
-
-    @property
-    def duration(self) -> int:
-        return self.__duration
-
-    @property
-    def required_lab_level(self) -> str:
-        return self.__required_lab_level
-
-    @property
-    def required_research_design_id(self) -> str:
-        return list(self.__required_research_design_id)
-
-    @property
-    def required_research_name(self) -> str:
-        return self.__required_research_name
-
-
-
-
-
-
-
-
-
-
 # ---------- Helper functions ----------
 
-def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
-    if research_id != '0':
-        research_info = researches_designs_data[research_id]
-        return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    else:
-        return None
+def __create_research_design_data_from_info(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(research_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['short'], researches_designs_data)
 
 
-def _get_costs_from_research_info(research_info: dict) -> str:
-    bux_cost = int(research_info['StarbuxCost'])
-    gas_cost = int(research_info['GasCost'])
+def __create_research_design_data_list_from_infos(researches_designs_infos: List[entity.EntityDesignInfo], researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignDetails]:
+    return [__create_research_design_data_from_info(item_design_info, researches_designs_data) for item_design_info in researches_designs_infos]
+
+
+def __get_costs(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    bux_cost = int(research_design_info['StarbuxCost'])
+    gas_cost = int(research_design_info['GasCost'])
 
     if bux_cost:
         cost = bux_cost
@@ -119,11 +54,40 @@ def _get_costs_from_research_info(research_info: dict) -> str:
         currency = ''
 
     cost_reduced, cost_multiplier = util.get_reduced_number(cost)
-    if currency:
-        currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency]
+    currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP.get(currency, '')
+    result = f'{cost_reduced}{cost_multiplier} {currency_emoji}'
+    return result
+
+
+def __get_duration(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    seconds = int(research_design_info['ResearchTime'])
+    result = util.get_formatted_timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
+    return result
+
+
+def __get_required_research_name(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    required_research_design_id = research_design_info['RequiredResearchDesignId']
+    if required_research_design_id != '0':
+        result = researches_designs_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
     else:
-        currency_emoji = ''
-    return f'{cost_reduced}{cost_multiplier} {currency_emoji}'
+        result = None
+    return result
+
+
+
+
+
+
+
+
+
+
+def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
+    if research_id != '0':
+        research_info = researches_designs_data[research_id]
+        return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        return None
 
 
 def _get_parents(research_info: dict, researches_designs_data: dict) -> list:
@@ -146,13 +110,12 @@ def _get_parents(research_info: dict, researches_designs_data: dict) -> list:
 
 # ---------- Research info ----------
 
-def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> LegacyResearchDesignDetails:
+def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> entity.EntityDesignDetails:
     if research_design_id:
         if research_design_id and research_design_id in researches_designs_data.keys():
-            char_design_info = researches_designs_data[research_design_id]
-            char_design_details = LegacyResearchDesignDetails(char_design_info, researches_designs_data)
-            return char_design_details
-
+            research_design_info = researches_designs_data[research_design_id]
+            research_design_details = __create_research_design_data_from_info(research_design_info, researches_designs_data)
+            return research_design_details
     return None
 
 
@@ -161,7 +124,7 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
 
     researches_designs_data = await researches_designs_retriever.get_data_dict3()
     research_designs_infos = await researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
-    research_designs_details = [LegacyResearchDesignDetails(research_info, researches_designs_data) for research_info in research_designs_infos]
+    research_designs_details = __create_research_design_data_list_from_infos(research_designs_infos, researches_designs_data)
 
     if not research_designs_details:
         return [f'Could not find a research named **{research_name}**.'], False
@@ -172,12 +135,12 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
             return _get_research_infos_as_text(research_name, research_designs_details), True
 
 
-def _get_research_infos_as_embed(research_designs_details: List[LegacyResearchDesignDetails]) -> List[discord.Embed]:
+def _get_research_infos_as_embed(research_designs_details: List[entity.EntityDesignDetails]) -> List[discord.Embed]:
     result = [research_design_details.get_details_as_embed() for research_design_details in research_designs_details]
     return result
 
 
-def _get_research_infos_as_text(research_name: str, research_designs_details: List[LegacyResearchDesignDetails]) -> List[str]:
+def _get_research_infos_as_text(research_name: str, research_designs_details: List[entity.EntityDesignDetails]) -> List[str]:
     lines = [f'Research stats for **{research_name}**']
 
     research_infos_count = len(research_designs_details)
@@ -219,3 +182,19 @@ researches_designs_retriever = entity.EntityDesignsRetriever(
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='ResearchDesigns'
 )
+
+__properties = {
+    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='ResearchDescription'),
+    'long': [
+        entity.EntityDesignDetailProperty('Cost', True, omit_if_none=True, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Duration', True, omit_if_none=True, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('Required LAB lvl', True, omit_if_none=True, entity_property_name='RequiredLabLevel'),
+        entity.EntityDesignDetailProperty('Required Research', True, omit_if_none=True, transform_function=__get_required_research_name)
+    ],
+    'short': [
+        entity.EntityDesignDetailProperty('Cost', False, omit_if_none=True, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Duration', False, omit_if_none=True, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('LAB lvl', True, omit_if_none=True, entity_property_name='RequiredLabLevel')
+    ]
+}
