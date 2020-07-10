@@ -29,8 +29,6 @@ import utility as util
 EntityDesignInfo = Dict[str, 'EntityDesignInfo']
 EntitiesDesignsData = Dict[str, EntityDesignInfo]
 
-PropertyCallback = Callable[[EntityDesignInfo, EntitiesDesignsData], str]
-
 
 
 
