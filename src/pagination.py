@@ -1,8 +1,9 @@
 import asyncio
 import discord
 from discord.ext.commands import Context
+import inspect
 import math
-from typing import Callable, Dict, List, Tuple
+from typing import Awaitable, Callable, Dict, List, Tuple, Union
 
 import emojis
 import settings
@@ -11,13 +12,15 @@ import utility as util
 
 
 class Paginator():
-    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], str], use_pagination: bool, page_size: int = 5, timeout: float = 60.0):
-        self.__context = ctx
-        self.__search_term = search_term
-        self.__available_options = list(available_options)
-        self.__short_text_function = short_text_function
-        self.__page_size = page_size
-        self.__timeout = timeout
+    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]], use_pagination: bool, page_size: int = 5, timeout: float = 60.0):
+        self.__context: Context = ctx
+        self.__search_term: str = search_term
+        self.__available_options: List[dict] = list(available_options)
+        self.__short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]] = short_text_function
+        self.__retrieve_short_text_async: bool = inspect.isawaitable(short_text_function)
+        self.__page_size: int = page_size
+        self.__timeout: int = timeout
+        self.__use_emojis: bool = None
 
         self.__is_dm_channel = ctx.channel.type == discord.ChannelType.private
         if ctx.channel.type == discord.ChannelType.text and ctx.guild and ctx.guild.id:
@@ -33,14 +36,15 @@ class Paginator():
             self.__page_size = len(self.__available_options)
             self.__base_reaction_emojis = []
 
-        self.__pages = Paginator.__get_pages(self.__available_options, self.__page_size)
-        self.__page_count = len(self.__pages)
-        self.__current_page = []
-        self.__current_page_no = 0
+        self.__pages: List[List[dict]] = Paginator.__get_pages(self.__available_options, self.__page_size)
+        self.__page_count: int = len(self.__pages)
+        self.__current_page: list = []
+        self.__current_page_no: int = 0
         self.__current_options: Dict[str, dict] = {}
         self.__set_first_page()
         self.__message: discord.Message = None
-        self.__title = Paginator.__get_title(search_term)
+        self.__title: str = Paginator.__get_title(search_term)
+        self.__base_reaction_emojis: List[str] = []
         if self.__use_emojis:
             self.__base_reaction_emojis = Paginator.__get_base_reaction_emojis(self.__pages)
 
@@ -109,7 +113,7 @@ class Paginator():
 
 
     async def __post_current_page(self) -> None:
-        options_display = Paginator.__get_options_display(self.__current_page, self.__short_text_function)
+        options_display = await Paginator.__get_options_display(self.__current_page, self.__short_text_function, self.__retrieve_short_text_async)
         if self.__page_count > 1:
             page_no = f'page {self.__current_page_no}/{self.__page_count}'
         else:
@@ -215,11 +219,14 @@ class Paginator():
 
 
     @staticmethod
-    def __get_options_display(entity_infos: List[dict], short_text_function: Callable[[dict], str]) -> str:
+    async def __get_options_display(entity_infos: List[dict], short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]], retrieve_short_text_async: bool) -> str:
         options = []
         for i, entity_info in enumerate(entity_infos, 1):
             number = str(i)
-            short_text = short_text_function(entity_info)
+            if retrieve_short_text_async:
+                short_text = await short_text_function(entity_info)
+            else:
+                short_text = short_text_function(entity_info)
             option = f'{number.rjust(2)}: {short_text}'
             options.append(option)
         return '\n'.join(options)

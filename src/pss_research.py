@@ -130,17 +130,17 @@ async def get_research_infos_by_name(research_name: str, as_embed: bool = settin
         return [f'Could not find a research named **{research_name}**.'], False
     else:
         if as_embed:
-            return _get_research_infos_as_embed(research_designs_details), True
+            return (await _get_research_infos_as_embed(research_designs_details)), True
         else:
-            return _get_research_infos_as_text(research_name, research_designs_details), True
+            return (await _get_research_infos_as_text(research_name, research_designs_details)), True
 
 
-def _get_research_infos_as_embed(research_designs_details: List[entity.EntityDesignDetails]) -> List[discord.Embed]:
-    result = [research_design_details.get_details_as_embed() for research_design_details in research_designs_details]
+async def _get_research_infos_as_embed(research_designs_details: List[entity.EntityDesignDetails]) -> List[discord.Embed]:
+    result = [(await research_design_details.get_details_as_embed()) for research_design_details in research_designs_details]
     return result
 
 
-def _get_research_infos_as_text(research_name: str, research_designs_details: List[entity.EntityDesignDetails]) -> List[str]:
+async def _get_research_infos_as_text(research_name: str, research_designs_details: List[entity.EntityDesignDetails]) -> List[str]:
     lines = [f'Research stats for **{research_name}**']
 
     research_infos_count = len(research_designs_details)
@@ -148,9 +148,9 @@ def _get_research_infos_as_text(research_name: str, research_designs_details: Li
 
     for research_design_details in research_designs_details:
         if big_set:
-            lines.extend(research_design_details.get_details_as_text_short())
+            lines.extend(await research_design_details.get_details_as_text_short())
         else:
-            lines.extend(research_design_details.get_details_as_text_long())
+            lines.extend(await research_design_details.get_details_as_text_long())
             lines.append(settings.EMPTY_LINE)
 
     return lines

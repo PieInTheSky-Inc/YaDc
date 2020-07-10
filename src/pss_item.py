@@ -40,15 +40,15 @@ CANNOT_BE_SOLD = 'This item can\'t be sold'
 # ---------- Classes ----------
 
 class ItemDesignDetails(entity.EntityDesignDetails):
-    def get_details_as_text_long(self) -> List[str]:
+    async def get_details_as_text_long(self) -> List[str]:
         details = []
-        for display_name, display_value in self.details_long:
+        for display_name, display_value in (await self.__get_details_long()):
             if display_value:
                 if display_name:
                     details.append(f'{display_name} = {display_value}')
                 else:
                     details.append(display_value)
-        short_details = ''.join(self.get_details_as_text_short())
+        short_details = ''.join(await self.get_details_as_text_short())
         if details:
             bracketed_details = details.pop()
             if details:
@@ -60,8 +60,10 @@ class ItemDesignDetails(entity.EntityDesignDetails):
         return result
 
 
-    def get_details_as_text_short(self) -> List[str]:
-        result = [f'{self.prefix}{self.title} ({self.description})']
+    async def get_details_as_text_short(self) -> List[str]:
+        title = await self.__get_title()
+        description = await self.__get_description()
+        result = [f'{self.prefix}{title} ({description})']
         return result
 
 
@@ -105,8 +107,8 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
     return slot, stat
 
 
-def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
-    result = item_design_details.get_details_as_text_short()
+async def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
+    result = await item_design_details.get_details_as_text_short()
     return ''.join(result)
 
 
@@ -313,11 +315,14 @@ def _get_item_infos_by_name(item_name: str, items_designs_data: dict, return_bes
     return result
 
 
-def get_item_details_short_by_training_id(training_id: str, items_designs_data: entity.EntitiesDesignsData, return_best_match: bool = False) -> list:
+async def get_item_details_short_by_training_id(training_id: str, items_designs_data: entity.EntitiesDesignsData, return_best_match: bool = False) -> list:
     item_design_ids = core.get_ids_from_property_value(items_designs_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = [' '.join(get_item_design_details_by_id(item_design_id, items_designs_data).get_details_as_text_long()) for item_design_id in item_design_ids]
+    result = []
+    for item_design_id in item_design_ids:
+        item_design_details = get_item_design_details_by_id(item_design_id, items_designs_data)
+        result.append(await item_design_details.get_details_as_text_long())
 
-    return result
+    return [' '.join(result)]
 
 
 def _fix_item_name(item_name) -> str:
@@ -354,21 +359,21 @@ async def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE
         items_designs_details = __create_base_design_data_list_from_infos(item_infos, items_designs_data)
 
         if as_embed:
-            return _get_item_info_as_embed(item_name, items_designs_details), True
+            return await _get_item_info_as_embed(item_name, items_designs_details), True
         else:
-            return _get_item_info_as_text(item_name, items_designs_details), True
+            return await _get_item_info_as_text(item_name, items_designs_details), True
 
 
-def _get_item_info_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]) -> List[discord.Embed]:
-    result = [item_design_details.get_details_as_embed() for item_design_details in items_designs_details]
+async def _get_item_info_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]) -> List[discord.Embed]:
+    result = [(await item_design_details.get_details_as_embed()) for item_design_details in items_designs_details]
     return result
 
 
-def _get_item_info_as_text(item_name: str, items_designs_details: List[ItemDesignDetails]) -> list:
+async def _get_item_info_as_text(item_name: str, items_designs_details: List[ItemDesignDetails]) -> list:
     lines = [f'Item stats for **{item_name}**']
 
     for item_design_details in items_designs_details:
-        lines.extend(item_design_details.get_details_as_text_long())
+        lines.extend(await item_design_details.get_details_as_text_long())
 
     return lines
 
@@ -400,21 +405,21 @@ async def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
         items_designs_details = __create_price_design_data_list_from_infos(item_infos, items_designs_data)
 
         if as_embed:
-            return _get_item_price_as_embed(item_name, items_designs_details), True
+            return await _get_item_price_as_embed(item_name, items_designs_details), True
         else:
-            return _get_item_price_as_text(item_name, items_designs_details), True
+            return await _get_item_price_as_text(item_name, items_designs_details), True
 
 
-def _get_item_price_as_embed(item_name: str, items_designs_details: List[ItemDesignDetails]):
-    result = [item_design_details.get_details_as_embed() for item_design_details in items_designs_details]
+async def _get_item_price_as_embed(item_name: str, items_designs_details: List[discord.Embed]):
+    result = [(await item_design_details.get_details_as_embed()) for item_design_details in items_designs_details]
     return result
 
 
-def _get_item_price_as_text(item_name: str, items_designs_details) -> str:
+async def _get_item_price_as_text(item_name: str, items_designs_details) -> str:
     lines = []
     lines.append(f'**Item prices matching \'{item_name}\'**')
     for item_design_details in items_designs_details:
-        lines.extend(item_design_details.get_details_as_text_long())
+        lines.extend(await item_design_details.get_details_as_text_long())
 
     lines.append(settings.EMPTY_LINE)
     lines.append(' '.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE'), resources.get_resource('PRICE_NOTE')]))
@@ -615,9 +620,9 @@ async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMB
         return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
     else:
         if as_embed:
-            return _get_best_items_as_embed(stat_filter, best_items), True
+            return await _get_best_items_as_embed(stat_filter, best_items), True
         else:
-            return _get_best_items_as_text_all(stat_filter, best_items), True
+            return await _get_best_items_as_text_all(stat_filter, best_items), True
 
 
 def _get_best_items_designs(slot_filter: List[str], stat_filter: str, items_designs_data: dict) -> Dict[str, List[ItemDesignDetails]]:
@@ -649,7 +654,7 @@ def _get_best_items_error(slot: str, stat: str) -> list:
     return []
 
 
-def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[discord.Embed]:
+async def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[discord.Embed]:
     result = []
 
     for group_name in sorted(items_designs_details_groups.keys()):
@@ -657,11 +662,11 @@ def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, 
         slot = _get_pretty_slot(group_name)
         result.append(discord.Embed(title=_get_best_title(stat, slot)))
         for item_design_details in group:
-            result.extend(item_design_details.get_details_as_embed())
+            result.extend(await item_design_details.get_details_as_embed())
     return result
 
 
-def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[str]:
+async def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[str]:
     result = []
 
     group_names_sorted = sorted(items_designs_details_groups.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_ORDER_LOOKUP.index(x))
@@ -672,7 +677,7 @@ def _get_best_items_as_text_all(stat: str, items_designs_details_groups: Dict[st
         result.append(settings.EMPTY_LINE)
         result.append(_get_best_title(stat, slot))
         for item_design_details in group:
-            result.extend(item_design_details.get_details_as_text_long())
+            result.extend(await item_design_details.get_details_as_text_long())
 
     result.append(settings.EMPTY_LINE)
     result.append(resources.get_resource('PRICE_NOTE'))

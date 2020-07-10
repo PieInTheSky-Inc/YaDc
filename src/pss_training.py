@@ -48,25 +48,25 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
         return [f'Could not find a training named **{training_name}**.'], False
     else:
         if as_embed:
-            return _get_training_info_as_embed(training_name, trainings_details), True
+            return await _get_training_info_as_embed(training_name, trainings_details), True
         else:
-            return _get_training_info_as_text(training_name, trainings_details), True
+            return await _get_training_info_as_text(training_name, trainings_details), True
 
 
-def _get_training_info_as_embed(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> discord.Embed:
-    result = [training_details.get_details_as_embed() for training_details in trainings_details]
+async def _get_training_info_as_embed(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> discord.Embed:
+    result = [(await training_details.get_details_as_embed()) for training_details in trainings_details]
     return result
 
 
-def _get_training_info_as_text(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> List[str]:
+async def _get_training_info_as_text(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> List[str]:
     trainings_details_count = len(trainings_details)
 
     lines = [f'Training stats for **{training_name}**']
     for i, training_details in enumerate(trainings_details):
         if trainings_details_count > 2:
-            lines.extend(training_details.get_details_as_text_short())
+            lines.extend(await training_details.get_details_as_text_short())
         else:
-            lines.extend(training_details.get_details_as_text_long())
+            lines.extend(await training_details.get_details_as_text_long())
             if i < trainings_details_count - 1:
                 lines.append(settings.EMPTY_LINE)
 
@@ -146,9 +146,9 @@ def __get_stat_chances(training_design_info: entity.EntityDesignInfo, trainings_
     return ' '.join(result)
 
 
-def __get_training_item_name(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+async def __get_training_item_name(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     training_id = training_design_info[TRAINING_DESIGN_KEY_NAME]
-    result = item.get_item_details_short_by_training_id(training_id, items_designs_data)
+    result = await item.get_item_details_short_by_training_id(training_id, items_designs_data)
     return ''.join(result)
 
 

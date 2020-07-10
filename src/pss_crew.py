@@ -372,9 +372,9 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
         collections_designs_data = await collections_designs_retriever.get_data_dict3()
         character_design_details = __create_character_design_details_from_info(char_design_info, None, collections_designs_data, level)
         if as_embed:
-            return character_design_details.get_details_as_embed(), True
+            return (await character_design_details.get_details_as_embed()), True
         else:
-            return character_design_details.get_details_as_text_long(), True
+            return (await character_design_details.get_details_as_text_long()), True
 
 
 
@@ -413,14 +413,14 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
             else:
                 long_details = []
                 for collection_design_details in collections_designs_details:
-                    long_details.extend(collection_design_details.get_details_as_text_short())
+                    long_details.extend((await collection_design_details.get_details_as_text_short()))
                 long_details.append(__get_collection_hyperlink(None, None, None))
                 return long_details, True
         else:
             if as_embed:
-                return collections_designs_details[0].get_details_as_embed(), True
+                return (await collections_designs_details[0].get_details_as_embed()), True
             else:
-                return collections_designs_details[0].get_details_as_text_long(), True
+                return (await collections_designs_details[0].get_details_as_text_long()), True
 
 
 
