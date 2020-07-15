@@ -12,11 +12,11 @@ import utility as util
 
 
 class Paginator():
-    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]], use_pagination: bool, page_size: int = 5, timeout: float = 60.0):
+    def __init__(self, ctx: Context, search_term: str, available_options: List[dict], short_text_function: Callable[[dict], Union[str, Awaitable[str]]], use_pagination: bool, page_size: int = 5, timeout: float = 60.0):
         self.__context: Context = ctx
         self.__search_term: str = search_term
         self.__available_options: List[dict] = list(available_options)
-        self.__short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]] = short_text_function
+        self.__short_text_function: Callable[[dict], Union[str, Awaitable[str]]] = short_text_function
         self.__retrieve_short_text_async: bool = inspect.isawaitable(short_text_function)
         self.__page_size: int = page_size
         self.__timeout: int = timeout
@@ -219,7 +219,7 @@ class Paginator():
 
 
     @staticmethod
-    async def __get_options_display(entity_infos: List[dict], short_text_function: Union[Awaitable[[dict], str], Callable[[dict], str]], retrieve_short_text_async: bool) -> str:
+    async def __get_options_display(entity_infos: List[dict], short_text_function: Callable[[dict], Union[str, Awaitable[str]]], retrieve_short_text_async: bool) -> str:
         options = []
         for i, entity_info in enumerate(entity_infos, 1):
             number = str(i)

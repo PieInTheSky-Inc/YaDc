@@ -60,7 +60,7 @@ __DISPLAY_NAMES = {
     'build_requirement': {
         'default': 'Build requirement'
     },
-    'cap_per tick': {
+    'cap_per_tick': {
         'default': 'Cap per tick',
         'Lift': 'Speed',
         'Radar': 'Cloak reduction',
@@ -121,6 +121,9 @@ __DISPLAY_NAMES = {
         'Training': None,
         'Trap': 'Crew dmg',
         'Wall': 'Armor value'
+    },
+    'min_hull_lvl': {
+        'default': 'Min ship lvl'
     },
     'more_info': {
         'default': 'More info'
@@ -592,11 +595,11 @@ async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE
         return [f'Could not find a room named **{room_name}**.'], False
     else:
         items_designs_data = await item.items_designs_retriever.get_data_dict3()
-        rooms_designs_details = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data)
+        rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data)
         if as_embed:
-            return rooms_designs_details.get_entity_details_as_embed(), True
+            return await rooms_designs_details_collection.get_entity_details_as_embed(), True
         else:
-            return rooms_designs_details.get_entity_details_as_text(), True
+            return await rooms_designs_details_collection.get_entity_details_as_text(), True
 
 
 def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
@@ -651,7 +654,7 @@ async def init():
     __display_name_properties = __create_display_name_properties(__DISPLAY_NAMES)
 
     global __properties
-    __properties.extend({
+    __properties = {
         'title': entity.EntityDesignDetailProperty('Room name', False, omit_if_none=False, transform_function=__get_room_name),
         'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='RoomDescription'),
         'long': [
@@ -687,7 +690,7 @@ async def init():
             entity.EntityDesignDetailProperty('Enhanced by', True, entity_property_name='EnhancementType', transform_function=__get_value),
             entity.EntityDesignDetailProperty('Ship lvl', True, entity_property_name='MinShipLevel', transform_function=__get_value),
         ]
-    })
+    }
 
 
 def __create_display_name_properties(display_names: List[str]) -> Dict[str, entity.EntityDesignDetailProperty]:
@@ -696,7 +699,7 @@ def __create_display_name_properties(display_names: List[str]) -> Dict[str, enti
 
 
 def __create_display_name_property(display_name_key: str, display_names: Dict[str, Dict[str, str]]) -> entity.EntityDesignDetailProperty:
-    result = entity.EntityDesignDetailProperty(None, False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
+    result = entity.EntityDesignDetailProperty('', False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
     return result
 
 

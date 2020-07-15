@@ -42,13 +42,15 @@ CANNOT_BE_SOLD = 'This item can\'t be sold'
 class ItemDesignDetails(entity.EntityDesignDetails):
     async def get_details_as_text_long(self) -> List[str]:
         details = []
-        for display_name, display_value in (await self.__get_details_long()):
+        details_long = await self._get_details_long()
+        for display_name, display_value in details_long:
             if display_value:
                 if display_name:
                     details.append(f'{display_name} = {display_value}')
                 else:
                     details.append(display_value)
-        short_details = ''.join(await self.get_details_as_text_short())
+        details_short = await self.get_details_as_text_short()
+        short_details = ''.join(details_short)
         if details:
             bracketed_details = details.pop()
             if details:
@@ -61,8 +63,8 @@ class ItemDesignDetails(entity.EntityDesignDetails):
 
 
     async def get_details_as_text_short(self) -> List[str]:
-        title = await self.__get_title()
-        description = await self.__get_description()
+        title = await self._get_title()
+        description = await self._get_description()
         result = [f'{self.prefix}{title} ({description})']
         return result
 
