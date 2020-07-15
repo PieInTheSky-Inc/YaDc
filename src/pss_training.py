@@ -235,18 +235,18 @@ trainings_designs_retriever = entity.EntityDesignsRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
-    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='TrainingDescription'),
+    'title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='TrainingDescription'),
     'long': [
-        entity.EntityDesignDetailProperty('Duration', True, omit_if_none=True, transform_function=__get_duration),
-        entity.EntityDesignDetailProperty('Cost', True, omit_if_none=True, transform_function=__get_costs),
-        entity.EntityDesignDetailProperty('Fatigue', True, omit_if_none=True, transform_function=__get_fatigue),
-        entity.EntityDesignDetailProperty('Training room', True, omit_if_none=True, transform_function=__get_training_room),
-        entity.EntityDesignDetailProperty('Research required', True, omit_if_none=True, transform_function=__get_required_research),
-        entity.EntityDesignDetailProperty('Consumable', True, omit_if_none=True, transform_function=__get_training_item_name),
-        entity.EntityDesignDetailProperty('Results', True, omit_if_none=True, transform_function=__get_stat_chances)
+        entity.EntityDesignDetailProperty('Duration', True, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('Cost', True, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Fatigue', True, transform_function=__get_fatigue),
+        entity.EntityDesignDetailProperty('Training room', True, transform_function=__get_training_room),
+        entity.EntityDesignDetailProperty('Research required', True, transform_function=__get_required_research),
+        entity.EntityDesignDetailProperty('Consumable', True, transform_function=__get_training_item_name),
+        entity.EntityDesignDetailProperty('Results', True, transform_function=__get_stat_chances)
     ],
     'short': [
-        entity.EntityDesignDetailProperty('Level', False, omit_if_none=True, transform_function=__get_stat_chances),
+        entity.EntityDesignDetailProperty('Level', False, transform_function=__get_stat_chances),
     ]
 }

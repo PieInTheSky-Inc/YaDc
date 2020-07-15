@@ -721,8 +721,8 @@ items_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRet
     fix_data_delegate=_fix_item_name
 )
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
-    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, transform_function=__get_rarity),
+    'title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, transform_function=__get_rarity),
     'base': [
         entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
         entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot),

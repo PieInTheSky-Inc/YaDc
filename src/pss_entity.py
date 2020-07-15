@@ -6,7 +6,7 @@ from collections import namedtuple
 import discord
 import inspect
 import json
-from typing import Awaitable, Callable, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Awaitable, Callable, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
 from xml.etree import ElementTree
 
 
@@ -44,14 +44,14 @@ CalculatedEntityDesignDetailProperty = namedtuple('CalculatedEntityDesignDetailP
 
 
 class EntityDesignDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str], str], force_display_name: bool, omit_if_none: bool = False, entity_property_name: str = None, transform_function: Union[Awaitable[[EntityDesignInfo, EntitiesDesignsData, ...], str ],Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str]] = None, **transform_kwargs):
+    def __init__(self, display_name: Union[str, Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str], EntityDesignDetailProperty], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Awaitable[[str], str ], Awaitable[[EntityDesignInfo, EntitiesDesignsData, ...], str ], Callable[[str], str], Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str]] = None, **transform_kwargs):
         self.__display_name: str = None
         self.__display_name_function: Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str] = None
-        self.__display_name_function_async: Awaitable[[EntityDesignInfo, EntitiesDesignsData, ...], str] = None
+        self.__display_name_property: EntityDesignDetailProperty = None
         if isinstance(display_name, str):
             self.__display_name = display_name
-        elif inspect.isawaitable(display_name):
-            self.__display_name_function_async = display_name
+        elif isinstance(display_name, EntityDesignDetailProperty):
+            self.__display_name_property = display_name
         elif callable(display_name):
             self.__display_name_function = display_name
         else:
@@ -59,8 +59,6 @@ class EntityDesignDetailProperty(object):
 
         if not entity_property_name and not transform_function:
             raise Exception('Invalid paramaeters: either the \'entity_property_name\' or the \'transform_function\' need to be provided!')
-        elif entity_property_name and transform_function:
-            raise Exception('Invalid paramaeters: only \'entity_property_name\' or the \'transform_function\' must be provided!')
 
         self.__transform_function: Callable[[EntityDesignInfo, EntitiesDesignsData, ...], str] = None
         self.__transform_function_async: Awaitable[[EntityDesignInfo, EntitiesDesignsData, ...], str] = None
@@ -74,7 +72,8 @@ class EntityDesignDetailProperty(object):
 
         self.__entity_property_name: str = entity_property_name or None
         self.__force_display_name: bool = force_display_name
-        self.__use_transform_function: bool = not entity_property_name and transform_function
+        self.__use_transform_function: bool = self.__transform_function is not None or self.__transform_function_async is not None
+        self.__use_entity_property_name: bool = self.__entity_property_name is not None
         self.__kwargs: Dict[str, object] = transform_kwargs or {}
         self.__omit_if_none: bool = omit_if_none
 
@@ -110,17 +109,22 @@ class EntityDesignDetailProperty(object):
         elif self.__display_name_function:
             result = self.__display_name_function(entity_design_info, *entities_designs_data, **kwargs)
             return result
+        elif self.__display_name_property:
+            _, result = self.__display_name_property.get_full_property(entity_design_info, entities_designs_data, kwargs)
         else:
             return ''
 
 
     async def __get_value(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **kwargs) -> str:
         if self.__use_transform_function:
+            if self.__use_entity_property_name:
+                entity_property = entity_design_info[self.__entity_property_name]
+                kwargs['entity_property'] = entity_property
             if self.__transform_function:
                 result = self.__transform_function(entity_design_info, *entities_designs_data, **kwargs)
             elif self.__transform_function_async:
                 result = await self.__transform_function_async(entity_design_info, *entities_designs_data, **kwargs)
-        elif self.__entity_property_name:
+        elif self.__use_entity_property_name:
             result = entity_design_info[self.__entity_property_name]
         else:
             result = None
@@ -282,11 +286,14 @@ class EntityDesignDetails(object):
 
 
 class EntityDesignDetailsCollection():
-    def __init__(self, entity_ids: List[str], big_set_threshold: int = 3):
-        entities_designs_data = None
-        self.__entities_designs_details: List[EntityDesignDetails] = [entity_design_data for entity_design_data in entity_ids if entity_design_data in entities_designs_data.keys()]
-        self.__big_set_threshold: int = big_set_threshold
-        pass
+    def __init__(self, entities_designs_details: Iterable[EntityDesignDetails], big_set_threshold: int = 0, add_empty_lines: bool = True):
+        self.__entities_designs_details: List[EntityDesignDetails] = list(entities_designs_details)
+        self.__set_size: int = len(self.__entities_designs_details)
+        self.__big_set_threshold: int = big_set_threshold or 0
+        if self.__big_set_threshold < 0:
+            self.__big_set_threshold = 0
+        self.__is_big_set: bool = self.__big_set_threshold and self.__set_size > self.__big_set_threshold
+        self.__add_empty_lines: bool = add_empty_lines or False
 
 
     def get_entity_details_as_embed(self) -> List[discord.Embed]:
@@ -295,15 +302,15 @@ class EntityDesignDetailsCollection():
 
     async def get_entity_details_as_text(self) -> List[str]:
         result = []
-        set_size = len(self.__entities_designs_details)
-        entity_design_details: EntityDesignDetails
-        for i, entity_design_details in enumerate(self.__entities_designs_details, start=1):
-            if set_size > self.__big_set_threshold:
-                result.extend((await entity_design_details.get_details_as_text_short()))
+        for entity_design_details in self.__entities_designs_details:
+            if self.__is_big_set:
+                result.extend(await entity_design_details.get_details_as_text_short())
             else:
-                result.extend((await entity_design_details.get_details_as_text_long()))
-                if i < set_size:
+                result.extend(await entity_design_details.get_details_as_text_long())
+                if self.__add_empty_lines:
                     result.append(settings.EMPTY_LINE)
+        if result and self.__add_empty_lines:
+            result = result[:-1]
         return result
 
 

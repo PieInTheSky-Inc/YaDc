@@ -613,10 +613,10 @@ collections_designs_retriever = entity.EntityDesignsRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
-    'character_title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'character_description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription'),
+    'character_title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'character_description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='CharacterDesignDescription'),
     'character_long': [
-        entity.EntityDesignDetailProperty('Level', True, omit_if_none=True, transform_function=__get_level),
+        entity.EntityDesignDetailProperty('Level', True, transform_function=__get_level),
         entity.EntityDesignDetailProperty('Rarity', True, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Race', True, entity_property_name='RaceType'),
         entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name),
@@ -637,19 +637,19 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'character_short': [
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_ability_stat),
-        entity.EntityDesignDetailProperty('Collection', True, omit_if_none=True, transform_function=__get_collection_name)
+        entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name)
     ],
-    'collection_title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'collection_description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CollectionDescription'),
+    'collection_title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'collection_description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='CollectionDescription'),
     'collection_long': [
-        entity.EntityDesignDetailProperty('Combo Min...Max', True, omit_if_none=True, transform_function=__get_min_max_combo),
-        entity.EntityDesignDetailProperty(__get_collection_perk, True, omit_if_none=True, transform_function=__get_enhancement),
-        entity.EntityDesignDetailProperty(__get_members_count_display_name, True, omit_if_none=True, transform_function=__get_collection_member_names),
-        entity.EntityDesignDetailProperty('Hyperlink', False, omit_if_none=True, transform_function=__get_collection_hyperlink)
+        entity.EntityDesignDetailProperty('Combo Min...Max', True, transform_function=__get_min_max_combo),
+        entity.EntityDesignDetailProperty(__get_collection_perk, True, transform_function=__get_enhancement),
+        entity.EntityDesignDetailProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names),
+        entity.EntityDesignDetailProperty('Hyperlink', False, transform_function=__get_collection_hyperlink)
     ],
     'collection_short': [
-        entity.EntityDesignDetailProperty('Perk', False, omit_if_none=True, transform_function=__get_collection_perk),
-        entity.EntityDesignDetailProperty('Member count', False, omit_if_none=True, transform_function=__get_collection_member_count)
+        entity.EntityDesignDetailProperty('Perk', False, transform_function=__get_collection_perk),
+        entity.EntityDesignDetailProperty('Member count', False, transform_function=__get_collection_member_count)
     ]
 }
 

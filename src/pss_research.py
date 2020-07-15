@@ -184,17 +184,17 @@ researches_designs_retriever = entity.EntityDesignsRetriever(
 )
 
 __properties = {
-    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='ResearchDescription'),
+    'title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='ResearchDescription'),
     'long': [
-        entity.EntityDesignDetailProperty('Cost', True, omit_if_none=True, transform_function=__get_costs),
-        entity.EntityDesignDetailProperty('Duration', True, omit_if_none=True, transform_function=__get_duration),
-        entity.EntityDesignDetailProperty('Required LAB lvl', True, omit_if_none=True, entity_property_name='RequiredLabLevel'),
-        entity.EntityDesignDetailProperty('Required Research', True, omit_if_none=True, transform_function=__get_required_research_name)
+        entity.EntityDesignDetailProperty('Cost', True, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Duration', True, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('Required LAB lvl', True, entity_property_name='RequiredLabLevel'),
+        entity.EntityDesignDetailProperty('Required Research', True, transform_function=__get_required_research_name)
     ],
     'short': [
-        entity.EntityDesignDetailProperty('Cost', False, omit_if_none=True, transform_function=__get_costs),
-        entity.EntityDesignDetailProperty('Duration', False, omit_if_none=True, transform_function=__get_duration),
-        entity.EntityDesignDetailProperty('LAB lvl', True, omit_if_none=True, entity_property_name='RequiredLabLevel')
+        entity.EntityDesignDetailProperty('Cost', False, transform_function=__get_costs),
+        entity.EntityDesignDetailProperty('Duration', False, transform_function=__get_duration),
+        entity.EntityDesignDetailProperty('LAB lvl', True, entity_property_name='RequiredLabLevel')
     ]
 }
