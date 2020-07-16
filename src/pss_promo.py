@@ -281,7 +281,7 @@ def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
     result = []
 
     for entity_type in [key for key in rewards.keys() if rewards[key]]:
-        get_entity_design_details_function = REWARD_TYPE_GET_ENTITY_FUNCTIONS[entity_type]
+        get_entity_design_details_function = REWARD_TYPE_GET_ENTITY_FUNCTIONS[entity_type.lower()]
         if get_entity_design_details_function:
             intermediate = []
             for entity_id in rewards[entity_type]:

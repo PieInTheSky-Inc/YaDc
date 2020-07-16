@@ -67,6 +67,8 @@ SETTINGS_TABLE_NAME = 'settings'
 SETTINGS_TYPES = ['boolean', 'float', 'int', 'text', 'timestamputc']
 
 
+THROW_COMMAND_ERRORS = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
+
 TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=12)
 
 

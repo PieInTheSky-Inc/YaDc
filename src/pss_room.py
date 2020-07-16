@@ -250,9 +250,9 @@ def __get_capacity_per_tick(room_info: entity.EntityDesignInfo, rooms_designs_da
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
         capacity = room_info.get('Capacity')
-        if capacity:
+        if capacity and room_type:
             cap_per_tick = util.convert_ticks_to_seconds(int(capacity))
-            result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
+            result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type.lower()]}'
             return result
         else:
             return None
@@ -266,8 +266,8 @@ def __get_damage(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.
         print_percent = kwargs.get('print_percent')
         reload_time = room_info.get('ReloadTime')
         max_power = room_info.get('MaxSystemPower')
-        volley = room_info.get('MissileDesign.Volley')
-        volley_delay = room_info.get('MissileDesign.VolleyDelay')
+        volley = entity.get_property_from_entity_info(room_info, 'MissileDesign.Volley')
+        volley_delay = entity.get_property_from_entity_info(room_info, 'MissileDesign.VolleyDelay')
         result = __get_dmg_for_dmg_type(dmg, reload_time, max_power, volley, volley_delay, print_percent)
         return result
     else:
@@ -300,7 +300,7 @@ def __get_is_allowed_in_extension_grids(room_info: entity.EntityDesignInfo, room
 
 def __get_manufacture_rate(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        manufacture_rate = room_info.get('ManufactureRate')
+        manufacture_rate = int(room_info.get('ManufactureRate', '0'))
         if manufacture_rate:
             manufacture_rate = float(manufacture_rate)
             manufacture_speed = 1.0 / manufacture_rate
@@ -351,8 +351,8 @@ def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs
 
 def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        manufacture_capacity = kwargs.get('ManufactureCapacity')
-        manufacture_rate = kwargs.get('ManufactureRate')
+        manufacture_capacity = room_info.get('ManufactureCapacity')
+        manufacture_rate = int(room_info.get('ManufactureRate', '0'))
         if manufacture_capacity and not manufacture_rate:
             return __parse_value(manufacture_capacity)
         else:
@@ -363,7 +363,7 @@ def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: en
 
 def __get_reload_time(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        reload_time = room_info.get('ReloadTime')
+        reload_time = int(room_info.get('ReloadTime', '0'))
         if reload_time:
             reload_ticks = float(reload_time)
             reload_seconds = reload_ticks / 40.0
@@ -476,7 +476,7 @@ async def __get_wikia_link(room_info: entity.EntityDesignInfo, rooms_designs_dat
 
 def __is_allowed_room_type(room_info: entity.EntityDesignInfo, allowed_room_types: Iterable) -> bool:
     room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
-    return (not allowed_room_types) or (room_type not in allowed_room_types)
+    return (not allowed_room_types) or (room_type in allowed_room_types)
 
 
 
@@ -545,7 +545,21 @@ def __get_property_display_name(room_design_info: entity.EntityDesignInfo, rooms
     if display_name_key and room_type:
         display_name = display_names.get(display_name_key, {})
         if display_name:
-            result = display_names.get(room_type, display_names.get('default'))
+            result = display_names.get(room_type, display_name.get('default'))
+        else:
+            raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
+    return result
+
+
+def __get_min_ship_lvl_display_name(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    display_name_key = kwargs.get('display_name_key')
+    display_names = kwargs.get('entity_property')
+    room_type = room_design_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
+    result = None
+    if display_name_key and room_type:
+        display_name = display_names.get(display_name_key, {})
+        if display_name:
+            result = display_names.get(room_type, display_name.get('default'))
         else:
             raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
     return result
@@ -589,7 +603,7 @@ async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
     rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
-    rooms_designs_infos = await rooms_designs_retriever.get_entities_designs_infos_by_name(room_name, entities_designs_data=rooms_designs_data)
+    rooms_designs_infos = _get_room_infos(room_name, rooms_designs_data)
 
     if not rooms_designs_infos:
         return [f'Could not find a room named **{room_name}**.'], False
@@ -597,9 +611,32 @@ async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE
         items_designs_data = await item.items_designs_retriever.get_data_dict3()
         rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data)
         if as_embed:
-            return await rooms_designs_details_collection.get_entity_details_as_embed(), True
+            return (await rooms_designs_details_collection.get_entity_details_as_embed()), True
         else:
-            return await rooms_designs_details_collection.get_entity_details_as_text(), True
+            return (await rooms_designs_details_collection.get_entity_details_as_text()), True
+
+
+def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
+    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
+    if not room_design_ids:
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
+
+    result = [rooms_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_designs_data.keys()]
+    result = sorted(result, key=lambda entity_info: _get_key_for_room_sort(entity_info, rooms_designs_data))
+    return result
+
+
+def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[str]:
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
+    return results
+
+
+def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: entity.EntitiesDesignsData):
+    return_best_match = any(char.isdigit() for char in room_short_name)
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
+    if results and return_best_match:
+        results = [results[0]]
+    return results
 
 
 def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
@@ -674,7 +711,7 @@ async def init():
             entity.EntityDesignDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDesignDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type),
             entity.EntityDesignDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-            entity.EntityDesignDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='Cooldown', transform_function=__get_value_as_seconds),
+            entity.EntityDesignDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='CooldownTime', transform_function=__get_value_as_seconds),
             entity.EntityDesignDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit),
             entity.EntityDesignDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate),
             entity.EntityDesignDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),

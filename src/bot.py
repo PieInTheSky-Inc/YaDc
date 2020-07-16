@@ -171,34 +171,37 @@ async def on_shard_ready():
 async def on_command_error(ctx: commands.Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
-    error_message = str(err)
-    retry_after = None
-    if isinstance(err, commands.CommandOnCooldown):
-        retry_after = err.retry_after
-    elif isinstance(err, commands.CommandNotFound):
-        prefix = await server_settings.get_prefix(bot, ctx.message)
-        invoked_with = ctx.invoked_with.split(' ')[0]
-        commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
-        bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
-        error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(bot_commands)}?'
-    elif isinstance(err, commands.CheckFailure):
-        error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
-    elif isinstance(err, commands.CommandInvokeError):
-        if err.original:
-            if isinstance(err.original, pss_exception.Error):
-                error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+    if settings.THROW_COMMAND_ERRORS:
+        raise err
     else:
-        if not isinstance(err, commands.MissingRequiredArgument):
-            logging.getLogger().error(err, exc_info=True)
-        command_args = util.get_exact_args(ctx)
-        help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-        command = bot.get_command(help_args)
-        await ctx.send_help(command)
-    error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-    if retry_after:
-        await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
-    else:
-        await ctx.send(f'**Error**\n{error_message}')
+        error_message = str(err)
+        retry_after = None
+        if isinstance(err, commands.CommandOnCooldown):
+            retry_after = err.retry_after
+        elif isinstance(err, commands.CommandNotFound):
+            prefix = await server_settings.get_prefix(bot, ctx.message)
+            invoked_with = ctx.invoked_with.split(' ')[0]
+            commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
+            bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
+            error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(bot_commands)}?'
+        elif isinstance(err, commands.CheckFailure):
+            error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
+        elif isinstance(err, commands.CommandInvokeError):
+            if err.original:
+                if isinstance(err.original, pss_exception.Error):
+                    error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+        else:
+            if not isinstance(err, commands.MissingRequiredArgument):
+                logging.getLogger().error(err, exc_info=True)
+            command_args = util.get_exact_args(ctx)
+            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+            command = bot.get_command(help_args)
+            await ctx.send_help(command)
+        error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+        if retry_after:
+            await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+        else:
+            await ctx.send(f'**Error**\n{error_message}')
 
 
 @bot.event
