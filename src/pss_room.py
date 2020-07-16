@@ -265,7 +265,7 @@ def __get_capacity_per_tick(room_info: entity.EntityDesignInfo, rooms_designs_da
         capacity = room_info.get('Capacity')
         if entity.has_value(capacity) and room_type:
             cap_per_tick = util.convert_ticks_to_seconds(int(capacity))
-            result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type.lower()]}'
+            result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
             return result
         else:
             return None
