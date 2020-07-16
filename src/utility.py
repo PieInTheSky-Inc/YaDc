@@ -112,7 +112,7 @@ def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
     return result
 
 
-def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True, include_seconds: bool = True) -> str:
+def get_formatted_duration(total_seconds: int, include_relative_indicator: bool = True, include_seconds: bool = True, exclude_zeros: bool = False) -> str:
     is_past = total_seconds < 0
     if is_past:
         total_seconds = abs(total_seconds)
@@ -130,9 +130,9 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
     result_parts = []
     result = ''
     print_weeks = weeks > 0
-    print_days = print_weeks or days > 0
-    print_hours = print_days or hours > 0
-    print_minutes = print_hours or minutes > 0
+    print_days = (print_weeks and not exclude_zeros) or days > 0
+    print_hours = (print_days and not exclude_zeros) or hours > 0
+    print_minutes = (print_hours and not exclude_zeros) or minutes > 0
     if print_weeks:
         result_parts.append(f'{weeks:d}w')
     if print_days:
@@ -141,7 +141,7 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
         result_parts.append(f'{hours:d}h')
     if print_minutes:
         result_parts.append(f'{minutes:d}m')
-    if not result_parts or include_seconds:
+    if not result_parts or (include_seconds and (seconds > 0 or not exclude_zeros)):
         result_parts.append(f'{seconds:d}s')
 
     result = ' '.join(result_parts)

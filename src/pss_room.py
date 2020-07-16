@@ -12,6 +12,7 @@ import pss_core as core
 import pss_entity as entity
 import pss_item as item
 import pss_lookups as lookups
+import pss_research as research
 import settings
 import utility as util
 
@@ -66,6 +67,9 @@ __DISPLAY_NAMES = {
         'Radar': 'Cloak reduction',
         'Stealth': 'Cloak duration'
     },
+    'category': {
+        'default': 'Category'
+    },
     'cooldown': {
         'default': 'Cooldown'
     },
@@ -109,6 +113,7 @@ __DISPLAY_NAMES = {
         'default': 'Max storage',
         'AntiCraft': None,
         'Bedroom': 'Crew slots',
+        'Bridge': 'Escape modifier',
         'Command': 'Max AI lines',
         'Corridor': None,
         'Council': 'Borrow limit',
@@ -116,6 +121,7 @@ __DISPLAY_NAMES = {
         'Lift': None,
         'Medical': 'Crew HP healed',
         'Radar': None,
+        'Reactor': None,
         'Shield': 'Shield points',
         'Stealth': None,
         'Training': None,
@@ -151,6 +157,9 @@ __DISPLAY_NAMES = {
     'system_dmg': {
         'default': 'System dmg'
     },
+    'type': {
+        'default': 'Type'
+    },
     'wikia': {
         'default': 'Wikia'
     },
@@ -167,16 +176,16 @@ __DISPLAY_NAMES = {
 
 # ---------- Create EntityDesignDetails ----------
 
-def __create_room_design_details_from_info(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
-    return entity.EntityDesignDetails(room_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['long'], rooms_designs_data, items_designs_data)
+def __create_room_design_details_from_info(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(room_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['long'], rooms_designs_data, items_designs_data, researches_designs_data)
 
 
-def __create_room_design_details_list_from_infos(rooms_designs_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignDetails]:
-    return [__create_room_design_details_from_info(room_design_info, rooms_designs_data, items_designs_data) for room_design_info in rooms_designs_infos]
+def __create_room_design_details_list_from_infos(rooms_designs_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignDetails]:
+    return [__create_room_design_details_from_info(room_design_info, rooms_designs_data, items_designs_data, researches_designs_data) for room_design_info in rooms_designs_infos]
 
 
-def __create_rooms_designs_details_collection_from_infos(rooms_designs_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
-    rooms_designs_details = __create_room_design_details_list_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data)
+def __create_rooms_designs_details_collection_from_infos(rooms_designs_infos: List[entity.EntityDesignInfo], rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
+    rooms_designs_details = __create_room_design_details_list_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data, researches_designs_data)
     result = entity.EntityDesignDetailsCollection(rooms_designs_details, big_set_threshold=3)
     return result
 
@@ -191,10 +200,10 @@ def __create_rooms_designs_details_collection_from_infos(rooms_designs_infos: Li
 
 # ---------- Transformation functions ----------
 
-def __convert_room_flags(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __convert_room_flags(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         flags = room_info.get('Flags')
-        if flags:
+        if entity.has_value(flags):
             result = []
             flags = int(flags)
             if result:
@@ -207,7 +216,7 @@ def __convert_room_flags(room_info: entity.EntityDesignInfo, rooms_designs_data:
         return None
 
 
-def __get_build_cost(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_build_cost(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         price_string = room_info.get('PriceString')
         if price_string:
@@ -222,7 +231,7 @@ def __get_build_cost(room_info: entity.EntityDesignInfo, rooms_designs_data: ent
         return None
 
 
-def __get_build_requirement(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+async def __get_build_requirement(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         requirement_string = room_info.get('RequirementString')
         if requirement_string:
@@ -235,8 +244,12 @@ def __get_build_requirement(room_info: entity.EntityDesignInfo, rooms_designs_da
                 required_amount = '1'
 
             if required_type == 'item':
-                item_info = items_designs_data[required_id]
-                result = f'{required_amount}x {item_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}'
+                item_design_details = item.get_item_design_details_by_id(required_id, items_designs_data)
+                result = f'{required_amount}x ' + ''.join((await item_design_details.get_details_as_text_short()))
+                return result
+            elif required_type == 'research':
+                research_design_details = research.get_research_design_details_by_id(required_id, researches_designs_data)
+                result = ''.join(await research_design_details.get_details_as_text_short())
                 return result
             else:
                 return requirement_string
@@ -246,11 +259,11 @@ def __get_build_requirement(room_info: entity.EntityDesignInfo, rooms_designs_da
         return None
 
 
-def __get_capacity_per_tick(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_capacity_per_tick(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
         capacity = room_info.get('Capacity')
-        if capacity and room_type:
+        if entity.has_value(capacity) and room_type:
             cap_per_tick = util.convert_ticks_to_seconds(int(capacity))
             result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type.lower()]}'
             return result
@@ -260,7 +273,7 @@ def __get_capacity_per_tick(room_info: entity.EntityDesignInfo, rooms_designs_da
         return None
 
 
-def __get_damage(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_damage(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         dmg = kwargs.get('entity_property')
         print_percent = kwargs.get('print_percent')
@@ -274,10 +287,10 @@ def __get_damage(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.
         return None
 
 
-def __get_innate_armor(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_innate_armor(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         default_defense_bonus = room_info.get('DefaultDefenceBonus')
-        if default_defense_bonus and default_defense_bonus != '0':
+        if entity.has_value(default_defense_bonus):
             reduction = (1.0 - 1.0 / (1.0 + (float(default_defense_bonus) / 100.0))) * 100
             result = f'{default_defense_bonus} ({util.format_up_to_decimals(reduction, 2)}% dmg reduction)'
             return result
@@ -287,7 +300,7 @@ def __get_innate_armor(room_info: entity.EntityDesignInfo, rooms_designs_data: e
         return None
 
 
-def __get_is_allowed_in_extension_grids(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_is_allowed_in_extension_grids(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         supported_grid_types = int(room_info.get('SupportedGridTypes', '0'))
         if (supported_grid_types & 2) != 0:
@@ -298,10 +311,10 @@ def __get_is_allowed_in_extension_grids(room_info: entity.EntityDesignInfo, room
         return None
 
 
-def __get_manufacture_rate(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_manufacture_rate(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        manufacture_rate = int(room_info.get('ManufactureRate', '0'))
-        if manufacture_rate:
+        manufacture_rate = room_info.get('ManufactureRate')
+        if entity.has_value(manufacture_rate):
             manufacture_rate = float(manufacture_rate)
             manufacture_speed = 1.0 / manufacture_rate
             manufacture_rate_per_hour = manufacture_rate * 3600
@@ -313,25 +326,25 @@ def __get_manufacture_rate(room_info: entity.EntityDesignInfo, rooms_designs_dat
         return None
 
 
-def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         capacity = room_info.get('Capacity')
         manufacture_capacity = room_info.get('ManufactureCapacity')
         manufacture_rate = room_info.get('ManufactureRate')
         manufacture_type = room_info.get('ManufactureType')
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
-        if capacity and ((not manufacture_capacity or not manufacture_rate) or (room_type and room_type == 'Recycling')):
+        if entity.has_value(capacity) and ((not entity.has_value(manufacture_capacity) or not entity.has_value(manufacture_rate)) or (room_type and room_type == 'Recycling')):
             value = __parse_value(capacity)
-        elif manufacture_capacity and manufacture_rate:
+        elif entity.has_value(manufacture_capacity) and entity.has_value(manufacture_rate):
             value = __parse_value(manufacture_capacity)
         else:
             value = None
 
         if value:
-            print_type = (capacity and not manufacture_rate) or (manufacture_capacity and manufacture_rate)
+            print_type = (entity.has_value(capacity) and not entity.has_value(manufacture_rate)) or (entity.has_value(manufacture_capacity) and entity.has_value(manufacture_rate))
             if print_type:
                 construction_type = ''
-                if manufacture_type:
+                if entity.has_value(manufacture_type):
                     lower = manufacture_type.lower()
                     if lower in lookups.CURRENCY_EMOJI_LOOKUP.keys():
                         construction_type = lookups.CURRENCY_EMOJI_LOOKUP[lower]
@@ -349,11 +362,11 @@ def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs
         return None
 
 
-def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         manufacture_capacity = room_info.get('ManufactureCapacity')
-        manufacture_rate = int(room_info.get('ManufactureRate', '0'))
-        if manufacture_capacity and not manufacture_rate:
+        manufacture_rate = room_info.get('ManufactureRate')
+        if entity.has_value(manufacture_capacity) and not entity.has_value(manufacture_rate):
             return __parse_value(manufacture_capacity)
         else:
             return None
@@ -361,10 +374,10 @@ def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: en
         return None
 
 
-def __get_reload_time(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_reload_time(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        reload_time = int(room_info.get('ReloadTime', '0'))
-        if reload_time:
+        reload_time = room_info.get('ReloadTime')
+        if entity.has_value(reload_time):
             reload_ticks = float(reload_time)
             reload_seconds = reload_ticks / 40.0
             reload_speed = 60.0 / reload_seconds
@@ -376,25 +389,38 @@ def __get_reload_time(room_info: entity.EntityDesignInfo, rooms_designs_data: en
         return None
 
 
-def __get_room_name(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_room_name(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
     if room_short_name:
         short_name = room_short_name.split(':')[0]
     else:
         short_name = None
+    result = room_name
     if short_name:
-        result = f'{room_name} [{short_name}]'
-    else:
-        result = room_name
+        result += f' [{short_name}]'
     return result
 
 
-def __get_shots_fired(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_room_name(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    room_name = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    result = room_name
+
+    room_short_name = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
+    if room_short_name:
+        short_name = room_short_name.split(':')[0]
+    else:
+        short_name = None
+    if short_name:
+        result += f' [{short_name}]'
+    return result
+
+
+def __get_shots_fired(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
-        volley = room_info.get('MissileDesign.Volley')
-        volley_delay = room_info.get('MissileDesign.VolleyDelay')
-        if volley and volley != '1':
+        volley = entity.get_property_from_entity_info(room_info, 'MissileDesign.Volley')
+        volley_delay = entity.get_property_from_entity_info(room_info, 'MissileDesign.VolleyDelay')
+        if entity.has_value(volley) and volley != '1':
             volley = int(volley)
             volley_delay = int(volley_delay)
             volley_delay_seconds = util.format_up_to_decimals(util.convert_ticks_to_seconds(volley_delay), 3)
@@ -406,7 +432,7 @@ def __get_shots_fired(room_info: entity.EntityDesignInfo, rooms_designs_data: en
         return None
 
 
-def __get_size(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_size(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         columns = room_info.get('Columns')
         rows = room_info.get('Rows')
@@ -419,7 +445,7 @@ def __get_size(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.En
         return None
 
 
-def __get_value(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_value(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         value = kwargs.get('entity_property')
         if value:
@@ -432,11 +458,11 @@ def __get_value(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.E
         return None
 
 
-def __get_value_as_duration(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_value_as_duration(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         value = kwargs.get('entity_property')
         if value:
-            result = util.get_formatted_duration(int(value), include_relative_indicator=False)
+            result = util.get_formatted_duration(int(value), include_relative_indicator=False, exclude_zeros=True)
             return result
         else:
             return None
@@ -444,7 +470,7 @@ def __get_value_as_duration(room_info: entity.EntityDesignInfo, rooms_designs_da
         return None
 
 
-def __get_value_as_seconds(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+def __get_value_as_seconds(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         value = kwargs.get('entity_property')
         if value:
@@ -457,7 +483,7 @@ def __get_value_as_seconds(room_info: entity.EntityDesignInfo, rooms_designs_dat
         return None
 
 
-async def __get_wikia_link(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+async def __get_wikia_link(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
         room_name = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
         if room_name:
@@ -545,7 +571,7 @@ def __get_property_display_name(room_design_info: entity.EntityDesignInfo, rooms
     if display_name_key and room_type:
         display_name = display_names.get(display_name_key, {})
         if display_name:
-            result = display_names.get(room_type, display_name.get('default'))
+            result = display_name.get(room_type, display_name.get('default'))
         else:
             raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
     return result
@@ -591,9 +617,9 @@ def __parse_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PR
 
 # ---------- Room info ----------
 
-def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
     if room_design_id and room_design_id in rooms_designs_data:
-        result = __create_room_design_details_from_info(rooms_designs_data[room_design_id], rooms_designs_data, items_designs_data)
+        result = __create_room_design_details_from_info(rooms_designs_data[room_design_id], rooms_designs_data, items_designs_data, researches_designs_data)
     else:
         result = None
     return result
@@ -609,7 +635,8 @@ async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE
         return [f'Could not find a room named **{room_name}**.'], False
     else:
         items_designs_data = await item.items_designs_retriever.get_data_dict3()
-        rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data)
+        researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
+        rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data, researches_designs_data)
         if as_embed:
             return (await rooms_designs_details_collection.get_entity_details_as_embed()), True
         else:
@@ -640,12 +667,14 @@ def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs
 
 
 def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
-    result = ''
     parent_infos = __get_parents(room_info, rooms_designs_data)
-    if parent_infos:
-        for parent_info in parent_infos:
-            result += parent_info[ROOM_DESIGN_KEY_NAME].zfill(4)
-    result += room_info[ROOM_DESIGN_KEY_NAME].zfill(4)
+    result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
+    if result:
+        result = result.split(':')[0]
+    else:
+        result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)[0:3]
+    result.ljust(3)
+    result += ''.join([parent_info[ROOM_DESIGN_KEY_NAME].zfill(4) for parent_info in parent_infos])
     return result
 
 
@@ -695,6 +724,8 @@ async def init():
         'title': entity.EntityDesignDetailProperty('Room name', False, omit_if_none=False, transform_function=__get_room_name),
         'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='RoomDescription'),
         'long': [
+            entity.EntityDesignDetailProperty(__display_name_properties['category'], True, entity_property_name='CategoryType', transform_function=__get_value),
+            entity.EntityDesignDetailProperty(__display_name_properties['type'], True, entity_property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
             entity.EntityDesignDetailProperty(__display_name_properties['size'], True, transform_function=__get_size),
             entity.EntityDesignDetailProperty(__display_name_properties['max_power_used'], True, entity_property_name='MaxSystemPower', transform_function=__get_value),
             entity.EntityDesignDetailProperty(__display_name_properties['power_generated'], True, entity_property_name='MaxPowerGenerated', transform_function=__get_value),
@@ -724,6 +755,7 @@ async def init():
             entity.EntityDesignDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
         ],
         'short': [
+            entity.EntityDesignDetailProperty('Room Type', False, entity_property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
             entity.EntityDesignDetailProperty('Enhanced by', True, entity_property_name='EnhancementType', transform_function=__get_value),
             entity.EntityDesignDetailProperty('Ship lvl', True, entity_property_name='MinShipLevel', transform_function=__get_value),
         ]
@@ -736,7 +768,7 @@ def __create_display_name_properties(display_names: List[str]) -> Dict[str, enti
 
 
 def __create_display_name_property(display_name_key: str, display_names: Dict[str, Dict[str, str]]) -> entity.EntityDesignDetailProperty:
-    result = entity.EntityDesignDetailProperty('', False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
+    result = entity.EntityDesignDetailProperty(display_name_key, False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
     return result
 
 

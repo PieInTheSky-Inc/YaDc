@@ -95,12 +95,12 @@ class EntityDesignDetailProperty(object):
 
     async def get_full_property(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **additional_kwargs) -> CalculatedEntityDesignDetailProperty:
         kwargs = {**self.__kwargs, **additional_kwargs}
-        if self.__force_display_name:
+        if self.force_display_name:
             display_name = await self.__get_display_name(entity_design_info, *entities_designs_data, **kwargs)
         else:
             display_name = None
         value = await self.__get_value(entity_design_info, *entities_designs_data, **kwargs)
-        if self.__omit_if_none and not value:
+        if self.__omit_if_none and not value or not display_name and self.force_display_name:
             return CalculatedEntityDesignDetailProperty(None, None)
         return CalculatedEntityDesignDetailProperty(display_name, value)
 
@@ -437,14 +437,6 @@ class EntityDesignsRetriever:
 
 # ---------- Helper ----------
 
-def group_entities_designs_details(entities_designs_details: List[EntityDesignDetails], property_name: str) -> Dict[object, List[EntityDesignDetails]]:
-    result = {}
-    for entity_design_details in entities_designs_details:
-        key = entity_design_details.entity_design_info[property_name]
-        result.setdefault(key, []).append(entity_design_details)
-    return result
-
-
 def get_property_from_entity_info(entity_info: EntityDesignInfo, entity_property_name: str) -> object:
     while '.' in entity_property_name:
         split_parameter = entity_property_name.split('.')
@@ -461,6 +453,18 @@ def get_property_from_entity_info(entity_info: EntityDesignInfo, entity_property
             return None
         else:
             return result
+
+
+def group_entities_designs_details(entities_designs_details: List[EntityDesignDetails], property_name: str) -> Dict[object, List[EntityDesignDetails]]:
+    result = {}
+    for entity_design_details in entities_designs_details:
+        key = entity_design_details.entity_design_info[property_name]
+        result.setdefault(key, []).append(entity_design_details)
+    return result
+
+
+def has_value(entity_property: str) -> bool:
+    return entity_property and entity_property != '0' and entity_property.lower() != 'none'
 
 
 
