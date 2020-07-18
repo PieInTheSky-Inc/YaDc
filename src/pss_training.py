@@ -16,6 +16,15 @@ import pss_research as research
 import settings
 import utility as util
 
+
+
+
+
+
+
+
+
+
 # ---------- Constants ----------
 
 TRAINING_DESIGN_BASE_PATH = 'TrainingService/ListAllTrainingDesigns2?languageKey=en'
@@ -40,37 +49,18 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
 
     trainings_designs_data = await trainings_designs_retriever.get_data_dict3()
     training_infos = await trainings_designs_retriever.get_entities_designs_infos_by_name(training_name, trainings_designs_data)
-    items_designs_data = await item.items_designs_retriever.get_data_dict3()
-    researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
-    trainings_details = __create_training_design_details_list_from_infos(training_infos, trainings_designs_data, items_designs_data, researches_designs_data)
 
     if not training_infos:
         return [f'Could not find a training named **{training_name}**.'], False
     else:
+        items_designs_data = await item.items_designs_retriever.get_data_dict3()
+        researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
+        trainings_details_collection = __create_trainings_designs_details_collection_from_infos(training_infos, trainings_designs_data, items_designs_data, researches_designs_data)
+
         if as_embed:
-            return await _get_training_info_as_embed(training_name, trainings_details), True
+            return (await trainings_details_collection.get_entity_details_as_embed()), True
         else:
-            return await _get_training_info_as_text(training_name, trainings_details), True
-
-
-async def _get_training_info_as_embed(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> discord.Embed:
-    result = [(await training_details.get_details_as_embed()) for training_details in trainings_details]
-    return result
-
-
-async def _get_training_info_as_text(training_name: str, trainings_details: List[entity.EntityDesignDetails]) -> List[str]:
-    trainings_details_count = len(trainings_details)
-
-    lines = [f'Training stats for **{training_name}**']
-    for i, training_details in enumerate(trainings_details):
-        if trainings_details_count > 2:
-            lines.extend(await training_details.get_details_as_text_short())
-        else:
-            lines.extend(await training_details.get_details_as_text_long())
-            if i < trainings_details_count - 1:
-                lines.append(settings.EMPTY_LINE)
-
-    return lines
+            return (await trainings_details_collection.get_entity_details_as_text()), True
 
 
 
@@ -81,7 +71,7 @@ async def _get_training_info_as_text(training_name: str, trainings_details: List
 
 
 
-# ---------- Helper functions ----------
+# ---------- Create EntityDesignDetails ----------
 
 def __create_training_design_details_from_info(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
     return entity.EntityDesignDetails(training_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['long'], trainings_designs_data, items_designs_data, researches_designs_data)
@@ -90,6 +80,22 @@ def __create_training_design_details_from_info(training_design_info: entity.Enti
 def __create_training_design_details_list_from_infos(trainings_designs_infos: List[entity.EntityDesignInfo], trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntitiesDesignsData]:
     return [__create_training_design_details_from_info(training_design_info, trainings_designs_data, items_designs_data, researches_designs_data) for training_design_info in trainings_designs_infos]
 
+
+def __create_trainings_designs_details_collection_from_infos(trainings_designs_infos: List[entity.EntityDesignInfo], trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
+    trainings_designs_details = __create_training_design_details_list_from_infos(trainings_designs_infos, trainings_designs_data, items_designs_data, researches_designs_data)
+    result = entity.EntityDesignDetailsCollection(trainings_designs_details, big_set_threshold=3)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
 
 def __get_costs(training_design_info: entity.EntityDesignInfo, trainings_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     cost = int(training_design_info['MineralCost'])
@@ -170,6 +176,9 @@ def __get_training_room(training_design_info: entity.EntityDesignInfo, trainings
 
 
 
+
+# ---------- Helper functions ----------
+
 def _get_key_for_training_sort(training_info: dict, trainings_designs_data: dict) -> str:
     result = ''
     parent_infos = _get_parents(training_info, trainings_designs_data)
@@ -194,6 +203,10 @@ def _get_parents(training_info: dict, trainings_designs_data: dict) -> list:
         return []
 
 
+def _get_room_names(training_room_type: int) -> Tuple[str, str]:
+    return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
+
+
 def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = False) -> (str, str, str, str):
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
@@ -209,10 +222,6 @@ def _get_stat_chance(stat_name: str, training_info: dict, guaranteed: bool = Fal
 
 def _get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str) -> str:
     return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
-
-
-def _get_room_names(training_room_type: int) -> Tuple[str, str]:
-    return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
 
 
 

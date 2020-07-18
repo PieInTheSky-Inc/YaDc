@@ -14,6 +14,14 @@ import settings
 import utility as util
 
 
+
+
+
+
+
+
+
+
 # ---------- Constants ----------
 
 RESEARCH_DESIGN_BASE_PATH = 'ResearchService/ListAllResearchDesigns2?languageKey=en'
@@ -29,15 +37,76 @@ RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
 
 
 
-# ---------- Helper functions ----------
+# ---------- Research info ----------
+
+def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> entity.EntityDesignDetails:
+    if research_design_id:
+        if research_design_id and research_design_id in researches_designs_data.keys():
+            research_design_info = researches_designs_data[research_design_id]
+            research_design_details = __create_research_design_data_from_info(research_design_info, researches_designs_data)
+            return research_design_details
+    return None
+
+
+async def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
+    pss_assert.valid_entity_name(research_name)
+
+    researches_designs_data = await researches_designs_retriever.get_data_dict3()
+    researches_designs_infos = await researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
+
+    if not researches_designs_infos:
+        return [f'Could not find a research named **{research_name}**.'], False
+    else:
+        researches_designs_details = __create_researches_designs_details_collection_from_infos(researches_designs_infos, researches_designs_data)
+        if as_embed:
+            return (await researches_designs_details.get_entity_details_as_embed()), True
+        else:
+            return (await researches_designs_details.get_entity_details_as_text()), True
+
+
+def _get_key_for_research_sort(research_info: dict, researches_designs_data: dict) -> str:
+    result = ''
+    parent_infos = _get_parents(research_info, researches_designs_data)
+    if parent_infos:
+        for parent_info in parent_infos:
+            result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
+    result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Create EntityDesignDetails ----------
 
 def __create_research_design_data_from_info(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
     return entity.EntityDesignDetails(research_design_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['short'], researches_designs_data)
 
 
-def __create_research_design_data_list_from_infos(researches_designs_infos: List[entity.EntityDesignInfo], researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignDetails]:
+def __create_researches_designs_data_list_from_infos(researches_designs_infos: List[entity.EntityDesignInfo], researches_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignDetails]:
     return [__create_research_design_data_from_info(item_design_info, researches_designs_data) for item_design_info in researches_designs_infos]
 
+
+def __create_researches_designs_details_collection_from_infos(researches_designs_infos: List[entity.EntityDesignInfo], researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
+    researches_designs_details = __create_researches_designs_data_list_from_infos(researches_designs_infos, researches_designs_data)
+    result = entity.EntityDesignDetailsCollection(researches_designs_details, big_set_threshold=3)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
 
 def __get_costs(research_design_info: entity.EntityDesignInfo, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     bux_cost = int(research_design_info['StarbuxCost'])
@@ -82,6 +151,8 @@ def __get_required_research_name(research_design_info: entity.EntityDesignInfo, 
 
 
 
+# ---------- Helper functions ----------
+
 def get_research_name_from_id(research_id: str, researches_designs_data: dict) -> str:
     if research_id != '0':
         research_info = researches_designs_data[research_id]
@@ -102,68 +173,6 @@ def _get_parents(research_info: dict, researches_designs_data: dict) -> list:
         return result
     else:
         return []
-
-
-
-
-
-
-# ---------- Research info ----------
-
-def get_research_design_details_by_id(research_design_id: str, researches_designs_data: dict) -> entity.EntityDesignDetails:
-    if research_design_id:
-        if research_design_id and research_design_id in researches_designs_data.keys():
-            research_design_info = researches_designs_data[research_design_id]
-            research_design_details = __create_research_design_data_from_info(research_design_info, researches_designs_data)
-            return research_design_details
-    return None
-
-
-async def get_research_infos_by_name(research_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
-    pss_assert.valid_entity_name(research_name)
-
-    researches_designs_data = await researches_designs_retriever.get_data_dict3()
-    research_designs_infos = await researches_designs_retriever.get_entities_designs_infos_by_name(research_name, entities_designs_data=researches_designs_data, sorted_key_function=_get_key_for_research_sort)
-    research_designs_details = __create_research_design_data_list_from_infos(research_designs_infos, researches_designs_data)
-
-    if not research_designs_details:
-        return [f'Could not find a research named **{research_name}**.'], False
-    else:
-        if as_embed:
-            return (await _get_research_infos_as_embed(research_designs_details)), True
-        else:
-            return (await _get_research_infos_as_text(research_name, research_designs_details)), True
-
-
-async def _get_research_infos_as_embed(research_designs_details: List[entity.EntityDesignDetails]) -> List[discord.Embed]:
-    result = [(await research_design_details.get_details_as_embed()) for research_design_details in research_designs_details]
-    return result
-
-
-async def _get_research_infos_as_text(research_name: str, research_designs_details: List[entity.EntityDesignDetails]) -> List[str]:
-    lines = [f'Research stats for **{research_name}**']
-
-    research_infos_count = len(research_designs_details)
-    big_set = research_infos_count > 3
-
-    for research_design_details in research_designs_details:
-        if big_set:
-            lines.extend(await research_design_details.get_details_as_text_short())
-        else:
-            lines.extend(await research_design_details.get_details_as_text_long())
-            lines.append(settings.EMPTY_LINE)
-
-    return lines
-
-
-def _get_key_for_research_sort(research_info: dict, researches_designs_data: dict) -> str:
-    result = ''
-    parent_infos = _get_parents(research_info, researches_designs_data)
-    if parent_infos:
-        for parent_info in parent_infos:
-            result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
-    result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
-    return result
 
 
 

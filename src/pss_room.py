@@ -174,6 +174,77 @@ __DISPLAY_NAMES = {
 
 
 
+# ---------- Room info ----------
+
+def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    if room_design_id and room_design_id in rooms_designs_data:
+        result = __create_room_design_details_from_info(rooms_designs_data[room_design_id], rooms_designs_data, items_designs_data, researches_designs_data)
+    else:
+        result = None
+    return result
+
+
+async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], discord.Embed]:
+    pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
+
+    rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
+    rooms_designs_infos = _get_room_infos(room_name, rooms_designs_data)
+
+    if not rooms_designs_infos:
+        return [f'Could not find a room named **{room_name}**.'], False
+    else:
+        items_designs_data = await item.items_designs_retriever.get_data_dict3()
+        researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
+        rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data, researches_designs_data)
+        if as_embed:
+            return (await rooms_designs_details_collection.get_entity_details_as_embed()), True
+        else:
+            return (await rooms_designs_details_collection.get_entity_details_as_text()), True
+
+
+def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
+    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
+    if not room_design_ids:
+        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
+
+    result = [rooms_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_designs_data.keys()]
+    result = sorted(result, key=lambda entity_info: _get_key_for_room_sort(entity_info, rooms_designs_data))
+    return result
+
+
+def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[str]:
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
+    return results
+
+
+def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: entity.EntitiesDesignsData):
+    return_best_match = any(char.isdigit() for char in room_short_name)
+    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
+    if results and return_best_match:
+        results = [results[0]]
+    return results
+
+
+def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
+    parent_infos = __get_parents(room_info, rooms_designs_data)
+    result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
+    if result:
+        result = result.split(':')[0]
+    else:
+        result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)[0:3]
+    result.ljust(3)
+    result += ''.join([parent_info[ROOM_DESIGN_KEY_NAME].zfill(4) for parent_info in parent_infos])
+    return result
+
+
+
+
+
+
+
+
+
+
 # ---------- Create EntityDesignDetails ----------
 
 def __create_room_design_details_from_info(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
@@ -615,77 +686,6 @@ def __parse_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PR
 
 
 
-# ---------- Room info ----------
-
-def get_room_design_details_by_id(room_design_id: str, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
-    if room_design_id and room_design_id in rooms_designs_data:
-        result = __create_room_design_details_from_info(rooms_designs_data[room_design_id], rooms_designs_data, items_designs_data, researches_designs_data)
-    else:
-        result = None
-    return result
-
-
-async def get_room_details_by_name(room_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], discord.Embed]:
-    pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
-
-    rooms_designs_data = await rooms_designs_retriever.get_data_dict3()
-    rooms_designs_infos = _get_room_infos(room_name, rooms_designs_data)
-
-    if not rooms_designs_infos:
-        return [f'Could not find a room named **{room_name}**.'], False
-    else:
-        items_designs_data = await item.items_designs_retriever.get_data_dict3()
-        researches_designs_data = await research.researches_designs_retriever.get_data_dict3()
-        rooms_designs_details_collection = __create_rooms_designs_details_collection_from_infos(rooms_designs_infos, rooms_designs_data, items_designs_data, researches_designs_data)
-        if as_embed:
-            return (await rooms_designs_details_collection.get_entity_details_as_embed()), True
-        else:
-            return (await rooms_designs_details_collection.get_entity_details_as_text()), True
-
-
-def _get_room_infos(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
-    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_designs_data)
-    if not room_design_ids:
-        room_design_ids = _get_room_design_ids_from_room_shortname(room_name, rooms_designs_data)
-
-    result = [rooms_designs_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_designs_data.keys()]
-    result = sorted(result, key=lambda entity_info: _get_key_for_room_sort(entity_info, rooms_designs_data))
-    return result
-
-
-def _get_room_design_ids_from_name(room_name: str, rooms_designs_data: entity.EntitiesDesignsData) -> List[str]:
-    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
-    return results
-
-
-def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_designs_data: entity.EntitiesDesignsData):
-    return_best_match = any(char.isdigit() for char in room_short_name)
-    results = core.get_ids_from_property_value(rooms_designs_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
-    if results and return_best_match:
-        results = [results[0]]
-    return results
-
-
-def _get_key_for_room_sort(room_info: dict, rooms_designs_data: dict) -> str:
-    parent_infos = __get_parents(room_info, rooms_designs_data)
-    result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
-    if result:
-        result = result.split(':')[0]
-    else:
-        result = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)[0:3]
-    result.ljust(3)
-    result += ''.join([parent_info[ROOM_DESIGN_KEY_NAME].zfill(4) for parent_info in parent_infos])
-    return result
-
-
-
-
-
-
-
-
-
-
 # ---------- Initilization ----------
 
 rooms_designs_retriever: entity.EntityDesignsRetriever
@@ -780,23 +780,3 @@ def __get_allowed_room_short_names(rooms_designs_data: dict):
             if room_short_name not in result:
                 result.append(room_short_name)
     return result
-
-
-
-
-
-
-
-
-
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    test_rooms = ['ion']
-#    for room_name in test_rooms:
-#        os.system('clear')
-#        result = await get_room_details_from_name(room_name, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        result = ''

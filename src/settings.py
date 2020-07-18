@@ -39,12 +39,24 @@ GDRIVE_SERVICE_ACCOUNT_FILE = 'client_secrets.json'
 GDRIVE_SETTINGS_FILE = 'settings.yaml'
 GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
 
+
+IGNORE_SERVER_IDS_FOR_COUNTING = [
+    110373943822540800,
+    264445053596991498,
+    446425626988249089,
+    450100127256936458
+]
+
+
 LATEST_SETTINGS_BASE_PATH = 'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
+
 
 MAXIMUM_CHARACTERS = 1900
 MIN_ENTITY_NAME_LENGTH = 3
 
+
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
+
 
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
 PRINT_DEBUG = int(os.environ.get('PRINT_DEBUG', '0'))
