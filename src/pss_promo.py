@@ -23,34 +23,6 @@ import settings
 import utility as util
 
 
-# ---------- Constants ----------
-
-PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
-PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
-PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
-
-REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
-    'item': item.get_item_design_details_by_id,
-    'character': crew.get_char_design_details_by_id,
-    'research': research.get_research_design_details_by_id,
-    'room': room.get_room_design_details_by_id,
-    'starbux': None
-}
-
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Initilization ----------
-
-
 
 
 
@@ -231,6 +203,113 @@ class PromoRequirement():
 
 
 
+# ---------- Constants ----------
+
+PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
+PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
+PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
+
+REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
+    'item': item.get_item_design_details_by_id,
+    'character': crew.get_char_design_details_by_id,
+    'research': research.get_research_design_details_by_id,
+    'room': room.get_room_design_details_by_id,
+    'starbux': None
+}
+
+
+
+
+
+
+
+
+
+
+# ---------- Promo info ----------
+
+async def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> LegacyPromotionDesignDetails:
+    if promotion_design_id:
+        if promotions_designs_data is None:
+            promotions_designs_data = await promotion_designs_retriever.get_data_dict3()
+
+        if promotion_design_id and promotion_design_id in promotions_designs_data.keys():
+            promotion_design_info = promotions_designs_data[promotion_design_id]
+            promotion_design_details = LegacyPromotionDesignDetails(promotion_design_info)
+            return promotion_design_details
+
+    return None
+
+
+def get_promotions_designs_details_by_name(promotion_name: str) -> entity.EntityDesignDetailsCollection:
+    pss_assert.valid_entity_name(promotion_name, 'promotion_name')
+
+
+
+async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
+    pss_assert.valid_entity_name(promotion_name, 'promotion_name')
+
+    promotion_design_infos = await promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
+    promotions_designs_details = [LegacyPromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
+
+    if not promotions_designs_details:
+        return [f'Could not find a promotion named **{promotion_name}**.'], False
+    else:
+        if as_embed:
+            return _get_promotions_details_as_embed(promotions_designs_details), True
+        else:
+            return _get_promotions_details_as_text(promotion_name, promotions_designs_details), True
+
+
+def _get_promotions_details_as_embed(promotion_design_details: Dict[str, dict]) -> discord.Embed:
+    pass
+
+
+def _get_promotions_details_as_text(promotion_name: str, promotion_design_details: Dict[str, dict]) -> List[str]:
+    promotion_details_count = len(promotion_design_details)
+
+    lines = [f'Promotion stats for **{promotion_name}**']
+    for i, promotion_details in enumerate(promotion_design_details):
+        if promotion_details_count > 2:
+            lines.extend(promotion_details.get_details_as_text_short())
+        else:
+            lines.extend(promotion_details.get_details_as_text_long())
+            if i < promotion_details_count - 1:
+                lines.append(settings.EMPTY_LINE)
+
+    return lines
+
+
+
+
+
+
+
+
+
+
+# ---------- Create EntityDesignDetails ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
+
+
+
+
+
+
+
+
+
+
 # ---------- Helper functions ----------
 
 def _convert_reward_string(reward_string: str) -> Dict[str, str]:
@@ -309,78 +388,6 @@ def _get_requirement_type_and_value(requirement_string: str, separator: str, add
 
 
 
-# ---------- Promo info ----------
-
-async def get_promotion_design_details_by_id(promotion_design_id: str, promotions_designs_data: dict = None) -> LegacyPromotionDesignDetails:
-    if promotion_design_id:
-        if promotions_designs_data is None:
-            promotions_designs_data = await promotion_designs_retriever.get_data_dict3()
-
-        if promotion_design_id and promotion_design_id in promotions_designs_data.keys():
-            promotion_design_info = promotions_designs_data[promotion_design_id]
-            promotion_design_details = LegacyPromotionDesignDetails(promotion_design_info)
-            return promotion_design_details
-
-    return None
-
-
-def get_promotions_designs_details_by_name(promotion_name: str) -> entity.EntityDesignDetailsCollection:
-    pss_assert.valid_entity_name(promotion_name, 'promotion_name')
-
-
-
-async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(promotion_name, 'promotion_name')
-
-    promotion_design_infos = await promotion_designs_retriever.get_entities_designs_infos_by_name(promotion_name)
-    promotions_designs_details = [LegacyPromotionDesignDetails(promotion_design_info) for promotion_design_info in promotion_design_infos if promotion_design_info['PromotionType'] == 'FirstPurchase']
-
-    if not promotions_designs_details:
-        return [f'Could not find a promotion named **{promotion_name}**.'], False
-    else:
-        if as_embed:
-            return _get_promotions_details_as_embed(promotions_designs_details), True
-        else:
-            return _get_promotions_details_as_text(promotion_name, promotions_designs_details), True
-
-
-def _get_promotions_details_as_embed(promotion_design_details: Dict[str, dict]) -> discord.Embed:
-    pass
-
-
-def _get_promotions_details_as_text(promotion_name: str, promotion_design_details: Dict[str, dict]) -> List[str]:
-    promotion_details_count = len(promotion_design_details)
-
-    lines = [f'Promotion stats for **{promotion_name}**']
-    for i, promotion_details in enumerate(promotion_design_details):
-        if promotion_details_count > 2:
-            lines.extend(promotion_details.get_details_as_text_short())
-        else:
-            lines.extend(promotion_details.get_details_as_text_long())
-            if i < promotion_details_count - 1:
-                lines.append(settings.EMPTY_LINE)
-
-    return lines
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ---------- Initilization ----------
 
 promotion_designs_retriever = entity.EntityDesignsRetriever(
@@ -389,25 +396,3 @@ promotion_designs_retriever = entity.EntityDesignsRetriever(
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='PromotionDesigns'
 )
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    test_promotions = ['alpaco']
-#    for promotion_name in test_promotions:
-#        os.system('clear')
-#        result = await get_promotions_designs_info_by_name(promotion_name, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        print('')
-#        result = ''
