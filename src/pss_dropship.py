@@ -178,7 +178,7 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: di
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
         entity_details = await item_design_details.get_details_as_text_long()
     elif shop_type == 'Room':
-        room_design_details = room.get_room_design_details_by_id(entity_id, rooms_designs_data, items_designs_data)
+        room_design_details = room.get_room_design_details_by_id(entity_id, rooms_designs_data, None, None)
         entity_details = await room_design_details.get_details_as_text_short()
     else:
         result.append('-')
@@ -210,7 +210,7 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: di
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)
         entity_details = ''.join(await item_design_details.get_details_as_text_long())
     elif sale_type == 'Room':
-        room_design_details = room.get_room_design_details_by_id(sale_argument, rooms_designs_data, items_designs_data)
+        room_design_details = room.get_room_design_details_by_id(sale_argument, rooms_designs_data, None, None)
         entity_details = ''.join(await room_design_details.get_details_as_text_short())
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
