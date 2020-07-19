@@ -1189,16 +1189,27 @@ async def cmd_about(ctx: commands.Context):
     __log_command_use(ctx)
     async with ctx.typing():
         guilds = [guild for guild in bot.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING]
-        users = set(bot.users)
+        all_users = set(bot.users)
+        users = []
+        bots = []
+        for user in all_users:
+            if user.bot:
+                bots.append(user)
+            else:
+                users.append(user)
+        user_name = bot.user.display_name
         if ctx.guild is None:
             nick = bot.user.display_name
         else:
             nick = ctx.guild.me.display_name
+        has_nick = bot.user.display_name != nick
         pfp_url = bot.user.avatar_url
         about_info = core.read_about_file()
         title = f'About {nick}'
+        if has_nick:
+            title += f' ({user_name})'
         description = about_info['description']
-        footer = f'Serving {len(users)} users on {len(guilds)} guilds.'
+        footer = f'Serving {len(users)} users & {len(bots)} bots on {len(guilds)} guilds.'
         version = f'v{settings.VERSION}'
         support_link = about_info['support']
         authors = ', '.join(about_info['authors'])
