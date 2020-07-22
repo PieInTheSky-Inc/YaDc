@@ -1433,7 +1433,7 @@ async def cmd_support(ctx: commands.Context):
         output = [about['support']]
     await util.dm_author(ctx, output)
     if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
 
 
 
