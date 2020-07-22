@@ -423,7 +423,102 @@ async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member
 
 
 
-# ----- General Bot Commands ----------------------------------------------------------
+# ---------- General Bot Commands ----------
+
+@bot.command(brief='Display info on this bot', name='about', aliases=['info'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_about(ctx: commands.Context):
+    """
+    Displays information about this bot and its authors.
+
+    Usage:
+      /about
+      /info
+
+    Examples:
+      /about - Displays information on this bot and its authors.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        guilds = [guild for guild in bot.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING]
+        all_users = set(bot.users)
+        users = []
+        bots = []
+        for user in all_users:
+            if user.bot:
+                bots.append(user)
+            else:
+                users.append(user)
+        user_name = bot.user.display_name
+        if ctx.guild is None:
+            nick = bot.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        has_nick = bot.user.display_name != nick
+        pfp_url = bot.user.avatar_url
+        about_info = core.read_about_file()
+        title = f'About {nick}'
+        if has_nick:
+            title += f' ({user_name})'
+        description = about_info['description']
+        footer = f'Serving {len(users)} users & {len(bots)} bots on {len(guilds)} guilds.'
+        version = f'v{settings.VERSION}'
+        support_link = about_info['support']
+        authors = ', '.join(about_info['authors'])
+        pfp_author = about_info['pfp']
+        color = util.get_bot_member_colour(bot, ctx.guild)
+
+        embed = discord.Embed(title=title, type='rich', color=color, description=description)
+        embed.add_field(name="version", value=version)
+        embed.add_field(name="authors", value=authors)
+        embed.add_field(name="profile pic by", value=pfp_author)
+        embed.add_field(name="support", value=support_link)
+        embed.set_footer(text=footer)
+        embed.set_thumbnail(url=pfp_url)
+    await ctx.send(embed=embed)
+
+
+@bot.command(brief='Get an invite link', name='invite')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_invite(ctx: commands.Context):
+    """
+    Produces an invite link for this bot and sends it via DM.
+
+    Usage:
+      /invite
+
+    Examples:
+      /invite - Produces an invite link for this bot and sends it via DM.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        if ctx.guild is None:
+            nick = bot.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{bot.user.id}']
+    await util.dm_author(ctx, output)
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+
+
+@bot.command(brief='Show links', name='links')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_links(ctx: commands.Context):
+    """
+    Shows the links for useful sites regarding Pixel Starships.
+
+    Usage:
+      /links
+
+    Examples:
+      /links - Shows the links for useful sites regarding Pixel Starships.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = core.read_links_file()
+    await util.post_output(ctx, output)
+
 
 @bot.command(brief='Ping the server', name='ping')
 async def cmd_ping(ctx: commands.Context):
@@ -451,6 +546,111 @@ async def cmd_ping(ctx: commands.Context):
 
 
 # ---------- PSS Bot Commands ----------
+
+@bot.command(brief='Get best items for a slot', name='best')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
+    """
+    Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
+
+    Usage:
+      /best [slot] [stat]
+      /best [item name]
+
+    Parameters:
+      slot: the equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
+      stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
+      item name: an item's name, whose slot and stat will be used to look up best data.
+
+    Examples:
+      /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
+      /best all hp - Prints all equipment items for all slots providing a HP bonus.
+      /best hp - Prints all equipment items for all slots providing a HP bonus.
+      /best storm lance - Prints all equipment items for the same slot and stat as a Storm Lance.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        item_name = slot
+        if stat is not None:
+            item_name += f' {stat}'
+        item_name = item_name.strip().lower()
+
+        if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
+            items_designs_details = await item.get_items_designs_details_by_name(item_name)
+            found_matching_items = items_designs_details and len(items_designs_details) > 0
+            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+        else:
+            items_designs_details = []
+            found_matching_items = False
+        if items_designs_details:
+            if len(items_designs_details) == 1:
+                item_design_details = items_designs_details[0]
+            else:
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
+                _, item_design_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_design_details)
+        else:
+            if found_matching_items:
+                raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
+
+        slot, stat = item.fix_slot_and_stat(slot, stat)
+        output, _ = await item.get_best_items(slot, stat)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get character stats', name='char', aliases=['crew'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
+    """
+    Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
+
+    Usage:
+      /stats <level> [name]
+
+    Parameters:
+      level: Level of a crew. Optional.
+      name:  (Part of) the name of a crew. Mandatory.
+
+    Examples:
+      /stats hug - Will print the stats range for a crew having 'hug' in its name.
+      /stats 25 hug - Will print the stats range for a level 25 crew having 'hug' in its name.
+
+    Notes:
+      This command will only print stats for the crew with the best matching crew_name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        level, crew_name = util.get_level_and_name(level, crew_name)
+        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_craft(ctx: commands.Context, *, item_name: str):
+    """
+    Get the items a specified item can be crafted into.
+
+    Usage:
+      /craft [item_name]
+      /upgrade [item_name]
+      /upg [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be upgraded. Mandatory.
+
+    Examples:
+      /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
+
+    Notes:
+      This command will only print crafting costs for the item with the best matching item name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await item.get_item_upgrades_from_name(item_name)
+    await util.post_output(ctx, output)
+
 
 @bot.command(brief='Get prestige combos of crew', name='prestige')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
@@ -522,32 +722,6 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_ingredients_for_item(item_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_craft(ctx: commands.Context, *, item_name: str):
-    """
-    Get the items a specified item can be crafted into.
-
-    Usage:
-      /craft [item_name]
-      /upgrade [item_name]
-      /upg [item_name]
-
-    Parameters:
-      item_name: (Part of) the name of an item to be upgraded. Mandatory.
-
-    Examples:
-      /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
-
-    Notes:
-      This command will only print crafting costs for the item with the best matching item name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name)
     await util.post_output(ctx, output)
 
 
@@ -626,33 +800,6 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         await ctx.send(f'Could not find a character or an item named `{full_name}`.')
 
 
-@bot.command(brief='Get character stats', name='char', aliases=['crew'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
-    """
-    Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
-
-    Usage:
-      /stats <level> [name]
-
-    Parameters:
-      level: Level of a crew. Optional.
-      name:  (Part of) the name of a crew. Mandatory.
-
-    Examples:
-      /stats hug - Will print the stats range for a crew having 'hug' in its name.
-      /stats 25 hug - Will print the stats range for a level 25 crew having 'hug' in its name.
-
-    Notes:
-      This command will only print stats for the crew with the best matching crew_name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
-    await util.post_output(ctx, output)
-
-
 @bot.command(brief='Get item stats', name='item')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_item(ctx: commands.Context, *, item_name: str):
@@ -674,58 +821,6 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_item_details_by_name(item_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get best items for a slot', name='best')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
-    """
-    Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
-
-    Usage:
-      /best [slot] [stat]
-      /best [item name]
-
-    Parameters:
-      slot: the equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
-      stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
-      item name: an item's name, whose slot and stat will be used to look up best data.
-
-    Examples:
-      /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
-      /best all hp - Prints all equipment items for all slots providing a HP bonus.
-      /best hp - Prints all equipment items for all slots providing a HP bonus.
-      /best storm lance - Prints all equipment items for the same slot and stat as a Storm Lance.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        item_name = slot
-        if stat is not None:
-            item_name += f' {stat}'
-        item_name = item_name.strip().lower()
-
-        if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
-            items_designs_details = await item.get_items_designs_details_by_name(item_name)
-            found_matching_items = items_designs_details and len(items_designs_details) > 0
-            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
-        else:
-            items_designs_details = []
-            found_matching_items = False
-        if items_designs_details:
-            if len(items_designs_details) == 1:
-                item_design_details = items_designs_details[0]
-            else:
-                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
-                _, item_design_details = await paginator.wait_for_option_selection()
-            slot, stat = item.get_slot_and_stat_type(item_design_details)
-        else:
-            if found_matching_items:
-                raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
-
-        slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat)
     await util.post_output(ctx, output)
 
 
@@ -901,70 +996,6 @@ async def cmd_news(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily(ctx: commands.Context):
-    """
-    This command can be used to get an overview of the autodaily settings for this bot.
-
-    In order to use this command or any sub commands, you need to be the owner of this bot.
-    """
-    __log_command_use(ctx)
-    pass
-
-
-@cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list(ctx: commands.Context):
-    __log_command_use(ctx)
-    pass
-
-
-@cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_all(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, None)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_invalid(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, False)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_valid(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, True)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_post(ctx: commands.Context):
-    __log_command_use(ctx)
-    guild = ctx.guild
-    channel_id = await server_settings.db_get_daily_channel_id(guild.id)
-    if channel_id is not None:
-        text_channel = bot.get_channel(channel_id)
-        output, _ = await dropship.get_dropship_text()
-        await util.post_output_to_channel(text_channel, output)
-
-
 @bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
@@ -1026,28 +1057,6 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
         await ctx.invoke(cmd, count=count)
 
 
-@cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
-async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
-    """
-    Prints top fleets. Prints top 100 fleets by default.
-
-    Usage:
-      /top fleets <count>
-      /top <count> fleets
-
-    Parameters:
-      count: The number of rows to be printed. Optional.
-
-    Examples:
-      /top fleets - prints top 100 fleets.
-      /top fleets 30 - prints top 30 fleets.
-      /top 30 fleets - prints top 30 fleets."""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await pss_top.get_top_fleets(count)
-    await util.post_output(ctx, output)
-
-
 @cmd_top.command(brief='Prints top captains', name='players', aliases=['captains', 'users'])
 async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     """
@@ -1067,6 +1076,28 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await pss_top.get_top_captains(count)
+    await util.post_output(ctx, output)
+
+
+@cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
+async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
+    """
+    Prints top fleets. Prints top 100 fleets by default.
+
+    Usage:
+      /top fleets <count>
+      /top <count> fleets
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top fleets - prints top 100 fleets.
+      /top fleets 30 - prints top 30 fleets.
+      /top 30 fleets - prints top 30 fleets."""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await pss_top.get_top_fleets(count)
     await util.post_output(ctx, output)
 
 
@@ -1153,101 +1184,6 @@ async def cmd_time(ctx: commands.Context):
         td = first_day_of_next_month - now
         str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
     await ctx.send(str_time)
-
-
-@bot.command(brief='Show links', name='links')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_links(ctx: commands.Context):
-    """
-    Shows the links for useful sites regarding Pixel Starships.
-
-    Usage:
-      /links
-
-    Examples:
-      /links - Shows the links for useful sites regarding Pixel Starships.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = core.read_links_file()
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Display info on this bot', name='about', aliases=['info'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_about(ctx: commands.Context):
-    """
-    Displays information about this bot and its authors.
-
-    Usage:
-      /about
-      /info
-
-    Examples:
-      /about - Displays information on this bot and its authors.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        guilds = [guild for guild in bot.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING]
-        all_users = set(bot.users)
-        users = []
-        bots = []
-        for user in all_users:
-            if user.bot:
-                bots.append(user)
-            else:
-                users.append(user)
-        user_name = bot.user.display_name
-        if ctx.guild is None:
-            nick = bot.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        has_nick = bot.user.display_name != nick
-        pfp_url = bot.user.avatar_url
-        about_info = core.read_about_file()
-        title = f'About {nick}'
-        if has_nick:
-            title += f' ({user_name})'
-        description = about_info['description']
-        footer = f'Serving {len(users)} users & {len(bots)} bots on {len(guilds)} guilds.'
-        version = f'v{settings.VERSION}'
-        support_link = about_info['support']
-        authors = ', '.join(about_info['authors'])
-        pfp_author = about_info['pfp']
-        color = util.get_bot_member_colour(bot, ctx.guild)
-
-        embed = discord.Embed(title=title, type='rich', color=color, description=description)
-        embed.add_field(name="version", value=version)
-        embed.add_field(name="authors", value=authors)
-        embed.add_field(name="profile pic by", value=pfp_author)
-        embed.add_field(name="support", value=support_link)
-        embed.set_footer(text=footer)
-        embed.set_thumbnail(url=pfp_url)
-    await ctx.send(embed=embed)
-
-
-@bot.command(brief='Get an invite link', name='invite')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_invite(ctx: commands.Context):
-    """
-    Produces an invite link for this bot and sends it via DM.
-
-    Usage:
-      /invite
-
-    Examples:
-      /invite - Produces an invite link for this bot and sends it via DM.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        if ctx.guild is None:
-            nick = bot.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{bot.user.id}']
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
 
 
 @bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
@@ -1375,7 +1311,6 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
         await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
 
-
 @bot.command(brief='Get infos on a player', name='player', aliases=['user'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_player(ctx: commands.Context, *, player_name: str):
@@ -1433,6 +1368,7 @@ async def cmd_support(ctx: commands.Context):
     await util.dm_author(ctx, output)
     if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
         await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+
 
 
 
@@ -1678,6 +1614,7 @@ async def cmd_prefix(ctx: commands.Context):
         guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
         output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
     await util.post_output(ctx, output)
+
 
 
 
@@ -2856,6 +2793,72 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
 
 
 
+
+# ---------- Owner commands ----------
+
+
+@bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily(ctx: commands.Context):
+    """
+    This command can be used to get an overview of the autodaily settings for this bot.
+
+    In order to use this command or any sub commands, you need to be the owner of this bot.
+    """
+    __log_command_use(ctx)
+    pass
+
+
+@cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily_list(ctx: commands.Context):
+    __log_command_use(ctx)
+    pass
+
+
+@cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily_list_all(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, None)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily_list_invalid(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, False)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily_list_valid(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, True)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily_post(ctx: commands.Context):
+    __log_command_use(ctx)
+    guild = ctx.guild
+    channel_id = await server_settings.db_get_daily_channel_id(guild.id)
+    if channel_id is not None:
+        text_channel = bot.get_channel(channel_id)
+        output, _ = await dropship.get_dropship_text()
+        await util.post_output_to_channel(text_channel, output)
 
 @bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
 @commands.is_owner()
