@@ -58,7 +58,12 @@ import pss_user as user
 
 
 
-# ----- Setup ---------------------------------------------------------
+
+
+# ############################################################################ #
+# ----------                       Bot Setup                        ---------- #
+# ############################################################################ #
+
 RATE = 5
 COOLDOWN = 15.0
 
@@ -85,21 +90,6 @@ tourney_data_client = TourneyDataClient(
 
 __COMMANDS = []
 
-
-
-
-
-
-
-
-
-# ----- Bot Setup -------------------------------------------------------------
-
-async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
-    result = await server_settings.get_prefix(bot, message)
-    return commands.when_mentioned_or(result)(bot, message)
-
-
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
@@ -107,12 +97,15 @@ logging.basicConfig(
     format = '{asctime} [{levelname:<8}] {name}: {message}')
 
 bot = commands.Bot(command_prefix=get_prefix,
-                               description='This is a Discord Bot for Pixel Starships',
-                               activity=ACTIVITY)
+                   description='This is a Discord Bot for Pixel Starships',
+                   activity=ACTIVITY)
 
 setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
+async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
+    result = await server_settings.get_prefix(bot, message)
+    return commands.when_mentioned_or(result)(bot, message)
 
 
 
@@ -122,7 +115,11 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
 
-# ----- Bot Events ------------------------------------------------------------
+
+# ############################################################################ #
+# ----------                       Bot Events                       ---------- #
+# ############################################################################ #
+
 @bot.event
 async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
@@ -229,7 +226,9 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 
 
-# ----- Tasks ----------------------------------------------------------
+# ############################################################################ #
+# ----------                         Tasks                          ---------- #
+# ############################################################################ #
 
 async def post_dailies_loop() -> None:
     print(f'Started post dailies loop')
@@ -423,8 +422,9 @@ async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member
 
 
 
-
-# ---------- General Bot Commands ----------
+# ############################################################################ #
+# ----------                  General Bot Commands                  ---------- #
+# ############################################################################ #
 
 @bot.command(brief='Display info on this bot', name='about', aliases=['info'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
@@ -538,6 +538,24 @@ async def cmd_ping(ctx: commands.Context):
     await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
 
 
+@bot.command(brief='Invite to bot\'s support server', name='support')
+async def cmd_support(ctx: commands.Context):
+    """
+    Produces an invite link to the support server for this bot and sends it via DM.
+
+    Usage:
+      /support
+
+    Examples:
+      /support - Produces an invite link to the support server and sends it via DM.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        about = core.read_about_file()
+        output = [about['support']]
+    await util.dm_author(ctx, output)
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
 
 
 
@@ -546,7 +564,11 @@ async def cmd_ping(ctx: commands.Context):
 
 
 
-# ---------- PSS Bot Commands ----------
+
+
+# ############################################################################ #
+# ----------                    PSS Bot Commands                    ---------- #
+# ############################################################################ #
 
 @bot.command(brief='Get best items for a slot', name='best')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
@@ -653,52 +675,89 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get prestige combos of crew', name='prestige')
+@bot.command(brief='Get collections', name='collection', aliases=['coll'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
+async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
-    Get the prestige combinations of the crew specified.
+    Get the details on a specific collection. If the collection name is omitted, it will display all collections.
 
     Usage:
-      /prestige [crew_name]
+      /collection <collection_name>
 
     Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+      collection_name: The name of the collection to get details on.
 
     Examples:
-      /prestige xin - Will print all prestige combinations including the crew 'Xin'.
+      /collection_name savy - Will print information on a collection having 'savy' in its name.
+      /collection - Will print less information on all collections.
 
     Notes:
-      This command will only print recipes for the crew with the best matching crew name.
+      This command will only print stats for the collection with the best matching collection_name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(crew_name)
+        output, _ = await crew.get_collection_design_details_by_name(collection_name)
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get character recipes', name='recipe')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
+@bot.command(brief='Show the dailies', name='daily')
+@commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
+async def cmd_daily(ctx: commands.Context):
     """
-    Get the prestige recipes of the crew specified.
+    Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
 
     Usage:
-      /recipe [crew_name]
-
-    Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
+      /daily
 
     Examples:
-      /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
+      /daily - Prints the information described above.
+    """
+    __log_command_use(ctx)
+    await util.try_delete_original_message(ctx)
+    async with ctx.typing():
+        output, _ = await dropship.get_dropship_text()
+    await util.post_output(ctx, output)
 
-    Notes:
-      This command will only print recipes for the crew with the best matching crew name.
+
+@bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
+    """
+    Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
+
+    Usage:
+      /fleet [fleet_name]
+      /alliance [fleet_name]
+
+    Parameters:
+      fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
+
+    Examples:
+      /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(crew_name)
-    await util.post_output(ctx, output)
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            fleet_name = exact_name
+        fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            async with ctx.typing():
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info)
+            await util.post_output_with_files(ctx, output, file_paths)
+            for file_path in file_paths:
+                os.remove(file_path)
+    else:
+        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
 
 @bot.command(brief='Get item ingredients', name='ingredients', aliases=['ing'])
@@ -726,7 +785,354 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
+@bot.command(brief='Get item stats', name='item')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_item(ctx: commands.Context, *, item_name: str):
+    """
+    Get the stats of any item matching the given item_name.
+
+    Usage:
+      /item [item_name]
+
+    Parameters:
+      item_name:  (Part of) the name of an item. Mandatory.
+
+    Examples:
+      /item hug - Will print some stats for an item having 'hug' in its name.
+
+    Notes:
+      This command will print information for all items matching the specified name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await item.get_item_details_by_name(item_name)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
+    """
+    Shows the cost for a crew to reach a certain level.
+
+    Usage:
+      /level <from_level> [to_level]
+      /lvl <from_level> [to_level]
+
+    Parameters:
+      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
+      to_level:   The level to which the requirements shall be calculated. Mandatory.
+
+    Examples:
+      /level 35 - Prints exp and gas requirements from level 1 to 35
+      /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = crew.get_level_costs(from_level, to_level)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Show the news', name='news')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_news(ctx: commands.Context):
+    """
+    Prints all news in ascending order.
+
+    Usage:
+      /news
+
+    Examples:
+      /news - Prints the information described above.
+    """
+    __log_command_use(ctx)
+    await util.try_delete_original_message(ctx)
+    async with ctx.typing():
+        output, _ = await dropship.get_news()
+    await util.post_output(ctx, output)
+
+
+@bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
+    """
+    Get historic tournament data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+
+    You need to use one of the subcommands.
+    """
+    __log_command_use(ctx)
+    await ctx.send_help('past')
+
+
+@cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = None, *, division: str = None):
+    """
+    Get historic tournament division stars data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        error = None
+        utc_now = util.get_utcnow()
+        output = []
+
+        (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            if not pss_top.is_valid_division_letter(division):
+                subcommand = bot.get_command('past stars fleet')
+                await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+            else:
+                month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+                try:
+                    tourney_data = tourney_data_client.get_data(year, month)
+                except ValueError as err:
+                    error = str(err)
+                    tourney_data = None
+                if tourney_data:
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+                elif error:
+                    output = [error]
+    await util.post_output(ctx, output)
+
+
+@cmd_past_stars.command(name='fleet', brief='Get historic fleet stars', aliases=['alliance'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+    """
+    Get historic tournament fleet stars data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                fleet_infos = []
+            else:
+                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            async with ctx.typing():
+                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
+
+
+@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                fleet_infos = []
+            else:
+                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            async with ctx.typing():
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at)
+            await util.post_output_with_files(ctx, output, file_paths)
+            for file_path in file_paths:
+                os.remove(file_path)
+            return
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
+
+
+@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
+    """
+    Get historic tournament player data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - player_name: Mandatory. The player for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        else:
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            try:
+                tourney_data = tourney_data_client.get_data(year, month)
+            except ValueError as err:
+                error = str(err)
+                tourney_data = None
+
+            if tourney_data is None:
+                user_infos = []
+            else:
+                user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get infos on a player', name='player', aliases=['user'])
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_player(ctx: commands.Context, *, player_name: str):
+    """
+    Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
+
+    Usage:
+      /player [player_name]
+      /user [player_name]
+
+    Parameters:
+      player_name: The (beginning of the) name of the player to search for. Mandatory.
+
+    Examples:
+      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            player_name = exact_name
+        user_infos = await user.get_user_details_by_name(player_name)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = await user.get_user_details_by_info(user_info)
+            await util.post_output(ctx, output)
+    else:
+        await ctx.send(f'Could not find a player named `{player_name}`.')
+
+
+@bot.command(brief='Get prestige combos of crew', name='prestige')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
+    """
+    Get the prestige combinations of the crew specified.
+
+    Usage:
+      /prestige [crew_name]
+
+    Parameters:
+      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+
+    Examples:
+      /prestige xin - Will print all prestige combinations including the crew 'Xin'.
+
+    Notes:
+      This command will only print recipes for the crew with the best matching crew name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await crew.get_prestige_from_info(crew_name)
+    await util.post_output(ctx, output)
+
+
+@bot.command(brief='Get item\'s prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
@@ -753,75 +1159,27 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item/crew stats', name='stats', aliases=['stat'])
+@bot.command(brief='Get character recipes', name='recipe')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
+async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
-    Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
+    Get the prestige recipes of the crew specified.
 
     Usage:
-      /stats <level> [name]
+      /recipe [crew_name]
 
     Parameters:
-      level: Level of a crew. Will only apply to crew stats. Optional.
-      name:  (Part of) the name of a crew or item. Mandatory.
+      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
 
     Examples:
-      /stats hug - Will output results of the commands '/char hug' and '/item hug'
-      /stats 25 hug - Will output results of the command '/char 25 hug' and '/item hug'
+      /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
 
     Notes:
-      This command will only print stats for the crew with the best matching name.
-      This command will print information for all items matching the specified name.
+      This command will only print recipes for the crew with the best matching crew name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        full_name = ' '.join([x for x in [level, name] if x])
-        level, name = util.get_level_and_name(level, name)
-        try:
-            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
-        except pss_exception.InvalidParameter:
-            char_output = None
-            char_success = False
-        try:
-            item_output, item_success = await item.get_item_details_by_name(name)
-        except pss_exception.InvalidParameter:
-            item_output = None
-            item_success = False
-
-    if char_success:
-        await util.post_output(ctx, char_output)
-
-    if item_success:
-        if char_success:
-            await ctx.send(settings.EMPTY_LINE)
-        await util.post_output(ctx, item_output)
-
-    if not char_success and not item_success:
-        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
-
-
-@bot.command(brief='Get item stats', name='item')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_item(ctx: commands.Context, *, item_name: str):
-    """
-    Get the stats of any item matching the given item_name.
-
-    Usage:
-      /item [item_name]
-
-    Parameters:
-      item_name:  (Part of) the name of an item. Mandatory.
-
-    Examples:
-      /item hug - Will print some stats for an item having 'hug' in its name.
-
-    Notes:
-      This command will print information for all items matching the specified name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name)
+        output, _ = await crew.get_prestige_to_info(crew_name)
     await util.post_output(ctx, output)
 
 
@@ -849,28 +1207,29 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get collections', name='collection', aliases=['coll'])
+@bot.command(brief='Get room infos', name='room')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
+async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
-    Get the details on a specific collection. If the collection name is omitted, it will display all collections.
+    Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
     Usage:
-      /collection <collection_name>
+      /room [name]
+      /room [short name] [room level]
 
     Parameters:
-      collection_name: The name of the collection to get details on.
+      name:       A room's name or part of it. Mandatory.
+      short name: A room's short name (2 or 3 characters). Mandatory.
+      room level: A room's level. Mandatory.
 
     Examples:
-      /collection_name savy - Will print information on a collection having 'savy' in its name.
-      /collection - Will print less information on all collections.
-
-    Notes:
-      This command will only print stats for the collection with the best matching collection_name.
+      /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
+      /room cloak generator lv2 - Searches for rooms having 'cloak generator lv2' in their names and prints their details.
+      /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await room.get_room_details_by_name(room_name)
     await util.post_output(ctx, output)
 
 
@@ -959,65 +1318,86 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
 
 
-@bot.command(brief='Show the dailies', name='daily')
-@commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
-async def cmd_daily(ctx: commands.Context):
-    """
-    Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
-
-    Usage:
-      /daily
-
-    Examples:
-      /daily - Prints the information described above.
-    """
-    __log_command_use(ctx)
-    await util.try_delete_original_message(ctx)
-    async with ctx.typing():
-        output, _ = await dropship.get_dropship_text()
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Show the news', name='news')
+@bot.command(brief='Get item/crew stats', name='stats', aliases=['stat'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_news(ctx: commands.Context):
+async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
     """
-    Prints all news in ascending order.
+    Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
 
     Usage:
-      /news
-
-    Examples:
-      /news - Prints the information described above.
-    """
-    __log_command_use(ctx)
-    await util.try_delete_original_message(ctx)
-    async with ctx.typing():
-        output, _ = await dropship.get_news()
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
-    """
-    Shows the cost for a crew to reach a certain level.
-
-    Usage:
-      /level <from_level> [to_level]
-      /lvl <from_level> [to_level]
+      /stats <level> [name]
 
     Parameters:
-      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
-      to_level:   The level to which the requirements shall be calculated. Mandatory.
+      level: Level of a crew. Will only apply to crew stats. Optional.
+      name:  (Part of) the name of a crew or item. Mandatory.
 
     Examples:
-      /level 35 - Prints exp and gas requirements from level 1 to 35
-      /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
+      /stats hug - Will output results of the commands '/char hug' and '/item hug'
+      /stats 25 hug - Will output results of the command '/char 25 hug' and '/item hug'
+
+    Notes:
+      This command will only print stats for the crew with the best matching name.
+      This command will print information for all items matching the specified name.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
-    await util.post_output(ctx, output)
+        full_name = ' '.join([x for x in [level, name] if x])
+        level, name = util.get_level_and_name(level, name)
+        try:
+            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
+        except pss_exception.InvalidParameter:
+            char_output = None
+            char_success = False
+        try:
+            item_output, item_success = await item.get_item_details_by_name(name)
+        except pss_exception.InvalidParameter:
+            item_output = None
+            item_success = False
+
+    if char_success:
+        await util.post_output(ctx, char_output)
+
+    if item_success:
+        if char_success:
+            await ctx.send(settings.EMPTY_LINE)
+        await util.post_output(ctx, item_output)
+
+    if not char_success and not item_success:
+        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
+
+
+@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_time(ctx: commands.Context):
+    """
+    Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
+
+    Usage:
+      /time
+
+    Examples:
+      /time - Prints PSS stardate, day & time in Melbourne and public holidays.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        now = datetime.datetime.now()
+        today = datetime.date(now.year, now.month, now.day)
+        pss_stardate = (today - settings.PSS_START_DATE).days
+        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
+
+        mel_tz = pytz.timezone('Australia/Melbourne')
+        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
+        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
+
+        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
+        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        if mel_time in aus_holidays:
+            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
+
+        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
+        td = first_day_of_next_month - now
+        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
+    await ctx.send(str_time)
 
 
 @bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
@@ -1102,91 +1482,6 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get room infos', name='room')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_room(ctx: commands.Context, *, room_name: str):
-    """
-    Get detailed information on a room. If more than 2 results are found, details will be omitted.
-
-    Usage:
-      /room [name]
-      /room [short name] [room level]
-
-    Parameters:
-      name:       A room's name or part of it. Mandatory.
-      short name: A room's short name (2 or 3 characters). Mandatory.
-      room level: A room's level. Mandatory.
-
-    Examples:
-      /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
-      /room cloak generator lv2 - Searches for rooms having 'cloak generator lv2' in their names and prints their details.
-      /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get training infos', name='training')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_training(ctx: commands.Context, *, training_name: str):
-    """
-    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
-
-    Usage:
-      /training [name]
-
-    Parameters:
-      name: A room's name or part of it. Mandatory.
-
-    Examples:
-      /training bench - Searches for trainings having 'bench' in their names and prints their details.
-
-    Notes:
-      The training yields displayed represent the upper bound of possible yields.
-      The highest yield will always be displayed on the far left.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_time(ctx: commands.Context):
-    """
-    Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
-
-    Usage:
-      /time
-
-    Examples:
-      /time - Prints PSS stardate, day & time in Melbourne and public holidays.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        now = datetime.datetime.now()
-        today = datetime.date(now.year, now.month, now.day)
-        pss_stardate = (today - settings.PSS_START_DATE).days
-        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
-
-        mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
-        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
-
-        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
-        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-        if mel_time in aus_holidays:
-            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
-
-        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
-        td = first_day_of_next_month - now
-        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-    await ctx.send(str_time)
-
-
 @bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
 @commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_tournament(ctx: commands.Context):
@@ -1248,104 +1543,474 @@ async def cmd_tournament_next(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 
-@bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
+@bot.command(brief='Get training infos', name='training')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
+async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
-    Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
+    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
 
     Usage:
-      /fleet [fleet_name]
-      /alliance [fleet_name]
+      /training [name]
 
     Parameters:
-      fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
+      name: A room's name or part of it. Mandatory.
 
     Examples:
-      /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
+      /training bench - Searches for trainings having 'bench' in their names and prints their details.
+
+    Notes:
+      The training yields displayed represent the upper bound of possible yields.
+      The highest yield will always be displayed on the far left.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        exact_name = util.get_exact_args(ctx)
-        if exact_name:
-            fleet_name = exact_name
-        fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            async with ctx.typing():
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info)
-            await util.post_output_with_files(ctx, output, file_paths)
-            for file_path in file_paths:
-                os.remove(file_path)
-    else:
-        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
+        output, _ = await training.get_training_details_from_name(training_name)
+    await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get infos on a player', name='player', aliases=['user'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_player(ctx: commands.Context, *, player_name: str):
+
+
+
+
+
+
+
+
+# ############################################################################ #
+# ----------                      Raw commands                      ---------- #
+# ############################################################################ #
+
+@bot.group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw(ctx: commands.Context):
     """
-    Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
+    Get raw data from the Pixel Starships API.
+    Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
 
     Usage:
-      /player [player_name]
-      /user [player_name]
+      /raw [subcommand] <id> <format>
 
     Parameters:
-      player_name: The (beginning of the) name of the player to search for. Mandatory.
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
 
-    Examples:
-      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        exact_name = util.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        user_infos = await user.get_user_details_by_name(player_name)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info)
-            await util.post_output(ctx, output)
-    else:
-        await ctx.send(f'Could not find a player named `{player_name}`.')
+    await ctx.send_help('raw')
 
 
-@bot.command(brief='Invite to bot\'s support server', name='support')
-async def cmd_support(ctx: commands.Context):
+@cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
     """
-    Produces an invite link to the support server for this bot and sends it via DM.
+    Get raw achievement design data from the PSS API.
 
     Usage:
-      /support
+      /raw achievement <id> <format>
 
-    Examples:
-      /support - Produces an invite link to the support server and sends it via DM.
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        about = core.read_about_file()
-        output = [about['support']]
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
+    await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
+
+
+@cmd_raw.group(name='ai', brief='Get raw ai data')
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai(ctx: commands.Context):
+    """
+    Get raw ai design data from the PSS API.
+
+    Usage:
+      /raw ai [subcommand] <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await ctx.send_help('raw ai')
+
+
+@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
+    """
+    Get raw ai action design data from the PSS API.
+
+    Usage:
+      /raw ai action <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
+
+
+@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
+    """
+    Get raw ai condition design data from the PSS API.
+
+    Usage:
+      /raw ai condition <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
+
+
+@cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
+    """
+    Get raw character design data from the PSS API.
+
+    Usage:
+      /raw char <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
+
+
+@cmd_raw.command(name='collection', brief='Get raw collection data', aliases=['coll', 'collections'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
+    """
+    Get raw collection design data from the PSS API.
+
+    Usage:
+      /raw collection <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
+
+
+@cmd_raw.group(name='gm', brief='Get raw gm data', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_gm(ctx: commands.Context):
+    """
+    Get raw gm design data from the PSS API.
+
+    Usage:
+      /raw gm [subcommand] <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await ctx.send_help('raw gm')
+
+
+@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
+    """
+    Get raw star system design data from the PSS API.
+
+    Usage:
+      /raw gm system <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
+
+
+@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
+    """
+    Get raw star system link design data from the PSS API.
+
+    Usage:
+      /raw gm path <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
+
+
+@cmd_raw.command(name='item', brief='Get raw item data', aliases=['items'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
+    """
+    Get raw item design data from the PSS API.
+
+    Usage:
+      /raw item <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
+
+
+@cmd_raw.command(name='mission', brief='Get raw mission data', aliases=['missions'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
+    """
+    Get raw mission design data from the PSS API.
+
+    Usage:
+      /raw mission <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
+
+
+@cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
+    """
+    Get raw promotion design data from the PSS API.
+
+    Usage:
+      /raw promotion <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promo_id)
+
+
+@cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
+    """
+    Get raw research design data from the PSS API.
+
+    Usage:
+      /raw research <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
+
+
+@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
+    """
+    Get raw room design data from the PSS API.
+
+    Usage:
+      /raw room <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
+
+
+@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
+    """
+    Get raw room purchase design data from the PSS API.
+
+    Usage:
+      /raw room purchase <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
+
+
+@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships', 'hull', 'hulls'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
+    """
+    Get raw ship design data from the PSS API.
+
+    Usage:
+      /raw ship <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
+
+
+@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
+@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
+async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
+    """
+    Get raw training design data from the PSS API.
+
+    Usage:
+      /raw training <id> <format>
+
+    Parameters:
+      id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
 
 
 
@@ -1356,6 +2021,9 @@ async def cmd_support(ctx: commands.Context):
 
 
 
+# ############################################################################ #
+# ----------                Server settings commands                ---------- #
+# ############################################################################ #
 
 @bot.group(brief='Server settings', name='settings', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
@@ -2104,676 +2772,9 @@ async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
 
 
 
-@bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
-    """
-    Get historic tournament data.
-
-    Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-
-    You need to use one of the subcommands.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('past')
-
-
-@cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = None, *, division: str = None):
-    """
-    Get historic tournament division stars data.
-
-    Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        error = None
-        utc_now = util.get_utcnow()
-        output = []
-
-        (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            if not pss_top.is_valid_division_letter(division):
-                subcommand = bot.get_command('past stars fleet')
-                await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
-            else:
-                month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-                try:
-                    tourney_data = tourney_data_client.get_data(year, month)
-                except ValueError as err:
-                    error = str(err)
-                    tourney_data = None
-                if tourney_data:
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
-                elif error:
-                    output = [error]
-    await util.post_output(ctx, output)
-
-
-@cmd_past_stars.command(name='fleet', brief='Get historic fleet stars', aliases=['alliance'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
-    """
-    Get historic tournament fleet stars data.
-
-    Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - fleet_name: Mandatory. The fleet for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = []
-        error = None
-        utc_now = util.get_utcnow()
-        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = tourney_data_client.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
-
-            if tourney_data is None:
-                fleet_infos = []
-            else:
-                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
-    elif error:
-        output = [str(error)]
-    else:
-        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
-    await util.post_output(ctx, output)
-
-
-@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
-    """
-    Get historic tournament fleet data.
-
-    Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - fleet_name: Mandatory. The fleet for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = []
-        error = None
-        utc_now = util.get_utcnow()
-        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = tourney_data_client.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
-
-            if tourney_data is None:
-                fleet_infos = []
-            else:
-                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            async with ctx.typing():
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at)
-            await util.post_output_with_files(ctx, output, file_paths)
-            for file_path in file_paths:
-                os.remove(file_path)
-            return
-    elif error:
-        output = [str(error)]
-    else:
-        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
-    await util.post_output(ctx, output)
-
-
-@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
-    """
-    Get historic tournament player data.
-
-    Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - player_name: Mandatory. The player for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = []
-        error = None
-        utc_now = util.get_utcnow()
-        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = tourney_data_client.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
-
-            if tourney_data is None:
-                user_infos = []
-            else:
-                user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
-    elif error:
-        output = [str(error)]
-    else:
-        output = [f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
-    await util.post_output(ctx, output)
-
-
-
-
-
-
-
-
-
-
-@bot.group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw(ctx: commands.Context):
-    """
-    Get raw data from the Pixel Starships API.
-    Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
-
-    Usage:
-      /raw [subcommand] <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('raw')
-
-
-@cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
-    """
-    Get raw achievement design data from the PSS API.
-
-    Usage:
-      /raw achievement <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
-
-
-@cmd_raw.group(name='ai', brief='Get raw ai data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai(ctx: commands.Context):
-    """
-    Get raw ai design data from the PSS API.
-
-    Usage:
-      /raw ai [subcommand] <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('raw ai')
-
-
-@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
-    """
-    Get raw ai action design data from the PSS API.
-
-    Usage:
-      /raw ai action <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
-
-
-@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
-    """
-    Get raw ai condition design data from the PSS API.
-
-    Usage:
-      /raw ai condition <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
-
-
-@cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
-    """
-    Get raw character design data from the PSS API.
-
-    Usage:
-      /raw char <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
-
-
-@cmd_raw.command(name='collection', brief='Get raw collection data', aliases=['coll', 'collections'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
-    """
-    Get raw collection design data from the PSS API.
-
-    Usage:
-      /raw collection <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
-
-
-@cmd_raw.group(name='gm', brief='Get raw gm data', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm(ctx: commands.Context):
-    """
-    Get raw gm design data from the PSS API.
-
-    Usage:
-      /raw gm [subcommand] <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('raw gm')
-
-
-@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
-    """
-    Get raw star system design data from the PSS API.
-
-    Usage:
-      /raw gm system <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
-
-
-@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
-    """
-    Get raw star system link design data from the PSS API.
-
-    Usage:
-      /raw gm path <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
-
-
-@cmd_raw.command(name='item', brief='Get raw item data', aliases=['items'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
-    """
-    Get raw item design data from the PSS API.
-
-    Usage:
-      /raw item <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
-
-
-@cmd_raw.command(name='mission', brief='Get raw mission data', aliases=['missions'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
-    """
-    Get raw mission design data from the PSS API.
-
-    Usage:
-      /raw mission <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
-
-
-@cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
-    """
-    Get raw promotion design data from the PSS API.
-
-    Usage:
-      /raw promotion <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promo_id)
-
-
-@cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
-    """
-    Get raw research design data from the PSS API.
-
-    Usage:
-      /raw research <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
-
-
-@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
-    """
-    Get raw room design data from the PSS API.
-
-    Usage:
-      /raw room <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command and its sub-commands are only available to certain users. If you think, you should be eligible to use these commands, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
-
-
-@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
-    """
-    Get raw room purchase design data from the PSS API.
-
-    Usage:
-      /raw room purchase <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
-
-
-@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships', 'hull', 'hulls'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
-    """
-    Get raw ship design data from the PSS API.
-
-    Usage:
-      /raw ship <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
-
-
-@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
-    """
-    Get raw training design data from the PSS API.
-
-    Usage:
-      /raw training <id> <format>
-
-    Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
-      format: A string determining the format of the output to be returned. These are valid values:
-                • --json (JSON)
-                • --xml (raw XML as returned by the API)
-              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
-      All parameters are optional.
-
-    It may take a while for the bot to create the file, so be patient ;)
-    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
-    """
-    __log_command_use(ctx)
-    await raw.post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Owner commands ----------
-
+# ############################################################################ #
+# ----------                     Owner commands                     ---------- #
+# ############################################################################ #
 
 @bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
 @commands.is_owner()
@@ -2838,45 +2839,6 @@ async def cmd_autodaily_post(ctx: commands.Context):
         output, _ = await dropship.get_dropship_text()
         await util.post_output_to_channel(text_channel, output)
 
-@bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_test(ctx: commands.Context, action, *, params = None):
-    print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
-    if action == 'utcnow':
-        utcnow = util.get_utcnow()
-        txt = util.get_formatted_datetime(utcnow)
-        await ctx.send(txt)
-    elif action == 'init':
-        await db.init_schema()
-        await ctx.send('Initialized the database from scratch')
-        await util.try_delete_original_message(ctx)
-    elif action == 'commands':
-        output = [', '.join(sorted(bot.all_commands.keys()))]
-        await util.post_output(ctx, output)
-    elif action == 'setting':
-        setting_name = params.replace(' ', '_').upper()
-        result = settings.__dict__.get(setting_name)
-        if result is None:
-            output = [f'Could not find a setting named `{params}`']
-        else:
-            if isinstance(result, str):
-                result = f'"{result}"'
-            elif isinstance(result, list):
-                for i, element in enumerate(result):
-                    if isinstance(element, str):
-                        result[i] = f'"{element}"'
-            elif isinstance(result, dict):
-                for key, value in result.items():
-                    result.pop(key)
-                    if isinstance(key, str):
-                        key = f'"{key}"'
-                    if isinstance(value, str):
-                        value = f'"{value}"'
-                    result[key] = value
-            output = [str(result)]
-        await util.post_output(ctx, output)
-
 
 @bot.group(brief='DB commands', name='db', hidden=True, invoke_without_command=True)
 @commands.is_owner()
@@ -2916,26 +2878,123 @@ async def cmd_db_select(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' didn\'t return any results.')
 
 
-@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
+@bot.group(brief='list available devices', name='device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
-async def cmd_updatecache(ctx: commands.Context):
-    """This command is to be used to update all caches manually."""
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device(ctx: commands.Context):
+    """
+    Returns all known devices stored in the DB.
+    """
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            output = []
+            for device in login.DEVICES.devices:
+                output.append(settings.EMPTY_LINE)
+                if device.can_login_until:
+                    login_until = util.get_formatted_datetime(device.can_login_until)
+                else:
+                    login_until = '-'
+                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
+            output = output[1:]
+            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
+        for post in posts:
+            await ctx.send(post)
+
+
+@cmd_device.command(brief='store device', name='add')
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device_add(ctx: commands.Context, device_key: str):
+    """
+    Attempts to store a device with the given device_key in the DB.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
-        await crew.characters_designs_retriever.update_cache()
-        await crew.collections_designs_retriever.update_cache()
-        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
-        for prestige_to_cache in prestige_to_caches:
-            await prestige_to_cache.update_data()
-        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
-        for prestige_from_cache in prestige_from_caches:
-            await prestige_from_cache.update_data()
-        await item.items_designs_retriever.update_cache()
-        await research.researches_designs_retriever.update_cache()
-        await room.rooms_designs_retriever.update_cache()
-        await training.trainings_designs_retriever.update_cache()
-    await ctx.send('Updated all caches successfully!')
+        try:
+            device = await login.DEVICES.add_device_by_key(device_key)
+            added = True
+        except Exception as err:
+            added = False
+    if added:
+        await ctx.send(f'Added device with device key \'{device.key}\'.')
+    else:
+        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
+
+
+@cmd_device.command(brief='create & store random device', name='create')
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device_create(ctx: commands.Context):
+    """
+    Creates a new random device_key and attempts to store the new device in the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        device = await login.DEVICES.create_device()
+        try:
+            await device.get_access_token()
+            created = True
+        except Exception as err:
+            await login.DEVICES.remove_device(device)
+            created = False
+    if created is True:
+        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
+    else:
+        await ctx.send(f'Failed to create and store device:```{err}```')
+
+
+@cmd_device.command(brief='login to a device', name='login')
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device_login(ctx: commands.Context):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            access_token = await login.DEVICES.get_access_token()
+            device = login.DEVICES.current
+        except Exception as err:
+            access_token = None
+    if access_token is not None:
+        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
+    else:
+        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
+
+
+@cmd_device.command(brief='remove device', name='remove', aliases=['delete', 'yeet'])
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device_remove(ctx: commands.Context, device_key: str):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            await login.DEVICES.remove_device_by_key(device_key)
+            yeeted = True
+        except Exception as err:
+            yeeted = False
+    if yeeted:
+        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
+    else:
+        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
+
+
+@cmd_device.command(brief='select a device', name='select')
+@commands.is_owner()
+@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_device_select(ctx: commands.Context, device_key: str):
+    """
+    Attempts to select a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        device = login.DEVICES.select_device(device_key)
+    await ctx.send(f'Selected device \'{device.key}\'.')
 
 
 @bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'], hidden=True)
@@ -2976,137 +3035,87 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
     await ctx.send(embed=embed)
 
 
-@bot.group(brief='list available devices', name='device', hidden=True)
+@bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device(ctx: commands.Context):
-    """
-    Returns all known devices stored in the DB.
-    """
-    __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            output = []
-            for device in login.DEVICES.devices:
-                output.append(settings.EMPTY_LINE)
-                if device.can_login_until:
-                    login_until = util.get_formatted_datetime(device.can_login_until)
-                else:
-                    login_until = '-'
-                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
-            output = output[1:]
-            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
-        for post in posts:
-            await ctx.send(post)
+async def cmd_test(ctx: commands.Context, action, *, params = None):
+    print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
+    if action == 'utcnow':
+        utcnow = util.get_utcnow()
+        txt = util.get_formatted_datetime(utcnow)
+        await ctx.send(txt)
+    elif action == 'init':
+        await db.init_schema()
+        await ctx.send('Initialized the database from scratch')
+        await util.try_delete_original_message(ctx)
+    elif action == 'commands':
+        output = [', '.join(sorted(bot.all_commands.keys()))]
+        await util.post_output(ctx, output)
+    elif action == 'setting':
+        setting_name = params.replace(' ', '_').upper()
+        result = settings.__dict__.get(setting_name)
+        if result is None:
+            output = [f'Could not find a setting named `{params}`']
+        else:
+            if isinstance(result, str):
+                result = f'"{result}"'
+            elif isinstance(result, list):
+                for i, element in enumerate(result):
+                    if isinstance(element, str):
+                        result[i] = f'"{element}"'
+            elif isinstance(result, dict):
+                for key, value in result.items():
+                    result.pop(key)
+                    if isinstance(key, str):
+                        key = f'"{key}"'
+                    if isinstance(value, str):
+                        value = f'"{value}"'
+                    result[key] = value
+            output = [str(result)]
+        await util.post_output(ctx, output)
 
 
-@cmd_device.command(brief='create & store random device', name='create')
+@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_create(ctx: commands.Context):
-    """
-    Creates a new random device_key and attempts to store the new device in the DB.
-    """
+@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+async def cmd_updatecache(ctx: commands.Context):
+    """This command is to be used to update all caches manually."""
     __log_command_use(ctx)
     async with ctx.typing():
-        device = await login.DEVICES.create_device()
-        try:
-            await device.get_access_token()
-            created = True
-        except Exception as err:
-            await login.DEVICES.remove_device(device)
-            created = False
-    if created is True:
-        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
+        await crew.characters_designs_retriever.update_cache()
+        await crew.collections_designs_retriever.update_cache()
+        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+        for prestige_to_cache in prestige_to_caches:
+            await prestige_to_cache.update_data()
+        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+        for prestige_from_cache in prestige_from_caches:
+            await prestige_from_cache.update_data()
+        await item.items_designs_retriever.update_cache()
+        await research.researches_designs_retriever.update_cache()
+        await room.rooms_designs_retriever.update_cache()
+        await training.trainings_designs_retriever.update_cache()
+    await ctx.send('Updated all caches successfully!')
+
+
+
+
+
+
+
+
+
+
+# ############################################################################ #
+# ----------                Command Helper Functions                ---------- #
+# ############################################################################ #
+
+async def __assert_settings_command_valid(ctx: commands.Context) -> None:
+    if util.is_guild_channel(ctx.channel):
+        permissions = ctx.channel.permissions_for(ctx.author)
+        if getattr(permissions, 'manage_guild') is not True:
+            raise commands.MissingPermissions(['manage_guild'])
     else:
-        await ctx.send(f'Failed to create and store device:```{err}```')
-
-
-@cmd_device.command(brief='store device', name='add')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_add(ctx: commands.Context, device_key: str):
-    """
-    Attempts to store a device with the given device_key in the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            device = await login.DEVICES.add_device_by_key(device_key)
-            added = True
-        except Exception as err:
-            added = False
-    if added:
-        await ctx.send(f'Added device with device key \'{device.key}\'.')
-    else:
-        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
-
-
-@cmd_device.command(brief='remove device', name='remove', aliases=['delete', 'yeet'])
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_remove(ctx: commands.Context, device_key: str):
-    """
-    Attempts to remove a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            await login.DEVICES.remove_device_by_key(device_key)
-            yeeted = True
-        except Exception as err:
-            yeeted = False
-    if yeeted:
-        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
-    else:
-        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
-
-
-@cmd_device.command(brief='login to a device', name='login')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_login(ctx: commands.Context):
-    """
-    Attempts to remove a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            access_token = await login.DEVICES.get_access_token()
-            device = login.DEVICES.current
-        except Exception as err:
-            access_token = None
-    if access_token is not None:
-        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
-    else:
-        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
-
-
-@cmd_device.command(brief='select a device', name='select')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_select(ctx: commands.Context, device_key: str):
-    """
-    Attempts to select a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        device = login.DEVICES.select_device(device_key)
-    await ctx.send(f'Selected device \'{device.key}\'.')
-
-
-
-
-
-
-
-
-
-
-# ---------- Command Helper Functions ----------
-
-
-
+        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
 def __log_command_use(ctx: commands.Context):
@@ -3121,13 +3130,6 @@ def __log_command_use_error(ctx: commands.Context, err: Exception):
             print(str(err))
 
 
-async def __assert_settings_command_valid(ctx: commands.Context) -> None:
-    if util.is_guild_channel(ctx.channel):
-        permissions = ctx.channel.permissions_for(ctx.author)
-        if getattr(permissions, 'manage_guild') is not True:
-            raise commands.MissingPermissions(['manage_guild'])
-    else:
-        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
 
@@ -3136,11 +3138,10 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
 
 
 
+# ############################################################################ #
+# ----------                      Run the Bot                       ---------- #
+# ############################################################################ #
 
-
-
-
-# ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
