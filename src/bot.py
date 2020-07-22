@@ -144,6 +144,7 @@ async def on_ready() -> None:
     print(f'Initialized!')
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {schema_version}')
+    print(f'discord.py version: {discord.__version__}')
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -3140,6 +3141,5 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
 
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
-    print(f'discord.py version: {discord.__version__}')
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
