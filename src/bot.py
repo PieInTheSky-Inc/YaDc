@@ -175,6 +175,7 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
         error_message = str(err)
         retry_after = None
         if isinstance(err, commands.CommandOnCooldown):
+            error_message += f'\nThis message will delete itself, when you may use the command again.'
             retry_after = err.retry_after
         elif isinstance(err, commands.CommandNotFound):
             prefix = await server_settings.get_prefix(bot, ctx.message)
