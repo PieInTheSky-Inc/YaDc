@@ -31,12 +31,17 @@ ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
 ROOM_DESIGN_KEY_NAME = 'RoomDesignId'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2 = 'RoomShortName'
+ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
 
 
 ROOM_DESIGN_PURCHASE_BASE_PATH = 'RoomService/ListRoomDesignPurchase?languageKey=en'
 ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
 ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
-ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
+
+
+MISSILE_DESIGN_BASE_PATH = 'RoomService/ListMissileDesigns'
+MISSILE_DESIGN_KEY_NAME = 'MissileDesignId'
+MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'MissileDesignName'
 
 
 # RoomType: 'unit'
@@ -163,6 +168,11 @@ __DISPLAY_NAMES = {
     'wikia': {
         'default': 'Wikia'
     },
+}
+
+
+__AMMO_TYPE_OVERWRITES = {
+    'ION': 'Ion Core(s)'
 }
 
 
@@ -420,7 +430,7 @@ def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs
                     if lower in lookups.CURRENCY_EMOJI_LOOKUP.keys():
                         construction_type = lookups.CURRENCY_EMOJI_LOOKUP[lower]
                     else:
-                        construction_type = manufacture_type
+                        construction_type = __get_manufacture_type(room_info)
                 if construction_type:
                     return f'{value} {construction_type}'
                 else:
@@ -431,6 +441,20 @@ def __get_max_storage_and_type(room_info: entity.EntityDesignInfo, rooms_designs
             return None
     else:
         return None
+
+
+def __get_property_display_name(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    display_name_key = kwargs.get('display_name_key')
+    display_names = kwargs.get('display_names')
+    room_type = room_design_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
+    result = None
+    if display_name_key and room_type:
+        display_name = display_names.get(display_name_key, {})
+        if display_name:
+            result = display_name.get(room_type, display_name.get('default'))
+        else:
+            raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
+    return result
 
 
 def __get_queue_limit(room_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, researches_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -634,17 +658,9 @@ def __get_parents(room_info: dict, rooms_designs_data: dict) -> list:
         return []
 
 
-def __get_property_display_name(room_design_info: entity.EntityDesignInfo, rooms_designs_data: entity.EntitiesDesignsData, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    display_name_key = kwargs.get('display_name_key')
-    display_names = kwargs.get('display_names')
-    room_type = room_design_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
-    result = None
-    if display_name_key and room_type:
-        display_name = display_names.get(display_name_key, {})
-        if display_name:
-            result = display_name.get(room_type, display_name.get('default'))
-        else:
-            raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
+def __get_manufacture_type(room_design_info: entity.EntityDesignInfo) -> str:
+    short_name = __get_short_name(room_design_info)
+    result = __AMMO_TYPE_OVERWRITES.get(short_name.upper(), room_design_info.get('ManufactureType'))
     return result
 
 
@@ -660,6 +676,15 @@ def __get_min_ship_lvl_display_name(room_design_info: entity.EntityDesignInfo, r
         else:
             raise Exception(f'Get room property display name: Could not find a display name with the key \'{display_name_key}\'! Please contact the author about this.')
     return result
+
+
+def __get_short_name(room_design_info: entity.EntityDesignInfo) -> str:
+    room_short_name = room_design_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
+    if room_short_name:
+        result = room_short_name.split(':')[0]
+        return result
+    else:
+        return ''
 
 
 def __parse_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
