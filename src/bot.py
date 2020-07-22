@@ -2988,6 +2988,14 @@ async def cmd_repeat(ctx: commands.Context, *, message: str = None):
     await ctx.send(message)
 
 
+@BOT.command(name='embed', brief='Embeds your message.', hidden=True)
+@commands.is_owner()
+async def cmd_embed(ctx: commands.Context, *, message: str = None):
+    colour = get_bot_member_colour(bot, ctx.guild)
+    embed = util.create_embed('Your message in an embed', description=message, colour=colour)
+    await ctx.send(embed)
+
+
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
 @commands.is_owner()
 async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
