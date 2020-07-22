@@ -426,7 +426,7 @@ async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member
 # ----------                  General Bot Commands                  ---------- #
 # ############################################################################ #
 
-@bot.command(brief='Display info on this bot', name='about', aliases=['info'])
+@bot.command(name='about', aliases=['info'], brief='Display info on this bot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_about(ctx: commands.Context):
     """
@@ -479,7 +479,7 @@ async def cmd_about(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 
-@bot.command(brief='Get an invite link', name='invite')
+@bot.command(name='invite', brief='Get an invite link')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_invite(ctx: commands.Context):
     """
@@ -503,7 +503,7 @@ async def cmd_invite(ctx: commands.Context):
         await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
 
 
-@bot.command(brief='Show links', name='links')
+@bot.command(name='links', brief='Show links')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_links(ctx: commands.Context):
     """
@@ -521,7 +521,7 @@ async def cmd_links(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Ping the server', name='ping')
+@bot.command(name='ping', brief='Ping the server')
 async def cmd_ping(ctx: commands.Context):
     """
     Ping the bot to verify that it\'s listening for commands.
@@ -538,7 +538,7 @@ async def cmd_ping(ctx: commands.Context):
     await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
 
 
-@bot.command(brief='Invite to bot\'s support server', name='support')
+@bot.command(name='support', brief='Invite to bot\'s support server')
 async def cmd_support(ctx: commands.Context):
     """
     Produces an invite link to the support server for this bot and sends it via DM.
@@ -570,7 +570,7 @@ async def cmd_support(ctx: commands.Context):
 # ----------                    PSS Bot Commands                    ---------- #
 # ############################################################################ #
 
-@bot.command(brief='Get best items for a slot', name='best')
+@bot.command(name='best', brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
     """
@@ -622,7 +622,7 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get character stats', name='char', aliases=['crew'])
+@bot.command(name='char', aliases=['crew'], brief='Get character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
     """
@@ -649,7 +649,7 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
+@bot.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
@@ -675,7 +675,7 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get collections', name='collection', aliases=['coll'])
+@bot.command(name='collection', aliases=['coll'], brief='Get collections')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
@@ -700,7 +700,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Show the dailies', name='daily')
+@bot.command(name='daily', brief='Show the dailies')
 @commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
 async def cmd_daily(ctx: commands.Context):
     """
@@ -719,7 +719,7 @@ async def cmd_daily(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
+@bot.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
     """
@@ -760,7 +760,7 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
         await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
 
-@bot.command(brief='Get item ingredients', name='ingredients', aliases=['ing'])
+@bot.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
@@ -785,7 +785,7 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item stats', name='item')
+@bot.command(name='item', brief='Get item stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
@@ -809,7 +809,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
+@bot.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
     """
@@ -832,7 +832,7 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Show the news', name='news')
+@bot.command(name='news', brief='Show the news')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_news(ctx: commands.Context):
     """
@@ -851,7 +851,7 @@ async def cmd_news(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
+@bot.group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
     """
@@ -909,7 +909,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
     await util.post_output(ctx, output)
 
 
-@cmd_past_stars.command(name='fleet', brief='Get historic fleet stars', aliases=['alliance'])
+@cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
@@ -961,7 +961,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
+@cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
@@ -1017,7 +1017,7 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
+@cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
     """
@@ -1069,7 +1069,7 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get infos on a player', name='player', aliases=['user'])
+@bot.command(name='player', aliases=['user'], brief='Get infos on a player')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_player(ctx: commands.Context, *, player_name: str):
     """
@@ -1108,7 +1108,7 @@ async def cmd_player(ctx: commands.Context, *, player_name: str):
         await ctx.send(f'Could not find a player named `{player_name}`.')
 
 
-@bot.command(brief='Get prestige combos of crew', name='prestige')
+@bot.command(name='prestige', brief='Get prestige combos of crew')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     """
@@ -1132,7 +1132,7 @@ async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item\'s prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
+@bot.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
@@ -1159,7 +1159,7 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get character recipes', name='recipe')
+@bot.command(name='recipe', brief='Get character recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
@@ -1183,7 +1183,7 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get research data', name='research')
+@bot.command(name='research', brief='Get research data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
@@ -1207,7 +1207,7 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get room infos', name='room')
+@bot.command(name='room', brief='Get room infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
@@ -1233,7 +1233,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Division stars', name='stars', invoke_without_command=True)
+@bot.group(name='stars', brief='Division stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars(ctx: commands.Context, *, division: str = None):
     """
@@ -1270,7 +1270,7 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
         await ctx.invoke(cmd, month=None, year=None, division=division)
 
 
-@cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
+@cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
     """
@@ -1318,7 +1318,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
 
 
-@bot.command(brief='Get item/crew stats', name='stats', aliases=['stat'])
+@bot.command(name='stats', aliases=['stat'], brief='Get item/crew stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
     """
@@ -1366,8 +1366,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         await ctx.send(f'Could not find a character or an item named `{full_name}`.')
 
 
-@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+@bot.command(name='time', brief='Get PSS stardate & Melbourne time')
 async def cmd_time(ctx: commands.Context):
     """
     Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
@@ -1400,7 +1399,7 @@ async def cmd_time(ctx: commands.Context):
     await ctx.send(str_time)
 
 
-@bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
+@bot.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top(ctx: commands.Context, *, count: str = '100'):
     """
@@ -1438,7 +1437,8 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
         await ctx.invoke(cmd, count=count)
 
 
-@cmd_top.command(brief='Prints top captains', name='players', aliases=['captains', 'users'])
+@cmd_top.command(name='players', aliases=['captains', 'users'], brief='Prints top captains')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     """
     Prints top captains. Prints top 100 captains by default.
@@ -1460,7 +1460,8 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     await util.post_output(ctx, output)
 
 
-@cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
+@cmd_top.command(name='fleets', aliases=['alliances'], brief='Prints top fleets')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
     """
     Prints top fleets. Prints top 100 fleets by default.
@@ -1482,8 +1483,7 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
-@commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.user)
+@bot.group(name='tournament', aliases=['tourney'], brief='Information on tournament time')
 async def cmd_tournament(ctx: commands.Context):
     """
     Get information about the starting time of the tournament.
@@ -1501,7 +1501,7 @@ async def cmd_tournament(ctx: commands.Context):
         await ctx.invoke(cmd)
 
 
-@cmd_tournament.command(brief='Information on this month\'s tournament time', name='current')
+@cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
 async def cmd_tournament_current(ctx: commands.Context):
     """
     Get information about the starting time of the current month's tournament.
@@ -1522,7 +1522,7 @@ async def cmd_tournament_current(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 
-@cmd_tournament.command(brief='Information on next month\'s tournament time', name='next')
+@cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
 async def cmd_tournament_next(ctx: commands.Context):
     """
     Get information about the starting time of the next month's tournament.
@@ -1543,7 +1543,7 @@ async def cmd_tournament_next(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 
-@bot.command(brief='Get training infos', name='training')
+@bot.command(name='training', brief='Get training infos')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
@@ -1605,7 +1605,7 @@ async def cmd_raw(ctx: commands.Context):
     await ctx.send_help('raw')
 
 
-@cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
+@cmd_raw.command(name='achievement', aliases=['achievements'], brief='Get raw achievement data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
     """
@@ -1653,7 +1653,7 @@ async def cmd_raw_ai(ctx: commands.Context):
     await ctx.send_help('raw ai')
 
 
-@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
+@cmd_raw_ai.command(name='action', aliases=['actions'], brief='Get raw ai action data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     """
@@ -1677,7 +1677,7 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     await raw.post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
 
 
-@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
+@cmd_raw_ai.command(name='condition', aliases=['conditions'], brief='Get raw ai condition data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
     """
@@ -1701,7 +1701,7 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
     await raw.post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
 
 
-@cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
+@cmd_raw.command(name='char', aliases=['crew', 'chars', 'crews'], brief='Get raw crew data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     """
@@ -1725,7 +1725,7 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
 
 
-@cmd_raw.command(name='collection', brief='Get raw collection data', aliases=['coll', 'collections'])
+@cmd_raw.command(name='collection', aliases=['coll', 'collections'], brief='Get raw collection data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
     """
@@ -1749,7 +1749,7 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
     await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
 
 
-@cmd_raw.group(name='gm', brief='Get raw gm data', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
+@cmd_raw.group(name='gm', aliases=['galaxymap', 'galaxy'], brief='Get raw gm data', invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm(ctx: commands.Context):
     """
@@ -1773,7 +1773,7 @@ async def cmd_raw_gm(ctx: commands.Context):
     await ctx.send_help('raw gm')
 
 
-@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
+@cmd_raw_gm.command(name='system', aliases=['systems', 'star', 'stars'], brief='Get raw gm system data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
     """
@@ -1797,7 +1797,7 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
     await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
 
 
-@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
+@cmd_raw_gm.command(name='path', aliases=['paths', 'link', 'links'], brief='Get raw gm path data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
     """
@@ -1821,7 +1821,7 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
     await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
 
 
-@cmd_raw.command(name='item', brief='Get raw item data', aliases=['items'])
+@cmd_raw.command(name='item', aliases=['items'], brief='Get raw item data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     """
@@ -1845,7 +1845,7 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
 
 
-@cmd_raw.command(name='mission', brief='Get raw mission data', aliases=['missions'])
+@cmd_raw.command(name='mission', aliases=['missions'], brief='Get raw mission data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     """
@@ -1869,7 +1869,7 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
 
 
-@cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
+@cmd_raw.command(name='promotion', aliases=['promo', 'promotions', 'promos'], brief='Get raw promotion data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     """
@@ -1893,7 +1893,7 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promo_id)
 
 
-@cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
+@cmd_raw.command(name='research', aliases=['researches'], brief='Get raw research data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     """
@@ -1917,7 +1917,7 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
 
 
-@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
+@cmd_raw.group(name='room', aliases=['rooms'], brief='Get raw room data', invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     """
@@ -1941,7 +1941,7 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
 
 
-@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
+@cmd_raw_room.command(name='purchase', aliases=['purchases'], brief='Get raw room purchase data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
     """
@@ -1965,7 +1965,7 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
     await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
 
 
-@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships', 'hull', 'hulls'])
+@cmd_raw.command(name='ship', aliases=['ships', 'hull', 'hulls'], brief='Get raw ship data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     """
@@ -1989,7 +1989,7 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
 
 
-@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
+@cmd_raw.command(name='training', aliases=['trainings'], brief='Get raw training data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     """
@@ -2025,7 +2025,7 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
 # ----------                Server settings commands                ---------- #
 # ############################################################################ #
 
-@bot.group(brief='Server settings', name='settings', invoke_without_command=True)
+@bot.group(name='settings', brief='Server settings', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings(ctx: commands.Context):
     """
@@ -2056,7 +2056,7 @@ async def cmd_settings(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings.group(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
+@cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily(ctx: commands.Context):
     """
@@ -2083,7 +2083,7 @@ async def cmd_settings_get_autodaily(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily channel', name='channel', aliases=['ch'])
+@cmd_settings_get_autodaily.command(name='channel', aliases=['ch'], brief='Retrieve auto-daily channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily_channel(ctx: commands.Context):
     """
@@ -2110,7 +2110,7 @@ async def cmd_settings_get_autodaily_channel(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily mode', name='changemode', aliases=['mode'])
+@cmd_settings_get_autodaily.command(name='changemode', aliases=['mode'], brief='Retrieve auto-daily mode')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
     """
@@ -2137,7 +2137,7 @@ async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily notify', name='notify')
+@cmd_settings_get_autodaily.command(name='notify', brief='Retrieve auto-daily notify')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
     """
@@ -2164,7 +2164,7 @@ async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
+@cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_botnews(ctx: commands.Context):
     """
@@ -2191,7 +2191,7 @@ async def cmd_settings_get_botnews(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
+@cmd_settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: commands.Context):
     """
@@ -2217,7 +2217,7 @@ async def cmd_settings_get_pagination(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
+@cmd_settings.command(name='prefix', brief='Retrieve prefix settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_prefix(ctx: commands.Context):
     """
@@ -2239,7 +2239,7 @@ async def cmd_settings_get_prefix(ctx: commands.Context):
     await ctx.invoke(command)
 
 
-@bot.command(brief='Retrieve prefix settings', name='prefix')
+@bot.command(name='prefix', brief='Retrieve prefix settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_prefix(ctx: commands.Context):
     """
@@ -2270,7 +2270,7 @@ async def cmd_prefix(ctx: commands.Context):
 
 
 
-@cmd_settings.group(brief='Reset server settings', name='reset', invoke_without_command=True)
+@cmd_settings.group(name='reset', brief='Reset server settings', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset(ctx: commands.Context):
     """
@@ -2299,7 +2299,7 @@ async def cmd_settings_reset(ctx: commands.Context):
         await ctx.invoke(reset_prefix)
 
 
-@cmd_settings_reset.group(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
+@cmd_settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily(ctx: commands.Context):
     """
@@ -2332,7 +2332,7 @@ async def cmd_settings_reset_autodaily(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily channel', name='channel', aliases=['ch'])
+@cmd_settings_reset_autodaily.command(name='channel', aliases=['ch'], brief='Reset auto-daily channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
     """
@@ -2365,7 +2365,7 @@ async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily change mode', name='changemode', aliases=['mode'])
+@cmd_settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
     """
@@ -2398,7 +2398,7 @@ async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily notifications', name='notify')
+@cmd_settings_reset_autodaily.command(name='notify', brief='Reset auto-daily notifications')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
     """
@@ -2431,7 +2431,7 @@ async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset.command(brief='Reset bot news channel', name='botnews', aliases=['botchannel'])
+@cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
     """
@@ -2464,7 +2464,7 @@ async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
+@cmd_settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: commands.Context):
     """
@@ -2497,7 +2497,7 @@ async def cmd_settings_reset_pagination(ctx: commands.Context):
             await util.post_output(ctx, output)
 
 
-@cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
+@cmd_settings_reset.command(name='prefix', brief='Reset prefix settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_prefix(ctx: commands.Context):
     """
@@ -2538,7 +2538,7 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
 
 
 
-@cmd_settings.group(brief='Change server settings', name='set', invoke_without_command=False)
+@cmd_settings.group(name='set', brief='Change server settings', invoke_without_command=False)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set(ctx: commands.Context):
     """
@@ -2558,7 +2558,7 @@ async def cmd_settings_set(ctx: commands.Context):
         await ctx.send_help('settings set')
 
 
-@cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
+@cmd_settings_set.group(name='autodaily', aliases=['daily'], brief='Change auto-daily settings', invoke_without_command=False)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily(ctx: commands.Context):
     """
@@ -2571,7 +2571,7 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     await ctx.send_help('settings set autodaily')
 
 
-@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
+@cmd_settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
     """
@@ -2604,7 +2604,7 @@ async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set_autodaily.command(brief='Set auto-daily repost mode', name='changemode', aliases=['mode'])
+@cmd_settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily repost mode')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_change(ctx: commands.Context):
     """
@@ -2633,7 +2633,7 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set_autodaily.command(brief='Set auto-daily notify settings', name='notify')
+@cmd_settings_set_autodaily.command(name='notify', brief='Set auto-daily notify settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: Union[discord.Role, discord.Member] = None):
     """
@@ -2665,7 +2665,7 @@ async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: U
             await util.post_output(ctx, output)
 
 
-@cmd_settings_set.command(brief='Set the bot news channel', name='botnews', aliases=['botchannel'])
+@cmd_settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel=None):
     """
@@ -2696,7 +2696,7 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
+@cmd_settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None):
     """
@@ -2732,7 +2732,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
         await util.post_output(ctx, output)
 
 
-@cmd_settings_set.command(brief='Set prefix', name='prefix')
+@cmd_settings_set.command(name='prefix', brief='Set prefix')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
     """
@@ -2776,9 +2776,8 @@ async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
 # ----------                     Owner commands                     ---------- #
 # ############################################################################ #
 
-@bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
+@bot.group(name='autodaily', brief='Configure auto-daily for the server', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily(ctx: commands.Context):
     """
     This command can be used to get an overview of the autodaily settings for this bot.
@@ -2789,17 +2788,15 @@ async def cmd_autodaily(ctx: commands.Context):
     pass
 
 
-@cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
+@cmd_autodaily.group(name='list', brief='List configured auto-daily channels', invoke_without_command=False, hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily_list(ctx: commands.Context):
     __log_command_use(ctx)
     pass
 
 
-@cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
+@cmd_autodaily_list.command(name='all', brief='List all configured auto-daily channels', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily_list_all(ctx: commands.Context):
     __log_command_use(ctx)
     async with ctx.typing():
@@ -2807,9 +2804,8 @@ async def cmd_autodaily_list_all(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
+@cmd_autodaily_list.command(name='invalid', brief='List all invalid configured auto-daily channels', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily_list_invalid(ctx: commands.Context):
     __log_command_use(ctx)
     async with ctx.typing():
@@ -2817,9 +2813,8 @@ async def cmd_autodaily_list_invalid(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
+@cmd_autodaily_list.command(name='valid', brief='List all valid configured auto-daily channels', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily_list_valid(ctx: commands.Context):
     __log_command_use(ctx)
     async with ctx.typing():
@@ -2827,9 +2822,8 @@ async def cmd_autodaily_list_valid(ctx: commands.Context):
     await util.post_output(ctx, output)
 
 
-@cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
+@cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_autodaily_post(ctx: commands.Context):
     __log_command_use(ctx)
     guild = ctx.guild
@@ -2840,13 +2834,13 @@ async def cmd_autodaily_post(ctx: commands.Context):
         await util.post_output_to_channel(text_channel, output)
 
 
-@bot.group(brief='DB commands', name='db', hidden=True, invoke_without_command=True)
+@bot.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
 @commands.is_owner()
 async def cmd_db(ctx: commands.Context):
     await ctx.send_help('db')
 
 
-@cmd_db.command(brief='Try to execute a DB query', name='query', hidden=True)
+@cmd_db.command(name='query', brief='Try to execute a DB query', hidden=True)
 @commands.is_owner()
 async def cmd_db_query(ctx: commands.Context, *, query: str):
     async with ctx.typing():
@@ -2857,7 +2851,7 @@ async def cmd_db_query(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
 
 
-@cmd_db.command(brief='Try to select from DB', name='select', hidden=True)
+@cmd_db.command(name='select', brief='Try to select from DB', hidden=True)
 @commands.is_owner()
 async def cmd_db_select(ctx: commands.Context, *, query: str):
     async with ctx.typing():
@@ -2878,9 +2872,8 @@ async def cmd_db_select(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' didn\'t return any results.')
 
 
-@bot.group(brief='list available devices', name='device', hidden=True)
+@bot.group(name='device', brief='list available devices', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device(ctx: commands.Context):
     """
     Returns all known devices stored in the DB.
@@ -2902,9 +2895,8 @@ async def cmd_device(ctx: commands.Context):
             await ctx.send(post)
 
 
-@cmd_device.command(brief='store device', name='add')
+@cmd_device.command(name='add', brief='store device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device_add(ctx: commands.Context, device_key: str):
     """
     Attempts to store a device with the given device_key in the DB.
@@ -2922,9 +2914,8 @@ async def cmd_device_add(ctx: commands.Context, device_key: str):
         await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
 
 
-@cmd_device.command(brief='create & store random device', name='create')
+@cmd_device.command(name='create', brief='create & store random device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device_create(ctx: commands.Context):
     """
     Creates a new random device_key and attempts to store the new device in the DB.
@@ -2944,9 +2935,8 @@ async def cmd_device_create(ctx: commands.Context):
         await ctx.send(f'Failed to create and store device:```{err}```')
 
 
-@cmd_device.command(brief='login to a device', name='login')
+@cmd_device.command(name='login', brief='login to a device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device_login(ctx: commands.Context):
     """
     Attempts to remove a device with the given device_key from the DB.
@@ -2964,9 +2954,8 @@ async def cmd_device_login(ctx: commands.Context):
         await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
 
 
-@cmd_device.command(brief='remove device', name='remove', aliases=['delete', 'yeet'])
+@cmd_device.command(name='remove', aliases=['delete', 'yeet'], brief='remove device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device_remove(ctx: commands.Context, device_key: str):
     """
     Attempts to remove a device with the given device_key from the DB.
@@ -2984,9 +2973,8 @@ async def cmd_device_remove(ctx: commands.Context, device_key: str):
         await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
 
 
-@cmd_device.command(brief='select a device', name='select')
+@cmd_device.command(name='select', brief='select a device', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_device_select(ctx: commands.Context, device_key: str):
     """
     Attempts to select a device with the given device_key from the DB.
@@ -2997,7 +2985,7 @@ async def cmd_device_select(ctx: commands.Context, device_key: str):
     await ctx.send(f'Selected device \'{device.key}\'.')
 
 
-@bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'], hidden=True)
+@bot.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
 @commands.is_owner()
 async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
     """
@@ -3035,9 +3023,8 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
     await ctx.send(embed=embed)
 
 
-@bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
+@bot.command(name='test', brief='These are testing commands, usually for debugging purposes', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_test(ctx: commands.Context, action, *, params = None):
     print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
@@ -3075,9 +3062,8 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await util.post_output(ctx, output)
 
 
-@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
+@bot.command(name='updatecache', brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
 async def cmd_updatecache(ctx: commands.Context):
     """This command is to be used to update all caches manually."""
     __log_command_use(ctx)
