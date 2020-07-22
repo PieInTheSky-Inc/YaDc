@@ -2251,7 +2251,6 @@ async def cmd_prefix(ctx: commands.Context):
       /prefix - Prints the prefix setting for the current Discord server/guild.
     """
     __log_command_use(ctx)
-
     channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
     async with ctx.typing():
         guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
@@ -2834,12 +2833,14 @@ async def cmd_autodaily_post(ctx: commands.Context):
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
 @commands.is_owner()
 async def cmd_db(ctx: commands.Context):
+    __log_command_use(ctx)
     await ctx.send_help('db')
 
 
 @cmd_db.command(name='query', brief='Try to execute a DB query', hidden=True)
 @commands.is_owner()
 async def cmd_db_query(ctx: commands.Context, *, query: str):
+    __log_command_use(ctx)
     async with ctx.typing():
         success = await db.try_execute(query)
     if not success:
@@ -2851,6 +2852,7 @@ async def cmd_db_query(ctx: commands.Context, *, query: str):
 @cmd_db.command(name='select', brief='Try to select from DB', hidden=True)
 @commands.is_owner()
 async def cmd_db_select(ctx: commands.Context, *, query: str):
+    __log_command_use(ctx)
     async with ctx.typing():
         if not query.lower().startswith('select '):
             query = f'SELECT {query}'
@@ -2982,18 +2984,20 @@ async def cmd_device_select(ctx: commands.Context, device_key: str):
     await ctx.send(f'Selected device \'{device.key}\'.')
 
 
-@BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
-@commands.is_owner()
-async def cmd_repeat(ctx: commands.Context, *, message: str = None):
-    await ctx.send(message)
-
-
 @BOT.command(name='embed', brief='Embeds your message.', hidden=True)
 @commands.is_owner()
 async def cmd_embed(ctx: commands.Context, *, message: str = None):
+    __log_command_use(ctx)
     colour = util.get_bot_member_colour(BOT, ctx.guild)
     embed = util.create_embed('Your message in an embed', description=message, colour=colour)
     await ctx.send(embed=embed)
+
+
+@BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
+@commands.is_owner()
+async def cmd_repeat(ctx: commands.Context, *, message: str = None):
+    __log_command_use(ctx)
+    await ctx.send(message)
 
 
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
@@ -3013,7 +3017,6 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
       /sendnews --title=This is a title. --content=This is the content.
     """
     __log_command_use(ctx)
-
     if not news:
         return
 
@@ -3037,6 +3040,7 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
 @BOT.command(name='test', brief='These are testing commands, usually for debugging purposes', hidden=True)
 @commands.is_owner()
 async def cmd_test(ctx: commands.Context, action, *, params = None):
+    __log_command_use(ctx)
     print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
