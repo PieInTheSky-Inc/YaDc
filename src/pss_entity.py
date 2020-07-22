@@ -112,7 +112,7 @@ class EntityDesignDetailProperty(object):
             result = self.__display_name_function(entity_design_info, *entities_designs_data, **kwargs)
             return result
         elif self.__display_name_property:
-            _, result = await self.__display_name_property.get_full_property(entity_design_info, entities_designs_data, kwargs)
+            _, result = await self.__display_name_property.get_full_property(entity_design_info, *entities_designs_data, **kwargs)
             return result
         else:
             return ''

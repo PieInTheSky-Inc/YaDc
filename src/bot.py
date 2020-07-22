@@ -144,6 +144,7 @@ async def on_ready() -> None:
     print(f'Initialized!')
     print(f'Bot version is: {settings.VERSION}')
     print(f'DB schema version is: {schema_version}')
+    print(f'discord.py version: {discord.__version__}')
     bot.loop.create_task(post_dailies_loop())
 
 
@@ -1247,29 +1248,6 @@ async def cmd_tournament_next(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 
-@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
-async def cmd_updatecache(ctx: commands.Context):
-    """This command is to be used to update all caches manually."""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        await crew.characters_designs_retriever.update_cache()
-        await crew.collections_designs_retriever.update_cache()
-        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
-        for prestige_to_cache in prestige_to_caches:
-            await prestige_to_cache.update_data()
-        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
-        for prestige_from_cache in prestige_from_caches:
-            await prestige_from_cache.update_data()
-        await item.items_designs_retriever.update_cache()
-        await research.researches_designs_retriever.update_cache()
-        await room.rooms_designs_retriever.update_cache()
-        await training.trainings_designs_retriever.update_cache()
-    await ctx.send('Updated all caches successfully!')
-
-
-
 @bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
@@ -1367,7 +1345,7 @@ async def cmd_support(ctx: commands.Context):
         output = [about['support']]
     await util.dm_author(ctx, output)
     if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
 
 
 
@@ -2938,6 +2916,27 @@ async def cmd_db_select(ctx: commands.Context, *, query: str):
         await ctx.send(f'The query \'{query}\' didn\'t return any results.')
 
 
+@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
+async def cmd_updatecache(ctx: commands.Context):
+    """This command is to be used to update all caches manually."""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        await crew.characters_designs_retriever.update_cache()
+        await crew.collections_designs_retriever.update_cache()
+        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+        for prestige_to_cache in prestige_to_caches:
+            await prestige_to_cache.update_data()
+        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+        for prestige_from_cache in prestige_from_caches:
+            await prestige_from_cache.update_data()
+        await item.items_designs_retriever.update_cache()
+        await research.researches_designs_retriever.update_cache()
+        await room.rooms_designs_retriever.update_cache()
+        await training.trainings_designs_retriever.update_cache()
+    await ctx.send('Updated all caches successfully!')
+
 
 @bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'], hidden=True)
 @commands.is_owner()
@@ -3143,6 +3142,5 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
 
 # ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
-    print(f'discord.py version: {discord.__version__}')
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     bot.run(token)
