@@ -2982,6 +2982,12 @@ async def cmd_device_select(ctx: commands.Context, device_key: str):
     await ctx.send(f'Selected device \'{device.key}\'.')
 
 
+@BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
+@commands.is_owner()
+async def cmd_repeat(ctx: commands.Context, *, message: str = None):
+    await ctx.send(message)
+
+
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
 @commands.is_owner()
 async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
