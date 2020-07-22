@@ -2991,7 +2991,7 @@ async def cmd_repeat(ctx: commands.Context, *, message: str = None):
 @BOT.command(name='embed', brief='Embeds your message.', hidden=True)
 @commands.is_owner()
 async def cmd_embed(ctx: commands.Context, *, message: str = None):
-    colour = util.get_bot_member_colour(bot, ctx.guild)
+    colour = util.get_bot_member_colour(BOT, ctx.guild)
     embed = util.create_embed('Your message in an embed', description=message, colour=colour)
     await ctx.send(embed)
 
