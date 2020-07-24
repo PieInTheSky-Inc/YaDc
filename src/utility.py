@@ -175,9 +175,13 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output(ctx: commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
-        await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+        if isinstance(output[0], discord.Embed):
+            for embed in output:
+                await ctx.send(embed=embed)
+        elif isinstance(output[0], str):
+            await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
 
 
 async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
