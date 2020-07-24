@@ -1230,6 +1230,13 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     await util.post_output(ctx, output)
 
 
+@BOT.command(name='sales', brief='List past sales', hidden=True)
+@commands.is_owner()
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_sales(ctx: commands.Context):
+    pass
+
+
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_stars(ctx: commands.Context, *, division: str = None):
