@@ -79,11 +79,11 @@ async def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.U
 
     try:
         daily_msg = _get_daily_news_from_data_as_text(daily_info)
-        dropship_msg = _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
-        merchantship_msg = _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
-        shop_msg = _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-        sale_msg = _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-        daily_reward_msg = _get_daily_reward_from_data_as_text(daily_info, item_design_data)
+        dropship_msg = await _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
+        merchantship_msg = await _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
+        shop_msg = await _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+        sale_msg = await _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
+        daily_reward_msg = await _get_daily_reward_from_data_as_text(daily_info, item_design_data)
     except Exception as e:
         print(e)
         pp = pprint.PrettyPrinter(indent=4)
@@ -112,16 +112,16 @@ def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
     return result
 
 
-def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict) -> list:
+async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict) -> list:
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
         common_crew_details = crew.get_char_design_details_by_id(common_crew_id, chars_designs_data, collections_designs_data, level=40)
-        common_crew_info = common_crew_details.get_details_as_text_short()
+        common_crew_info = await common_crew_details.get_details_as_text_short()
 
         hero_crew_id = raw_data['HeroCrewId']
         hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, chars_designs_data, collections_designs_data, level=40)
-        hero_crew_info = hero_crew_details.get_details_as_text_short()
+        hero_crew_info = await hero_crew_details.get_details_as_text_short()
 
         common_crew_rarity = common_crew_details.entity_design_info['Rarity']
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
@@ -136,7 +136,7 @@ def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict
     return result
 
 
-def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
+async def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if raw_data:
         cargo_items = raw_data['CargoItems'].split('|')
@@ -151,7 +151,7 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
                 _, item_id = item_id.split(':')
             if item_id:
                 item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
-                item_details = ''.join(item_design_details.get_details_as_text_long())
+                item_details = ''.join(await item_design_details.get_details_as_text_long())
                 currency_type, price = cargo_prices[i].split(':')
                 currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
                 result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
@@ -160,7 +160,7 @@ def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_designs_data: d
     return result
 
 
-def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> List[str]:
+async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> List[str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = raw_data['LimitedCatalogType']
@@ -173,12 +173,13 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     entity_details = []
     if shop_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(entity_id, chars_designs_data, collections_designs_data, level=40)
-        entity_details = char_design_details.get_details_as_text_short()
+        entity_details = await char_design_details.get_details_as_text_short()
     elif shop_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
-        entity_details = item_design_details.get_details_as_text_long()
+        entity_details = await item_design_details.get_details_as_text_long()
     elif shop_type == 'Room':
-        entity_details = room.get_room_details_short_from_id_as_text(entity_id, rooms_designs_data)
+        room_design_details = room.get_room_design_details_by_id(entity_id, rooms_designs_data, None, None)
+        entity_details = await room_design_details.get_details_as_text_short()
     else:
         result.append('-')
         return result
@@ -192,7 +193,7 @@ def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     return result
 
 
-def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> list:
+async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, collections_designs_data: dict, items_designs_data: dict, rooms_designs_data: dict) -> list:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -204,12 +205,13 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(sale_argument, chars_designs_data, collections_designs_data, level=40)
-        entity_details = ''.join(char_design_details.get_details_as_text_short())
+        entity_details = ''.join(await char_design_details.get_details_as_text_short())
     elif sale_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)
-        entity_details = ''.join(item_design_details.get_details_as_text_long())
+        entity_details = ''.join(await item_design_details.get_details_as_text_long())
     elif sale_type == 'Room':
-        entity_details = ''.join(room.get_room_details_short_from_id_as_text(sale_argument, rooms_designs_data))
+        room_design_details = room.get_room_design_details_by_id(sale_argument, rooms_designs_data, None, None)
+        entity_details = ''.join(await room_design_details.get_details_as_text_short())
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
     else: # Print debugging info
@@ -225,7 +227,7 @@ def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: dict, co
     return result
 
 
-def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
+async def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict) -> list:
     result = ['**Daily rewards**']
 
     reward_currency = raw_data['DailyRewardType'].lower()
@@ -238,7 +240,7 @@ def _get_daily_reward_from_data_as_text(raw_data: dict, item_designs_data: dict)
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
         item_design_details = item.get_item_design_details_by_id(item_id, item_designs_data)
-        item_details = ''.join(item_design_details.get_details_as_text_long())
+        item_details = ''.join(await item_design_details.get_details_as_text_long())
         result.append(f'{amount} x {item_details}')
 
     return result

@@ -5,10 +5,10 @@ import settings
 
 
 
-def valid_entity_name(name: str, parameter_name: str = None, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False):
+def valid_entity_name(name: str, parameter_name: str = None, min_length: int = settings.MIN_ENTITY_NAME_LENGTH, allowed_values: list = [], case_sensitive: bool = False, allow_none_or_empty: bool = False):
     if parameter_name is None:
         parameter_name = 'name'
-    valid_parameter_value(name, parameter_name, min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive)
+    valid_parameter_value(name, parameter_name, min_length=min_length, allowed_values=allowed_values, case_sensitive=case_sensitive, allow_none_or_empty=allow_none_or_empty)
 
 
 def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1, allowed_values: list = [], case_sensitive: bool = False, allow_none_or_empty: bool = False):

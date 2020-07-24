@@ -23,34 +23,6 @@ import settings
 import utility as util
 
 
-# ---------- Constants ----------
-
-PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
-PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
-PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
-
-REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
-    'item': item.get_item_design_details_by_id,
-    'character': crew.get_char_design_details_by_id,
-    'research': research.get_research_design_details_by_id,
-    'room': room.get_room_design_details_by_id,
-    'starbux': None
-}
-
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Initilization ----------
-
-
 
 
 
@@ -231,74 +203,19 @@ class PromoRequirement():
 
 
 
-# ---------- Helper functions ----------
+# ---------- Constants ----------
 
-def _convert_reward_string(reward_string: str) -> Dict[str, str]:
-    result = {}
+PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
+PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
+PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
 
-    if not reward_string:
-        return result
-
-    for reward in reward_string.split('|'):
-        reward_type, entity_id = reward.split(':')
-        result.setdefault(reward_type, []).append(entity_id)
-
-    return result
-
-
-def _convert_requirement_string(requirement_string: str) -> List[PromoRequirement]:
-    result: List[PromoRequirement] = []
-
-    if not requirement_string:
-        return result
-
-    for requirement in requirement_string.split('&&'):
-        promo_requirement = PromoRequirement(requirement)
-        result.append(promo_requirement)
-
-    return result
-
-
-def _get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime:
-    if not api_datetime:
-        return None
-    result = datetime.datetime.strptime(api_datetime, datetime_format)
-    if result < settings.PSS_START_DATE:
-        return None
-    else:
-        return result
-
-
-def _get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> str:
-    if language_key and requirement_type:
-        result = lookups.PROMO_REQUIREMENT_TYPE_LOOKUP.get(language_key, {}).get(requirement_type, None)
-        return result
-    else:
-        return None
-
-
-def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
-    result = []
-
-    for entity_type in [key for key in rewards.keys() if rewards[key]]:
-        get_entity_design_details_function = REWARD_TYPE_GET_ENTITY_FUNCTIONS[entity_type]
-        if get_entity_design_details_function:
-            intermediate = []
-            for entity_id in rewards[entity_type]:
-                entity_design_details: entity.LegacyEntityDesignDetails = get_entity_design_details_function(entity_id)
-                intermediate.append(entity_design_details.get_details_as_text_short())
-            result.append(', '.join(intermediate))
-        else:
-            result.append(f'{entity_type}: {sum(rewards[entity_type])}')
-
-    return ', '.join(result)
-
-
-def _get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> (str, int):
-    requirement_type, requirement_value = requirement_string.split(separator)
-    requirement_value = int(requirement_value) + add_to_value
-    return requirement_type, requirement_value
-
+REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
+    'item': item.get_item_design_details_by_id,
+    'character': crew.get_char_design_details_by_id,
+    'research': research.get_research_design_details_by_id,
+    'room': room.get_room_design_details_by_id,
+    'starbux': None
+}
 
 
 
@@ -371,6 +288,96 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_design_detail
 
 
 
+# ---------- Create EntityDesignDetails ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Helper functions ----------
+
+def _convert_reward_string(reward_string: str) -> Dict[str, str]:
+    result = {}
+
+    if not reward_string:
+        return result
+
+    for reward in reward_string.split('|'):
+        reward_type, entity_id = reward.split(':')
+        result.setdefault(reward_type, []).append(entity_id)
+
+    return result
+
+
+def _convert_requirement_string(requirement_string: str) -> List[PromoRequirement]:
+    result: List[PromoRequirement] = []
+
+    if not requirement_string:
+        return result
+
+    for requirement in requirement_string.split('&&'):
+        promo_requirement = PromoRequirement(requirement)
+        result.append(promo_requirement)
+
+    return result
+
+
+def _get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime:
+    if not api_datetime:
+        return None
+    result = datetime.datetime.strptime(api_datetime, datetime_format)
+    if result < settings.PSS_START_DATE:
+        return None
+    else:
+        return result
+
+
+def _get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> str:
+    if language_key and requirement_type:
+        result = lookups.PROMO_REQUIREMENT_TYPE_LOOKUP.get(language_key, {}).get(requirement_type, None)
+        return result
+    else:
+        return None
+
+
+def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
+    result = []
+
+    for entity_type in [key for key in rewards.keys() if rewards[key]]:
+        get_entity_design_details_function = REWARD_TYPE_GET_ENTITY_FUNCTIONS[entity_type.lower()]
+        if get_entity_design_details_function:
+            intermediate = []
+            for entity_id in rewards[entity_type]:
+                entity_design_details: entity.LegacyEntityDesignDetails = get_entity_design_details_function(entity_id)
+                intermediate.append(entity_design_details.get_details_as_text_short())
+            result.append(', '.join(intermediate))
+        else:
+            result.append(f'{entity_type}: {sum(rewards[entity_type])}')
+
+    return ', '.join(result)
+
+
+def _get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> (str, int):
+    requirement_type, requirement_value = requirement_string.split(separator)
+    requirement_value = int(requirement_value) + add_to_value
+    return requirement_type, requirement_value
+
 
 
 
@@ -389,25 +396,3 @@ promotion_designs_retriever = entity.EntityDesignsRetriever(
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='PromotionDesigns'
 )
-
-
-
-
-
-
-
-
-
-
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    test_promotions = ['alpaco']
-#    for promotion_name in test_promotions:
-#        os.system('clear')
-#        result = await get_promotions_designs_info_by_name(promotion_name, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        print('')
-#        result = ''

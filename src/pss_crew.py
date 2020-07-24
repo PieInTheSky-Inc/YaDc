@@ -15,27 +15,6 @@ import settings
 import utility as util
 
 
-# ---------- Constants ----------
-
-CHARACTER_DESIGN_BASE_PATH = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
-CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
-CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CharacterDesignName'
-
-COLLECTION_DESIGN_BASE_PATH = 'CollectionService/ListAllCollectionDesigns?languageKey=en'
-COLLECTION_DESIGN_KEY_NAME = 'CollectionDesignId'
-COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CollectionName'
-
-__PRESTIGE_FROM_BASE_PATH = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
-__PRESTIGE_TO_BASE_PATH = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
-
-
-
-# ---------- Initilization ----------
-
-__prestige_from_cache_dict = {}
-__prestige_to_cache_dict = {}
-
-
 
 
 
@@ -45,58 +24,6 @@ __prestige_to_cache_dict = {}
 
 
 # ---------- Classes ----------
-
-class LegacyCollectionDesignDetails(entity.LegacyEntityDesignDetails):
-    def __init__(self, collection_design_info: dict, collection_chars_names: dict):
-        collection_perk = collection_design_info['EnhancementType']
-        collection_perk = lookups.COLLECTION_PERK_LOOKUP.get(collection_design_info['EnhancementType'], collection_design_info['EnhancementType'])
-        min_combo = collection_design_info['MinCombo']
-        max_combo = collection_design_info['MaxCombo']
-        base_enhancement_value = collection_design_info['BaseEnhancementValue']
-        step_enhancement_value = collection_design_info['StepEnhancementValue']
-
-        self.__characters: str = ', '.join(collection_chars_names)
-        self.__min_max_combo = f'{min_combo}...{max_combo}'
-        self.__enhancement = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
-
-        details_long: List[Tuple[str, str]] = [
-            ('Combo Min...Max', self.__min_max_combo),
-            (collection_perk, self.__enhancement),
-            ('Characters', self.__characters)
-        ]
-        details_short: List[Tuple[str, str, bool]] = [
-        ]
-
-        super().__init__(
-            name=collection_design_info[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME],
-            description=collection_design_info['CollectionDescription'],
-            details_long=details_long,
-            details_short=details_short,
-            hyperlink='https://pixelstarships.fandom.com/wiki/Category:Crew_Collections'
-        )
-
-
-    @property
-    def characters(self) -> str:
-        return self.__characters
-
-    @property
-    def min_max_combo(self) -> str:
-        return self.__min_max_combo
-
-    @property
-    def enhancement(self) -> str:
-        return self.__enhancement
-
-
-
-
-
-
-
-
-
-
 
 class LegacyPrestigeDetails(entity.LegacyEntityDesignDetails):
     def __init__(self, char_design_info: dict, prestige_infos: Dict[str, List[str]], error_message: str, title_template: str, sub_title_template: str):
@@ -160,11 +87,6 @@ class LegacyPrestigeDetails(entity.LegacyEntityDesignDetails):
 
 
 
-
-
-
-
-
 class LegacyPrestigeFromDetails(LegacyPrestigeDetails):
     def __init__(self, char_from_design_info: dict, chars_designs_data: dict, prestige_from_data: dict):
         chars_designs_data = chars_designs_data
@@ -187,11 +109,6 @@ class LegacyPrestigeFromDetails(LegacyPrestigeDetails):
                 error = 'noone'
 
         super().__init__(char_from_design_info, prestige_infos, error, template_title, template_subtitle)
-
-
-
-
-
 
 
 
@@ -255,105 +172,18 @@ class LegacyPrestigeToDetails(LegacyPrestigeDetails):
 
 
 
-# ---------- Helper functions ----------
+# ---------- Constants ----------
 
-def __create_character_design_details_from_info(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> entity.EntityDesignDetails:
-    return entity.EntityDesignDetails(character_design_info, __properties['title'], __properties['description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_designs_data, collections_designs_data, level=level)
+CHARACTER_DESIGN_BASE_PATH = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
+CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
+CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CharacterDesignName'
 
+COLLECTION_DESIGN_BASE_PATH = 'CollectionService/ListAllCollectionDesigns?languageKey=en'
+COLLECTION_DESIGN_KEY_NAME = 'CollectionDesignId'
+COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CollectionName'
 
-def __create_character_design_data_list_from_infos(character_design_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> List[entity.EntitiesDesignsData]:
-    return [__create_character_design_details_from_info(character_design_info, characters_designs_data, collections_designs_data, level) for character_design_info in character_design_infos]
-
-
-
-
-
-def __calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
-    exponent = lookups.PROGRESSION_TYPES[progression_type]
-    result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
-    return result
-
-
-def __get_ability_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
-    value = __get_stat(character_design_info, characters_designs_data, collections_designs_data, level, stat_name='SpecialAbilityArgument')
-    if character_design_info['SpecialAbilityType']:
-        special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_design_info['SpecialAbilityType'], character_design_info['SpecialAbilityType'])
-    else:
-        special_ability is None
-    if special_ability:
-        result = f'{value} ({special_ability})'
-    else:
-        result = value
-    return result
-
-
-def __get_collection_name(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    result = None
-    collection_id = character_design_info[COLLECTION_DESIGN_KEY_NAME]
-    if collection_id and int(collection_id):
-        result = collections_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    return result
-
-
-def __get_level(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
-    if level is None:
-        return None
-    else:
-        return str(level)
-
-
-def __get_slots(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    result = []
-    equipment_mask = int(character_design_info['EquipmentMask'])
-    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
-        if (equipment_mask & k) != 0:
-            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
-
-    result = ', '.join(result) if result else '-'
-    return result
-
-
-def __get_speed(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    walk_speed = character_design_info['WalkingSpeed']
-    run_speed = character_design_info['RunSpeed']
-    result = f'{walk_speed}/{run_speed}'
-    return result
-
-
-def __get_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, stat_name: str, **kwargs) -> str:
-    is_special_stat = stat_name.lower().startswith('specialability')
-    if is_special_stat:
-        max_stat_name = 'SpecialAbilityFinalArgument'
-    else:
-        max_stat_name = f'Final{stat_name}'
-    min_value = float(character_design_info[stat_name])
-    max_value = float(character_design_info[max_stat_name])
-    progression_type = character_design_info['ProgressionType']
-    result = __get_stat_value(min_value, max_value, level, progression_type)
-    return result
-
-
-def __get_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> str:
-    if level is None or level < 1 or level > 40:
-        return f'{min_value:0.1f} - {max_value:0.1f}'
-    else:
-        return f'{__calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
-
-
-
-
-
-
-
-
-
-async def _get_collection_chars_designs_infos(collection_design_info: Dict[str, str]) -> list:
-    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
-    chars_designs_data = await characters_designs_retriever.get_data_dict3()
-    chars_designs_infos = [chars_designs_data[char_id] for char_id in chars_designs_data.keys() if chars_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
-    result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
-    result.sort()
-    return result
+__PRESTIGE_FROM_BASE_PATH = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+__PRESTIGE_TO_BASE_PATH = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
 
 
 
@@ -386,9 +216,9 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
         collections_designs_data = await collections_designs_retriever.get_data_dict3()
         character_design_details = __create_character_design_details_from_info(char_design_info, None, collections_designs_data, level)
         if as_embed:
-            return character_design_details.get_details_as_embed(), True
+            return (await character_design_details.get_details_as_embed()), True
         else:
-            return character_design_details.get_details_as_text_long(), True
+            return (await character_design_details.get_details_as_text_long()), True
 
 
 
@@ -402,20 +232,39 @@ async def get_char_design_details_by_name(char_name: str, level: int, as_embed: 
 # ---------- Collection Info ----------
 
 async def get_collection_design_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
-    pss_assert.valid_entity_name(collection_name)
+    pss_assert.valid_entity_name(collection_name, parameter_name='collection_name', allow_none_or_empty=True)
 
+    print_all = not collection_name
     collections_designs_data = await collections_designs_retriever.get_data_dict3()
-    collection_design_info = await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data)
-
-    if collection_design_info is None:
-        return [f'Could not find a collection named **{collection_name}**.'], False
+    characters_designs_data = await characters_designs_retriever.get_data_dict3()
+    collections_designs_infos = []
+    if print_all:
+        collections_designs_infos = collections_designs_data.values()
     else:
-        collection_chars_names = await _get_collection_chars_designs_infos(collection_design_info)
-        collection_design_details = LegacyCollectionDesignDetails(collection_design_info, collection_chars_names)
-        if as_embed:
-            return collection_design_details.get_details_as_embed(), True
+        collections_designs_infos.append(await collections_designs_retriever.get_entity_design_info_by_name(collection_name, collections_designs_data))
+
+    if collections_designs_infos is None:
+        if print_all:
+            return [f'An error occured upon retrieving collection info. Please try again later.'], False
         else:
-            return collection_design_details.get_details_as_text_long(), True
+            return [f'Could not find a collection named **{collection_name}**.'], False
+    else:
+        collections_designs_infos = sorted(collections_designs_infos, key=lambda x: x[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME])
+        collections_designs_details = [__create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data) for collection_design_info in collections_designs_infos]
+        if print_all:
+            if as_embed:
+                return collections_designs_details.get_details_as_embed(), True
+            else:
+                long_details = []
+                for collection_design_details in collections_designs_details:
+                    long_details.extend((await collection_design_details.get_details_as_text_short()))
+                long_details.append(__get_collection_hyperlink(None, None, None))
+                return long_details, True
+        else:
+            if as_embed:
+                return (await collections_designs_details[0].get_details_as_embed()), True
+            else:
+                return (await collections_designs_details[0].get_details_as_text_long()), True
 
 
 
@@ -589,7 +438,186 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 
 
 
+# ---------- Create EntityDesignDetails ----------
+
+def __create_character_design_details_from_info(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(character_design_info, __properties['character_title'], __properties['character_description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_designs_data, collections_designs_data, level=level)
+
+
+def __create_characters_designs_details_list_from_infos(characters_designs_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> List[entity.EntitiesDesignsData]:
+    return [__create_character_design_details_from_info(character_design_info, characters_designs_data, collections_designs_data, level) for character_design_info in characters_designs_infos]
+
+
+def __create_characters_designs_details_collection_from_infos(characters_designs_infos: List[entity.EntityDesignInfo], characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int) -> entity.EntityDesignDetailsCollection:
+    characters_designs_details = __create_characters_designs_details_list_from_infos(characters_designs_infos, characters_designs_data, collections_designs_data, level)
+    result = entity.EntityDesignDetailsCollection(characters_designs_details, big_set_threshold=2)
+    return result
+
+
+def __create_collection_design_details_from_info(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetails:
+    return entity.EntityDesignDetails(collection_design_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_long'], __properties['collection_short'], __properties['collection_long'], collections_designs_data, characters_designs_data)
+
+
+def __create_collections_designs_details_list_from_infos(collections_designs_infos: List[entity.EntityDesignInfo], collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData) -> List[entity.EntitiesDesignsData]:
+    return [__create_collection_design_details_from_info(collection_design_info, collections_designs_data, characters_designs_data) for collection_design_info in collections_designs_infos]
+
+
+def __create_collections_designs_details_collection_from_infos(collection_design_info: List[entity.EntityDesignInfo], collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
+    collections_designs_details = __create_collections_designs_details_list_from_infos(collection_design_info, collections_designs_data, characters_designs_data)
+    result = entity.EntityDesignDetailsCollection(collections_designs_details, big_set_threshold=2)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
+
+def __get_ability_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
+    value = __get_stat(character_design_info, characters_designs_data, collections_designs_data, level, stat_name='SpecialAbilityArgument')
+    if character_design_info['SpecialAbilityType']:
+        special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_design_info['SpecialAbilityType'], character_design_info['SpecialAbilityType'])
+    else:
+        special_ability is None
+    if special_ability:
+        result = f'{value} ({special_ability})'
+    else:
+        result = value
+    return result
+
+
+def __get_collection_member_count(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = len(chars_designs_infos)
+    return f'{result} members'
+
+
+def __get_collection_member_names(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = [char_design_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_design_info in chars_designs_infos]
+    result.sort()
+    return ', '.join(result)
+
+
+def __get_collection_hyperlink(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    return '<https://pixelstarships.fandom.com/wiki/Category:Crew_Collections>'
+
+
+def __get_collection_perk(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    enhancement_type = collection_design_info['EnhancementType']
+    result = lookups.COLLECTION_PERK_LOOKUP.get(enhancement_type, enhancement_type)
+    return result
+
+
+def __get_enhancement(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    base_enhancement_value = collection_design_info['BaseEnhancementValue']
+    step_enhancement_value = collection_design_info['StepEnhancementValue']
+    result = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
+    return result
+
+
+def __get_level(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
+    if level is None:
+        return None
+    else:
+        return str(level)
+
+
+def __get_members_count_display_name(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    collection_id = collection_design_info[COLLECTION_DESIGN_KEY_NAME]
+    chars_designs_infos = [characters_designs_data[char_id] for char_id in characters_designs_data.keys() if characters_designs_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
+    result = f'Members ({len(chars_designs_infos)})'
+    return result
+
+
+def __get_min_max_combo(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    min_combo = collection_design_info['MinCombo']
+    max_combo = collection_design_info['MaxCombo']
+    result = f'{min_combo}...{max_combo}'
+    return result
+
+
+def __get_slots(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    result = []
+    equipment_mask = int(character_design_info['EquipmentMask'])
+    for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
+        if (equipment_mask & k) != 0:
+            result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
+
+    result = ', '.join(result) if result else '-'
+    return result
+
+
+def __get_speed(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    walk_speed = character_design_info['WalkingSpeed']
+    run_speed = character_design_info['RunSpeed']
+    result = f'{walk_speed}/{run_speed}'
+    return result
+
+
+def __get_stat(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, stat_name: str, **kwargs) -> str:
+    is_special_stat = stat_name.lower().startswith('specialability')
+    if is_special_stat:
+        max_stat_name = 'SpecialAbilityFinalArgument'
+    else:
+        max_stat_name = f'Final{stat_name}'
+    min_value = float(character_design_info[stat_name])
+    max_value = float(character_design_info[max_stat_name])
+    progression_type = character_design_info['ProgressionType']
+    result = __get_stat_value(min_value, max_value, level, progression_type)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Helper functions ----------
+
+def __calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
+    exponent = lookups.PROGRESSION_TYPES[progression_type]
+    result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
+    return result
+
+
+def __get_collection_name(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    result = None
+    collection_id = character_design_info[COLLECTION_DESIGN_KEY_NAME]
+    if collection_id and int(collection_id):
+        result = collections_designs_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
+
+
+def __get_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> str:
+    if level is None or level < 1 or level > 40:
+        return f'{min_value:0.1f} - {max_value:0.1f}'
+    else:
+        return f'{__calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
+
+
+
+
+
+
+
+
+
+
 # ---------- Initilization ----------
+
+__prestige_from_cache_dict = {}
+__prestige_to_cache_dict = {}
 
 characters_designs_retriever = entity.EntityDesignsRetriever(
     CHARACTER_DESIGN_BASE_PATH,
@@ -608,10 +636,10 @@ collections_designs_retriever = entity.EntityDesignsRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
-    'title': entity.EntityDesignDetailProperty('Title', False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, entity_property_name='CharacterDesignDescription'),
+    'character_title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'character_description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='CharacterDesignDescription'),
     'character_long': [
-        entity.EntityDesignDetailProperty('Level', True, omit_if_none=True, transform_function=__get_level),
+        entity.EntityDesignDetailProperty('Level', True, transform_function=__get_level),
         entity.EntityDesignDetailProperty('Rarity', True, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Race', True, entity_property_name='RaceType'),
         entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name),
@@ -632,43 +660,22 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
     'character_short': [
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
         entity.EntityDesignDetailProperty('Ability', True, transform_function=__get_ability_stat),
-        entity.EntityDesignDetailProperty('Collection', True, omit_if_none=True, transform_function=__get_collection_name)
+        entity.EntityDesignDetailProperty('Collection', True, transform_function=__get_collection_name)
+    ],
+    'collection_title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME),
+    'collection_description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='CollectionDescription'),
+    'collection_long': [
+        entity.EntityDesignDetailProperty('Combo Min...Max', True, transform_function=__get_min_max_combo),
+        entity.EntityDesignDetailProperty(__get_collection_perk, True, transform_function=__get_enhancement),
+        entity.EntityDesignDetailProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names),
+        entity.EntityDesignDetailProperty('Hyperlink', False, transform_function=__get_collection_hyperlink)
+    ],
+    'collection_short': [
+        entity.EntityDesignDetailProperty('Perk', False, transform_function=__get_collection_perk),
+        entity.EntityDesignDetailProperty('Member count', False, transform_function=__get_collection_member_count)
     ]
 }
 
 
 async def init():
     pass
-
-
-
-
-
-# Get stat for level:
-# - get exponent 'p' by ProgressionType:
-#   - Linear: p = 1.0
-#   - EaseIn: p = 2.0
-#   - EaseOut: p = 0.5
-# - get min stat 'min' & max stat 'max'
-# result = min + (max - min) * ((level - 1) / 39) ** p
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    f = get_level_costs(20, 30)
-#    test_crew = [('alpaco', 5)]
-#    for (crew_name, level) in test_crew:
-#        os.system('clear')
-#        result = await get_char_design_details_by_name(crew_name, level, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        print('')
-#        result = await get_prestige_from_info(crew_name, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        print('')
-#        result = await get_prestige_to_info(crew_name, as_embed=False)
-#        for line in result[0]:
-#            print(line)
-#        print('')
-#        result = ''
