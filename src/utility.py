@@ -221,11 +221,18 @@ async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_cha
         await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
-def create_embed(title, description=None, colour=None, fields=None):
-    result = discord.Embed(title=title, description=description, colour=colour)
+def create_embed(title, description=None, colour=None, fields=None, thumbnail_url=None, image_url=None, icon_url=None, author_url=None):
+    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty)
+    if title and title != discord.Embed.Empty:
+        result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
     if fields is not None:
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
+    if thumbnail_url:
+        result.set_thumbnail(url=thumbnail_url)
+    if image_url:
+        result.set_image(url=image_url)
+
     return result
 
 

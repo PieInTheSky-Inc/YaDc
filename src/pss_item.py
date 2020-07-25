@@ -174,7 +174,7 @@ async def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict
         slot = _get_pretty_slot(group_name)
         result.append(discord.Embed(title=_get_best_title(stat, slot)))
         for item_design_details in group:
-            result.extend(await item_design_details.get_details_as_embed())
+            result.append(await item_design_details.get_details_as_embed_long())
     return result
 
 

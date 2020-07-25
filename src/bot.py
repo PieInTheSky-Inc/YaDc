@@ -1226,7 +1226,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name)
+        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 

@@ -4,6 +4,7 @@
 from abc import ABC, abstractstaticmethod
 from collections import namedtuple
 import discord
+import discord.ext.commands as commands
 import inspect
 import json
 from typing import Awaitable, Callable, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
@@ -95,7 +96,7 @@ class EntityDesignDetailProperty(object):
 
     async def get_full_property(self, entity_design_info: EntityDesignInfo, *entities_designs_data: EntitiesDesignsData, **additional_kwargs) -> CalculatedEntityDesignDetailProperty:
         kwargs = {**self.__kwargs, **additional_kwargs}
-        if self.force_display_name:
+        if self.force_display_name or kwargs.get('force_display_name'):
             display_name = await self.__get_display_name(entity_design_info, *entities_designs_data, **kwargs)
         else:
             display_name = None
@@ -164,7 +165,7 @@ class EntityDesignDetailEmbedProperty(EntityDesignDetailProperty):
 
 
 class EntityDesignDetails(object):
-    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: List[EntityDesignDetailProperty], *entities_designs_data: Optional[EntitiesDesignsData], prefix: str = None, **kwargs):
+    def __init__(self, entity_design_info: EntityDesignInfo, title: EntityDesignDetailProperty, description: EntityDesignDetailProperty, properties_long: List[EntityDesignDetailProperty], properties_short: List[EntityDesignDetailProperty], properties_embed: Dict[str, EntityDesignDetailProperty], *entities_designs_data: Optional[EntitiesDesignsData], prefix: str = None, **kwargs):
         """
 
         """
@@ -174,10 +175,10 @@ class EntityDesignDetails(object):
         self.__description_property: EntityDesignDetailProperty = description
         self.__properties_long: List[EntityDesignDetailProperty] = properties_long or []
         self.__properties_short: List[EntityDesignDetailProperty] = properties_short or []
-        self.__properties_embed: List[EntityDesignDetailProperty] = properties_embed or []
+        self.__properties_embed: Dict[str, EntityDesignDetailProperty] = properties_embed or {}
         self.__title: str = None
         self.__description: str = None
-        self.__details_embed: List[Tuple[str, str]] = None
+        self.__details_embed: Dict[str, str] = None
         self.__details_long: List[Tuple[str, str]] = None
         self.__details_short: List[Tuple[str, str]] = None
         self.__prefix: str = prefix or ''
@@ -201,10 +202,11 @@ class EntityDesignDetails(object):
         return self.__prefix
 
 
-    async def get_details_as_embed(self) -> discord.Embed:
-        result = discord.Embed(title=(await self._get_title()), description=(await self._get_description()))
-        for detail in (await self._get_details_embed()):
-            result.add_field(name=detail.name, value=detail.value)
+    async def get_details_as_embed_long(self, ctx: commands.Context) -> discord.Embed:
+        result: discord.Embed = await self.__create_base_embed(ctx)
+        details_long = await self._get_details_long()
+        for detail in details_long:
+            result.add_field(name=detail.display_name, value=detail.value)
         return result
 
 
@@ -236,14 +238,14 @@ class EntityDesignDetails(object):
         return [result]
 
 
-    async def _get_properties(self, properties: List[EntityDesignDetailProperty]):
+    async def _get_properties(self, properties: List[EntityDesignDetailProperty], force_display_names: bool = False):
         result: List[Tuple[str, str]] = []
         entity_design_detail_property: EntityDesignDetailProperty = None
         for entity_design_detail_property in properties:
             info = self.__entity_design_info
             data = self.__entities_designs_data
             kwargs = self.__kwargs
-            full_property = await entity_design_detail_property.get_full_property(info, *data, **kwargs)
+            full_property = await entity_design_detail_property.get_full_property(info, *data, **kwargs, force_display_names=force_display_names)
             if not entity_design_detail_property.omit_if_none or full_property.value:
                 result.append(full_property)
         return result
@@ -256,9 +258,13 @@ class EntityDesignDetails(object):
         return self.__description
 
 
-    async def _get_details_embed(self) -> List[Tuple[str, str]]:
+    async def _get_details_embed(self) -> Dict[str, str]:
         if self.__details_embed is None:
-            self.__details_embed = await self._get_properties(self.__properties_embed)
+            self.__details_embed = {}
+            for property_key, embed_property in self.__properties_embed.items():
+                value = await self._get_properties([embed_property])
+                if value and value[0] and value[0].value:
+                    self.__details_embed[property_key] = value[0].value
         return self.__details_embed
 
 
@@ -268,10 +274,21 @@ class EntityDesignDetails(object):
         return self.__details_long
 
 
-    async def _get_details_short(self) -> List[Tuple[str, str]]:
+    async def _get_details_short(self, force_display_names: bool = False) -> List[Tuple[str, str]]:
         if self.__details_short is None:
-            self.__details_short = await self._get_properties(self.__properties_short)
+            self.__details_short = await self._get_properties(self.__properties_short, force_display_names=force_display_names)
         return self.__details_short
+
+
+    def _get_details_short_as_text(self, details_short: List[Tuple[str, str]], force_display_names: bool = False) -> str:
+        details = []
+        for detail in details_short:
+            if detail.display_name:
+                details.append(f'{detail.display_name}: {detail.value}')
+            else:
+                details.append(detail.value)
+        result = ', '.join(details)
+        return result
 
 
     async def _get_title(self) -> str:
@@ -279,6 +296,19 @@ class EntityDesignDetails(object):
             _, title = await self.__title_property.get_full_property(self.__entity_design_info, *self.__entities_designs_data, **self.__kwargs)
             self.__title = title or ''
         return self.__title
+
+
+    async def __create_base_embed(self, ctx: commands.Context) -> discord.Embed:
+        title = await self._get_title()
+        description = await self._get_description()
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        details_embed = await self._get_details_embed()
+        author_url = details_embed.get('author_url')
+        icon_url = details_embed.get('icon_url')
+        image_url = details_embed.get('image_url')
+        thumbnail_url = details_embed.get('thumbnail_url')
+        result = util.create_embed(title=title, description=description, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url)
+        return result
 
 
 
@@ -300,8 +330,23 @@ class EntityDesignDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    def get_entity_details_as_embed(self) -> List[discord.Embed]:
-        raise Exception('get_entity_details_as_embed is not yet implemented.')
+    async def get_entity_details_as_embed(self, ctx: commands.Context) -> List[discord.Embed]:
+        result = []
+        if self.__is_big_set:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            fields = []
+            for entity_design_details in self.__entities_designs_details:
+                field_title = await entity_design_details._get_title()
+                details_short = await entity_design_details._get_details_short()
+                field_details = entity_design_details._get_details_short_as_text(details_short)
+                fields.append((field_title, field_details, False))
+            embed = util.create_embed(discord.Embed.Empty, colour=colour, fields=fields)
+            result.append(embed)
+        else:
+            for entity_design_details in self.__entities_designs_details:
+                details = await entity_design_details.get_details_as_embed_long(ctx)
+                result.append(details)
+        return result
 
 
     async def get_entity_details_as_text(self) -> List[str]:
@@ -436,6 +481,20 @@ class EntityDesignsRetriever:
 
 
 # ---------- Helper ----------
+
+async def get_download_sprite_link_by_property(entity_info: EntityDesignInfo, *entities_designs_data, **kwargs) -> str:
+    entity_property = kwargs.get('entity_property')
+    return await get_download_sprite_link(entity_property)
+
+
+async def get_download_sprite_link(sprite_id: str) -> str:
+    if has_value(sprite_id):
+        base_url = await core.get_base_url()
+        result = f'{base_url}FileService/DownloadSprite?spriteId={sprite_id}'
+        return result
+    else:
+        return None
+
 
 def get_property_from_entity_info(entity_info: EntityDesignInfo, entity_property_name: str) -> object:
     while '.' in entity_property_name:
