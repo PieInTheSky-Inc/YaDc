@@ -182,11 +182,13 @@ async def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict
         group = items_designs_details_groups[group_name]
         slot = _get_pretty_slot(group_name)
         title = _get_best_title(stat, slot, use_markdown=False)
-        description = []
-        for item_design_details in group:
-            description.extend(await item_design_details.get_details_as_text_long())
-        embed = util.create_embed(title, description='\n'.join(description), footer=resources.get_resource('PRICE_NOTE_EMBED'))
-        result.append(embed)
+
+        items_designs_details_collection = __create_best_designs_details_collection_from_infos(group)
+        embeds = await items_designs_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))
+        for embed in embeds:
+            embed.title = title
+
+        result.extend(embeds)
     return result
 
 
@@ -523,7 +525,7 @@ def __create_base_designs_details_list_from_infos(items_designs_infos: List[enti
 
 def __create_base_designs_details_collection_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
     base_designs_details = __create_base_designs_details_list_from_infos(items_designs_infos, items_designs_data)
-    result = entity.EntityDesignDetailsCollection(base_designs_details, big_set_threshold=3, add_empty_lines=False)
+    result = entity.EntityDesignDetailsCollection(base_designs_details, big_set_threshold=3)
     return result
 
 
@@ -535,9 +537,8 @@ def __create_best_designs_details_list_from_infos(items_designs_infos: List[enti
     return [__create_best_design_data_from_info(item_design_info, items_designs_data) for item_design_info in items_designs_infos]
 
 
-def __create_best_designs_details_collection_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
-    best_designs_details = __create_best_designs_details_list_from_infos(items_designs_infos, items_designs_data)
-    result = entity.EntityDesignDetailsCollection(best_designs_details, big_set_threshold=0)
+def __create_best_designs_details_collection_from_infos(best_designs_details: List[entity.EntityDesignDetails]) -> entity.EntityDesignDetailsCollection:
+    result = entity.EntityDesignDetailsCollection(best_designs_details, big_set_threshold=1)
     return result
 
 
