@@ -333,11 +333,11 @@ async def __get_build_requirement(room_info: entity.EntityDesignInfo, rooms_desi
 
             if required_type == 'item':
                 item_design_details = item.get_item_design_details_by_id(required_id, items_designs_data)
-                result = f'{required_amount}x ' + ''.join((await item_design_details.get_details_as_text_short()))
+                result = f'{required_amount}x ' + ''.join((await item_design_details.get_full_details_as_text_short()))
                 return result
             elif required_type == 'research':
                 research_design_details = research.get_research_design_details_by_id(required_id, researches_designs_data)
-                result = ''.join(await research_design_details.get_details_as_text_short())
+                result = ''.join(await research_design_details.get_full_details_as_text_short())
                 return result
             else:
                 return requirement_string

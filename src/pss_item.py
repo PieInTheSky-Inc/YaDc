@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import discord
+import discord.ext.commands as commands
 import os
 import re
 from typing import Callable, Dict, List, Optional, Tuple, Union
@@ -41,7 +42,7 @@ class ItemDesignDetails(entity.EntityDesignDetails):
                     details.append(f'{display_name} = {display_value}')
                 else:
                     details.append(display_value)
-        details_short = await self.get_details_as_text_short()
+        details_short = await self.get_full_details_as_text_short()
         short_details = ''.join(details_short)
         if details:
             bracketed_details = details.pop()
@@ -54,7 +55,7 @@ class ItemDesignDetails(entity.EntityDesignDetails):
         return result
 
 
-    async def get_details_as_text_short(self) -> List[str]:
+    async def get_full_details_as_text_short(self) -> List[str]:
         title = await self._get_title()
         description = await self._get_description()
         result = [f'{self.prefix}{title} ({description})']
@@ -88,7 +89,7 @@ CANNOT_BE_SOLD = 'This item can\'t be sold'
 
 # ---------- Item info ----------
 
-async def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_item_details_by_name(item_name: str, ctx: commands.Context = None, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_designs_data = await items_designs_retriever.get_data_dict3()
@@ -97,13 +98,21 @@ async def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
-        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        items_designs_data_for_sort = {item_info.get(ITEM_DESIGN_KEY_NAME): item_info for item_info in item_infos}
+        item_infos = sorted(item_infos, key=lambda item_info: (
+            _get_key_for_base_items_sort(item_info, items_designs_data_for_sort)
+        ))
         items_designs_details_collection = __create_base_designs_details_collection_from_infos(item_infos, items_designs_data)
 
         if as_embed:
-            return (await items_designs_details_collection.get_entity_details_as_embed()), True
+            return (await items_designs_details_collection.get_entity_details_as_embed(ctx)), True
         else:
             return (await items_designs_details_collection.get_entity_details_as_text()), True
+
+
+
+
+
 
 
 
@@ -114,7 +123,7 @@ async def get_item_details_by_name(item_name: str, as_embed: bool = settings.USE
 _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (for all slots), {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
 
-async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_parameter_value(slot, 'slot', allowed_values=lookups.EQUIPMENT_SLOTS_LOOKUP.keys(), allow_none_or_empty=True)
     pss_assert.valid_parameter_value(stat, 'stat', allowed_values=lookups.STAT_TYPES_LOOKUP.keys())
 
@@ -132,7 +141,7 @@ async def get_best_items(slot: str, stat: str, as_embed: bool = settings.USE_EMB
         return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
     else:
         if as_embed:
-            return await _get_best_items_as_embed(stat_filter, best_items), True
+            return await _get_best_items_as_embed(stat_filter, best_items, ctx), True
         else:
             return await _get_best_items_as_text_all(stat_filter, best_items), True
 
@@ -147,7 +156,7 @@ def _get_best_items_designs(slot_filter: List[str], stat_filter: str, items_desi
 
     filtered_data = core.filter_data_dict(items_designs_data, filters, ignore_case=True)
     if filtered_data:
-        items_infos = sorted(filtered_data.values(), key=__get_key_for_best_items_sort)
+        items_infos = sorted(filtered_data.values(), key=_get_key_for_best_items_sort)
         items_designs_details = __create_best_designs_details_list_from_infos(items_infos, items_designs_data)
         result = entity.group_entities_designs_details(items_designs_details, 'ItemSubType')
     return result
@@ -166,15 +175,18 @@ def _get_best_items_error(slot: str, stat: str) -> list:
     return []
 
 
-async def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]]) -> List[discord.Embed]:
+async def _get_best_items_as_embed(stat: str, items_designs_details_groups: Dict[str, List[ItemDesignDetails]], ctx: commands.Context = None) -> List[discord.Embed]:
     result = []
 
     for group_name in sorted(items_designs_details_groups.keys()):
         group = items_designs_details_groups[group_name]
         slot = _get_pretty_slot(group_name)
-        result.append(discord.Embed(title=_get_best_title(stat, slot)))
+        title = _get_best_title(stat, slot, use_markdown=False)
+        description = []
         for item_design_details in group:
-            result.append(await item_design_details.get_details_as_embed_long())
+            description.extend(await item_design_details.get_details_as_text_long())
+        embed = util.create_embed(title, description='\n'.join(description), footer=resources.get_resource('PRICE_NOTE_EMBED'))
+        result.append(embed)
     return result
 
 
@@ -197,22 +209,46 @@ async def _get_best_items_as_text_all(stat: str, items_designs_details_groups: D
     return result
 
 
-def _get_best_title(stat: str, slot: str) -> str:
-    return f'Best **{stat}** bonus for **{slot}** slot'
+def _get_best_title(stat: str, slot: str, use_markdown: bool = True) -> str:
+    bold_marker = '**' if use_markdown else ''
+    return f'Best {bold_marker}{stat}{bold_marker} bonus for {bold_marker}{slot}{bold_marker} slot'
 
 
-def _get_pretty_slot(slot: str) -> str:
-    return slot.replace('Equipment', '')
+def _get_key_for_base_items_sort(item_info: dict, items_designs_data: entity.EntitiesDesignsData) -> str:
+    result = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    item_sub_type = item_info.get('ItemSubType')
+    if entity.has_value(item_sub_type) and item_sub_type in lookups.ITEM_SUB_TYPES_TO_GET_PARENTS_FOR:
+        parents = __get_parents(item_info, items_designs_data)
+        if parents:
+            result = parents[0].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+            result += ''.join([item_info.get(ITEM_DESIGN_KEY_NAME).zfill(4) for item_info in parents])
+    return result
 
 
-def __get_key_for_best_items_sort(item_info: dict) -> str:
-    if item_info and item_info['EnhancementValue'] and item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]:
+def _get_key_for_best_items_sort(item_info: dict) -> str:
+    if item_info.get('EnhancementValue') and item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME):
         slot = item_info['ItemSubType']
         rarity_num = lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']]
         enhancement_value = int((1000.0 - float(item_info['EnhancementValue'])) * 10)
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
         result = f'{enhancement_value}{slot}{rarity_num}{item_name}'
         return result
+
+
+def _get_pretty_slot(slot: str) -> str:
+    return slot.replace('Equipment', '')
+
+
+def __get_parents(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
+    item_design_id = item_info.get(ITEM_DESIGN_KEY_NAME)
+    root_item_design_id = item_info.get('RootItemDesignId')
+    result = []
+    if entity.has_value(root_item_design_id) and item_design_id != root_item_design_id:
+        parent_info = items_designs_data.get(root_item_design_id)
+        if parent_info:
+            result = __get_parents(parent_info, items_designs_data)
+            result.append(parent_info)
+    return result
 
 
 
@@ -225,7 +261,7 @@ def __get_key_for_best_items_sort(item_info: dict) -> str:
 
 # ---------- Price info ----------
 
-async def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_item_price(item_name: str, ctx: commands.Context = None, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_designs_data = await items_designs_retriever.get_data_dict3()
@@ -242,7 +278,7 @@ async def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
         items_designs_details_collection = __create_price_designs_details_collection_from_infos(item_infos, items_designs_data)
 
         if as_embed:
-            return (await items_designs_details_collection.get_entity_details_as_embed()), True
+            return (await items_designs_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
         else:
             return (await items_designs_details_collection.get_entity_details_as_text()), True
 
@@ -257,7 +293,7 @@ async def get_item_price(item_name: str, as_embed: bool = settings.USE_EMBEDS):
 
 # ---------- Ingredients info ----------
 
-async def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_ingredients_for_item(item_name: str, ctx: commands.Context = None, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_designs_data = await items_designs_retriever.get_data_dict3()
@@ -271,16 +307,43 @@ async def get_ingredients_for_item(item_name: str, as_embed: bool = settings.USE
         ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], items_designs_data)
         ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
         if as_embed:
-            return _get_item_ingredients_as_embed(item_name, ingredients_dicts, items_designs_data), True
+            return _get_item_ingredients_as_embed(item_info, ingredients_dicts, items_designs_data, ctx), True
         else:
-            return _get_item_ingredients_as_text(item_name, ingredients_dicts, items_designs_data), True
+            return _get_item_ingredients_as_text(item_info, ingredients_dicts, items_designs_data), True
 
 
-def _get_item_ingredients_as_embed(item_name, ingredients_dicts, item_design_data):
-    return ''
+def _get_item_ingredients_as_embed(item_info, ingredients_dicts, item_design_data, ctx) -> discord.Embed:
+    item_name = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    ingredients_dicts = [d for d in ingredients_dicts if d]
+
+    lines = []
+    if ingredients_dicts:
+        for ingredients_dict in ingredients_dicts:
+            current_level_lines = []
+            current_level_costs = 0
+            for ingredient_item_id, ingredient_amount in ingredients_dict.items():
+                ingredient_item_info = item_design_data[ingredient_item_id]
+                ingredient_name = ingredient_item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                ingredient_price = int(ingredient_item_info['MarketPrice'])
+                price_sum = ingredient_price * ingredient_amount
+                current_level_costs += price_sum
+                current_level_lines.append(f'{ingredient_amount} x {ingredient_name} ({ingredient_price} bux ea): {price_sum} bux')
+            lines.extend(current_level_lines)
+            lines.append(f'**Crafting costs: {current_level_costs} bux**')
+            lines.append(settings.EMPTY_LINE)
+    else:
+        lines.append('This item can\'t be crafted')
+
+    title = f'Ingredients for: {item_name}'
+    description = '\n'.join(lines)
+    thumbnail_url = entity.get_download_sprite_link(item_info.get('ImageSpriteId'))
+    colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+    result = util.create_embed(title, description=description, colour=colour, thumbnail_url=thumbnail_url, footer=resources.get_resource('PRICE_NOTE_EMBED'))
+    return result
 
 
-def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data):
+def _get_item_ingredients_as_text(item_info, ingredients_dicts, item_design_data):
+    item_name = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
     lines = [f'**Ingredients for {item_name}**']
     ingredients_dicts = [d for d in ingredients_dicts if d]
 
@@ -288,13 +351,13 @@ def _get_item_ingredients_as_text(item_name, ingredients_dicts, item_design_data
         for ingredients_dict in ingredients_dicts:
             current_level_lines = []
             current_level_costs = 0
-            for item_id, item_amount in ingredients_dict.items():
-                item_info = item_design_data[item_id]
-                item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                item_price = int(item_info['MarketPrice'])
-                price_sum = item_price * item_amount
+            for ingredient_item_id, ingredient_amount in ingredients_dict.items():
+                ingredient_item_info = item_design_data[ingredient_item_id]
+                ingredient_name = ingredient_item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                ingredient_price = int(ingredient_item_info['MarketPrice'])
+                price_sum = ingredient_price * ingredient_amount
                 current_level_costs += price_sum
-                current_level_lines.append(f'> {item_amount} x {item_name} ({item_price} bux ea): {price_sum} bux')
+                current_level_lines.append(f'> {ingredient_amount} x {ingredient_name} ({ingredient_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
             lines.append(settings.EMPTY_LINE)
@@ -372,7 +435,7 @@ def _flatten_ingredients_tree(ingredients_tree: list) -> list:
 
 # ---------- Upgrade info ----------
 
-async def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_item_upgrades_from_name(item_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_designs_data = await items_designs_retriever.get_data_dict3()
@@ -388,7 +451,7 @@ async def get_item_upgrades_from_name(item_name: str, as_embed: bool = settings.
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
 
         if as_embed:
-            return _get_item_upgrades_as_embed(item_name, item_infos, items_designs_data), True
+            return _get_item_upgrades_as_embed(item_name, item_infos, items_designs_data, ctx), True
         else:
             return _get_item_upgrades_as_text(item_name, item_infos, items_designs_data), True
 
@@ -403,13 +466,30 @@ def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:
     return result
 
 
-def _get_item_upgrades_as_embed(item_name: str, item_infos: dict, item_design_data: dict):
-    return ''
+def _get_item_upgrades_as_embed(item_name: str, item_infos: dict, item_design_data: dict, ctx: commands.Context) -> discord.Embed:
+    if item_infos:
+        description = None
+        fields = []
+        for item_info in item_infos:
+            field_title = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            field_content = []
+            ingredients = _get_ingredients_dict(item_info['Ingredients'])
+            for item_id, amount in ingredients.items():
+                ingredient_info = item_design_data[item_id]
+                field_content.append(f'{ingredient_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]} x{amount}')
+            fields.append((field_title, field_content, True))
+    else:
+        description = f'No item with the a name like {item_name} can be upgraded.'
+        fields = None
+
+    title = f'Crafting recipes requiring: {item_name}'
+    colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+    result = util.create_embed(title, description=description, colour=colour, fields=fields)
+    return result
 
 
 def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_data) -> list:
-    lines = [f'**Crafting recipes requiring {item_name}**']
-
+    lines = [f'Crafting recipes requiring: {item_name}']
     if item_infos:
         for item_info in item_infos:
             lines.append(f'**{item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}**')
@@ -418,7 +498,7 @@ def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_dat
                 ingredient_info = item_design_data[item_id]
                 lines.append(f'> {ingredient_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]} x{amount}')
     else:
-        lines.append(f'This item cannot be upgraded.')
+        lines.append(f'No item with the a name like {item_name} can be upgraded.')
 
     return lines
 
@@ -434,7 +514,7 @@ def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_dat
 # ---------- Create EntityDesignDetails ----------
 
 def __create_base_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['base'], None, __properties['base'], items_designs_data)
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['base'], __properties['base'], __properties['embed'], items_designs_data, description_embed=__properties.get('description_embed'))
 
 
 def __create_base_designs_details_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
@@ -443,12 +523,12 @@ def __create_base_designs_details_list_from_infos(items_designs_infos: List[enti
 
 def __create_base_designs_details_collection_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> entity.EntityDesignDetailsCollection:
     base_designs_details = __create_base_designs_details_list_from_infos(items_designs_infos, items_designs_data)
-    result = entity.EntityDesignDetailsCollection(base_designs_details, big_set_threshold=0)
+    result = entity.EntityDesignDetailsCollection(base_designs_details, big_set_threshold=3, add_empty_lines=False)
     return result
 
 
 def __create_best_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['best'], None, __properties['best'], items_designs_data, prefix='> ')
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['best'], __properties['best'], __properties['embed'], items_designs_data, prefix='> ', description_embed=__properties.get('description_embed'))
 
 
 def __create_best_designs_details_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
@@ -462,7 +542,7 @@ def __create_best_designs_details_collection_from_infos(items_designs_infos: Lis
 
 
 def __create_price_design_data_from_info(item_design_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> ItemDesignDetails:
-    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['price'], None, __properties['price'], items_designs_data)
+    return ItemDesignDetails(item_design_info, __properties['title'], __properties['description'], __properties['price'], __properties['price'], __properties['embed'], items_designs_data, description_embed=__properties.get('description_embed'))
 
 
 def __create_price_designs_details_list_from_infos(items_designs_infos: List[entity.EntityDesignInfo], items_designs_data: entity.EntitiesDesignsData) -> List[ItemDesignDetails]:
@@ -492,6 +572,15 @@ def __get_can_sell(item_info: entity.EntityDesignInfo, items_designs_data: entit
     else:
         result = None
     return result
+
+
+async def __get_image_url(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    logo_sprite_id = item_info.get('LogoSpriteId')
+    image_sprite_id = item_info.get('ImageSpriteId')
+    if entity.has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
+        return await entity.get_download_sprite_link(logo_sprite_id)
+    else:
+        return None
 
 
 def __get_item_bonus_type_and_value(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
@@ -541,8 +630,17 @@ def __get_pretty_market_price(item_info: entity.EntityDesignInfo, items_designs_
     return result
 
 
-def __get_rarity(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
-    return item_info['Rarity']
+def __get_type(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
+    item_sub_type = item_info.get('ItemSubType')
+    if entity.has_value(item_sub_type) and 'Equipment' not in item_sub_type:
+        result = item_sub_type.replace('Equipment', '')
+    else:
+        item_type = item_info.get('ItemType')
+        if entity.has_value(item_type):
+            result = item_type
+        else:
+            result = None
+    return result
 
 
 
@@ -613,7 +711,7 @@ async def get_item_details_short_by_training_id(training_id: str, items_designs_
 
 
 async def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
-    result = await item_design_details.get_details_as_text_short()
+    result = await item_design_details.get_full_details_as_text_short()
     return ''.join(result)
 
 
@@ -721,19 +819,29 @@ items_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRet
 )
 __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.EntityDesignDetailProperty]]] = {
     'title': entity.EntityDesignDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, transform_function=__get_rarity),
+    'description': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='Rarity'),
+    'description_embed': entity.EntityDesignDetailProperty('Description', False, omit_if_none=False, entity_property_name='ItemDesignDescription'),
     'base': [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
+        entity.EntityDesignDetailProperty('Type', False, transform_function=__get_type, embed_only=True),
         entity.EntityDesignDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
         entity.EntityDesignDetailProperty('Slot', False, transform_function=__get_item_slot),
-        entity.EntityDesignDetailProperty('CanSell', False, transform_function=__get_can_sell)
+        entity.EntityDesignDetailProperty('CanSell', False, transform_function=__get_can_sell, text_only=True),
+        entity.EntityDesignDetailProperty('Market Price', False, transform_function=__get_pretty_market_price, embed_only=True)
     ],
     'best': [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
         entity.EntityDesignDetailProperty('EnhancementValue', False, transform_function=__get_enhancement_value),
         entity.EntityDesignDetailProperty('MarketPrice', False, transform_function=__get_pretty_market_price)
     ],
     'price': [
+        entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
         entity.EntityDesignDetailProperty('Prices', False, transform_function=__get_item_price)
-    ]
+    ],
+    'embed': {
+        'image_url': entity.EntityDesignDetailProperty('image_url', False, transform_function=__get_image_url),
+        'thumbnail_url': entity.EntityDesignDetailProperty('thumbnail_url', False, entity_property_name='ImageSpriteId', transform_function=entity.get_download_sprite_link_by_property)
+    }
 }
 
 

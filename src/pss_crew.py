@@ -257,7 +257,7 @@ async def get_collection_design_details_by_name(collection_name: str, as_embed: 
             else:
                 long_details = []
                 for collection_design_details in collections_designs_details:
-                    long_details.extend((await collection_design_details.get_details_as_text_short()))
+                    long_details.extend((await collection_design_details.get_full_details_as_text_short()))
                 long_details.append(__get_collection_hyperlink(None, None, None))
                 return long_details, True
         else:

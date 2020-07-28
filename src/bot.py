@@ -615,7 +615,7 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat)
+        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 
@@ -668,7 +668,7 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name)
+        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 
@@ -778,7 +778,7 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name)
+        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 
@@ -802,7 +802,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name)
+        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 
@@ -1152,7 +1152,7 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_price(item_name)
+        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=True)
     await util.post_output(ctx, output)
 
 
@@ -1346,7 +1346,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name)
+            item_output, item_success = await item.get_item_details_by_name(name, ctx=ctx, as_embed=True)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False

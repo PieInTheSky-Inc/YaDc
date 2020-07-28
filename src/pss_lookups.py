@@ -147,6 +147,20 @@ GRID_TYPE_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
+IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
+    1: ('Clip', 500),
+    2: ('Roll', 1200),
+    4: ('Stash', 2500),
+    8: ('Case', 6500),
+    16: ('Vault', 14000)
+}
+
+
+ITEM_SUB_TYPES_TO_GET_PARENTS_FOR = [
+    'Module'
+]
+
+
 MONTH_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_name) if k > 0}
 MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_abbr) if k > 0}
 
@@ -174,15 +188,6 @@ REDUCE_TOKENS_LOOKUP: Dict[int, str] = {
     1: 'k',
     2: 'm',
     3: 'g'
-}
-
-
-IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
-    1: ('Clip', 500),
-    2: ('Roll', 1200),
-    4: ('Stash', 2500),
-    8: ('Case', 6500),
-    16: ('Vault', 14000)
 }
 
 

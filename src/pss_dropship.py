@@ -117,11 +117,11 @@ async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_designs_data
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
         common_crew_details = crew.get_char_design_details_by_id(common_crew_id, chars_designs_data, collections_designs_data, level=40)
-        common_crew_info = await common_crew_details.get_details_as_text_short()
+        common_crew_info = await common_crew_details.get_full_details_as_text_short()
 
         hero_crew_id = raw_data['HeroCrewId']
         hero_crew_details = crew.get_char_design_details_by_id(hero_crew_id, chars_designs_data, collections_designs_data, level=40)
-        hero_crew_info = await hero_crew_details.get_details_as_text_short()
+        hero_crew_info = await hero_crew_details.get_full_details_as_text_short()
 
         common_crew_rarity = common_crew_details.entity_design_info['Rarity']
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
@@ -173,13 +173,13 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_designs_data: di
     entity_details = []
     if shop_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(entity_id, chars_designs_data, collections_designs_data, level=40)
-        entity_details = await char_design_details.get_details_as_text_short()
+        entity_details = await char_design_details.get_full_details_as_text_short()
     elif shop_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(entity_id, items_designs_data)
         entity_details = await item_design_details.get_details_as_text_long()
     elif shop_type == 'Room':
-        room_design_details = room.get_room_design_details_by_id(entity_id, rooms_designs_data, None, None)
-        entity_details = await room_design_details.get_details_as_text_short()
+        room_design_details = room.get_room_design_details_by_id(entity_id, rooms_designs_data, None, None, None)
+        entity_details = await room_design_details.get_full_details_as_text_short()
     else:
         result.append('-')
         return result
@@ -205,13 +205,13 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_designs_data: di
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
         char_design_details = crew.get_char_design_details_by_id(sale_argument, chars_designs_data, collections_designs_data, level=40)
-        entity_details = ''.join(await char_design_details.get_details_as_text_short())
+        entity_details = ''.join(await char_design_details.get_full_details_as_text_short())
     elif sale_type == 'Item':
         item_design_details = item.get_item_design_details_by_id(sale_argument, items_designs_data)
         entity_details = ''.join(await item_design_details.get_details_as_text_long())
     elif sale_type == 'Room':
-        room_design_details = room.get_room_design_details_by_id(sale_argument, rooms_designs_data, None, None)
-        entity_details = ''.join(await room_design_details.get_details_as_text_short())
+        room_design_details = room.get_room_design_details_by_id(sale_argument, rooms_designs_data, None, None, None)
+        entity_details = ''.join(await room_design_details.get_full_details_as_text_short())
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
     else: # Print debugging info
