@@ -110,6 +110,17 @@ async def get_item_details_by_name(item_name: str, ctx: commands.Context = None,
             return (await items_designs_details_collection.get_entity_details_as_text()), True
 
 
+def _get_key_for_base_items_sort(item_info: dict, items_designs_data: entity.EntitiesDesignsData) -> str:
+    result = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    item_sub_type = item_info.get('ItemSubType')
+    if entity.has_value(item_sub_type) and item_sub_type in lookups.ITEM_SUB_TYPES_TO_GET_PARENTS_FOR:
+        parents = __get_parents(item_info, items_designs_data)
+        if parents:
+            result = parents[0].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+            result += ''.join([item_info.get(ITEM_DESIGN_KEY_NAME).zfill(4) for item_info in parents])
+    return result
+
+
 
 
 
@@ -216,17 +227,6 @@ def _get_best_title(stat: str, slot: str, use_markdown: bool = True) -> str:
     return f'Best {bold_marker}{stat}{bold_marker} bonus for {bold_marker}{slot}{bold_marker} slot'
 
 
-def _get_key_for_base_items_sort(item_info: dict, items_designs_data: entity.EntitiesDesignsData) -> str:
-    result = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-    item_sub_type = item_info.get('ItemSubType')
-    if entity.has_value(item_sub_type) and item_sub_type in lookups.ITEM_SUB_TYPES_TO_GET_PARENTS_FOR:
-        parents = __get_parents(item_info, items_designs_data)
-        if parents:
-            result = parents[0].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-            result += ''.join([item_info.get(ITEM_DESIGN_KEY_NAME).zfill(4) for item_info in parents])
-    return result
-
-
 def _get_key_for_best_items_sort(item_info: dict) -> str:
     if item_info.get('EnhancementValue') and item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME):
         slot = item_info['ItemSubType']
@@ -239,18 +239,6 @@ def _get_key_for_best_items_sort(item_info: dict) -> str:
 
 def _get_pretty_slot(slot: str) -> str:
     return slot.replace('Equipment', '')
-
-
-def __get_parents(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
-    item_design_id = item_info.get(ITEM_DESIGN_KEY_NAME)
-    root_item_design_id = item_info.get('RootItemDesignId')
-    result = []
-    if entity.has_value(root_item_design_id) and item_design_id != root_item_design_id:
-        parent_info = items_designs_data.get(root_item_design_id)
-        if parent_info:
-            result = __get_parents(parent_info, items_designs_data)
-            result.append(parent_info)
-    return result
 
 
 
@@ -714,6 +702,18 @@ async def get_item_details_short_by_training_id(training_id: str, items_designs_
 async def get_item_search_details(item_design_details: ItemDesignDetails) -> List[str]:
     result = await item_design_details.get_full_details_as_text_short()
     return ''.join(result)
+
+
+def __get_parents(item_info: entity.EntityDesignInfo, items_designs_data: entity.EntitiesDesignsData) -> List[entity.EntityDesignInfo]:
+    item_design_id = item_info.get(ITEM_DESIGN_KEY_NAME)
+    root_item_design_id = item_info.get('RootItemDesignId')
+    result = []
+    if entity.has_value(root_item_design_id) and item_design_id != root_item_design_id:
+        parent_info = items_designs_data.get(root_item_design_id)
+        if parent_info:
+            result = __get_parents(parent_info, items_designs_data)
+            result.append(parent_info)
+    return result
 
 
 def get_slot_and_stat_type(item_design_details: ItemDesignDetails) -> Tuple[str, str]:
