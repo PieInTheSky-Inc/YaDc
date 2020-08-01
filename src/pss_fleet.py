@@ -63,7 +63,7 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 # ---------- Helper functions ----------
 
-def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_description_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     description = fleet_info.get('AllianceDescription')
     if description is not None:
@@ -71,7 +71,7 @@ def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     division_name = get_division_name_as_text(fleet_info)
     if division_name is not None and division_name != '-':
@@ -83,7 +83,7 @@ def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityDesignInfo)
     return result
 
 
-def get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     if fleet_info:
         division_design_id = fleet_info.get('DivisionDesignId')
@@ -92,7 +92,7 @@ def get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_member_count(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+def __get_member_count(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
     result = None
     member_count = fleet_info.get('NumberOfMembers')
     if member_count is not None:
@@ -102,12 +102,12 @@ def __get_member_count(fleet_info: entity.EntityDesignInfo, fleet_users_infos: e
     return result
 
 
-def __get_min_trophies(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_min_trophies(fleet_info: entity.EntityInfo) -> str:
     result = fleet_info.get('MinTrophyRequired')
     return result
 
 
-def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_name(fleet_info: entity.EntityInfo) -> str:
     result = None
     fleet_name = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
     if fleet_name is not None:
@@ -118,7 +118,7 @@ def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     ranking = fleet_info.get('Ranking')
     if ranking is not None and ranking != '0':
@@ -126,7 +126,7 @@ def __get_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_stars(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_stars(fleet_info: entity.EntityInfo) -> str:
     result = None
     stars = fleet_info.get('Score')
     if stars is not None and stars != '0':
@@ -134,7 +134,7 @@ def __get_stars(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_trophies(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+def __get_trophies(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
     result = None
     member_count = fleet_info.get('Trophy')
     if member_count is not None:
@@ -144,7 +144,7 @@ def __get_trophies(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entit
     return result
 
 
-def __get_type_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     requires_approval = fleet_info.get('RequiresApproval')
     if requires_approval is not None:

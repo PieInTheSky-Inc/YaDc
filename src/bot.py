@@ -596,27 +596,29 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
         item_name = item_name.strip().lower()
 
         if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
-            items_designs_details = await item.get_items_designs_details_by_name(item_name)
-            found_matching_items = items_designs_details and len(items_designs_details) > 0
-            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+            items_details = await item.get_items_details_by_name(item_name)
+            found_matching_items = items_details and len(items_details) > 0
+            items_details = item.filter_items_details_for_equipment(items_details)
         else:
-            items_designs_details = []
+            items_details = []
             found_matching_items = False
-        if items_designs_details:
-            if len(items_designs_details) == 1:
-                item_design_details = items_designs_details[0]
+        if items_details:
+            if len(items_details) == 1:
+                item_details = items_details[0]
             else:
                 use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
-                _, item_design_details = await paginator.wait_for_option_selection()
-            slot, stat = item.get_slot_and_stat_type(item_design_details)
+                paginator = pagination.Paginator(ctx, item_name, items_details, item.get_item_search_details, use_pagination)
+                _, item_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_details)
         else:
             if found_matching_items:
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
         output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=True)
+        output2, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='char', aliases=['crew'], brief='Get character stats')
@@ -642,7 +644,7 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
+        output, _ = await crew.get_char_details_by_name(crew_name, level=level)
     await util.post_output(ctx, output)
 
 
@@ -693,7 +695,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await crew.get_collection_details_by_name(collection_name)
     await util.post_output(ctx, output)
 
 
@@ -779,7 +781,9 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=True)
+        output2, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='item', brief='Get item stats')
@@ -803,7 +807,9 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=True)
+        output2, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
@@ -1153,7 +1159,9 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=True)
+        output2, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='recipe', brief='Get character recipes')
@@ -1341,7 +1349,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
+            char_output, char_success = await crew.get_char_details_by_name(name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False

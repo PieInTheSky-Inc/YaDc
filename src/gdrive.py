@@ -36,8 +36,8 @@ import utility as util
 class TourneyData(object):
     def __init__(self, raw_data: str):
         data = json.loads(raw_data)
-        self.__fleets: entity.EntitiesDesignsData = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
-        self.__users: entity.EntitiesDesignsData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
+        self.__fleets: entity.EntitiesData = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
+        self.__users: entity.EntitiesData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
         self.__meta: Dict[str, object] = data['meta']
         self.__data_date: datetime.datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
         if not self.__meta.get('SchemaVersion', None):
@@ -56,7 +56,7 @@ class TourneyData(object):
         return list(self.__fleets.keys())
 
     @property
-    def fleets(self) -> entity.EntitiesDesignsData:
+    def fleets(self) -> entity.EntitiesData:
         """
         Copy of fleet data
         """
@@ -88,7 +88,7 @@ class TourneyData(object):
         return list(self.__users.keys())
 
     @property
-    def users(self) -> entity.EntitiesDesignsData:
+    def users(self) -> entity.EntitiesData:
         """
         Copy of user data
         """
@@ -102,14 +102,14 @@ class TourneyData(object):
         return self.__data_date.year
 
 
-    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityDesignInfo:
+    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityInfo:
         """
         Look up fleet by id
         """
         return dict(self.__fleets.get(fleet_id, None))
 
 
-    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesDesignsData:
+    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesData:
         """
         Looks up fleets having the specified fleet_name in their name.
         Case-insensitive.
@@ -122,14 +122,14 @@ class TourneyData(object):
         return result
 
 
-    def get_user_data_by_id(self, user_id: str) -> entity.EntityDesignInfo:
+    def get_user_data_by_id(self, user_id: str) -> entity.EntityInfo:
         """
         Look up user by id
         """
         return dict(self.__users.get(user_id, None))
 
 
-    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesDesignsData:
+    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesData:
         """
         Looks up users having the specified user_name in their name.
         Case-insensitive.

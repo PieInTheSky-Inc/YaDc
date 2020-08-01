@@ -87,7 +87,8 @@ EQUIPMENT_SLOTS_ORDER_LOOKUP: List[str] = [
     'EquipmentBody',
     'EquipmentWeapon',
     'EquipmentLeg',
-    'EquipmentPet'
+    'EquipmentPet',
+    'Module'
 ]
 
 
@@ -108,7 +109,9 @@ EQUIPMENT_SLOTS_LOOKUP: Dict[str, str] = {
     'gun': 'EquipmentWeapon',
     'accessory': 'EquipmentAccessory',
     'shoulder': 'EquipmentAccessory',
-    'pet': 'EquipmentPet'
+    'pet': 'EquipmentPet',
+    'module': 'Module',
+    'mod': 'Module'
 }
 
 
