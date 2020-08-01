@@ -558,6 +558,8 @@ class EntityDetails(object):
         title, description, details_short = await self.__get_full_details(False, EntityDetailsType.SHORT)
         if description:
             description = f' ({description})'
+        else:
+            description = ''
         details = [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_short if detail.value]
         details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
         if details_text:
@@ -642,13 +644,13 @@ class EntityDetailsCollection():
         return result
 
 
-    async def get_entity_details_as_text(self, custom_title: str = None, custom_footer_text: str = None) -> List[str]:
+    async def get_entity_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT) -> List[str]:
         result = []
         if custom_title:
             result.append(custom_title)
         for entity_details in self.__entities_details:
             if self.__is_big_set:
-                details = await entity_details.get_details_as_text(EntityDetailsType.SHORT)
+                details = await entity_details.get_details_as_text(big_set_details_type)
                 result.extend(details)
             else:
                 details = await entity_details.get_details_as_text(EntityDetailsType.LONG)

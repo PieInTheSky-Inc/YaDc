@@ -671,7 +671,9 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=True)
+        output2, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='collection', aliases=['coll'], brief='Get collections')

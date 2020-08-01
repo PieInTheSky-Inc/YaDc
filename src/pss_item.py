@@ -324,7 +324,7 @@ def _get_item_ingredients_as_text(item_info, ingredients_dicts, item_design_data
     return lines
 
 
-def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> list:
+def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> List[Tuple[str, str, list]]:
     """returns a tree structure: [(item_id, item_amount, item_ingredients[])]"""
     if not ingredients_str:
         return []
@@ -337,7 +337,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
         item_info = item_design_data[item_id]
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
         item_amount = int(item_amount)
-        # Filter out void particles and scrap
+        # Filter out void particles and fragments
         if 'void particle' not in item_name and ' fragment' not in item_name:
             combined_amount = item_amount * parent_amount
             item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
@@ -348,7 +348,7 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
 
 def _get_ingredients_dict(ingredients: str) -> dict:
     result = {}
-    if ingredients and ingredients != '0':
+    if entity.has_value(ingredients):
         result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
     return result
 
@@ -404,11 +404,14 @@ async def get_item_upgrades_from_name(item_name: str, ctx: commands.Context, as_
             item_infos.extend(_get_upgrades_for(item_id, items_data))
         item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        upgrade_details_collection = __create_upgrade_details_collection_from_infos(item_infos, items_data)
 
         if as_embed:
-            return _get_item_upgrades_as_embed(item_name, item_infos, items_data, ctx), True
+            custom_title = f'{len(item_infos)} crafting recipes requiring: {item_name}'
+            return (await upgrade_details_collection.get_entity_details_as_embed(ctx, custom_title=custom_title)), True
         else:
-            return _get_item_upgrades_as_text(item_name, item_infos, items_data), True
+            custom_title = f'{len(item_infos)} crafting recipes requiring: **{item_name}**'
+            return (await upgrade_details_collection.get_entity_details_as_text(custom_title=custom_title, big_set_details_type=entity.EntityDetailsType.LONG)), True
 
 
 def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:
@@ -523,6 +526,20 @@ def __create_price_details_collection_from_infos(items_designs_infos: List[entit
     return result
 
 
+def __create_upgrade_design_data_from_info(item_info: entity.EntityInfo, items_data: entity.EntitiesData) -> entity.EntityDetails:
+    return entity.EntityDetails(item_info, __properties['title'], entity.NO_PROPERTY, __properties['upgrade'], __properties['embed_settings'], items_data)
+
+
+def __create_upgrade_details_list_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData) -> List[entity.EntityDetails]:
+    return [__create_upgrade_design_data_from_info(item_info, items_data) for item_info in items_designs_infos]
+
+
+def __create_upgrade_details_collection_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
+    price_details = __create_upgrade_details_list_from_infos(items_designs_infos, items_data)
+    result = entity.EntityDetailsCollection(price_details, big_set_threshold=1)
+    return result
+
+
 
 
 
@@ -533,62 +550,7 @@ def __create_price_details_collection_from_infos(items_designs_infos: List[entit
 
 # ---------- Transformation functions ----------
 
-def __get_can_sell(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    flags = int(item_info['Flags'])
-    if flags & 1 == 0:
-        result = CANNOT_BE_SOLD
-    else:
-        result = None
-    return result
-
-
-async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    logo_sprite_id = item_info.get('LogoSpriteId')
-    image_sprite_id = item_info.get('ImageSpriteId')
-    if entity.has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
-        return await entity.get_download_sprite_link(logo_sprite_id)
-    else:
-        return None
-
-
-def __get_item_bonus_type_and_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    bonus_type = item_info['EnhancementType']
-    bonus_value = item_info['EnhancementValue']
-    if bonus_type.lower() == 'none':
-        result = None
-    else:
-        result = f'{bonus_type} +{bonus_value}'
-    return result
-
-
-def __get_item_slot(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    item_type = item_info['ItemType']
-    item_sub_type = item_info['ItemSubType']
-    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
-        result = item_sub_type.replace('Equipment', '')
-    else:
-        result = None
-    return result
-
-
-def __get_item_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    flags = int(item_info['Flags'])
-    if flags & 1 == 0:
-        result = CANNOT_BE_SOLD
-    else:
-        fair_price = item_info['FairPrice']
-        market_price = item_info['MarketPrice']
-        result = f'{market_price} ({fair_price})'
-    return result
-
-
-def __get_enhancement_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    enhancement_value = float(item_info['EnhancementValue'])
-    result = f'{enhancement_value:.1f}'
-    return result
-
-
-def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
     ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], items_data)
     ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
     ingredients_dicts = [d for d in ingredients_dicts if d]
@@ -614,10 +576,68 @@ def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesD
     return '\n'.join(lines)
 
 
-def __get_ingredients_title(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
-    value = kwargs.get('entity_property')
-    if value:
-        result = f'Ingredients for: {value}'
+def __get_can_sell(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        result = None
+    return result
+
+
+def __get_enhancement_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    enhancement_value = float(item_info['EnhancementValue'])
+    result = f'{enhancement_value:.1f}'
+    return result
+
+
+async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    logo_sprite_id = item_info.get('LogoSpriteId')
+    image_sprite_id = item_info.get('ImageSpriteId')
+    if entity.has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
+        return await entity.get_download_sprite_link(logo_sprite_id)
+    else:
+        return None
+
+
+def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    ingredients = _get_ingredients_dict(item_info.get('Ingredients'))
+    result = []
+    for item_id, amount in ingredients.items():
+        item_name = items_data[item_id].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+        result.append(f'> {item_name} x{amount}')
+    if result:
+        return '\n'.join(result)
+    else:
+        return None
+
+
+def __get_item_bonus_type_and_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    bonus_type = item_info['EnhancementType']
+    bonus_value = item_info['EnhancementValue']
+    if bonus_type.lower() == 'none':
+        result = None
+    else:
+        result = f'{bonus_type} +{bonus_value}'
+    return result
+
+
+def __get_item_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    flags = int(item_info['Flags'])
+    if flags & 1 == 0:
+        result = CANNOT_BE_SOLD
+    else:
+        fair_price = item_info['FairPrice']
+        market_price = item_info['MarketPrice']
+        result = f'{market_price} ({fair_price})'
+    return result
+
+
+def __get_item_slot(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    item_type = item_info['ItemType']
+    item_sub_type = item_info['ItemSubType']
+    if item_type == 'Equipment' and 'Equipment' in item_sub_type:
+        result = item_sub_type.replace('Equipment', '')
     else:
         result = None
     return result
@@ -640,6 +660,15 @@ def __get_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, *
     else:
         price = kwargs.get('entity_property')
         result = f'{price} bux'
+    return result
+
+
+def __get_title_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+    value = kwargs.get('entity_property')
+    if value:
+        result = f'Ingredients for: {value}'
+    else:
+        result = None
     return result
 
 
@@ -844,7 +873,7 @@ items_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
 )
 __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPropertyCollection, entity.EntityDetailPropertyListCollection]] = {
     'title': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'title_ingredients': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_ingredients_title, text_only=True),
+    'title_ingredients': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients, text_only=True),
     'description': entity.EntityDetailPropertyCollection(
         entity.EntityDetailProperty('Description', False, entity_property_name='ItemDesignDescription'),
         property_short=entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='Rarity')
@@ -873,6 +902,11 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPr
             entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price)
         ]
     ),
+    'ingredients': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty(entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients), False, transform_function=__get_all_ingredients)
+        ]
+    ),
     'price': entity.EntityDetailPropertyListCollection(
         [
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
@@ -885,9 +919,9 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPr
             entity.EntityDetailProperty('Market price (Fair price)', False, transform_function=__get_item_price)
         ]
     ),
-    'ingredients': entity.EntityDetailPropertyListCollection(
+    'upgrade': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty(entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_ingredients_title), False, transform_function=__get_ingredients)
+            entity.EntityDetailProperty('Ingredients', False, transform_function=__get_ingredients)
         ]
     ),
     'embed_settings': {
