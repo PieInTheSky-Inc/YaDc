@@ -205,8 +205,10 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     result = [FLEET_SHEET_COLUMN_NAMES]
 
     for user_info in fleet_users_infos.values():
-        logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate'])
-        joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate'])
+        last_login_date = user_info.get('LastLoginDate')
+        logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate']) if last_login_date else None
+        join_date = user_info.get('AllianceJoinDate')
+        joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate']) if join_date else None
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
@@ -214,10 +216,10 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             fleet_name,
             user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
             user_info['AllianceMembership'],
-            util.convert_pss_timestamp_to_excel(user_info['LastLoginDate']),
+            util.convert_pss_timestamp_to_excel(last_login_date),
             int(user_info['Trophy']),
             int(user_info['AllianceScore']),
-            util.convert_pss_timestamp_to_excel(user_info['AllianceJoinDate']),
+            util.convert_pss_timestamp_to_excel(join_date),
             int(user_info.get('CrewDonated', '0')),
             int(user_info.get('CrewReceived', '0')),
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),

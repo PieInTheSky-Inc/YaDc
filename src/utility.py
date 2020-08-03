@@ -155,9 +155,12 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
 
 
 
-def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True):
-    total_seconds = delta.total_seconds()
-    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True) -> str:
+    if delta:
+        total_seconds = delta.total_seconds()
+        return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+    else:
+        return None
 
 
 def get_utcnow():
@@ -470,11 +473,14 @@ def url_escape(s: str) -> str:
 
 
 def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
-    format_str = '%Y-%m-%d %H:%M'
-    if include_seconds:
-        format_str += ':%S'
-    result = dt.strftime(format_str)
-    return result
+    if dt:
+        format_str = '%Y-%m-%d %H:%M'
+        if include_seconds:
+            format_str += ':%S'
+        result = dt.strftime(format_str)
+        return result
+    else:
+        return None
 
 
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
