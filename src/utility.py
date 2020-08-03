@@ -166,7 +166,7 @@ def get_utcnow():
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
     result = None
-    if pss_datetime is not None:
+    if pss_datetime:
         try:
             result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
         except ValueError:
