@@ -267,7 +267,14 @@ class TourneyDataClient():
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
         utc_now = util.get_utcnow()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
-        result = self.get_data(year, month, initializing=initializing)
+        while year > self.from_year or month >= self.from_month:
+            result = self.get_data(year, month, initializing=initializing)
+            if result:
+                break
+            month -= 1
+            if month == 0:
+                year -= 1
+                month = 12
         return result
 
 
@@ -282,16 +289,18 @@ class TourneyDataClient():
 
 
     def __cache_data(self, tourney_data: TourneyData) -> bool:
-        self.__request_write()
-        can_write = False
-        while not can_write:
-            can_write = self.__get_reader_count() == 0
-            if not can_write:
-                time.sleep(random.random())
-            with self.__WRITE_LOCK:
-                self.__cache.setdefault(tourney_data.year, {})[tourney_data.month] = tourney_data
-                self.__write_requested = False
-            return True
+        if tourney_data:
+            self.__request_write()
+            can_write = False
+            while not can_write:
+                can_write = self.__get_reader_count() == 0
+                if not can_write:
+                    time.sleep(random.random())
+                with self.__WRITE_LOCK:
+                    self.__cache.setdefault(tourney_data.year, {})[tourney_data.month] = tourney_data
+                    self.__write_requested = False
+                return True
+            return False
         return False
 
 
@@ -401,8 +410,11 @@ class TourneyDataClient():
         if initializing is False:
             self.__initialize()
         g_file = self.__get_latest_file(year, month, initializing=initializing)
-        raw_data = g_file.GetContentString()
-        result = TourneyData(raw_data)
+        if g_file:
+            raw_data = g_file.GetContentString()
+            result = TourneyData(raw_data)
+        else:
+            result = None
         return result
 
 
