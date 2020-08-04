@@ -1237,7 +1237,9 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=True)
+        output2, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
