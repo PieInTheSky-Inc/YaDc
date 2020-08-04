@@ -516,6 +516,17 @@ def __get_collection_perk(collection_design_info: entity.EntityDesignInfo, colle
     return result
 
 
+def __get_crew_card_hyperlink(character_design_info: entity.EntityDesignInfo, characters_designs_data: entity.EntitiesDesignsData, collections_designs_data: entity.EntitiesDesignsData, level: int, **kwargs) -> str:
+    crew_name: str = character_design_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    if crew_name:
+        crew_name_escaped = util.url_escape(crew_name)
+        url = f'https://pixelperfectguide.com/crew/cards/?CrewName={crew_name_escaped}'
+        result = f'<{url}>'
+        return result
+    else:
+        return None
+
+
 def __get_enhancement(collection_design_info: entity.EntityDesignInfo, collections_designs_data: entity.EntitiesDesignsData, characters_designs_data: entity.EntitiesDesignsData, **kwargs) -> str:
     base_enhancement_value = collection_design_info['BaseEnhancementValue']
     step_enhancement_value = collection_design_info['StepEnhancementValue']
@@ -655,7 +666,8 @@ __properties: Dict[str, Union[entity.EntityDesignDetailProperty, List[entity.Ent
         entity.EntityDesignDetailProperty('Walk/run speed', True, transform_function=__get_speed),
         entity.EntityDesignDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
         entity.EntityDesignDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
-        entity.EntityDesignDetailProperty('Slots', True, transform_function=__get_slots)
+        entity.EntityDesignDetailProperty('Slots', True, transform_function=__get_slots),
+        entity.EntityDesignDetailProperty('Roles', True, transform_function=__get_crew_card_hyperlink)
     ],
     'character_short': [
         entity.EntityDesignDetailProperty('Rarity', False, entity_property_name='Rarity'),
