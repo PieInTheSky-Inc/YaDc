@@ -107,12 +107,10 @@ __DISPLAY_NAMES = {
         'default': 'Hull dmg'
     },
     'innate_armor': {
-        'default': 'Innate armor',
-        'Corridor': None
+        'default': 'Innate armor'
     },
     'manufacture_speed': {
-        'default': 'Manufacture speed',
-        'Recycling': None
+        'default': 'Manufacture speed'
     },
     'max_crew_blend': {
         'default': 'Max crew blend'
@@ -122,20 +120,14 @@ __DISPLAY_NAMES = {
     },
     'max_storage': {
         'default': 'Max storage',
-        'AntiCraft': None,
         'Bedroom': 'Crew slots',
         'Bridge': 'Escape modifier',
         'Command': 'Max AI lines',
-        'Corridor': None,
         'Council': 'Borrow limit',
         'Engine': 'Dodge modifier',
-        'Lift': None,
         'Medical': 'Crew HP healed',
-        'Radar': None,
-        'Reactor': None,
         'Shield': 'Shield points',
-        'Stealth': None,
-        'Training': None,
+        'Training': 'Training lvl',
         'Trap': 'Crew dmg',
         'Wall': 'Armor value'
     },
@@ -150,8 +142,7 @@ __DISPLAY_NAMES = {
     },
     'queue_limit': {
         'default': 'Queue limit',
-        'Council': 'Borrow limit',
-        'Printer': None
+        'Council': 'Borrow limit'
     },
     'reload_speed': {
         'default': 'Reload speed'
@@ -295,7 +286,7 @@ def __create_rooms_details_collection_from_infos(rooms_designs_infos: List[entit
 # ---------- Transformation functions ----------
 
 def __convert_room_flags(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         flags = room_info.get('Flags')
         if entity.has_value(flags):
             result = []
@@ -311,7 +302,7 @@ def __convert_room_flags(room_info: entity.EntityInfo, rooms_data: entity.Entiti
 
 
 def __get_build_cost(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         price_string = room_info.get('PriceString')
         if price_string:
             resource_type, amount = price_string.split(':')
@@ -326,7 +317,7 @@ def __get_build_cost(room_info: entity.EntityInfo, rooms_data: entity.EntitiesDa
 
 
 async def __get_build_requirement(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         requirement_string = room_info.get('RequirementString')
         if requirement_string:
             requirement_string = requirement_string.lower()
@@ -354,7 +345,7 @@ async def __get_build_requirement(room_info: entity.EntityInfo, rooms_data: enti
 
 
 def __get_capacity_per_tick(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
         capacity = room_info.get('Capacity')
         if entity.has_value(capacity) and room_type:
@@ -368,7 +359,7 @@ def __get_capacity_per_tick(room_info: entity.EntityInfo, rooms_data: entity.Ent
 
 
 def __get_damage(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         dmg = kwargs.get('entity_property')
         print_percent = kwargs.get('print_percent')
         reload_time = room_info.get('ReloadTime')
@@ -382,7 +373,7 @@ def __get_damage(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, 
 
 
 def __get_innate_armor(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         default_defense_bonus = room_info.get('DefaultDefenceBonus')
         if entity.has_value(default_defense_bonus):
             reduction = (1.0 - 1.0 / (1.0 + (float(default_defense_bonus) / 100.0))) * 100
@@ -412,7 +403,7 @@ async def __get_interior_sprite_url(room_info: entity.EntityInfo, rooms_data: en
 
 
 def __get_is_allowed_in_extension_grids(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         supported_grid_types = int(room_info.get('SupportedGridTypes', '0'))
         if (supported_grid_types & 2) != 0:
             return 'Allowed in extension grids'
@@ -423,7 +414,7 @@ def __get_is_allowed_in_extension_grids(room_info: entity.EntityInfo, rooms_data
 
 
 def __get_manufacture_rate(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         manufacture_rate = room_info.get('ManufactureRate')
         if entity.has_value(manufacture_rate):
             manufacture_rate = float(manufacture_rate)
@@ -438,7 +429,7 @@ def __get_manufacture_rate(room_info: entity.EntityInfo, rooms_data: entity.Enti
 
 
 def __get_max_storage_and_type(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         capacity = room_info.get('Capacity')
         manufacture_capacity = room_info.get('ManufactureCapacity')
         manufacture_rate = room_info.get('ManufactureRate')
@@ -488,7 +479,7 @@ def __get_property_display_name(room_info: entity.EntityInfo, rooms_data: entity
 
 
 def __get_queue_limit(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         manufacture_capacity = room_info.get('ManufactureCapacity')
         manufacture_rate = room_info.get('ManufactureRate')
         if entity.has_value(manufacture_capacity) and not entity.has_value(manufacture_rate):
@@ -515,7 +506,7 @@ async def __get_random_exterior_sprite_url(room_info: entity.EntityInfo, rooms_d
 
 
 def __get_reload_time(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         reload_time = room_info.get('ReloadTime')
         if entity.has_value(reload_time):
             reload_ticks = float(reload_time)
@@ -530,7 +521,7 @@ def __get_reload_time(room_info: entity.EntityInfo, rooms_data: entity.EntitiesD
 
 
 async def __get_required_item(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         requirement_string = room_info.get('RequirementString')
         if requirement_string:
             required_type, required_id, required_amount = __get_required_details(requirement_string)
@@ -550,7 +541,7 @@ async def __get_required_item(room_info: entity.EntityInfo, rooms_data: entity.E
 
 
 async def __get_required_research(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         requirement_string = room_info.get('RequirementString')
         if requirement_string:
             required_type, required_id, _ = __get_required_details(requirement_string)
@@ -597,7 +588,7 @@ def __get_room_name(room_info: entity.EntityInfo, rooms_data: entity.EntitiesDat
 
 
 def __get_shots_fired(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         volley = entity.get_property_from_entity_info(room_info, 'MissileDesign.Volley')
         volley_delay = entity.get_property_from_entity_info(room_info, 'MissileDesign.VolleyDelay')
         if entity.has_value(volley) and volley != '1':
@@ -613,7 +604,7 @@ def __get_shots_fired(room_info: entity.EntityInfo, rooms_data: entity.EntitiesD
 
 
 def __get_size(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         columns = room_info.get('Columns')
         rows = room_info.get('Rows')
         if columns and rows:
@@ -626,7 +617,7 @@ def __get_size(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, it
 
 
 def __get_value(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('entity_property')
         if value:
             max_decimal_count = kwargs.get('max_decimal_count', settings.DEFAULT_FLOAT_PRECISION)
@@ -639,7 +630,7 @@ def __get_value(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, i
 
 
 def __get_value_as_duration(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('entity_property')
         if value:
             result = util.get_formatted_duration(int(value), include_relative_indicator=False, exclude_zeros=True)
@@ -651,7 +642,7 @@ def __get_value_as_duration(room_info: entity.EntityInfo, rooms_data: entity.Ent
 
 
 def __get_value_as_seconds(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('entity_property')
         if value:
             value_seconds = util.convert_ticks_to_seconds(int(value))
@@ -664,7 +655,7 @@ def __get_value_as_seconds(room_info: entity.EntityInfo, rooms_data: entity.Enti
 
 
 async def __get_wikia_link(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         return_plain = kwargs.get('return_plain')
         room_name = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
         if room_name:
@@ -684,9 +675,11 @@ async def __get_wikia_link(room_info: entity.EntityInfo, rooms_data: entity.Enti
         return None
 
 
-def __is_allowed_room_type(room_info: entity.EntityInfo, allowed_room_types: Iterable) -> bool:
+def __is_allowed_room_type(room_info: entity.EntityInfo, allowed_room_types: Iterable, forbidden_room_types) -> bool:
     room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
-    return (not allowed_room_types) or (room_type in allowed_room_types)
+    is_allowed = not allowed_room_types or room_type in allowed_room_types
+    is_forbidden = forbidden_room_types and room_type in forbidden_room_types
+    return is_allowed and not is_forbidden
 
 
 
@@ -868,7 +861,7 @@ async def init():
                 entity.EntityDetailProperty(__display_name_properties['size'], True, transform_function=__get_size),
                 entity.EntityDetailProperty(__display_name_properties['max_power_used'], True, entity_property_name='MaxSystemPower', transform_function=__get_value),
                 entity.EntityDetailProperty(__display_name_properties['power_generated'], True, entity_property_name='MaxPowerGenerated', transform_function=__get_value),
-                entity.EntityDetailProperty(__display_name_properties['innate_armor'], True, transform_function=__get_innate_armor),
+                entity.EntityDetailProperty(__display_name_properties['innate_armor'], True, transform_function=__get_innate_armor, forbidden_room_types=['Corridor']),
                 entity.EntityDetailProperty(__display_name_properties['enhanced_by'], True, entity_property_name='EnhancementType', transform_function=__get_value),
                 entity.EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, entity_property_name='MinShipLevel', transform_function=__get_value),
                 entity.EntityDetailProperty(__display_name_properties['reload_speed'], True, transform_function=__get_reload_time),
@@ -879,11 +872,11 @@ async def init():
                 entity.EntityDetailProperty(__display_name_properties['hull_dmg'], True, entity_property_name='MissileDesign.HullDamage', transform_function=__get_damage, print_percent=False),
                 entity.EntityDetailProperty(__display_name_properties['ap_dmg'], True, entity_property_name='MissileDesign.DirectSystemDamage', transform_function=__get_damage, print_percent=False),
                 entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
-                entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type),
+                entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
                 entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
                 entity.EntityDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='CooldownTime', transform_function=__get_value_as_seconds),
-                entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit),
-                entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate),
+                entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
+                entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
                 entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
                 entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, entity_property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
                 entity.EntityDetailProperty(__display_name_properties['build_time'], True, entity_property_name='ConstructionTime', transform_function=__get_value_as_duration),
