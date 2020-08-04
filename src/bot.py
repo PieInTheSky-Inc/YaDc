@@ -1210,8 +1210,10 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name)
+        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=True)
+        output2, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='room', brief='Get room infos')
