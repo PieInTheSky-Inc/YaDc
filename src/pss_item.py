@@ -877,8 +877,13 @@ items_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     fix_data_delegate=_fix_item_name
 )
 __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPropertyCollection, entity.EntityDetailPropertyListCollection]] = {
-    'title': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'title_ingredients': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients, text_only=True),
+    'title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    ),
+    'title_ingredients': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients, text_only=True),
+        property_embed=entity.NO_PROPERTY
+    ),
     'description': entity.EntityDetailPropertyCollection(
         entity.EntityDetailProperty('Description', False, entity_property_name='ItemDesignDescription'),
         property_short=entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='Rarity')

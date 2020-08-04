@@ -349,7 +349,7 @@ class EntityDetailPropertyListCollection(object):
 
 class EntityDetails(object):
     def __init__(self, entity_info: EntityInfo,
-                       title: EntityDetailProperty,
+                       title: EntityDetailPropertyCollection,
                        description: EntityDetailPropertyCollection,
                        properties: EntityDetailPropertyCollection,
                        embed_settings: Dict[str, EntityDetailProperty],
@@ -361,8 +361,8 @@ class EntityDetails(object):
         """
         self.__entities_data: EntitiesData = entities_data or {}
         self.__entity_info: EntityInfo = entity_info or {}
-        self.__title_property: EntityDetailProperty = title
-        self.__description_property_collection: EntityDetailPropertyCollection = description
+        self.__title_property_collection: EntityDetailPropertyCollection = title or NO_PROPERTY
+        self.__description_property_collection: EntityDetailPropertyCollection = description or NO_PROPERTY
         self.__properties: Dict[bool, Dict[EntityDetailsType, List[EntityDetailProperty]]] = {
             False: {
                 EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.embed_only],
@@ -377,8 +377,7 @@ class EntityDetails(object):
         }
         self.__embed_settings: Dict[str, EntityDetailProperty] = embed_settings or {}
         self.__calculated_embed_settings: Dict[str, str] = None
-        self.__title: str = None
-        self.__title_embed: str = None
+        self.__titles: Dict[EntityDetailsType, str] = {}
         self.__descriptions: Dict[EntityDetailsType, str] = {}
         self.__details: Dict[bool, Dict[EntityDetailsType, List[CalculatedEntityDetailProperty]]] = {
             False: {
@@ -459,31 +458,13 @@ class EntityDetails(object):
 
 
     async def get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
-        title, description = await self.__get_title_and_description(EntityDetailsType.EMBED if as_embed else details_type)
+        title, description = await self.__get_title_and_description(details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
 
 
     async def _get_description(self, details_type: EntityDetailsType = EntityDetailsType.LONG) -> str:
-        if self.__description_property_collection == NO_PROPERTY:
-            return None
-
-        if details_type == EntityDetailsType.LONG:
-            description_property = self.__description_property_collection.property_long
-        elif details_type == EntityDetailsType.SHORT:
-            description_property = self.__description_property_collection.property_short
-        elif details_type == EntityDetailsType.MINI:
-            description_property = self.__description_property_collection.property_mini
-        elif details_type == EntityDetailsType.EMBED:
-            description_property = self.__description_property_collection.property_embed
-        else:
-            raise ValueError()
-
-        if details_type not in self.__descriptions.keys():
-            full_property = await description_property.get_full_property(self.__entity_info, *self.__entities_data, force_if_none=True, **self.__kwargs)
-            self.__descriptions[details_type] = full_property.value
-
-        return self.__descriptions[details_type]
+        return await self.__get_property_from_collection(self.__description_property_collection, self.__descriptions, details_type)
 
 
     async def _get_details_properties(self, as_embed: bool, details_type: EntityDetailsType) -> List[CalculatedEntityDetailProperty]:
@@ -495,23 +476,12 @@ class EntityDetails(object):
         return self.__details[as_embed][details_type]
 
 
-    async def _get_title(self, as_embed: bool) -> str:
-        if self.__title_property and self.__title_property != NO_PROPERTY:
-            if as_embed and not self.__title_property.text_only:
-                if self.__title_embed is None:
-                    full_property = await self.__title_property.get_full_property(self.__entity_info, *self.__entities_data, **self.__kwargs)
-                    self.__title_embed = full_property.value
-                return self.__title_embed
-            elif not as_embed and not self.__title_property.embed_only:
-                if self.__title is None:
-                    full_property = await self.__title_property.get_full_property(self.__entity_info, *self.__entities_data, **self.__kwargs)
-                    self.__title = full_property.value
-                return self.__title
-        return None
+    async def _get_title(self, details_type: EntityDetailsType = EntityDetailsType.LONG) -> str:
+        return await self.__get_property_from_collection(self.__title_property_collection, self.__titles, details_type)
 
 
     async def __create_base_embed(self, ctx: commands.Context) -> discord.Embed:
-        title = await self._get_title(True)
+        title = await self._get_title(details_type=EntityDetailsType.EMBED)
         description = await self._get_description(details_type=EntityDetailsType.EMBED)
         colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
         embed_settings = await self.get_embed_settings()
@@ -569,16 +539,38 @@ class EntityDetails(object):
 
 
     async def __get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
-        title, description = await self.__get_title_and_description(EntityDetailsType.EMBED if as_embed else details_type)
+        title, description = await self.__get_title_and_description(details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
 
 
+    async def __get_property_from_collection(self, property_collection: EntityDetailPropertyCollection, detail_lookup: Dict[EntityDetailsType, str], details_type: EntityDetailsType) -> str:
+        if property_collection == NO_PROPERTY:
+            return None
+
+        if details_type == EntityDetailsType.LONG:
+            prop = property_collection.property_long
+        elif details_type == EntityDetailsType.SHORT:
+            prop = property_collection.property_short
+        elif details_type == EntityDetailsType.MINI:
+            prop = property_collection.property_mini
+        elif details_type == EntityDetailsType.EMBED:
+            prop = property_collection.property_embed
+        else:
+            raise ValueError(f'The parameter \'details_type\' received an invalid value: {details_type}')
+
+        if details_type not in detail_lookup.keys():
+            full_property = await prop.get_full_property(self.__entity_info, *self.__entities_data, force_if_none=True, **self.__kwargs)
+            detail_lookup[details_type] = full_property.value
+
+        return detail_lookup[details_type]
+
+
     async def __get_title_and_description(self, details_type: EntityDetailsType) -> Tuple[str, str]:
-        as_embed = details_type == EntityDetailsType.EMBED
-        title = await self._get_title(as_embed)
+        title = await self._get_title(details_type=details_type)
         description = await self._get_description(details_type=details_type)
         return title, description
+
 
 
 
