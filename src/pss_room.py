@@ -172,7 +172,7 @@ __DISPLAY_NAMES = {
         'default': 'Type'
     },
     'wikia': {
-        'default': 'Wikia'
+        'default': 'Wiki'
     },
 }
 
