@@ -156,6 +156,12 @@ __DISPLAY_NAMES = {
     'reload_speed': {
         'default': 'Reload speed'
     },
+    'required_item': {
+        'default': 'Required item'
+    },
+    'required_research': {
+        'default': 'Required research'
+    },
     'shield_dmg': {
         'default': 'Shield dmg'
     },
@@ -523,6 +529,46 @@ def __get_reload_time(room_info: entity.EntityInfo, rooms_data: entity.EntitiesD
         return None
 
 
+async def __get_required_item(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+        requirement_string = room_info.get('RequirementString')
+        if requirement_string:
+            required_type, required_id, required_amount = __get_required_details(requirement_string)
+
+            if required_type == 'item':
+                item_details = item.get_item_details_by_id(required_id, items_data)
+                result = f'{required_amount}x ' + ''.join((await item_details.get_details_as_text(entity.EntityDetailsType.MINI)))
+                return result
+            elif required_type == 'research':
+                return None
+            else:
+                return requirement_string
+        else:
+            return None
+    else:
+        return None
+
+
+async def __get_required_research(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types')):
+        requirement_string = room_info.get('RequirementString')
+        if requirement_string:
+            required_type, required_id, _ = __get_required_details(requirement_string)
+
+            if required_type == 'item':
+                return None
+            elif required_type == 'research':
+                research_details = research.get_research_details_by_id(required_id, researches_data)
+                result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.MINI))
+                return result
+            else:
+                return requirement_string
+        else:
+            return None
+    else:
+        return None
+
+
 def __get_room_name(room_info: entity.EntityInfo, rooms_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, rooms_designs_sprites_data: entity.EntitiesData, **kwargs) -> str:
     room_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
     room_short_name = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]
@@ -721,6 +767,17 @@ def __get_min_ship_lvl_display_name(room_info: entity.EntityInfo, rooms_data: en
     return result
 
 
+def __get_required_details(requirement_string: str) -> Tuple[str, str, str]:
+    requirement_string = requirement_string.lower()
+    required_type, required_id = requirement_string.split(':')
+
+    if 'x' in required_id:
+        required_id, required_amount = required_id.split('x')
+    else:
+        required_amount = '1'
+    return required_type, required_id, required_amount
+
+
 def __get_short_name(room_info: entity.EntityInfo) -> str:
     room_short_name = room_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2)
     if room_short_name:
@@ -831,7 +888,8 @@ async def init():
                 entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, entity_property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
                 entity.EntityDetailProperty(__display_name_properties['build_time'], True, entity_property_name='ConstructionTime', transform_function=__get_value_as_duration),
                 entity.EntityDetailProperty(__display_name_properties['build_cost'], True, transform_function=__get_build_cost),
-                entity.EntityDetailProperty(__display_name_properties['build_requirement'], True, transform_function=__get_build_requirement),
+                entity.EntityDetailProperty(__display_name_properties['required_research'], True, transform_function=__get_required_research),
+                entity.EntityDetailProperty(__display_name_properties['required_item'], True, transform_function=__get_required_item),
                 entity.EntityDetailProperty(__display_name_properties['grid_types'], True, transform_function=__get_is_allowed_in_extension_grids),
                 entity.EntityDetailProperty(__display_name_properties['more_info'], True, transform_function=__convert_room_flags),
                 entity.EntityDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
