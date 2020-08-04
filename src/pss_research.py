@@ -198,7 +198,8 @@ __properties = {
         entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),
     'description': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='ResearchDescription')
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='ResearchDescription'),
+        property_short=entity.NO_PROPERTY
     ),
     'properties': entity.EntityDetailPropertyListCollection(
         [
@@ -211,7 +212,8 @@ __properties = {
             entity.EntityDetailProperty('Cost', False, transform_function=__get_costs),
             entity.EntityDetailProperty('Duration', False, transform_function=__get_duration),
             entity.EntityDetailProperty('LAB lvl', True, entity_property_name='RequiredLabLevel')
-        ]
+        ],
+        properties_mini=[]
     ),
     'embed_settings': {
         'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='LogoSpriteId', transform_function=entity.get_download_sprite_link_by_property)
