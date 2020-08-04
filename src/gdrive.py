@@ -250,10 +250,10 @@ class TourneyDataClient():
             if month < self.from_month:
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
-            if year > self.to_year:
-                raise ValueError(f'There\'s no data from {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
-            if year == self.to_year and month > self.to_month:
-                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+            if year > self.to_year or (year == self.to_year and month > self.to_month):
+                utc_now = util.get_utcnow()
+                if utc_now.year <= self.to_year and utc_now.month - 1 <= self.to_month:
+                    raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
         result = self.__read_data(year, month)
 
@@ -267,6 +267,8 @@ class TourneyDataClient():
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
         utc_now = util.get_utcnow()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
+        if initializing:
+            month -= 1
         while year > self.from_year or month >= self.from_month:
             result = self.get_data(year, month, initializing=initializing)
             if result:
@@ -348,8 +350,8 @@ class TourneyDataClient():
 
 
     def __get_latest_file(self, year: int, month: int, day: int = None, initializing: bool = False) -> pydrive.files.GoogleDriveFile:
-        if initializing is False:
-            self.__initialize()
+        #if initializing is False:
+        #    self.__initialize()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
             file_name_part += f'{day:02d}'
@@ -407,8 +409,9 @@ class TourneyDataClient():
 
 
     def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
-        if initializing is False:
-            self.__initialize()
+        #if initializing is False:
+        #    initializing = True
+        #    self.__initialize()
         g_file = self.__get_latest_file(year, month, initializing=initializing)
         if g_file:
             raw_data = g_file.GetContentString()
