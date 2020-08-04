@@ -303,8 +303,8 @@ class EntityDetailPropertyListCollection(object):
                        properties_short: List[EntityDetailProperty] = None,
                        properties_mini: List[EntityDetailProperty] = None):
         self.__properties_long: List[EntityDetailProperty] = properties_long
-        self.__properties_short: List[EntityDetailProperty] = [] if properties_short is None else properties_short
-        self.__properties_mini: List[EntityDetailProperty] = [] if properties_mini is None else properties_mini
+        self.__properties_short: List[EntityDetailProperty] = properties_short
+        self.__properties_mini: List[EntityDetailProperty] = properties_mini
 
 
     @property
@@ -313,14 +313,14 @@ class EntityDetailPropertyListCollection(object):
 
     @property
     def properties_short(self) -> List[EntityDetailProperty]:
-        if self.__properties_short:
+        if self.__properties_short is not None:
             return self.__properties_short
         else:
             return self.properties_long
 
     @property
     def properties_mini(self) -> List[EntityDetailProperty]:
-        if self.__properties_mini:
+        if self.__properties_mini is not None:
             return self.__properties_mini
         else:
             return self.properties_short
@@ -471,7 +471,7 @@ class EntityDetails(object):
         if details_type == EntityDetailsType.EMBED:
             as_embed = True
             details_type = EntityDetailsType.LONG
-        if self.__details[as_embed][details_type] is None and self.__properties[as_embed][details_type]:
+        if self.__details[as_embed][details_type] is None and self.__properties[as_embed][details_type] is not None:
             self.__details[as_embed][details_type] = [await self.__get_calculated_property(entity_detail_property) for entity_detail_property in self.__properties[as_embed][details_type]]
         return self.__details[as_embed][details_type]
 
