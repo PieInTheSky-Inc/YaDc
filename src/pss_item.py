@@ -481,7 +481,7 @@ def __create_base_details_list_from_infos(items_designs_infos: List[entity.Entit
 
 def __create_base_details_collection_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
     base_details = __create_base_details_list_from_infos(items_designs_infos, items_data)
-    result = entity.EntityDetailsCollection(base_details, big_set_threshold=3)
+    result = entity.EntityDetailsCollection(base_details, big_set_threshold=2)
     return result
 
 
@@ -567,7 +567,7 @@ def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.Entit
                 current_level_costs += price_sum
                 current_level_lines.append(f'> {ingredient_amount} x {ingredient_name} ({ingredient_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
-            lines.append(f'**Crafting costs: {current_level_costs} bux**')
+            lines.append(f'Crafting costs: {current_level_costs} bux')
             lines.append(settings.EMPTY_LINE)
         if lines:
             lines = lines[:-1]
@@ -698,6 +698,11 @@ def __get_type(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **
 
 def filter_items_details_for_equipment(items_details: List[entity.EntityDetails]) -> List[entity.EntityDetails]:
     result = [item_details for item_details in items_details if __get_item_slot(item_details.entity_info, None) is not None]
+    if result:
+        stat = items_details[0].entity_info.get('EnhancementType')
+        slot = __get_item_slot(items_details[0].entity_info, None)
+        if all(item_details.entity_info.get('EnhancementType') == stat and __get_item_slot(item_details.entity_info, None) == slot for item_details in items_details):
+            return [items_details[0]]
     return result
 
 
@@ -753,7 +758,7 @@ async def get_item_details_short_by_training_id(training_id: str, items_data: en
 
 
 async def get_item_search_details(item_details: entity.EntityDetails) -> List[str]:
-    result = await item_details.get_details_mini_as_text()
+    result = await item_details.get_details_as_text(entity.EntityDetailsType.MINI)
     return ''.join(result)
 
 
