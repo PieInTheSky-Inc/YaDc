@@ -178,7 +178,7 @@ __DISPLAY_NAMES = {
 
 
 __AMMO_TYPE_OVERWRITES = {
-    'ION': 'Ion Core(s)'
+    'ION': 'Ion Cores'
 }
 
 
