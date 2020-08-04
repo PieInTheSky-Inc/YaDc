@@ -337,7 +337,7 @@ async def __get_build_requirement(room_info: entity.EntityInfo, rooms_data: enti
                 return result
             elif required_type == 'research':
                 research_details = research.get_research_details_by_id(required_id, researches_data)
-                result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+                result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.MINI))
                 return result
             else:
                 return requirement_string
