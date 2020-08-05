@@ -12,6 +12,7 @@ from cache import PssCache
 import pss_core as core
 import pss_entity as entity
 import pss_lookups as lookups
+import pss_sprites as sprites
 import resources
 import settings
 import utility as util
@@ -291,7 +292,7 @@ async def _get_item_ingredients_as_embed(item_info, ingredients_dicts, item_desi
 
     title = f'Ingredients for: {item_name}'
     description = '\n'.join(lines)
-    thumbnail_url = await entity.get_download_sprite_link(item_info.get('ImageSpriteId'))
+    thumbnail_url = await sprites.get_download_sprite_link(item_info.get('ImageSpriteId'))
     colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
     result = util.create_embed(title, description=description, colour=colour, thumbnail_url=thumbnail_url, footer=resources.get_resource('PRICE_NOTE_EMBED'))
     return [result]
@@ -595,7 +596,7 @@ async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.Entit
     logo_sprite_id = item_info.get('LogoSpriteId')
     image_sprite_id = item_info.get('ImageSpriteId')
     if entity.has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
-        return await entity.get_download_sprite_link(logo_sprite_id)
+        return await sprites.get_download_sprite_link(logo_sprite_id)
     else:
         return None
 
@@ -932,7 +933,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPr
     ),
     'embed_settings': {
         'image_url': entity.EntityDetailProperty('image_url', False, transform_function=__get_image_url),
-        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='ImageSpriteId', transform_function=entity.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='ImageSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
     }
 }
 

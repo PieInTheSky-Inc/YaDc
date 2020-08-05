@@ -14,6 +14,7 @@ import pss_entity as entity
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
+import pss_sprites as sprites
 import settings
 import utility as util
 
@@ -267,6 +268,6 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
         ]
     ),
     'embed_settings': {
-        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='TrainingSpriteId', transform_function=entity.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='TrainingSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
     }
 }

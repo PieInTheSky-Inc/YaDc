@@ -774,20 +774,6 @@ class EntityRetriever:
 
 # ---------- Helper ----------
 
-async def get_download_sprite_link_by_property(entity_info: EntityInfo, *entities_data, **kwargs) -> str:
-    entity_property = kwargs.get('entity_property')
-    return await get_download_sprite_link(entity_property)
-
-
-async def get_download_sprite_link(sprite_id: str) -> str:
-    if has_value(sprite_id):
-        base_url = await core.get_base_url()
-        result = f'{base_url}FileService/DownloadSprite?spriteId={sprite_id}'
-        return result
-    else:
-        return None
-
-
 def get_property_from_entity_info(entity_info: EntityInfo, entity_property_name: str) -> object:
     while '.' in entity_property_name:
         split_parameter = entity_property_name.split('.')

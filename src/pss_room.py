@@ -15,6 +15,7 @@ import pss_entity as entity
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
+import pss_sprites as sprites
 import settings
 import utility as util
 
@@ -394,7 +395,7 @@ async def __get_interior_sprite_url(room_info: entity.EntityInfo, rooms_data: en
         exterior_sprites_infos = [room_design_sprite_design for room_design_sprite_design in sprites_infos if room_design_sprite_design.get('RoomSpriteType').strip().lower() == 'interior']
         if exterior_sprites_infos:
             # Create an url with the SpriteId
-            result = await entity.get_download_sprite_link(exterior_sprites_infos[0].get('SpriteId'))
+            result = await sprites.get_download_sprite_link(exterior_sprites_infos[0].get('SpriteId'))
             return result
         else:
             return None
@@ -497,7 +498,7 @@ async def __get_random_exterior_sprite_url(room_info: entity.EntityInfo, rooms_d
         exterior_sprites_infos = [room_design_sprite_design for room_design_sprite_design in sprites_infos if room_design_sprite_design.get('RoomSpriteType').strip().lower() == 'exterior']
         if exterior_sprites_infos:
             room_design_sprite_info = exterior_sprites_infos[random.randint(0, len(exterior_sprites_infos) - 1)]
-            result = await entity.get_download_sprite_link(room_design_sprite_info.get('SpriteId'))
+            result = await sprites.get_download_sprite_link(room_design_sprite_info.get('SpriteId'))
             return result
         else:
             return None
@@ -894,7 +895,7 @@ async def init():
             ]
         ),
         'embed_settings': {
-            'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='LogoSpriteId', transform_function=entity.get_download_sprite_link_by_property),
+            'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
             'image_url': entity.EntityDetailProperty('image_url', False, transform_function=__get_interior_sprite_url),
             'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, transform_function=__get_random_exterior_sprite_url)
         }

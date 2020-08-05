@@ -11,6 +11,7 @@ import pss_assert
 import pss_core as core
 import pss_entity as entity
 import pss_lookups as lookups
+import pss_sprites as sprites
 import settings
 import utility as util
 
@@ -216,6 +217,6 @@ __properties = {
         properties_mini=[]
     ),
     'embed_settings': {
-        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='LogoSpriteId', transform_function=entity.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
     }
 }
