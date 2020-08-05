@@ -3,6 +3,7 @@
 
 from datetime import timedelta
 import discord
+import discord.ext.commands as commands
 from typing import Callable, Dict, List, Tuple, Union
 
 from cache import PssCache
@@ -44,7 +45,7 @@ BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
 # ---------- Training info ----------
 
-async def get_training_details_from_name(training_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_training_details_from_name(training_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(training_name)
 
     trainings_data = await trainings_designs_retriever.get_data_dict3()
@@ -58,7 +59,7 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
         trainings_details_collection = __create_trainings_details_collection_from_infos(training_infos, trainings_data, items_data, researches_data)
 
         if as_embed:
-            return (await trainings_details_collection.get_entity_details_as_embed()), True
+            return (await trainings_details_collection.get_entity_details_as_embed(ctx)), True
         else:
             return (await trainings_details_collection.get_entity_details_as_text()), True
 
@@ -74,7 +75,7 @@ async def get_training_details_from_name(training_name: str, as_embed: bool = se
 # ---------- Create EntityDetails ----------
 
 def __create_training_details_from_info(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData) -> entity.EntityDetails:
-    return entity.EntityDetails(training_info, __properties['title'], __properties['description'], __properties['long'], __properties['short'], __properties['long'], trainings_data, items_data, researches_data)
+    return entity.EntityDetails(training_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], trainings_data, items_data, researches_data)
 
 
 def __create_training_details_list_from_infos(trainings_designs_infos: List[entity.EntityInfo], trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData) -> List[entity.EntitiesData]:
@@ -154,8 +155,9 @@ def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.
 
 async def __get_training_item_name(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
     training_id = training_info[TRAINING_DESIGN_KEY_NAME]
-    result = await item.get_item_details_short_by_training_id(training_id, items_data)
-    return ''.join(result)
+    items_details = item.get_item_details_by_training_id(training_id, items_data)
+    result = [''.join(await item_details.get_details_as_text(entity.EntityDetailsType.MINI)) for item_details in items_details]
+    return ', '.join(result)
 
 
 def __get_training_room(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
@@ -244,18 +246,27 @@ trainings_designs_retriever = entity.EntityRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDetailProperty]]] = {
-    'title': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'description': entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='TrainingDescription'),
-    'long': [
-        entity.EntityDetailProperty('Duration', True, transform_function=__get_duration),
-        entity.EntityDetailProperty('Cost', True, transform_function=__get_costs),
-        entity.EntityDetailProperty('Fatigue', True, transform_function=__get_fatigue),
-        entity.EntityDetailProperty('Training room', True, transform_function=__get_training_room),
-        entity.EntityDetailProperty('Research required', True, transform_function=__get_required_research),
-        entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name),
-        entity.EntityDetailProperty('Results', True, transform_function=__get_stat_chances)
-    ],
-    'short': [
-        entity.EntityDetailProperty('Level', False, transform_function=__get_stat_chances),
-    ]
+    'title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    ),
+    'description': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='TrainingDescription'),
+        property_short=entity.NO_PROPERTY
+    ),
+    'properties': entity.EntityDetailPropertyListCollection([
+            entity.EntityDetailProperty('Duration', True, transform_function=__get_duration),
+            entity.EntityDetailProperty('Cost', True, transform_function=__get_costs),
+            entity.EntityDetailProperty('Fatigue', True, transform_function=__get_fatigue),
+            entity.EntityDetailProperty('Training room', True, transform_function=__get_training_room),
+            entity.EntityDetailProperty('Research required', True, transform_function=__get_required_research),
+            entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name),
+            entity.EntityDetailProperty('Results', True, transform_function=__get_stat_chances)
+        ],
+    properties_short=[
+            entity.EntityDetailProperty('Level', False, transform_function=__get_stat_chances),
+        ]
+    ),
+    'embed_settings': {
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='TrainingSpriteId', transform_function=entity.get_download_sprite_link_by_property)
+    }
 }

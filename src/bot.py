@@ -1575,8 +1575,10 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name)
+        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=True)
+        output2, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 

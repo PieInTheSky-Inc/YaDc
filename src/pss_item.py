@@ -747,14 +747,10 @@ async def get_items_details_by_name(item_name: str, sorted: bool = True) -> List
     return result
 
 
-async def get_item_details_short_by_training_id(training_id: str, items_data: entity.EntitiesData, return_best_match: bool = False) -> list:
-    item_design_ids = core.get_ids_from_property_value(items_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = []
-    for item_design_id in item_design_ids:
-        item_details = get_item_details_by_id(item_design_id, items_data)
-        result.append(await item_details.get_details_as_text(entity.EntityDetailsType.LONG))
-
-    return [' '.join(result)]
+def get_item_details_by_training_id(training_id: str, items_data: entity.EntitiesData, return_best_match: bool = False) -> List[entity.EntityDetails]:
+    items_designs_ids = core.get_ids_from_property_value(items_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
+    result = [get_item_details_by_id(item_design_id, items_data) for item_design_id in items_designs_ids]
+    return result
 
 
 async def get_item_search_details(item_details: entity.EntityDetails) -> List[str]:
