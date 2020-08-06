@@ -644,8 +644,10 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_details_by_name(crew_name, level=level)
+        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=True)
+        output2, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
@@ -697,8 +699,10 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_details_by_name(collection_name)
+        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=True)
+        output2, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='daily', brief='Show the dailies')

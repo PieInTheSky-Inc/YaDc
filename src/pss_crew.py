@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import discord
+import discord.ext.commands as commands
 import os
 from typing import Dict, List, Set, Tuple, Union
 
@@ -11,6 +12,7 @@ import pss_assert
 import pss_entity as entity
 import pss_core as core
 import pss_lookups as lookups
+import pss_sprites as sprites
 import settings
 import utility as util
 
@@ -203,7 +205,7 @@ def get_char_details_by_id(char_design_id: str, chars_data: entity.EntitiesData,
     return None
 
 
-async def get_char_details_by_name(char_name: str, level: int, as_embed: bool = settings.USE_EMBEDS):
+async def get_char_details_by_name(char_name: str, ctx: commands.Context, level: int, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
     pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
 
@@ -214,11 +216,11 @@ async def get_char_details_by_name(char_name: str, level: int, as_embed: bool = 
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
         collections_data = await collections_designs_retriever.get_data_dict3()
-        character_details = __create_character_details_from_info(char_info, None, collections_data, level)
+        characters_details_collection = __create_characters_details_collection_from_infos([char_info], chars_data, collections_data, level)
         if as_embed:
-            return (await character_details.get_details_as_embed()), True
+            return (await characters_details_collection.get_entity_details_as_embed(ctx)), True
         else:
-            return (await character_details.__get_details_long_as_text()), True
+            return (await characters_details_collection.get_entity_details_as_text()), True
 
 
 
@@ -231,7 +233,7 @@ async def get_char_details_by_name(char_name: str, level: int, as_embed: bool = 
 
 # ---------- Collection Info ----------
 
-async def get_collection_details_by_name(collection_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_collection_details_by_name(collection_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(collection_name, parameter_name='collection_name', allow_none_or_empty=True)
 
     print_all = not collection_name
@@ -250,21 +252,13 @@ async def get_collection_details_by_name(collection_name: str, as_embed: bool = 
             return [f'Could not find a collection named **{collection_name}**.'], False
     else:
         collections_designs_infos = sorted(collections_designs_infos, key=lambda x: x[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME])
-        collections_details = [__create_collection_details_from_info(collection_info, collections_data, characters_data) for collection_info in collections_designs_infos]
-        if print_all:
-            if as_embed:
-                return collections_details.get_details_as_embed(), True
-            else:
-                long_details = []
-                for collection_details in collections_details:
-                    long_details.extend((await collection_details.__get_details_short_as_text()))
-                long_details.append(__get_collection_hyperlink(None, None, None))
-                return long_details, True
+        collections_designs_infos = collections_designs_infos if print_all else [collections_designs_infos[0]]
+        collections_details_collection = __create_collections_details_collection_from_infos(collections_designs_infos, collections_data, characters_data)
+
+        if as_embed:
+            return (await collections_details_collection.get_entity_details_as_embed(ctx)), True
         else:
-            if as_embed:
-                return (await collections_details[0].get_details_as_embed()), True
-            else:
-                return (await collections_details[0].__get_details_long_as_text()), True
+            return (await collections_details_collection.get_entity_details_as_text()), True
 
 
 
@@ -277,7 +271,7 @@ async def get_collection_details_by_name(collection_name: str, as_embed: bool = 
 
 # ---------- Prestige from Info ----------
 
-async def get_prestige_from_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_from_info(char_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_data = await characters_designs_retriever.get_data_dict3()
@@ -330,7 +324,7 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
 
 # ---------- Prestige to Info ----------
 
-async def get_prestige_to_info(char_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_to_info(char_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_data = await characters_designs_retriever.get_data_dict3()
@@ -441,7 +435,7 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: tuple) -> list:
 # ---------- Create EntityDetails ----------
 
 def __create_character_details_from_info(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int) -> entity.EntityDetails:
-    return entity.EntityDetails(character_info, __properties['character_title'], __properties['character_description'], __properties['character_long'], __properties['character_short'], __properties['character_long'], characters_data, collections_data, level=level)
+    return entity.EntityDetails(character_info, __properties['character_title'], __properties['character_description'], __properties['character_properties'], __properties['character_embed_settings'], characters_data, collections_data, level=level)
 
 
 def __create_characters_details_list_from_infos(characters_designs_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int) -> List[entity.EntitiesData]:
@@ -450,12 +444,12 @@ def __create_characters_details_list_from_infos(characters_designs_infos: List[e
 
 def __create_characters_details_collection_from_infos(characters_designs_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int) -> entity.EntityDetailsCollection:
     characters_details = __create_characters_details_list_from_infos(characters_designs_infos, characters_data, collections_data, level)
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=2)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1)
     return result
 
 
 def __create_collection_details_from_info(collection_info: entity.EntityInfo, collections_data: entity.EntitiesData, characters_data: entity.EntitiesData) -> entity.EntityDetails:
-    return entity.EntityDetails(collection_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_long'], __properties['collection_short'], __properties['collection_long'], collections_data, characters_data)
+    return entity.EntityDetails(collection_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_properties'], __properties['collection_embed_settings'], collections_data, characters_data)
 
 
 def __create_collections_details_list_from_infos(collections_designs_infos: List[entity.EntityInfo], collections_data: entity.EntitiesData, characters_data: entity.EntitiesData) -> List[entity.EntitiesData]:
@@ -464,7 +458,7 @@ def __create_collections_details_list_from_infos(collections_designs_infos: List
 
 def __create_collections_details_collection_from_infos(collection_info: List[entity.EntityInfo], collections_data: entity.EntitiesData, characters_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
     collections_details = __create_collections_details_list_from_infos(collection_info, collections_data, characters_data)
-    result = entity.EntityDetailsCollection(collections_details, big_set_threshold=2)
+    result = entity.EntityDetailsCollection(collections_details, big_set_threshold=1)
     return result
 
 
@@ -527,6 +521,15 @@ def __get_crew_card_hyperlink(character_info: entity.EntityInfo, characters_data
         return None
 
 
+def __get_embed_color(collection_info: entity.EntityInfo, collections_data: entity.EntitiesData, characters_data: entity.EntitiesData, **kwargs) -> discord.Color:
+    color_string = collection_info.get('ColorString')
+    if entity.has_value(color_string):
+        result = util.convert_color_string_to_embed_color(color_string)
+    else:
+        result = discord.Embed.Empty
+    return result
+
+
 def __get_enhancement(collection_info: entity.EntityInfo, collections_data: entity.EntitiesData, characters_data: entity.EntitiesData, **kwargs) -> str:
     base_enhancement_value = collection_info['BaseEnhancementValue']
     step_enhancement_value = collection_info['StepEnhancementValue']
@@ -555,6 +558,19 @@ def __get_min_max_combo(collection_info: entity.EntityInfo, collections_data: en
     return result
 
 
+def __get_name_with_level(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int, **kwargs) -> str:
+    result = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    if level:
+        result += f' {settings.DEFAULT_HYPHEN} Level {level}'
+    return result
+
+
+def __get_rarity(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, **kwargs) -> str:
+    rarity = character_info.get('Rarity')
+    result = f'{rarity} {lookups.RARITY_EMOJIS_LOOKUP.get(rarity)}'
+    return result
+
+
 def __get_slots(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, **kwargs) -> str:
     result = []
     equipment_mask = int(character_info['EquipmentMask'])
@@ -562,7 +578,7 @@ def __get_slots(character_info: entity.EntityInfo, characters_data: entity.Entit
         if (equipment_mask & k) != 0:
             result.append(lookups.EQUIPMENT_MASK_LOOKUP[k])
 
-    result = ', '.join(result) if result else '-'
+    result = ', '.join(result) if result else settings.DEFAULT_HYPHEN
     return result
 
 
@@ -647,45 +663,65 @@ collections_designs_retriever = entity.EntityRetriever(
 
 
 __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDetailProperty]]] = {
-    'character_title': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'character_description': entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='CharacterDesignDescription'),
-    'character_long': [
-        entity.EntityDetailProperty('Level', True, transform_function=__get_level),
-        entity.EntityDetailProperty('Rarity', True, entity_property_name='Rarity'),
-        entity.EntityDetailProperty('Race', True, entity_property_name='RaceType'),
-        entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name),
-        entity.EntityDetailProperty('Gender', True, entity_property_name='GenderType'),
-        entity.EntityDetailProperty('Ability', True, transform_function=__get_ability_stat),
-        entity.EntityDetailProperty('HP', True, transform_function=__get_stat, stat_name='Hp'),
-        entity.EntityDetailProperty('Attack', True, transform_function=__get_stat, stat_name='Attack'),
-        entity.EntityDetailProperty('Repair', True, transform_function=__get_stat, stat_name='Repair'),
-        entity.EntityDetailProperty('Pilot', True, transform_function=__get_stat, stat_name='Pilot'),
-        entity.EntityDetailProperty('Science', True, transform_function=__get_stat, stat_name='Science'),
-        entity.EntityDetailProperty('Engine', True, transform_function=__get_stat, stat_name='Engine'),
-        entity.EntityDetailProperty('Weapon', True, transform_function=__get_stat, stat_name='Weapon'),
-        entity.EntityDetailProperty('Walk/run speed', True, transform_function=__get_speed),
-        entity.EntityDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
-        entity.EntityDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
-        entity.EntityDetailProperty('Slots', True, transform_function=__get_slots),
-        entity.EntityDetailProperty('Roles', True, transform_function=__get_crew_card_hyperlink)
-    ],
-    'character_short': [
-        entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
-        entity.EntityDetailProperty('Ability', True, transform_function=__get_ability_stat),
-        entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name)
-    ],
-    'collection_title': entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME),
-    'collection_description': entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='CollectionDescription'),
-    'collection_long': [
-        entity.EntityDetailProperty('Combo Min...Max', True, transform_function=__get_min_max_combo),
-        entity.EntityDetailProperty(__get_collection_perk, True, transform_function=__get_enhancement),
-        entity.EntityDetailProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names),
-        entity.EntityDetailProperty('Hyperlink', False, transform_function=__get_collection_hyperlink)
-    ],
-    'collection_short': [
-        entity.EntityDetailProperty('Perk', False, transform_function=__get_collection_perk),
-        entity.EntityDetailProperty('Member count', False, transform_function=__get_collection_member_count)
-    ]
+    'character_title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_name_with_level)
+    ),
+    'character_description': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='CharacterDesignDescription'),
+        property_short=entity.NO_PROPERTY
+    ),
+    'character_properties': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty('Rarity', True, transform_function=__get_rarity),
+            entity.EntityDetailProperty('Race', True, entity_property_name='RaceType'),
+            entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name),
+            entity.EntityDetailProperty('Gender', True, entity_property_name='GenderType'),
+            entity.EntityDetailProperty('Ability', True, transform_function=__get_ability_stat),
+            entity.EntityDetailProperty('HP', True, transform_function=__get_stat, stat_name='Hp'),
+            entity.EntityDetailProperty('Attack', True, transform_function=__get_stat, stat_name='Attack'),
+            entity.EntityDetailProperty('Repair', True, transform_function=__get_stat, stat_name='Repair'),
+            entity.EntityDetailProperty('Pilot', True, transform_function=__get_stat, stat_name='Pilot'),
+            entity.EntityDetailProperty('Science', True, transform_function=__get_stat, stat_name='Science'),
+            entity.EntityDetailProperty('Engine', True, transform_function=__get_stat, stat_name='Engine'),
+            entity.EntityDetailProperty('Weapon', True, transform_function=__get_stat, stat_name='Weapon'),
+            entity.EntityDetailProperty('Walk/run speed', True, transform_function=__get_speed),
+            entity.EntityDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
+            entity.EntityDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
+            entity.EntityDetailProperty('Slots', True, transform_function=__get_slots),
+            entity.EntityDetailProperty('Roles', True, transform_function=__get_crew_card_hyperlink)
+        ],
+        properties_short=[
+            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
+            entity.EntityDetailProperty('Ability', True, transform_function=__get_ability_stat),
+            entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name)
+        ]),
+    'character_embed_settings': {
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='ProfileSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
+    },
+    'collection_title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, entity_property_name=COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    ),
+    'collection_description': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, entity_property_name='CollectionDescription'),
+        property_short=entity.NO_PROPERTY
+    ),
+    'collection_properties': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty('Combo Min...Max', True, transform_function=__get_min_max_combo),
+            entity.EntityDetailProperty(__get_collection_perk, True, transform_function=__get_enhancement),
+            entity.EntityDetailTextOnlyProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names),
+            entity.EntityDetailEmbedOnlyProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names, display_inline=False),
+            entity.EntityDetailProperty('Hyperlink', False, transform_function=__get_collection_hyperlink)
+        ],
+        properties_short=[
+            entity.EntityDetailProperty('Perk', False, transform_function=__get_collection_perk),
+            entity.EntityDetailProperty('Member count', False, transform_function=__get_collection_member_count)
+        ]),
+    'collection_embed_settings': {
+        'color': entity.EntityDetailProperty('color', False, transform_function=__get_embed_color),
+        'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='IconSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
+    }
 }
 
 

@@ -420,6 +420,16 @@ def sort_tuples_by(data: list, order_info: list) -> list:
         return result
 
 
+def convert_color_string_to_embed_color(color_string: str) -> discord.Color:
+    if color_string:
+        split_color_string = color_string.split(',')
+        r, g, b = [int(c) for c in split_color_string]
+        result = discord.Color.from_rgb(r, g, b)
+    else:
+        result = discord.Embed.Empty
+    return result
+
+
 def convert_input_to_boolean(s: str) -> bool:
     result = None
     if s:

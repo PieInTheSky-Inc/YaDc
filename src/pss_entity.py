@@ -29,11 +29,11 @@ import utility as util
 # ---------- Constants ----------
 
 DEFAULT_ENTITY_DETAIL_PROPERTY_PREFIX: str = ''
-DEFAULT_VALUE_IF_NONE: str = '–'
+DEFAULT_VALUE_IF_NONE: str = settings.DEFAULT_HYPHEN
 DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR: str = ' = '
 DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR: str = ': '
 DEFAULT_DETAILS_PROPERTIES_SEPARATOR: str = ' | '
-DEFAULT_TITLE_DETAILS_SEPARATOR: str = ' – '
+DEFAULT_TITLE_DETAILS_SEPARATOR: str = f' {settings.DEFAULT_HYPHEN} '
 
 ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED: str = f'The detail type \'EMBED\' is not valid for this method!'
 ERROR_ENTITY_DETAILS_TYPE_NONE_NOT_ALLOWED: str = f'You have to provide a detail type!'
@@ -81,17 +81,22 @@ class EntityDetailsType(IntEnum):
 
 
 class CalculatedEntityDetailProperty(object):
-    def __init__(self, display_name: str, value: str, force_display_name: bool, omit_if_none: bool):
+    def __init__(self, display_name: str, value: str, force_display_name: bool, omit_if_none: bool, display_inline_for_embeds: bool = settings.DEFAULT_EMBED_INLINE):
         self.__display_name: str = display_name
+        self.__display_inline_for_embeds: bool = display_inline_for_embeds
         self.__value: str = value
         self.__force_display_name: bool = force_display_name
         self.__omit_if_none: bool = omit_if_none
-        self.__tuple: Tuple[str, str, bool, bool] = [self.__display_name, self.__value, self.__force_display_name, self.__omit_if_none]
+        self.__tuple: Tuple[str, str, bool, bool] = [self.__display_name, self.__value, self.__force_display_name, self.__omit_if_none, self.__display_inline_for_embeds]
 
 
     @property
     def display_name(self) -> str:
         return self.__display_name
+
+    @property
+    def display_inline(self) -> bool:
+        return self.__display_inline_for_embeds
 
     @property
     def force_display_name(self) -> bool:
@@ -230,6 +235,43 @@ class EntityDetailProperty(object):
         else:
             result = None
         return result
+
+
+
+
+
+
+
+
+
+
+class EntityDetailEmbedOnlyProperty(EntityDetailProperty):
+    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, display_inline: bool = settings.DEFAULT_EMBED_INLINE, **transform_kwargs):
+        self.__display_inline: bool = display_inline
+        super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, embed_only=True, **transform_kwargs)
+
+
+    @property
+    def display_inline(self) -> bool:
+        return self.__display_inline
+
+
+    async def get_full_property(self, entity_info: EntityInfo, *entities_data: EntitiesData, **additional_kwargs) -> CalculatedEntityDetailProperty:
+        result = await super().get_full_property(entity_info, *entities_data, **additional_kwargs)
+        return CalculatedEntityDetailProperty(result.display_name, result.value, result.force_display_name, result.omit_if_none, display_inline_for_embeds=self.display_inline)
+
+
+
+
+
+
+
+
+
+
+class EntityDetailTextOnlyProperty(EntityDetailProperty):
+    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, **transform_kwargs):
+        super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, text_only=True, **transform_kwargs)
 
 
 
@@ -423,7 +465,8 @@ class EntityDetails(object):
         detail: CalculatedEntityDetailProperty
         for detail in details_long:
             if detail.value or not detail.omit_if_none:
-                result.add_field(name=detail.display_name, value=detail.value)
+                display_inline = detail.display_inline if detail.display_inline is not None else True
+                result.add_field(name=detail.display_name, value=detail.value, inline=display_inline)
         return result
 
 
@@ -483,8 +526,9 @@ class EntityDetails(object):
     async def __create_base_embed(self, ctx: commands.Context) -> discord.Embed:
         title = await self._get_title(details_type=EntityDetailsType.EMBED)
         description = await self._get_description(details_type=EntityDetailsType.EMBED)
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+
         embed_settings = await self.get_embed_settings()
+        colour = embed_settings.get('color', embed_settings.get('colour', util.get_bot_member_colour(ctx.bot, ctx.guild)))
         author_url = embed_settings.get('author_url')
         icon_url = embed_settings.get('icon_url')
         image_url = embed_settings.get('image_url')
@@ -602,21 +646,21 @@ class EntityDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_short_detail_separator: str = None, custom_title: str = None, custom_footer_text: str = None) -> List[discord.Embed]:
+    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None) -> List[discord.Embed]:
         """
         custom_title: only relevant for big sets
         """
         result = []
         display_names = []
         if self.__is_big_set:
-            short_detail_separator = custom_short_detail_separator if custom_short_detail_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
+            detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
             title = custom_title or discord.Embed.Empty
             colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
             display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.SHORT)
             fields = []
             for entity_details in self.__entities_details:
                 entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.SHORT)
-                details = short_detail_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
+                details = detail_property_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
                 fields.append((entity_title, details, True))
 
             footer = ''

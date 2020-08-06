@@ -762,7 +762,7 @@ async def get_items_details_by_name(item_name: str, sorted: bool = True) -> List
     return result
 
 
-def get_item_details_by_training_id(training_id: str, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, return_best_match: bool = False) -> List[entity.EntityDetails]:
+def get_item_details_by_training_id(training_id: str, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[entity.EntityDetails]:
     items_designs_ids = core.get_ids_from_property_value(items_data, training.TRAINING_DESIGN_KEY_NAME, training_id, fix_data_delegate=_fix_item_name, match_exact=True)
     result = [get_item_details_by_id(item_design_id, items_data, trainings_data) for item_design_id in items_designs_ids]
     return result

@@ -16,9 +16,11 @@ BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions
 
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
-DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
+DEFAULT_EMBED_INLINE: bool = True
 DEFAULT_FLOAT_PRECISION: int = 1
+DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
+DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 

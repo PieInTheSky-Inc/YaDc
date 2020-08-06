@@ -185,6 +185,16 @@ RARITY_ORDER_LOOKUP: Dict[str, int] = {
     'Legendary': 10
 }
 
+RARITY_EMOJIS_LOOKUP: Dict[str, str] = {
+    'Common': emojis.pss_rarity,
+    'Elite': emojis.pss_rarity * 2,
+    'Unique': emojis.pss_rarity * 3,
+    'Epic': emojis.pss_rarity * 4,
+    'Hero': emojis.pss_rarity * 5,
+    'Special': emojis.pss_rarity_special,
+    'Legendary': emojis.pss_rarity_legendary
+}
+
 
 REDUCE_TOKENS_LOOKUP: Dict[int, str] = {
     0: '',
@@ -213,6 +223,7 @@ SPECIAL_ABILITIES_LOOKUP: Dict[str, str] = {
     'HealRoomHp': 'Urgent Repair',
     'HealSameRoomCharacters': 'Healing Rain',
     'HealSelfHp': 'First Aid',
+    'Invulnerability': 'Phase Shift',
     'ProtectRoom': 'Stasis Shield',
     'SetFire': 'Arson'
 }
