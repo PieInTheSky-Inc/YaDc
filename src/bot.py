@@ -837,8 +837,10 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
+        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=True)
+        output2, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='news', brief='Show the news')

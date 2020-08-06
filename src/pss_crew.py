@@ -377,7 +377,7 @@ def _create_prestige_to_cache(char_design_id: str) -> PssCache:
 
 # ---------- Level Info ----------
 
-def get_level_costs(from_level: int, to_level: int = None) -> list:
+def get_level_costs(ctx: commands.Context, from_level: int, to_level: int = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     # If to_level: assert that to_level > from_level and <= 41
     # Else: swap both, set from_level = 1
     if to_level:
@@ -394,12 +394,21 @@ def get_level_costs(from_level: int, to_level: int = None) -> list:
     crew_cost_txt = _get_crew_cost_txt(from_level, to_level, crew_costs)
     legendary_crew_cost_txt = _get_crew_cost_txt(from_level, to_level, legendary_crew_costs)
 
-    result = ['**Level costs** (non-legendary crew, max research)']
-    result.extend(crew_cost_txt)
-    result.append(settings.EMPTY_LINE)
-    result.append('**Level costs** (legendary crew, max research)')
-    result.extend(legendary_crew_cost_txt)
-
+    if as_embed:
+        embed_color = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        fields = [
+            ('Non-legendary crew', '\n'.join(crew_cost_txt), False),
+            ('Legendary crew', '\n'.join(crew_cost_txt), False)
+        ]
+        result = [util.create_embed(title='Level costs', fields=fields, colour=embed_color, footer='Note: Gas costs are higher, if "Advanced Training 7" hasn\'t been reseached, yet.')]
+    else:
+        result = ['**Level costs** (non-legendary crew, max research)']
+        result.extend(crew_cost_txt)
+        result.append(settings.EMPTY_LINE)
+        result.append('**Level costs** (legendary crew, max research)')
+        result.extend(legendary_crew_cost_txt)
+        result.append(settings.EMPTY_LINE)
+        result.append('**Note:** Gas costs are higher, if **Advanced Training 7** hasn\'t been reseached, yet.')
     return result, True
 
 
