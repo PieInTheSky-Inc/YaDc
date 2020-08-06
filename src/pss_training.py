@@ -71,7 +71,7 @@ async def get_training_details_from_name(training_name: str, ctx: commands.Conte
         custom_footer = 'The stats displayed are chances. The actual result may be much lower depending on: max training points, training points used, the training points gained on a particular stat and fatigue.'
 
         if as_embed:
-            return (await trainings_details_collection.get_entity_details_as_embed(ctx, custom_short_detail_separator='\n', custom_footer_text=custom_footer)), True
+            return (await trainings_details_collection.get_entity_details_as_embed(ctx, custom_detail_property_separator='\n', custom_footer_text=custom_footer)), True
         else:
             return (await trainings_details_collection.get_entity_details_as_text(custom_footer_text=custom_footer)), True
 
@@ -165,6 +165,25 @@ def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.
 
     separator = '\n' if add_line_breaks else ' '
     return separator.join(result)
+
+
+async def __get_thumbnail_url(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
+    training_sprite_id = training_info.get('TrainingSpriteId')
+    sprite_id = None
+    if entity.has_value(training_sprite_id) and training_sprite_id != '454':
+        sprite_id = training_sprite_id
+    else:
+        training_id = training_info.get(TRAINING_DESIGN_KEY_NAME)
+        item_details = item.get_item_details_by_training_id(training_id, items_data, trainings_data)
+        if item_details:
+            item_sprite_id = item_details[0].entity_info.get('ImageSpriteId')
+            if entity.has_value(item_sprite_id):
+                sprite_id = item_sprite_id
+    if sprite_id:
+        result = await sprites.get_download_sprite_link(sprite_id)
+    else:
+        result = None
+    return result
 
 
 async def __get_training_item_name(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
@@ -275,7 +294,8 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
             entity.EntityDetailProperty('Training room', True, transform_function=__get_training_room),
             entity.EntityDetailProperty('Research required', True, transform_function=__get_required_research),
             entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name),
-            entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_stat_chances)
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, text_only=True),
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, embed_only=True, add_line_breaks=True)
     ],
     properties_short=[
             entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name, embed_only=True),
@@ -288,6 +308,6 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
     ]
     ),
     'embed_settings': {
-        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='TrainingSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, transform_function=__get_thumbnail_url)
     }
 }
