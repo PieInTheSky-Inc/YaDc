@@ -46,6 +46,16 @@ BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
 # ---------- Training info ----------
 
+async def get_training_details_from_id(training_id: str, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData = None, researches_data: entity.EntitiesData = None) -> entity.EntityDetails:
+    if not items_data:
+        items_data = item.items_designs_retriever.get_data_dict3()
+    if not researches_data:
+        researches_data = research.researches_designs_retriever.get_data_dict3()
+    training_info = trainings_data[training_id]
+    result = __create_training_details_from_info(training_info, trainings_data, items_data, researches_data)
+    return result
+
+
 async def get_training_details_from_name(training_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(training_name)
 
@@ -58,11 +68,12 @@ async def get_training_details_from_name(training_name: str, ctx: commands.Conte
         items_data = await item.items_designs_retriever.get_data_dict3()
         researches_data = await research.researches_designs_retriever.get_data_dict3()
         trainings_details_collection = __create_trainings_details_collection_from_infos(training_infos, trainings_data, items_data, researches_data)
+        custom_footer = 'The stats displayed are chances. The actual result may be much lower depending on: max training points, training points used, the training points gained on a particular stat and fatigue.'
 
         if as_embed:
-            return (await trainings_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await trainings_details_collection.get_entity_details_as_embed(ctx, custom_short_detail_separator='\n', custom_footer_text=custom_footer)), True
         else:
-            return (await trainings_details_collection.get_entity_details_as_text()), True
+            return (await trainings_details_collection.get_entity_details_as_text(custom_footer_text=custom_footer)), True
 
 
 
@@ -134,6 +145,7 @@ def __get_required_research(training_info: entity.EntityInfo, trainings_data: en
 
 
 def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
+    add_line_breaks = kwargs.get('add_line_breaks', False)
     chances = []
     max_chance_value = 0
     result = []
@@ -151,12 +163,13 @@ def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.
     xp_stat_chance = _get_stat_chance('Xp', training_info, guaranteed=True)
     result.append(_get_stat_chance_as_text(*xp_stat_chance))
 
-    return ' '.join(result)
+    separator = '\n' if add_line_breaks else ' '
+    return separator.join(result)
 
 
 async def __get_training_item_name(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> str:
     training_id = training_info[TRAINING_DESIGN_KEY_NAME]
-    items_details = item.get_item_details_by_training_id(training_id, items_data)
+    items_details = item.get_item_details_by_training_id(training_id, items_data, trainings_data)
     result = [''.join(await item_details.get_details_as_text(entity.EntityDetailsType.MINI)) for item_details in items_details]
     return ', '.join(result)
 
@@ -248,7 +261,8 @@ trainings_designs_retriever = entity.EntityRetriever(
 
 __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDetailProperty]]] = {
     'title': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME)
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
+        property_mini=entity.NO_PROPERTY
     ),
     'description': entity.EntityDetailPropertyCollection(
         entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='TrainingDescription'),
@@ -261,11 +275,17 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
             entity.EntityDetailProperty('Training room', True, transform_function=__get_training_room),
             entity.EntityDetailProperty('Research required', True, transform_function=__get_required_research),
             entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name),
-            entity.EntityDetailProperty('Results', True, transform_function=__get_stat_chances)
-        ],
+            entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_stat_chances)
+    ],
     properties_short=[
-            entity.EntityDetailProperty('Level', False, transform_function=__get_stat_chances),
-        ]
+            entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name, embed_only=True),
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, text_only=True),
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, embed_only=True, add_line_breaks=True)
+    ],
+    properties_mini=[
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, text_only=True),
+            entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, embed_only=True, add_line_breaks=True)
+    ]
     ),
     'embed_settings': {
         'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='TrainingSpriteId', transform_function=sprites.get_download_sprite_link_by_property)

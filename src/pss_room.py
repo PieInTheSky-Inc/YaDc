@@ -330,7 +330,7 @@ async def __get_build_requirement(room_info: entity.EntityInfo, rooms_data: enti
                 required_amount = '1'
 
             if required_type == 'item':
-                item_details = item.get_item_details_by_id(required_id, items_data)
+                item_details = item.get_item_details_by_id(required_id, items_data, None)
                 result = f'{required_amount}x ' + ''.join((await item_details.get_details_as_text(entity.EntityDetailsType.MINI)))
                 return result
             elif required_type == 'research':
@@ -528,7 +528,7 @@ async def __get_required_item(room_info: entity.EntityInfo, rooms_data: entity.E
             required_type, required_id, required_amount = __get_required_details(requirement_string)
 
             if required_type == 'item':
-                item_details = item.get_item_details_by_id(required_id, items_data)
+                item_details = item.get_item_details_by_id(required_id, items_data, None)
                 result = f'{required_amount}x ' + ''.join((await item_details.get_details_as_text(entity.EntityDetailsType.MINI)))
                 return result
             elif required_type == 'research':

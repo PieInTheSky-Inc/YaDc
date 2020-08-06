@@ -13,6 +13,7 @@ import pss_core as core
 import pss_entity as entity
 import pss_lookups as lookups
 import pss_sprites as sprites
+import pss_training as training
 import resources
 import settings
 import utility as util
@@ -58,11 +59,12 @@ async def get_item_details_by_name(item_name: str, ctx: commands.Context = None,
     if not item_infos:
         return [f'Could not find an item named **{item_name}**.'], False
     else:
+        trainings_data = await training.trainings_designs_retriever.get_data_dict3()
         items_data_for_sort = {item_info.get(ITEM_DESIGN_KEY_NAME): item_info for item_info in item_infos}
         item_infos = sorted(item_infos, key=lambda item_info: (
             _get_key_for_base_items_sort(item_info, items_data_for_sort)
         ))
-        items_details_collection = __create_base_details_collection_from_infos(item_infos, items_data)
+        items_details_collection = __create_base_details_collection_from_infos(item_infos, items_data, trainings_data)
 
         if as_embed:
             return (await items_details_collection.get_entity_details_as_embed(ctx)), True
@@ -472,16 +474,16 @@ def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_dat
 
 # ---------- Create EntityDetails ----------
 
-def __create_base_design_data_from_info(item_info: entity.EntityInfo, items_data: entity.EntitiesData) -> entity.EntityDetails:
-    return entity.EntityDetails(item_info, __properties['title'], __properties['description'], __properties['base'], __properties['embed_settings'], items_data)
+def __create_base_design_data_from_info(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> entity.EntityDetails:
+    return entity.EntityDetails(item_info, __properties['title'], __properties['description'], __properties['base'], __properties['embed_settings'], items_data, trainings_data)
 
 
-def __create_base_details_list_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData) -> List[entity.EntityDetails]:
-    return [__create_base_design_data_from_info(item_info, items_data) for item_info in items_designs_infos]
+def __create_base_details_list_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[entity.EntityDetails]:
+    return [__create_base_design_data_from_info(item_info, items_data, trainings_data) for item_info in items_designs_infos]
 
 
-def __create_base_details_collection_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
-    base_details = __create_base_details_list_from_infos(items_designs_infos, items_data)
+def __create_base_details_collection_from_infos(items_designs_infos: List[entity.EntityInfo], items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
+    base_details = __create_base_details_list_from_infos(items_designs_infos, items_data, trainings_data)
     result = entity.EntityDetailsCollection(base_details, big_set_threshold=2)
     return result
 
@@ -551,7 +553,7 @@ def __create_upgrade_details_collection_from_infos(items_designs_infos: List[ent
 
 # ---------- Transformation functions ----------
 
-def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], items_data)
     ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
     ingredients_dicts = [d for d in ingredients_dicts if d]
@@ -577,7 +579,7 @@ def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.Entit
     return '\n'.join(lines)
 
 
-def __get_can_sell(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_can_sell(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = CANNOT_BE_SOLD
@@ -586,13 +588,13 @@ def __get_can_sell(item_info: entity.EntityInfo, items_data: entity.EntitiesData
     return result
 
 
-def __get_enhancement_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_enhancement_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     enhancement_value = float(item_info['EnhancementValue'])
     result = f'{enhancement_value:.1f}'
     return result
 
 
-async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     logo_sprite_id = item_info.get('LogoSpriteId')
     image_sprite_id = item_info.get('ImageSpriteId')
     if entity.has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
@@ -601,7 +603,7 @@ async def __get_image_url(item_info: entity.EntityInfo, items_data: entity.Entit
         return None
 
 
-def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     ingredients = _get_ingredients_dict(item_info.get('Ingredients'))
     result = []
     for item_id, amount in ingredients.items():
@@ -613,7 +615,7 @@ def __get_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesD
         return None
 
 
-def __get_item_bonus_type_and_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_item_bonus_type_and_value(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
     if bonus_type.lower() == 'none':
@@ -623,7 +625,7 @@ def __get_item_bonus_type_and_value(item_info: entity.EntityInfo, items_data: en
     return result
 
 
-def __get_item_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_item_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = CANNOT_BE_SOLD
@@ -634,7 +636,7 @@ def __get_item_price(item_info: entity.EntityInfo, items_data: entity.EntitiesDa
     return result
 
 
-def __get_item_slot(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_item_slot(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     item_type = item_info['ItemType']
     item_sub_type = item_info['ItemSubType']
     if item_type == 'Equipment' and 'Equipment' in item_sub_type:
@@ -644,7 +646,7 @@ def __get_item_slot(item_info: entity.EntityInfo, items_data: entity.EntitiesDat
     return result
 
 
-def __get_pretty_market_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_pretty_market_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = CANNOT_BE_SOLD
@@ -654,7 +656,7 @@ def __get_pretty_market_price(item_info: entity.EntityInfo, items_data: entity.E
     return result
 
 
-def __get_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = None
@@ -664,7 +666,7 @@ def __get_price(item_info: entity.EntityInfo, items_data: entity.EntitiesData, *
     return result
 
 
-def __get_title_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+def __get_title_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     value = kwargs.get('entity_property')
     if value:
         result = f'Ingredients for: {value}'
@@ -673,7 +675,18 @@ def __get_title_ingredients(item_info: entity.EntityInfo, items_data: entity.Ent
     return result
 
 
-def __get_type(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **kwargs) -> str:
+async def __get_training_mini_details(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
+    for_embed = kwargs.get('for_embed', False)
+    training_design_id = item_info.get(training.TRAINING_DESIGN_KEY_NAME)
+    if entity.has_value(training_design_id):
+        training_design_details: entity.EntityDetails = await training.get_training_details_from_id(training_design_id, trainings_data, items_data)
+        result = await training_design_details.get_details_as_text(entity.EntityDetailsType.MINI, for_embed=for_embed)
+        return ''.join(result)
+    else:
+        return None
+
+
+def __get_type(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, **kwargs) -> str:
     item_sub_type = item_info.get('ItemSubType')
     if entity.has_value(item_sub_type) and 'Equipment' not in item_sub_type:
         result = item_sub_type.replace('Equipment', '')
@@ -698,11 +711,11 @@ def __get_type(item_info: entity.EntityInfo, items_data: entity.EntitiesData, **
 
 
 def filter_items_details_for_equipment(items_details: List[entity.EntityDetails]) -> List[entity.EntityDetails]:
-    result = [item_details for item_details in items_details if __get_item_slot(item_details.entity_info, None) is not None]
+    result = [item_details for item_details in items_details if __get_item_slot(item_details.entity_info, None, None) is not None]
     if result:
         stat = items_details[0].entity_info.get('EnhancementType')
-        slot = __get_item_slot(items_details[0].entity_info, None)
-        if all(item_details.entity_info.get('EnhancementType') == stat and __get_item_slot(item_details.entity_info, None) == slot for item_details in items_details):
+        slot = __get_item_slot(items_details[0].entity_info, None, None)
+        if all(item_details.entity_info.get('EnhancementType') == stat and __get_item_slot(item_details.entity_info, None, None) == slot for item_details in items_details):
             return [items_details[0]]
     return result
 
@@ -732,25 +745,26 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
     return slot, stat
 
 
-def get_item_details_by_id(item_design_id: str, items_data: dict) -> entity.EntityDetails:
+def get_item_details_by_id(item_design_id: str, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> entity.EntityDetails:
     if item_design_id and item_design_id in items_data.keys():
-        return __create_base_design_data_from_info(items_data[item_design_id], items_data)
+        return __create_base_design_data_from_info(items_data[item_design_id], items_data, trainings_data)
     else:
         return None
 
 
 async def get_items_details_by_name(item_name: str, sorted: bool = True) -> List[entity.EntityDetails]:
     items_data = await items_designs_retriever.get_data_dict3()
+    trainings_data = await training.trainings_designs_retriever.get_data_dict3()
     item_infos = _get_item_infos_by_name(item_name, items_data)
     if sorted:
         item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
-    result = __create_base_details_list_from_infos(item_infos, items_data)
+    result = __create_base_details_list_from_infos(item_infos, items_data, trainings_data)
     return result
 
 
-def get_item_details_by_training_id(training_id: str, items_data: entity.EntitiesData, return_best_match: bool = False) -> List[entity.EntityDetails]:
-    items_designs_ids = core.get_ids_from_property_value(items_data, 'TrainingDesignId', training_id, fix_data_delegate=_fix_item_name, match_exact=True)
-    result = [get_item_details_by_id(item_design_id, items_data) for item_design_id in items_designs_ids]
+def get_item_details_by_training_id(training_id: str, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData, return_best_match: bool = False) -> List[entity.EntityDetails]:
+    items_designs_ids = core.get_ids_from_property_value(items_data, training.TRAINING_DESIGN_KEY_NAME, training_id, fix_data_delegate=_fix_item_name, match_exact=True)
+    result = [get_item_details_by_id(item_design_id, items_data, trainings_data) for item_design_id in items_designs_ids]
     return result
 
 
@@ -772,7 +786,7 @@ def __get_parents(item_info: entity.EntityInfo, items_data: entity.EntitiesData)
 
 
 def get_slot_and_stat_type(item_details: entity.EntityDetails) -> Tuple[str, str]:
-    slot = __get_item_slot(item_details.entity_info, None)
+    slot = __get_item_slot(item_details.entity_info, None, None)
     stat = item_details.entity_info['EnhancementType']
     return slot, stat
 
@@ -891,6 +905,8 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPr
             entity.EntityDetailProperty('Type', True, transform_function=__get_type),
             entity.EntityDetailProperty('Bonus', True, transform_function=__get_item_bonus_type_and_value),
             entity.EntityDetailProperty('Slot', True, transform_function=__get_item_slot),
+            entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, embed_only=True, for_embed=True),
+            entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, text_only=True),
             entity.EntityDetailProperty('Market price', True, transform_function=__get_pretty_market_price)
         ],
         properties_short=[

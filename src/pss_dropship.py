@@ -10,9 +10,11 @@ from cache import PssCache
 import emojis
 import pss_core as core
 import pss_crew as crew
+import pss_entity as entity
 import pss_item as item
 import pss_lookups as lookups
 import pss_room as room
+import pss_training as training
 import settings
 import utility as util
 
@@ -72,18 +74,19 @@ async def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.U
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
 
-    collection_design_data = await crew.collections_designs_retriever.get_data_dict3()
-    char_design_data = await crew.characters_designs_retriever.get_data_dict3()
-    item_design_data = await item.items_designs_retriever.get_data_dict3()
-    room_design_data = await room.rooms_designs_retriever.get_data_dict3()
+    collections_designs_data = await crew.collections_designs_retriever.get_data_dict3()
+    chars_designs_data = await crew.characters_designs_retriever.get_data_dict3()
+    items_designs_data = await item.items_designs_retriever.get_data_dict3()
+    rooms_designs_data = await room.rooms_designs_retriever.get_data_dict3()
+    trainings_designs_data = await training.trainings_designs_retriever.get_data_dict3()
 
     try:
         daily_msg = _get_daily_news_from_data_as_text(daily_info)
-        dropship_msg = await _get_dropship_msg_from_data_as_text(daily_info, char_design_data, collection_design_data)
-        merchantship_msg = await _get_merchantship_msg_from_data_as_text(daily_info, item_design_data)
-        shop_msg = await _get_shop_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-        sale_msg = await _get_sale_msg_from_data_as_text(daily_info, char_design_data, collection_design_data, item_design_data, room_design_data)
-        daily_reward_msg = await _get_daily_reward_from_data_as_text(daily_info, item_design_data)
+        dropship_msg = await _get_dropship_msg_from_data_as_text(daily_info, chars_designs_data, collections_designs_data)
+        merchantship_msg = await _get_merchantship_msg_from_data_as_text(daily_info, items_designs_data, trainings_designs_data)
+        shop_msg = await _get_shop_msg_from_data_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
+        sale_msg = await _get_sale_msg_from_data_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
+        daily_reward_msg = await _get_daily_reward_from_data_as_text(daily_info, items_designs_data, trainings_designs_data)
     except Exception as e:
         print(e)
         pp = pprint.PrettyPrinter(indent=4)
@@ -136,7 +139,7 @@ async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_data: dict, 
     return result
 
 
-async def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_data: dict) -> list:
+async def _get_merchantship_msg_from_data_as_text(raw_data: dict, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if raw_data:
         cargo_items = raw_data['CargoItems'].split('|')
@@ -150,7 +153,7 @@ async def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_data: dic
             if ':' in item_id:
                 _, item_id = item_id.split(':')
             if item_id:
-                item_details = item.get_item_details_by_id(item_id, item_data)
+                item_details = item.get_item_details_by_id(item_id, items_data, trainings_data)
                 item_details = ''.join(await item_details.__get_details_short_as_text())
                 currency_type, price = cargo_prices[i].split(':')
                 currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
@@ -160,7 +163,7 @@ async def _get_merchantship_msg_from_data_as_text(raw_data: dict, item_data: dic
     return result
 
 
-async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: dict, collections_data: dict, items_data: dict, rooms_data: dict) -> List[str]:
+async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = raw_data['LimitedCatalogType']
@@ -175,8 +178,8 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: dict, coll
         char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data, level=40)
         entity_details = await char_details.__get_details_short_as_text()
     elif shop_type == 'Item':
-        item_details = item.get_item_details_by_id(entity_id, items_data)
-        entity_details = await item_details.get_details_as_text()
+        item_details = item.get_item_details_by_id(entity_id, items_data, trainings_data)
+        entity_details = await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)
     elif shop_type == 'Room':
         room_details = room.get_room_details_by_id(entity_id, rooms_data, None, None, None)
         entity_details = await room_details.__get_details_short_as_text()
@@ -193,7 +196,7 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: dict, coll
     return result
 
 
-async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: dict, collections_data: dict, items_data: dict, rooms_data: dict) -> list:
+async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -207,8 +210,8 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: dict, coll
         char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data, level=40)
         entity_details = ''.join(await char_details.__get_details_short_as_text())
     elif sale_type == 'Item':
-        item_details = item.get_item_details_by_id(sale_argument, items_data)
-        entity_details = ''.join(await item_details.get_details_as_text_long())
+        item_details = item.get_item_details_by_id(sale_argument, items_data, trainings_data)
+        entity_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Room':
         room_details = room.get_room_details_by_id(sale_argument, rooms_data, None, None, None)
         entity_details = ''.join(await room_details.__get_details_short_as_text())
@@ -227,7 +230,7 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: dict, coll
     return result
 
 
-async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: dict) -> list:
+async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
     result = ['**Daily rewards**']
 
     reward_currency = raw_data['DailyRewardType'].lower()
@@ -239,9 +242,9 @@ async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: dict) -
     item_rewards = raw_data['DailyItemRewards'].split('|')
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
-        item_details = item.get_item_details_by_id(item_id, item_data)
-        item_details = ''.join(await item_details.get_details_as_text_long())
-        result.append(f'{amount} x {item_details}')
+        item_details: entity.EntityDetails = item.get_item_details_by_id(item_id, item_data, trainings_data)
+        item_details_text = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+        result.append(f'{amount} x {item_details_text}')
 
     return result
 

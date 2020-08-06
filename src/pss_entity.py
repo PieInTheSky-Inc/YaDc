@@ -427,15 +427,15 @@ class EntityDetails(object):
         return result
 
 
-    async def get_details_as_text(self, details_type: EntityDetailsType) -> List[str]:
+    async def get_details_as_text(self, details_type: EntityDetailsType, for_embed: bool = False) -> List[str]:
         if details_type == EntityDetailsType.EMBED:
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
         if details_type == EntityDetailsType.LONG:
             return await self.__get_details_long_as_text()
         elif details_type == EntityDetailsType.SHORT:
-            return await self.__get_details_short_as_text()
+            return await self.__get_details_short_as_text(for_embed)
         elif details_type == EntityDetailsType.MINI:
-            return await self.__get_details_mini_as_text()
+            return await self.__get_details_mini_as_text(for_embed)
 
 
     async def get_display_names(self, as_embed: bool, details_type: EntityDetailsType) -> List[str]:
@@ -503,7 +503,9 @@ class EntityDetails(object):
 
     async def __get_details_long_as_text(self) -> List[str]:
         title, description, details_long = await self.__get_full_details(False, EntityDetailsType.LONG)
-        result = [f'**{title}**']
+        result = []
+        if title:
+            result.append(f'**{title}**')
         if description:
             result.append(f'_{description}_')
         for detail in [d for d in details_long if d.value]:
@@ -511,30 +513,35 @@ class EntityDetails(object):
         return result
 
 
-    async def __get_details_mini_as_text(self) -> List[str]:
-        title, description, details_mini = await self.__get_full_details(False, EntityDetailsType.MINI)
+    async def __get_details_mini_as_text(self, for_embed: bool) -> List[str]:
+        title, description, details_mini = await self.__get_full_details(for_embed, EntityDetailsType.MINI)
+        title_text = title if title else ''
         details = []
         if description:
             details.append(description)
         details += [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_mini if detail.value]
-        details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
-        if details_text:
+        details_text = DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR.join([detail for detail in details if detail])
+        if details_text and title_text:
             details_text = f' ({details_text})'
-        result = f'{self.prefix}{title}{details_text}'
+        result = f'{self.prefix}{title_text}{details_text}'
         return [result]
 
 
-    async def __get_details_short_as_text(self) -> List[str]:
-        title, description, details_short = await self.__get_full_details(False, EntityDetailsType.SHORT)
+    async def __get_details_short_as_text(self, for_embed: bool) -> List[str]:
+        title, description, details_short = await self.__get_full_details(for_embed, EntityDetailsType.SHORT)
+        title_text = title if title else ''
         if description:
-            description = f' ({description})'
+            if title_text:
+                description = f' ({description})'
+            else:
+                description =f'({description})'
         else:
             description = ''
         details = [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_short if detail.value]
-        details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
-        if details_text:
-            details_text = f'{DEFAULT_TITLE_DETAILS_SEPARATOR}{details_text}'
-        result = f'{self.prefix}{title}{description}{details_text}'
+        details_text = DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR.join([detail for detail in details if detail])
+        if details_text and title_text:
+            details_text = f' ({details_text})'
+        result = f'{self.prefix}{title_text}{description}{details_text}'
         return [result]
 
 
@@ -595,20 +602,21 @@ class EntityDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_title: str = None, custom_footer_text: str = None) -> List[discord.Embed]:
+    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_short_detail_separator: str = None, custom_title: str = None, custom_footer_text: str = None) -> List[discord.Embed]:
         """
         custom_title: only relevant for big sets
         """
         result = []
         display_names = []
         if self.__is_big_set:
+            short_detail_separator = custom_short_detail_separator if custom_short_detail_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
             title = custom_title or discord.Embed.Empty
             colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
             display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.SHORT)
             fields = []
             for entity_details in self.__entities_details:
                 entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.SHORT)
-                details = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
+                details = short_detail_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
                 fields.append((entity_title, details, True))
 
             footer = ''
