@@ -50,7 +50,7 @@ CANNOT_BE_SOLD = 'Can\'t be sold'
 
 # ---------- Item info ----------
 
-async def get_item_details_by_name(item_name: str, ctx: commands.Context = None, as_embed: bool = settings.USE_EMBEDS):
+async def get_item_details_by_name(item_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_data = await items_designs_retriever.get_data_dict3()

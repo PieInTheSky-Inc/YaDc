@@ -501,7 +501,7 @@ class EntityDetails(object):
 
 
     async def get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
-        title, description = await self.__get_title_and_description(details_type)
+        title, description = await self.__get_title_and_description(EntityDetailsType.EMBED if as_embed else details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
 
@@ -546,7 +546,7 @@ class EntityDetails(object):
 
 
     async def __get_details_long_as_text(self) -> List[str]:
-        title, description, details_long = await self.__get_full_details(False, EntityDetailsType.LONG)
+        title, description, details_long = await self.get_full_details(False, EntityDetailsType.LONG)
         result = []
         if title:
             result.append(f'**{title}**')
@@ -558,7 +558,7 @@ class EntityDetails(object):
 
 
     async def __get_details_mini_as_text(self, for_embed: bool) -> List[str]:
-        title, description, details_mini = await self.__get_full_details(for_embed, EntityDetailsType.MINI)
+        title, description, details_mini = await self.get_full_details(for_embed, EntityDetailsType.MINI)
         title_text = title if title else ''
         details = []
         if description:
@@ -572,7 +572,7 @@ class EntityDetails(object):
 
 
     async def __get_details_short_as_text(self, for_embed: bool) -> List[str]:
-        title, description, details_short = await self.__get_full_details(for_embed, EntityDetailsType.SHORT)
+        title, description, details_short = await self.get_full_details(for_embed, EntityDetailsType.SHORT)
         title_text = title if title else ''
         if description:
             if title_text:
@@ -587,12 +587,6 @@ class EntityDetails(object):
             details_text = f' ({details_text})'
         result = f'{self.prefix}{title_text}{description}{details_text}'
         return [result]
-
-
-    async def __get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
-        title, description = await self.__get_title_and_description(details_type)
-        details = await self._get_details_properties(as_embed, details_type)
-        return title, description, details
 
 
     async def __get_property_from_collection(self, property_collection: EntityDetailPropertyCollection, detail_lookup: Dict[EntityDetailsType, str], details_type: EntityDetailsType) -> str:
@@ -646,7 +640,7 @@ class EntityDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None) -> List[discord.Embed]:
+    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[discord.Embed]:
         """
         custom_title: only relevant for big sets
         """
@@ -661,7 +655,7 @@ class EntityDetailsCollection():
             for entity_details in self.__entities_details:
                 entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.SHORT)
                 details = detail_property_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
-                fields.append((entity_title, details, True))
+                fields.append((entity_title, details, display_inline))
 
             footer = ''
             if display_names:
@@ -677,7 +671,7 @@ class EntityDetailsCollection():
                 result.append(embed)
                 fields = fields[25:]
 
-            embed = util.create_embed(title, colour=colour, fields=fields, footer=footer)
+            embed = util.create_embed(title, colour=colour, fields=fields, footer=footer, thumbnail_url=custom_thumbnail_url)
             result.append(embed)
         else:
             for entity_details in self.__entities_details:
@@ -837,11 +831,14 @@ def get_property_from_entity_info(entity_info: EntityInfo, entity_property_name:
 
     if entity_property_name in entity_info.keys():
         result = entity_info[entity_property_name]
-        result_lower = result.lower()
-        if not result or result_lower == '0' or result_lower == 'none':
-            return None
+        if isinstance(result, str):
+            result_lower = result.lower()
+            if not result or result_lower == '0' or result_lower == 'none':
+                return None
+            else:
+                return result
         else:
-            return result
+            return result or None
 
 
 def group_entities_details(entities_details: List[EntityDetails], property_name: str) -> Dict[object, List[EntityDetails]]:

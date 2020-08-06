@@ -271,7 +271,7 @@ async def get_collection_details_by_name(collection_name: str, ctx: commands.Con
 
 # ---------- Prestige from Info ----------
 
-async def get_prestige_from_info(char_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_from_info(ctx: commands.Context, char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_data = await characters_designs_retriever.get_data_dict3()
@@ -280,16 +280,20 @@ async def get_prestige_from_info(char_name: str, ctx: commands.Context, as_embed
     if not char_from_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        prestige_from_data = await _get_prestige_from_data(char_from_info)
-        prestige_from_details = LegacyPrestigeFromDetails(char_from_info, chars_data, prestige_from_data)
+        prestige_from_data = await _get_prestige_from_infos(char_from_info)
+        prestige_from_infos = sorted([chars_data[prestige_to_id] for prestige_to_id in prestige_from_data.keys()], key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+        prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos, chars_data, prestige_from_data)
+        recipe_count = sum([len(prestige_from_ids) for prestige_from_ids in prestige_from_data.values()])
+        title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
 
         if as_embed:
-            return prestige_from_details.get_details_as_embed(), True
+            thumbnail_url = await sprites.get_download_sprite_link(char_from_info['ProfileSpriteId'])
+            return (await prestige_from_details_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False)), True
         else:
-            return prestige_from_details.get_details_as_text_long(), True
+            return (await prestige_from_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG)), True
 
 
-async def _get_prestige_from_data(char_info: dict) -> dict:
+async def _get_prestige_from_infos(char_info: dict) -> Dict[str, List[str]]:
     if not char_info:
         return {}
 
@@ -298,7 +302,12 @@ async def _get_prestige_from_data(char_info: dict) -> dict:
         prestige_from_cache = __prestige_from_cache_dict[char_design_id]
     else:
         prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
-    return await prestige_from_cache.get_data_dict3()
+    raw_data_dict = await prestige_from_cache.get_raw_data_dict()
+    prestige_from_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterFrom']['Prestiges'].values())
+    result = {}
+    for value in prestige_from_infos:
+        result.setdefault(value['ToCharacterDesignId'], []).append(value['CharacterDesignId2'])
+    return result
 
 
 def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
@@ -311,6 +320,23 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
     url = f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}'
     name = f'PrestigeFrom{char_design_id}'
     result = PssCache(url, name, None)
+    return result
+
+
+
+def __create_prestige_from_details_from_info(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> entity.EntityDetails:
+    result = entity.EntityDetails(character_info, __properties['prestige_from_title'], entity.NO_PROPERTY, __properties['prestige_from_properties'], __properties['character_embed_settings'], characters_data, prestige_from_data, prefix='> ')
+    return result
+
+
+def __create_prestige_from_details_list_from_infos(characters_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> List[entity.EntityDetails]:
+    result = [__create_prestige_from_details_from_info(character_info, characters_data, prestige_from_data) for character_info in characters_infos]
+    return result
+
+
+def __create_prestige_from_details_collection_from_infos(characters_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> List[entity.EntityDetails]:
+    characters_details = __create_prestige_from_details_list_from_infos(characters_infos, characters_data, prestige_from_data)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
     return result
 
 
@@ -574,6 +600,33 @@ def __get_name_with_level(character_info: entity.EntityInfo, characters_data: en
     return result
 
 
+def __get_prestige_from_names(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]], separator: str = ', ', **kwargs) -> str:
+    result = []
+    for prestige_from_id in prestige_from_data[character_info[CHARACTER_DESIGN_KEY_NAME]]:
+        result.append(characters_data[prestige_from_id][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+    return separator.join(sorted(result))
+
+
+def __get_prestige_from_title(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, for_embed: bool = None, **kwargs) -> str:
+    char_name = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    if for_embed:
+        result = f'To {char_name} with'
+    else:
+        result = f'To {char_name} with:'
+    return result
+
+
+def __get_prestige_to_names(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: List[entity.EntityInfo], separator: str = None, **kwargs) -> str:
+    result = []
+    prestige_from_data = [prestige_from_info for prestige_from_info in prestige_from_data if prestige_from_info['PrestigeToId'] == character_info[CHARACTER_DESIGN_KEY_NAME]]
+    for prestige_from_info in prestige_from_data:
+        if prestige_from_info['CharacterDesignId1'] == character_info[CHARACTER_DESIGN_KEY_NAME]:
+            result.append(prestige_from_info['CharacterDesignId2'][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+        elif prestige_from_info['CharacterDesignId2'] == character_info[CHARACTER_DESIGN_KEY_NAME]:
+            result.append(prestige_from_info['CharacterDesignId1'][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+    return sorted(result)
+
+
 def __get_rarity(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, **kwargs) -> str:
     rarity = character_info.get('Rarity')
     result = f'{rarity} {lookups.RARITY_EMOJIS_LOOKUP.get(rarity)}'
@@ -625,6 +678,11 @@ def __calculate_stat_value(min_value: float, max_value: float, level: int, progr
     exponent = lookups.PROGRESSION_TYPES[progression_type]
     result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
     return result
+
+
+def __get_char_names_from_infos(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, entity_property: List[entity.EntityInfo], separator: str = None, index: int = None, prestige_entity_property_name: str = None, **kwargs) -> str:
+    result = [prestige_char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for prestige_char_info in entity_property[index][prestige_entity_property_name]]
+    return separator.join(result)
 
 
 def __get_collection_name(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, **kwargs) -> str:
@@ -730,7 +788,17 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
         'color': entity.EntityDetailProperty('color', False, transform_function=__get_embed_color),
         'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
         'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='IconSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
-    }
+    },
+    'prestige_from_title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_prestige_from_title, for_embed=False),
+        property_embed=entity.EntityDetailEmbedOnlyProperty('Title', False, omit_if_none=False, transform_function=__get_prestige_from_title, for_embed=True),
+    ),
+    'prestige_from_properties': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailTextOnlyProperty('Prestige', False, transform_function=__get_prestige_from_names),
+            entity.EntityDetailEmbedOnlyProperty('Prestige', False, transform_function=__get_prestige_from_names)
+        ]
+    )
 }
 
 

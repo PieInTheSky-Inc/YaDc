@@ -1139,8 +1139,10 @@ async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(crew_name)
+        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=True)
+        output2, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
@@ -1192,8 +1194,10 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(crew_name)
+        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=True)
+        output2, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=False)
     await util.post_output(ctx, output)
+    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='research', brief='Get research data')
@@ -1361,12 +1365,12 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_details_by_name(name, level)
+            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name, ctx=ctx, as_embed=True)
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=True)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
