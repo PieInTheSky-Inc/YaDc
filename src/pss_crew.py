@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+from collections import Counter
 import discord
 import discord.ext.commands as commands
 import os
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, Iterable, List, Set, Tuple, Union
 
 from cache import PssCache
 import emojis
@@ -280,23 +281,21 @@ async def get_prestige_from_info(ctx: commands.Context, char_name: str, as_embed
     if not char_from_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        prestige_from_data = await _get_prestige_from_infos(char_from_info)
-        prestige_from_infos = sorted([chars_data[prestige_to_id] for prestige_to_id in prestige_from_data.keys()], key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-        prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos, chars_data, prestige_from_data)
-        recipe_count = sum([len(prestige_from_ids) for prestige_from_ids in prestige_from_data.values()])
-        title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
+        prestige_from_ids, recipe_count = await _get_prestige_from_ids_and_recipe_count(char_from_info)
+        util.make_dict_value_lists_unique(prestige_from_ids)
+        prestige_from_infos = sorted(__prepare_prestige_infos(chars_data, prestige_from_ids), key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+        prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos)
 
         if as_embed:
+            title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
             thumbnail_url = await sprites.get_download_sprite_link(char_from_info['ProfileSpriteId'])
             return (await prestige_from_details_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False)), True
         else:
+            title = f'**{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige combinations)'
             return (await prestige_from_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG)), True
 
 
-async def _get_prestige_from_infos(char_info: dict) -> Dict[str, List[str]]:
-    if not char_info:
-        return {}
-
+async def _get_prestige_from_ids_and_recipe_count(char_info: dict) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in __prestige_from_cache_dict.keys():
         prestige_from_cache = __prestige_from_cache_dict[char_design_id]
@@ -305,9 +304,12 @@ async def _get_prestige_from_infos(char_info: dict) -> Dict[str, List[str]]:
     raw_data_dict = await prestige_from_cache.get_raw_data_dict()
     prestige_from_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterFrom']['Prestiges'].values())
     result = {}
+    recipe_count = 0
     for value in prestige_from_infos:
         result.setdefault(value['ToCharacterDesignId'], []).append(value['CharacterDesignId2'])
-    return result
+        recipe_count += 1
+    result = {char_to_id: list(set(chars_2_ids)) for char_to_id, chars_2_ids in result.items()}
+    return result, recipe_count
 
 
 def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
@@ -324,23 +326,6 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
 
 
 
-def __create_prestige_from_details_from_info(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> entity.EntityDetails:
-    result = entity.EntityDetails(character_info, __properties['prestige_from_title'], entity.NO_PROPERTY, __properties['prestige_from_properties'], __properties['character_embed_settings'], characters_data, prestige_from_data, prefix='> ')
-    return result
-
-
-def __create_prestige_from_details_list_from_infos(characters_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> List[entity.EntityDetails]:
-    result = [__create_prestige_from_details_from_info(character_info, characters_data, prestige_from_data) for character_info in characters_infos]
-    return result
-
-
-def __create_prestige_from_details_collection_from_infos(characters_infos: List[entity.EntityInfo], characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]]) -> List[entity.EntityDetails]:
-    characters_details = __create_prestige_from_details_list_from_infos(characters_infos, characters_data, prestige_from_data)
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
-    return result
-
-
-
 
 
 
@@ -350,7 +335,7 @@ def __create_prestige_from_details_collection_from_infos(characters_infos: List[
 
 # ---------- Prestige to Info ----------
 
-async def get_prestige_to_info(char_name: str, ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS):
+async def get_prestige_to_info(ctx: commands.Context, char_name: str, as_embed: bool = settings.USE_EMBEDS):
     pss_assert.valid_entity_name(char_name, 'char_name', min_length=2)
 
     chars_data = await characters_designs_retriever.get_data_dict3()
@@ -359,25 +344,40 @@ async def get_prestige_to_info(char_name: str, ctx: commands.Context, as_embed: 
     if not char_to_info:
         return [f'Could not find a crew named **{char_name}**.'], False
     else:
-        prestige_to_data = await _get_prestige_to_data(char_to_info)
-        prestige_to_details = LegacyPrestigeToDetails(char_to_info, chars_data, prestige_to_data)
+        prestige_to_ids, recipe_count = await _get_prestige_to_ids_and_recipe_count(char_to_info)
+        util.make_dict_value_lists_unique(prestige_to_ids)
+        prestige_to_infos = sorted(__prepare_prestige_infos(chars_data, prestige_to_ids), key=lambda prestige_to_info: prestige_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
+        prestige_to_details_collection = __create_prestige_to_details_collection_from_infos(prestige_to_infos)
 
         if as_embed:
-            return prestige_to_details.get_details_as_embed(), True
+            title = f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige recipes)'
+            thumbnail_url = await sprites.get_download_sprite_link(char_to_info['ProfileSpriteId'])
+            return (await prestige_to_details_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False)), True
         else:
-            return prestige_to_details.get_details_as_text_long(), True
+            title = f'**{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige recipes)'
+            return (await prestige_to_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG)), True
 
 
-async def _get_prestige_to_data(char_info: dict) -> dict:
-    if not char_info:
-        return {}
-
+async def _get_prestige_to_ids_and_recipe_count(char_info: dict) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in __prestige_to_cache_dict.keys():
         prestige_to_cache = __prestige_to_cache_dict[char_design_id]
     else:
         prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
-    return await prestige_to_cache.get_data_dict3()
+    raw_data_dict = await prestige_to_cache.get_raw_data_dict()
+    prestige_to_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterTo']['Prestiges'].values())
+    recipe_count = len(prestige_to_infos)
+    all_recipes = []
+    for value in prestige_to_infos:
+        all_recipes.append((value['CharacterDesignId1'], value['CharacterDesignId2']))
+        all_recipes.append((value['CharacterDesignId2'], value['CharacterDesignId1']))
+    all_recipes = list(set(all_recipes))
+    result = _normalize_prestige_to_data(all_recipes)
+    for char_1_id in result.keys():
+        for char_2_id, char_1_ids in result.items():
+            if char_1_id != char_2_id and char_1_id in char_1_ids:
+                result[char_1_id].append(char_2_id)
+    return result, recipe_count
 
 
 def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
@@ -390,6 +390,32 @@ def _create_prestige_to_cache(char_design_id: str) -> PssCache:
     url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
     name = f'PrestigeTo{char_design_id}'
     result = PssCache(url, name, None)
+    return result
+
+
+def _get_prestige_recipe_count(prestige_data: Dict[str, List[str]]) -> int:
+    result = []
+    for char_1_id, char_2_ids in prestige_data.items():
+        result.extend([tuple(sorted([char_1_id, char_2_id])) for char_2_id in char_2_ids])
+    result = list(set(result))
+    return len(result)
+
+
+def _normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str, List[str]]:
+    all_recipes = list(all_recipes)
+    all_char_ids = [recipe[0] for recipe in all_recipes]
+    char_id_counts = sorted([(char_id, count) for char_id, count in dict(Counter(all_char_ids)).items()], key=lambda x: x[1], reverse=True)
+    result = {}
+    for char_id, _ in char_id_counts:
+        for recipe in list(all_recipes):
+            if recipe[0] == char_id:
+                if recipe[1] not in result.get(char_id, []):
+                    result.setdefault(char_id, []).append(recipe[1])
+                all_recipes.remove(recipe)
+            elif recipe[1] == char_id:
+                if recipe[0] not in result.get(char_id, []):
+                    result.setdefault(char_id, []).append(recipe[0])
+                all_recipes.remove(recipe)
     return result
 
 
@@ -497,6 +523,38 @@ def __create_collections_details_collection_from_infos(collection_info: List[ent
     return result
 
 
+def __create_prestige_from_details_from_info(character_info: entity.EntityInfo) -> entity.EntityDetails:
+    result = entity.EntityDetails(character_info, __properties['prestige_from_title'], entity.NO_PROPERTY, __properties['prestige_from_properties'], __properties['character_embed_settings'], prefix='> ')
+    return result
+
+
+def __create_prestige_from_details_list_from_infos(characters_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
+    result = [__create_prestige_from_details_from_info(character_info) for character_info in characters_infos]
+    return result
+
+
+def __create_prestige_from_details_collection_from_infos(characters_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
+    characters_details = __create_prestige_from_details_list_from_infos(characters_infos)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    return result
+
+
+def __create_prestige_to_details_from_info(character_info: entity.EntityInfo) -> entity.EntityDetails:
+    result = entity.EntityDetails(character_info, __properties['prestige_to_title'], entity.NO_PROPERTY, __properties['prestige_to_properties'], __properties['character_embed_settings'], prefix='> ')
+    return result
+
+
+def __create_prestige_to_details_list_from_infos(characters_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
+    result = [__create_prestige_to_details_from_info(character_info) for character_info in characters_infos]
+    return result
+
+
+def __create_prestige_to_details_collection_from_infos(characters_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
+    characters_details = __create_prestige_to_details_list_from_infos(characters_infos)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    return result
+
+
 
 
 
@@ -600,14 +658,7 @@ def __get_name_with_level(character_info: entity.EntityInfo, characters_data: en
     return result
 
 
-def __get_prestige_from_names(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: Dict[str, List[str]], separator: str = ', ', **kwargs) -> str:
-    result = []
-    for prestige_from_id in prestige_from_data[character_info[CHARACTER_DESIGN_KEY_NAME]]:
-        result.append(characters_data[prestige_from_id][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-    return separator.join(sorted(result))
-
-
-def __get_prestige_from_title(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, for_embed: bool = None, **kwargs) -> str:
+def __get_prestige_from_title(character_info: entity.EntityInfo, for_embed: bool = None, **kwargs) -> str:
     char_name = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if for_embed:
         result = f'To {char_name} with'
@@ -616,15 +667,18 @@ def __get_prestige_from_title(character_info: entity.EntityInfo, characters_data
     return result
 
 
-def __get_prestige_to_names(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, prestige_from_data: List[entity.EntityInfo], separator: str = None, **kwargs) -> str:
-    result = []
-    prestige_from_data = [prestige_from_info for prestige_from_info in prestige_from_data if prestige_from_info['PrestigeToId'] == character_info[CHARACTER_DESIGN_KEY_NAME]]
-    for prestige_from_info in prestige_from_data:
-        if prestige_from_info['CharacterDesignId1'] == character_info[CHARACTER_DESIGN_KEY_NAME]:
-            result.append(prestige_from_info['CharacterDesignId2'][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-        elif prestige_from_info['CharacterDesignId2'] == character_info[CHARACTER_DESIGN_KEY_NAME]:
-            result.append(prestige_from_info['CharacterDesignId1'][CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-    return sorted(result)
+def __get_prestige_names(character_info: entity.EntityInfo, separator: str = ', ', **kwargs) -> str:
+    result = sorted([prestige_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for prestige_info in character_info['Prestige']])
+    return separator.join(result)
+
+
+def __get_prestige_to_title(character_info: entity.EntityInfo, for_embed: bool = None, **kwargs) -> str:
+    char_name = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    if for_embed:
+        result = f'{char_name} with'
+    else:
+        result = f'{char_name} with:'
+    return result
 
 
 def __get_rarity(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, **kwargs) -> str:
@@ -698,6 +752,15 @@ def __get_stat_value(min_value: float, max_value: float, level: int, progression
         return f'{min_value:0.1f} - {max_value:0.1f}'
     else:
         return f'{__calculate_stat_value(min_value, max_value, level, progression_type):0.1f}'
+
+
+def __prepare_prestige_infos(characters_data: entity.EntitiesData, prestige_ids: Dict[str, List[str]]) -> List[entity.EntityInfo]:
+    result = []
+    for char_1_id, chars_2_ids in prestige_ids.items():
+        char_1_info = characters_data[char_1_id]
+        char_1_info['Prestige'] = [characters_data[char_2_id] for char_2_id in chars_2_ids]
+        result.append(char_1_info)
+    return result
 
 
 
@@ -795,8 +858,16 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
     ),
     'prestige_from_properties': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailTextOnlyProperty('Prestige', False, transform_function=__get_prestige_from_names),
-            entity.EntityDetailEmbedOnlyProperty('Prestige', False, transform_function=__get_prestige_from_names)
+            entity.EntityDetailProperty('Prestige', False, transform_function=__get_prestige_names)
+        ]
+    ),
+    'prestige_to_title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_prestige_to_title, for_embed=False),
+        property_embed=entity.EntityDetailEmbedOnlyProperty('Title', False, omit_if_none=False, transform_function=__get_prestige_to_title, for_embed=True),
+    ),
+    'prestige_to_properties': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty('Prestige', False, transform_function=__get_prestige_names)
         ]
     )
 }

@@ -690,6 +690,12 @@ def is_valid_month(month: str) -> bool:
     return result
 
 
+def make_dict_value_lists_unique(d: Dict[str, Iterable[object]]) -> Dict[str, List[object]]:
+    for key in d.keys():
+        d[key] = list(set(d[key]))
+    return d
+
+
 
 
 
