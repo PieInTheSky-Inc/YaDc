@@ -1365,23 +1365,29 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level)
+            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=True)
+            char_output2, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=False)
         except pss_exception.InvalidParameter:
             char_output = None
+            char_output2 = None
             char_success = False
         try:
             item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=True)
+            item_output2, item_success = await item.get_item_details_by_name(name, ctx, as_embed=False)
         except pss_exception.InvalidParameter:
             item_output = None
+            item_output2 = None
             item_success = False
 
     if char_success:
         await util.post_output(ctx, char_output)
+        await util.post_output(ctx, char_output2)
 
     if item_success:
         if char_success:
             await ctx.send(settings.EMPTY_LINE)
         await util.post_output(ctx, item_output)
+        await util.post_output(ctx, item_output2)
 
     if not char_success and not item_success:
         await ctx.send(f'Could not find a character or an item named `{full_name}`.')
