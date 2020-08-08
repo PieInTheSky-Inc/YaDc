@@ -566,7 +566,7 @@ def __create_prestige_to_details_collection_from_infos(characters_infos: List[en
 # ---------- Transformation functions ----------
 
 def __get_ability(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int, **kwargs) -> str:
-    if character_info['SpecialAbilityType']:
+    if entity.has_value(character_info['SpecialAbilityType']):
         result = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_info['SpecialAbilityType'], character_info['SpecialAbilityType'])
     else:
         result = None
