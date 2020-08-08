@@ -564,7 +564,7 @@ class EntityDetails(object):
         if description:
             details.append(description)
         details += [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_mini if detail.value]
-        details_text = DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR.join([detail for detail in details if detail])
+        details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
         if details_text and title_text:
             details_text = f' ({details_text})'
         result = f'{self.prefix}{title_text}{details_text}'
@@ -582,7 +582,7 @@ class EntityDetails(object):
         else:
             description = ''
         details = [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_short if detail.value]
-        details_text = DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR.join([detail for detail in details if detail])
+        details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
         if details_text and title_text:
             details_text = f' ({details_text})'
         result = f'{self.prefix}{title_text}{description}{details_text}'
