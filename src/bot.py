@@ -136,6 +136,7 @@ async def on_ready() -> None:
     __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
     print(f'Initialized!')
     print(f'Bot version is: {settings.VERSION}')
+    schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
     print(f'discord.py version: {discord.__version__}')
     BOT.loop.create_task(post_dailies_loop())
@@ -615,10 +616,8 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=True)
-        output2, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=False)
+        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='char', aliases=['crew'], brief='Get character stats')
@@ -644,10 +643,8 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=True)
-        output2, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=False)
+        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
@@ -672,10 +669,8 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=True)
-        output2, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=False)
+        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='collection', aliases=['coll'], brief='Get collections')
@@ -699,10 +694,8 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=True)
-        output2, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=False)
+        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='daily', brief='Show the dailies')
@@ -786,10 +779,8 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=True)
-        output2, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=False)
+        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='item', brief='Get item stats')
@@ -812,10 +803,8 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=True)
-        output2, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=False)
+        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
@@ -837,10 +826,8 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=True)
-        output2, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=False)
+        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='news', brief='Show the news')
@@ -1168,10 +1155,8 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=True)
-        output2, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=False)
+        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='recipe', brief='Get character recipes')
@@ -1194,10 +1179,8 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=True)
-        output2, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=False)
+        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='research', brief='Get research data')
@@ -1220,10 +1203,8 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=True)
-        output2, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=False)
+        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='room', brief='Get room infos')
@@ -1248,10 +1229,8 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=True)
-        output2, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=False)
+        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
@@ -1365,29 +1344,23 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=True)
-            char_output2, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=False)
+            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=(await __get_use_embeds(ctx)))
         except pss_exception.InvalidParameter:
             char_output = None
-            char_output2 = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=True)
-            item_output2, item_success = await item.get_item_details_by_name(name, ctx, as_embed=False)
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=(await __get_use_embeds(ctx)))
         except pss_exception.InvalidParameter:
             item_output = None
-            item_output2 = None
             item_success = False
 
     if char_success:
         await util.post_output(ctx, char_output)
-        await util.post_output(ctx, char_output2)
 
     if item_success:
         if char_success:
             await ctx.send(settings.EMPTY_LINE)
         await util.post_output(ctx, item_output)
-        await util.post_output(ctx, item_output2)
 
     if not char_success and not item_success:
         await ctx.send(f'Could not find a character or an item named `{full_name}`.')
@@ -1591,10 +1564,8 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=True)
-        output2, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=False)
+        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await __get_use_embeds(ctx)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 
@@ -2082,6 +2053,7 @@ async def cmd_settings(ctx: commands.Context):
             output.extend(guild_settings.get_pretty_bot_news_channel())
             output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
             output.append(f'Prefix = {guild_settings.prefix}')
+            output.append(f'Use embeds = {guild_settings.pretty_use_embeds}')
         await util.post_output(ctx, output)
 
 
@@ -2242,7 +2214,7 @@ async def cmd_settings_get_embeds(ctx: commands.Context):
     if util.is_guild_channel(ctx.channel):
         async with ctx.typing():
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            output = [f'Pagination on this server has been set to: `{guild_settings.pretty_use_pagination}`']
+            output = [f'Embeds on this server are turned: `{guild_settings.pretty_use_embeds}`']
         await util.post_output(ctx, output)
 
 
@@ -2811,7 +2783,7 @@ async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
 
     async with ctx.typing():
         guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        success = await guild_settings.set_use_pagination(switch)
+        success = await guild_settings.set_use_embeds(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings embed'))
     else:
@@ -3244,6 +3216,13 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
             raise commands.MissingPermissions(['manage_guild'])
     else:
         raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
+
+
+async def __get_use_embeds(ctx: commands.Context) -> bool:
+    if not util.is_guild_channel(ctx.channel):
+        return settings.USE_EMBEDS
+    guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
+    return guild_settings.use_embeds
 
 
 def __log_command_use(ctx: commands.Context):

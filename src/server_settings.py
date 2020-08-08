@@ -502,6 +502,10 @@ class GuildSettings(object):
         return self.__guild_id
 
     @property
+    def pretty_use_embeds(self) -> str:
+        return convert_to_on_off(self.use_embeds)
+
+    @property
     def pretty_use_pagination(self) -> str:
         return convert_to_on_off(self.use_pagination)
 
@@ -622,7 +626,7 @@ class GuildSettings(object):
     async def set_use_embeds(self, use_embeds: bool) -> bool:
         if use_embeds is None:
             if self.__use_embeds is None:
-                use_embeds = app_settings.DEFAULT_USE_EMOJI_PAGINATOR
+                use_embeds = app_settings.USE_EMBEDS
             else:
                 use_embeds = self.__use_embeds
             use_embeds = not use_embeds
