@@ -19,7 +19,7 @@ import utility as util
 __AUTODAILY_SETTING_COUNT = 9
 
 
-_VALID_PAGINATION_SWITCH_VALUES = {
+_VALID_BOOL_SWITCH_VALUES = {
     'on': True,
     'true': True,
     '1': True,
@@ -45,6 +45,7 @@ _COLUMN_NAME_DAILY_NOTIFY_TYPE: str = 'dailynotifytype'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: str = 'dailylatestmessagecreatedate'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: str = 'dailylatestmessagemodifydate'
 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
+_COLUMN_NAME_USE_EMBEDS: str = 'useembeds'
 
 
 
@@ -432,6 +433,7 @@ class GuildSettings(object):
         self.__prefix: str = row.get(_COLUMN_NAME_PREFIX)
         self.__use_pagination: bool = row.get(_COLUMN_NAME_USE_PAGINATION)
         self.__bot_news_channel_id: int = row.get(_COLUMN_NAME_BOT_NEWS_CHANNEL_ID)
+        self.__use_embeds: bool = row.get(_COLUMN_NAME_USE_EMBEDS)
 
         self.__guild: discord.Guild = None
         self.__bot_news_channel: discord.TextChannel = None
@@ -508,6 +510,13 @@ class GuildSettings(object):
         return self.__prefix or app_settings.DEFAULT_PREFIX
 
     @property
+    def use_embeds(self) -> bool:
+        if self.__use_embeds is None:
+            return app_settings.USE_EMBEDS
+        else:
+            return self.__use_embeds
+
+    @property
     def use_pagination(self) -> bool:
         if self.__use_pagination is None:
             return app_settings.DEFAULT_USE_EMOJI_PAGINATOR
@@ -558,6 +567,18 @@ class GuildSettings(object):
             return True
 
 
+    async def reset_use_embeds(self) -> bool:
+        if self.__use_embeds is not None:
+            settings = {
+                _COLUMN_NAME_USE_EMBEDS: None
+            }
+            success = await _db_update_server_settings(self.__guild_id, settings)
+            if success:
+                self.__use_embeds = None
+            return success
+        return True
+
+
     async def reset_use_pagination(self) -> bool:
         if self.__use_pagination is not None:
             settings = {
@@ -598,6 +619,27 @@ class GuildSettings(object):
         return True
 
 
+    async def set_use_embeds(self, use_embeds: bool) -> bool:
+        if use_embeds is None:
+            if self.__use_embeds is None:
+                use_embeds = app_settings.DEFAULT_USE_EMOJI_PAGINATOR
+            else:
+                use_embeds = self.__use_embeds
+            use_embeds = not use_embeds
+        else:
+            pss_assert.valid_parameter_value(use_embeds, 'use_embeds', min_length=1, allowed_values=_VALID_BOOL_SWITCH_VALUES.keys(), case_sensitive=False)
+            use_embeds = convert_from_on_off(use_embeds)
+        if self.__use_embeds is None or use_embeds != self.__use_embeds:
+            settings = {
+                _COLUMN_NAME_USE_EMBEDS: use_embeds
+            }
+            success = await _db_update_server_settings(self.id, settings)
+            if success:
+                self.__use_embeds = use_embeds
+            return success
+        return True
+
+
     async def set_use_pagination(self, use_pagination: bool) -> bool:
         if use_pagination is None:
             if self.__use_pagination is None:
@@ -606,7 +648,7 @@ class GuildSettings(object):
                 use_pagination = self.__use_pagination
             use_pagination = not use_pagination
         else:
-            pss_assert.valid_parameter_value(use_pagination, 'use_pagination', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
+            pss_assert.valid_parameter_value(use_pagination, 'use_pagination', min_length=1, allowed_values=_VALID_BOOL_SWITCH_VALUES.keys(), case_sensitive=False)
             use_pagination = convert_from_on_off(use_pagination)
         if self.__use_pagination is None or use_pagination != self.__use_pagination:
             settings = {
@@ -765,8 +807,8 @@ def convert_from_on_off(switch: str) -> bool:
         return None
     else:
         switch = switch.lower()
-        if switch in _VALID_PAGINATION_SWITCH_VALUES.keys():
-            result = _VALID_PAGINATION_SWITCH_VALUES[switch]
+        if switch in _VALID_BOOL_SWITCH_VALUES.keys():
+            result = _VALID_BOOL_SWITCH_VALUES[switch]
             return result
         else:
             return None
@@ -875,7 +917,7 @@ async def set_pagination(guild: discord.Guild, switch: str) -> bool:
     if switch is None:
         return await toggle_use_pagination(guild.id)
     else:
-        pss_assert.valid_parameter_value(switch, 'switch', min_length=1, allowed_values=_VALID_PAGINATION_SWITCH_VALUES.keys(), case_sensitive=False)
+        pss_assert.valid_parameter_value(switch, 'switch', min_length=1, allowed_values=_VALID_BOOL_SWITCH_VALUES.keys(), case_sensitive=False)
         use_pagination = convert_from_on_off(switch)
         success = await db_update_use_pagination(guild.id, use_pagination)
         if success:

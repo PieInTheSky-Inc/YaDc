@@ -86,9 +86,9 @@ THROW_COMMAND_ERRORS = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
 TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=12)
 
 
-USE_EMBEDS = False
+USE_EMBEDS = True
 
-VERSION = '1.3.0.2'
+VERSION = '1.3.1.0'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'

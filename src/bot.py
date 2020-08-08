@@ -2220,6 +2220,32 @@ async def cmd_settings_get_botnews(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_embeds(ctx: commands.Context):
+    """
+    Retrieve the embed setting for this server. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings embed
+      /settings embeds
+
+    Examples:
+      /settings embed - Prints the embed setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = [f'Pagination on this server has been set to: `{guild_settings.pretty_use_pagination}`']
+        await util.post_output(ctx, output)
+
+
 @cmd_settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_pagination(ctx: commands.Context):
@@ -2492,6 +2518,39 @@ async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_embeds(ctx: commands.Context):
+    """
+    Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset embed
+      /settings reset embeds
+
+    Examples:
+      /settings reset embed - Resets the embed settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_use_embeds()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings embed'))
+        else:
+            output = [
+                'An error ocurred while trying to reset the embed settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
+
+
 @cmd_settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: commands.Context):
@@ -2724,6 +2783,42 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
         await util.post_output(ctx, output)
 
 
+@cmd_settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
+    """
+    Sets or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set embed <switch>
+      /settings set embeds <switch>
+
+    Parameters:
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+
+    Notes:
+      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
+
+    Examples:
+      /settings set embed - Toggles the embed setting for the current Discord server/guild depending on the current setting.
+      /settings set embed off - Turns off embeds for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_use_pagination(switch)
+    if success:
+        await ctx.invoke(BOT.get_command('settings embed'))
+    else:
+        output = [f'Could not set embed settings for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
 @cmd_settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None):
@@ -2738,7 +2833,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
       /settings set pages <switch>
 
     Parameters:
-      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
 
     Notes:
       If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.

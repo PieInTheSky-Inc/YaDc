@@ -64,6 +64,9 @@ async def init_schema():
     if not (await update_schema('1.3.0.0', update_schema_v_1_3_0_0)):
         return
 
+    if not (await update_schema('1.3.1.0', update_schema_v_1_3_1_0)):
+        return
+
     success_serversettings = await try_create_table('serversettings', [
         ('guildid', 'TEXT', True, True),
         ('dailychannelid', 'TEXT', False, False),
@@ -86,6 +89,29 @@ async def update_schema(version: str, update_function: Callable) -> bool:
     success = await update_function()
     if not success:
         print(f'[update_schema] DB initialization failed upon upgrading the DB schema to version {version}.')
+    return success
+
+
+async def update_schema_v_1_3_1_0() -> bool:
+    schema_version = await get_schema_version()
+    if schema_version:
+        compare_1300 = util.compare_versions(schema_version, '1.3.1.0')
+        compare_1290 = util.compare_versions(schema_version, '1.3.0.0')
+        if compare_1300 <= 0:
+            return True
+        elif compare_1290 > 0:
+            return False
+
+    print(f'[update_schema_v_1_3_1_0] Updating database schema from v1.3.0.0 to v1.3.1.0')
+
+    query_add_column = f'ALTER TABLE serversettings ADD COLUMN useembeds BOOL;'
+    success_add_column = await try_execute(query_add_column)
+
+    if not success_add_column:
+        print(f'[update_schema_v_1_3_1_0] ERROR: Failed to add column \'useembeds\' to table \'serversettings\'!')
+        return False
+
+    success = await try_set_schema_version('1.3.1.0')
     return success
 
 
