@@ -119,11 +119,11 @@ async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_data: dict, 
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
-        common_crew_details = crew.get_char_details_by_id(common_crew_id, chars_data, collections_data, level=40)
+        common_crew_details = crew.get_char_details_by_id(common_crew_id, chars_data, collections_data)
         common_crew_info = await common_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
 
         hero_crew_id = raw_data['HeroCrewId']
-        hero_crew_details = crew.get_char_details_by_id(hero_crew_id, chars_data, collections_data, level=40)
+        hero_crew_details = crew.get_char_details_by_id(hero_crew_id, chars_data, collections_data)
         hero_crew_info = await hero_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
 
         common_crew_rarity = common_crew_details.entity_info['Rarity']
@@ -175,7 +175,7 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: entity.Ent
     entity_id = raw_data['LimitedCatalogArgument']
     entity_details = []
     if shop_type == 'Character':
-        char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data, level=40)
+        char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data)
         entity_details = await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)
     elif shop_type == 'Item':
         item_details = item.get_item_details_by_id(entity_id, items_data, trainings_data)
@@ -207,7 +207,7 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: entity.Ent
     sale_type = raw_data['SaleType']
     sale_argument = raw_data['SaleArgument']
     if sale_type == 'Character':
-        char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data, level=40)
+        char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data)
         entity_details = ''.join(await char_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Item':
         item_details = item.get_item_details_by_id(sale_argument, items_data, trainings_data)
