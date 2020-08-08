@@ -565,12 +565,20 @@ def __create_prestige_to_details_collection_from_infos(characters_infos: List[en
 
 # ---------- Transformation functions ----------
 
+def __get_ability(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int, **kwargs) -> str:
+    if character_info['SpecialAbilityType']:
+        result = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_info['SpecialAbilityType'], character_info['SpecialAbilityType'])
+    else:
+        result = None
+    return result
+
+
 def __get_ability_stat(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int, **kwargs) -> str:
     value = __get_stat(character_info, characters_data, collections_data, level, stat_name='SpecialAbilityArgument')
     if character_info['SpecialAbilityType']:
         special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_info['SpecialAbilityType'], character_info['SpecialAbilityType'])
     else:
-        special_ability is None
+        special_ability = None
     if special_ability:
         result = f'{value} ({special_ability})'
     else:
@@ -822,7 +830,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
         ],
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
-            entity.EntityDetailProperty('Ability', True, transform_function=__get_ability_stat),
+            entity.EntityDetailProperty('Ability', False, transform_function=__get_ability),
             entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name)
         ]),
     'character_embed_settings': {
