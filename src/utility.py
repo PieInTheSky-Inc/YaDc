@@ -280,6 +280,11 @@ def create_posts_from_lines(lines, char_limit) -> list:
     return result
 
 
+def get_star_date(utc_now: datetime) -> int:
+    today = date(utc_now.year, utc_now.month, utc_now.day)
+    return (today - settings.PSS_START_DATE).days
+
+
 def escape_escape_sequences(txt: str) -> str:
     if txt:
         txt = txt.replace('\\n', '\n')

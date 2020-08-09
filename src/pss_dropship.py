@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import calendar
 from datetime import datetime
 import discord
+import discord.ext.commands as commands
 import pprint
 from typing import Dict, Iterable, List, Tuple, Union
 
@@ -15,6 +17,7 @@ import pss_item as item
 import pss_lookups as lookups
 import pss_room as room
 import pss_training as training
+import pss_sprites as sprites
 import settings
 import utility as util
 
@@ -70,7 +73,8 @@ def _convert_sale_item_mask(sale_item_mask: int) -> str:
 
 # ---------- Dropship info ----------
 
-async def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en') -> (List[str], bool):
+async def get_dropship_text(bot: commands.Bot = None, guild: discord.Guild = None, daily_info: dict = None, utc_now: datetime = None, language_key: str = 'en') -> Tuple[List[str], List[discord.Embed], bool]:
+    utc_now = utc_now or util.get_utcnow()
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
 
@@ -88,34 +92,55 @@ async def get_dropship_text(daily_info: dict = None, as_embed: bool = settings.U
         sale_msg = await _get_sale_msg_from_data_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
         daily_reward_msg = await _get_daily_reward_from_data_as_text(daily_info, items_designs_data, trainings_designs_data)
     except Exception as e:
-        print(e)
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(daily_info)
+        print(e)
         return [], False
 
-    lines = daily_msg
-    lines.append(settings.EMPTY_LINE)
-    lines.extend(dropship_msg)
-    lines.append(settings.EMPTY_LINE)
-    lines.extend(merchantship_msg)
-    lines.append(settings.EMPTY_LINE)
-    lines.extend(shop_msg)
-    lines.append(settings.EMPTY_LINE)
-    lines.extend(sale_msg)
-    lines.append(settings.EMPTY_LINE)
-    lines.extend(daily_reward_msg)
+    parts = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
-    return lines, True
+    lines = list(daily_msg)
+    for part in parts:
+        lines.append(settings.EMPTY_LINE)
+        lines.extend(part)
+
+    title = f'Star date {util.get_star_date(utc_now)}'
+    description = ''.join(daily_msg)
+    fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
+    sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
+    colour = util.get_bot_member_colour(bot, guild)
+    embed = util.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour)
+
+    return lines, [embed], True
 
 
-def _get_daily_news_from_data_as_text(raw_data: dict) -> list:
+def compare_dropship_messages(message: discord.Message, dropship_text: str, dropship_embed: discord.Embed) -> bool:
+    """
+    Returns True, if messages are equal.
+    """
+    if dropship_embed:
+        dropship_embed_fields = dropship_embed.to_dict()['fields']
+    for message_embed in message.embeds:
+        message_embed_fields = message_embed.to_dict()['fields']
+        break
+    if len(dropship_embed_fields) == len(message_embed_fields):
+        for i, dropship_embed_field in enumerate(dropship_embed_fields):
+            if not util.dicts_equal(dropship_embed_field, message_embed_fields[i]):
+                return False
+        return True
+
+    return message.content == dropship_text
+
+
+
+def _get_daily_news_from_data_as_text(raw_data: dict) -> List[str]:
     result = ['No news have been provided :(']
     if raw_data and 'News' in raw_data.keys():
         result = [raw_data['News']]
     return result
 
 
-async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_data: dict, collections_data: dict) -> list:
+async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_data: dict, collections_data: dict) -> List[str]:
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if raw_data:
         common_crew_id = raw_data['CommonCrewId']
@@ -139,7 +164,7 @@ async def _get_dropship_msg_from_data_as_text(raw_data: dict, chars_data: dict, 
     return result
 
 
-async def _get_merchantship_msg_from_data_as_text(raw_data: dict, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
+async def _get_merchantship_msg_from_data_as_text(raw_data: dict, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if raw_data:
         cargo_items = raw_data['CargoItems'].split('|')
@@ -196,7 +221,7 @@ async def _get_shop_msg_from_data_as_text(raw_data: dict, chars_data: entity.Ent
     return result
 
 
-async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
+async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -230,7 +255,7 @@ async def _get_sale_msg_from_data_as_text(raw_data: dict, chars_data: entity.Ent
     return result
 
 
-async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> list:
+async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = ['**Daily rewards**']
 
     reward_currency = raw_data['DailyRewardType'].lower()

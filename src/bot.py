@@ -259,12 +259,14 @@ async def post_dailies_loop() -> None:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
-            latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
-            latest_daily_message = '\n'.join(latest_message_output)
-            output, created_output = await dropship.get_dropship_text(daily_info=daily_info)
+            latest_message_output_text, latest_message_output_embeds, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_daily_message = '\n'.join(latest_message_output_text)
+            lastest_daily_embed = latest_message_output_embeds[0]
+            output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
-                posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
+                current_daily_embed = output_embeds[0]
+                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now, yesterday, latest_daily_message, lastest_daily_embed)
             print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed:
@@ -275,11 +277,11 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: discord.Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> int:
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now, yesterday, latest_daily_message_contents, latest_daily_message_embed)
             if posted:
                 posted_count += 1
                 await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
@@ -287,7 +289,7 @@ async def post_dailies(current_daily_message: str, autodaily_settings: List[serv
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: discord.Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> (bool, bool, discord.Message):
     """
     Returns (posted, can_post, latest_message)
     """
@@ -306,12 +308,12 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         latest_message: discord.Message = None
 
         if can_post:
-            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
+            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message, latest_daily_message_embed, current_daily_embed)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
-                if latest_message.content == current_daily_message:
+                if dropship.compare_dropship_messages(latest_message, current_daily_message, current_daily_embed):
                     post_new = False
                 elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
@@ -344,7 +346,14 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
 
             if can_post and post_new:
                 try:
-                    latest_message = await text_channel.send(current_daily_message)
+                    use_embeds = await __get_use_embeds(text_channel.guild)
+                    if use_embeds:
+                        colour = util.get_bot_member_colour(BOT, text_channel.guild)
+                        embed = current_daily_embed.copy()
+                        embed.colour = colour
+                        latest_message = await text_channel.send(embed=embed)
+                    else:
+                        latest_message = await text_channel.send(current_daily_message)
                     posted = True
                     print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except discord.Forbidden:
@@ -364,7 +373,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str) -> (bool, discord.Message):
+async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: discord.Embed, current_daily_embed: discord.Embed) -> (bool, discord.Message):
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
@@ -385,7 +394,7 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
         if result is None:
             try:
                 async for message in text_channel.history(after=yesterday):
-                    if message.author == BOT.user and (message.content == latest_daily or message.content == current_daily):
+                    if message.author == BOT.user and (dropship.compare_dropship_messages(message, latest_daily, latest_daily_embed) or dropship.compare_dropship_messages(message, current_daily, current_daily_embed)) and (message.content == latest_daily or message.content == current_daily):
                         result = message
                         print(f'[daily_fetch_latest_message] found latest message by content in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {result.id}')
                         break
@@ -616,7 +625,7 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -643,7 +652,7 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -669,7 +678,7 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -694,7 +703,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -713,8 +722,12 @@ async def cmd_daily(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_dropship_text()
-    await util.post_output(ctx, output)
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
+    if as_embed:
+        await util.post_output(ctx, output_embed)
+    else:
+        await util.post_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
@@ -779,7 +792,7 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -803,7 +816,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -826,7 +839,7 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1155,7 +1168,7 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1179,7 +1192,7 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1203,7 +1216,7 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1229,7 +1242,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1344,12 +1357,12 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=(await __get_use_embeds(ctx)))
+            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=(await __get_use_embeds(ctx.guild)))
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=(await __get_use_embeds(ctx)))
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -1380,8 +1393,7 @@ async def cmd_time(ctx: commands.Context):
     __log_command_use(ctx)
     async with ctx.typing():
         now = datetime.datetime.now()
-        today = datetime.date(now.year, now.month, now.day)
-        pss_stardate = (today - settings.PSS_START_DATE).days
+        pss_stardate = util.get_star_date(now)
         str_time = 'Today is Stardate {}\n'.format(pss_stardate)
 
         mel_tz = pytz.timezone('Australia/Melbourne')
@@ -1564,7 +1576,7 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await __get_use_embeds(ctx)))
+        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -2925,8 +2937,12 @@ async def cmd_autodaily_post(ctx: commands.Context):
     channel_id = await server_settings.db_get_daily_channel_id(guild.id)
     if channel_id is not None:
         text_channel = BOT.get_channel(channel_id)
-        output, _ = await dropship.get_dropship_text()
-        await util.post_output_to_channel(text_channel, output)
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text()
+        if as_embed:
+            await util.post_output_to_channel(text_channel, output_embed)
+        else:
+            await util.post_output_to_channel(text_channel, output)
 
 
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
@@ -3218,10 +3234,10 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
         raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
-async def __get_use_embeds(ctx: commands.Context) -> bool:
-    if not util.is_guild_channel(ctx.channel):
+async def __get_use_embeds(guild: discord.Guild) -> bool:
+    if not guild:
         return settings.USE_EMBEDS
-    guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
+    guild_settings = await GUILD_SETTINGS.get(BOT, guild.id)
     return guild_settings.use_embeds
 
 
