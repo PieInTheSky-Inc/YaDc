@@ -858,7 +858,7 @@ async def cmd_news(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_news()
+        output, _ = await dropship.get_news(ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 

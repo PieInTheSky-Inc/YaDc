@@ -221,8 +221,8 @@ async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_cha
         await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
-def create_embed(title, description=None, colour=None, fields=None, thumbnail_url=None, image_url=None, icon_url=None, author_url=None, footer=None, footer_icon_url=None):
-    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty)
+def create_embed(title, description=None, colour=None, fields=None, thumbnail_url=None, image_url=None, icon_url=None, author_url=None, footer=None, footer_icon_url=None, timestamp=None):
+    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty, timestamp=timestamp or discord.Embed.Empty)
     if title and title != discord.Embed.Empty:
         result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
     if fields is not None:
@@ -234,6 +234,9 @@ def create_embed(title, description=None, colour=None, fields=None, thumbnail_ur
         result.set_image(url=image_url)
     if footer:
         result.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+    else:
+        if timestamp:
+            result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
 
     return result
 

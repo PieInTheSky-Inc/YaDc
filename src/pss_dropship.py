@@ -284,7 +284,7 @@ async def _get_daily_reward_from_data_as_text(raw_data: dict, item_data: entity.
 
 # ---------- News info ----------
 
-async def get_news(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
+async def get_news(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en'):
     path = f'SettingService/ListAllNewsDesigns?languageKey={language_key}'
 
     try:
@@ -296,21 +296,26 @@ async def get_news(as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en
     if not raw_data:
         return [f'Could not get news: {err}'], False
     else:
+        news_infos = sorted(list(raw_data.values()), key=lambda news_info: news_info['UpdateDate'])
+        news_count = len(news_infos)
+        if news_count > 5:
+            news_infos = news_infos[news_count-5:]
+        news_details_collection = __create_news_details_collection_from_infos(news_infos)
+
         if as_embed:
-            return _get_news_as_embed(raw_data), True
+            return (await news_details_collection.get_entity_details_as_embed(ctx)), True
         else:
-            return _get_news_as_text(raw_data), True
+            return _get_news_as_text(news_infos), True
 
 
-def _get_news_as_embed(news_infos: dict) -> list:
+async def _get_news_as_embed(ctx: commands.Context, news_infos: dict) -> List[discord.Embed]:
     result = []
-    for news_info in news_infos.values():
-        news_details = _get_news_details_as_embed(news_info)
+    for news_info in news_infos:
+        news_details = await _get_news_details_as_embed(ctx, news_info)
         if news_details:
             result.append(news_details)
 
-    return []
-
+    return result
 
 def _get_news_as_text(news_infos: dict) -> list:
     result = []
@@ -323,8 +328,21 @@ def _get_news_as_text(news_infos: dict) -> list:
     return result
 
 
-def _get_news_details_as_embed(news_info: dict) -> discord.Embed:
-    return ''
+async def _get_news_details_as_embed(ctx: commands.Context, news_info: dict) -> discord.Embed:
+    title = news_info['Title']
+    description = util.escape_escape_sequences(news_info['Description'])
+    while '\n\n' in description:
+        description = description.replace('\n\n', '\n')
+    sprite_url = await sprites.get_download_sprite_link(news_info['SpriteId'])
+    timestamp = util.parse_pss_datetime(news_info['UpdateDate'])
+    colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+    link = news_info['Link'].strip()
+    if link:
+        fields = [('Link', link, False)]
+    else:
+        fields = []
+    result = util.create_embed(title, description=description, image_url=sprite_url, colour=colour, footer='PSS News', timestamp=timestamp, fields=fields)
+    return result
 
 
 def _get_news_details_as_text(news_info: dict) -> list:
@@ -346,6 +364,105 @@ def _get_news_details_as_text(news_info: dict) -> list:
         result.append(f'<{link}>')
 
     return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Create EntityDetails ----------
+
+def __create_news_design_data_from_info(news_info: entity.EntityInfo) -> entity.EntityDetails:
+    return entity.EntityDetails(news_info, __properties['title_news'], __properties['description_news'], __properties['properties_news'], __properties['embed_settings'])
+
+
+def __create_news_details_list_from_infos(news_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
+    return [__create_news_design_data_from_info(news_info) for news_info in news_infos]
+
+
+def __create_news_details_collection_from_infos(news_infos: List[entity.EntityInfo]) -> entity.EntityDetailsCollection:
+    base_details = __create_news_details_list_from_infos(news_infos)
+    result = entity.EntityDetailsCollection(base_details, big_set_threshold=0)
+    return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
+
+def __get_pss_datetime(*args, **kwargs) -> datetime:
+    entity_property = kwargs.get('entity_property')
+    result = util.parse_pss_datetime(entity_property)
+    return result
+
+
+def __get_value(*args, **kwargs) -> str:
+    entity_property = kwargs.get('entity_property')
+    if entity.has_value(entity_property):
+        return entity_property
+    else:
+        return None
+
+
+def __sanitize_text(*args, **kwargs) -> str:
+    entity_property = kwargs.get('entity_property')
+    if entity_property:
+        result = util.escape_escape_sequences(entity_property)
+        while '\n\n' in result:
+            result = result.replace('\n\n', '\n')
+        return result
+    else:
+        return None
+
+
+
+
+
+
+
+
+
+
+# ---------- Helper functions ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Initilization ----------
+
+__properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPropertyCollection, entity.EntityDetailPropertyListCollection]] = {
+    'title_news': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='Title')
+    ),
+    'description_news': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, entity_property_name='Description', transform_function=__sanitize_text)
+    ),
+    'properties_news': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty('Link', True, entity_property_name='Link', transform_function=__get_value)
+        ]
+    ),
+    'embed_settings': {
+        'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'timestamp': entity.EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
+    }
+}
 
 
 

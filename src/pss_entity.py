@@ -533,7 +533,8 @@ class EntityDetails(object):
         icon_url = embed_settings.get('icon_url')
         image_url = embed_settings.get('image_url')
         thumbnail_url = embed_settings.get('thumbnail_url')
-        result = util.create_embed(title=title, description=description, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url)
+        timestamp = embed_settings.get('timestamp')
+        result = util.create_embed(title=title, description=description, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, timestamp=timestamp)
         return result
 
 
@@ -850,7 +851,7 @@ def group_entities_details(entities_details: List[EntityDetails], property_name:
 
 
 def has_value(entity_property: str) -> bool:
-    return entity_property and entity_property != '0' and entity_property.lower() != 'none'
+    return entity_property and entity_property != '0' and entity_property.lower() != 'none' and entity_property.strip()
 
 
 
