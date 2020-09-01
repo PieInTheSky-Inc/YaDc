@@ -22,6 +22,7 @@ from pss_exception import InvalidParameter
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_user as user
+import settings
 import utility as util
 
 
@@ -36,14 +37,9 @@ import utility as util
 class TourneyData(object):
     def __init__(self, raw_data: str):
         data = json.loads(raw_data)
-<<<<<<< Updated upstream
-        self.__fleets: entity.EntitiesDesignsData = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
-        self.__users: entity.EntitiesDesignsData = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
-=======
 
-        self.__fleets: entity.EntitiesData
-        self.__users: entity.EntitiesData
->>>>>>> Stashed changes
+        self.__fleets: entity.EntitiesDesignsData
+        self.__users: entity.EntitiesDesignsData
         self.__meta: Dict[str, object] = data['meta']
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
@@ -52,7 +48,10 @@ class TourneyData(object):
             self.__users = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
         elif self.__meta['schema_version'] == 4:
             self.__fleets = TourneyData.__create_fleet_dict_from_data_v4(data['fleets'])
-            self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], data['data'], self.__fleets)
+            self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
+        elif self.__meta['schema_version'] == 5:
+            self.__fleets = TourneyData.__create_fleet_dict_from_data_v5(data['fleets'])
+            self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
         self.__data_date: datetime.datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
 
@@ -186,18 +185,23 @@ class TourneyData(object):
     def __create_fleet_dict_from_data_v4(fleet_data: list) -> dict:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
-            alliance_id = entry[0]
+            alliance_id = str(entry[0])
             result[alliance_id] = {
                 'AllianceId': alliance_id,
                 'AllianceName': entry[1],
-                'Score': entry[2],
-                'DivisionDesignId': entry[3],
-                'Trophy': entry[4]
+                'Score': str(entry[2]),
+                'DivisionDesignId': str(entry[3]),
+                'Trophy': str(entry[4])
             }
         ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
             result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
         return result
+
+
+    @staticmethod
+    def __create_fleet_dict_from_data_v5(fleet_data: list) -> dict:
+        return TourneyData.__create_fleet_dict_from_data_v4(fleet_data)
 
 
     @staticmethod
@@ -214,48 +218,91 @@ class TourneyData(object):
                 'AllianceMembership': entry[4],
                 'AllianceJoinDate': entry[5],
                 'LastLoginDate': entry[6],
-                'Name': users_dict[entry[0]]
+                'Name': users_dict[entry[0]],
+                'Alliance': {}
             }
             if fleet_id and fleet_id != '0':
                 fleet_info = fleet_data.get(fleet_id, {})
                 for key, value in fleet_info.items():
-                    result[entry[0]][key] = value
+                    result[entry[0]]['Alliance'][key] = value
 
         return result
 
 
     @staticmethod
-    def __create_user_dict_from_data_v4(users: list, data: list, fleet_data: dict) -> dict:
+    def __create_user_dict_from_data_v4(users: list, fleet_data: dict) -> dict:
         result = {}
-        users_dict = dict(users)
-        for entry in data:
-            fleet_id = entry[1]
-            result[entry[0]] = {
-                'Id': entry[0],
+        for user in users:
+            fleet_id = str(user[2])
+            user_id = str(user[0])
+            result[user_id] = {
+                'Id': user_id,
                 'AllianceId': fleet_id,
-                'Trophy': entry[2],
-                'AllianceScore': entry[3],
-                'AllianceMembership': entry[4],
-                'AllianceJoinDate': entry[5],
-                'LastLoginDate': entry[6],
-                'Name': users_dict[entry[0]],
-                'LastHeartBeatDate': entry[7],
-                'CrewDonated': entry[8],
-                'CrewReceived': entry[9],
-                'PVPAttackWins': entry[10],
-                'PVPAttackLosses': entry[11],
-                'PVPAttackDraws': entry[12],
-                'PVPDefenceWins': entry[13],
-                'PVPDefenceLosses': entry[14],
-                'PVPDefenceDraws': entry[15]
+                'Trophy': str(user[3]),
+                'AllianceScore': str(user[4]),
+                'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
+                'Name': user[1],
+                'CrewDonated': str(user[9]),
+                'CrewReceived': str(user[10]),
+                'PVPAttackWins': str(user[11]),
+                'PVPAttackLosses': str(user[12]),
+                'PVPAttackDraws': str(user[13]),
+                'PVPDefenceWins': str(user[14]),
+                'PVPDefenceLosses': str(user[15]),
+                'PVPDefenceDraws': str(user[16]),
+                'Alliance': {}
             }
             if fleet_id and fleet_id != '0':
                 fleet_info = fleet_data.get(fleet_id, {})
                 for key, value in fleet_info.items():
-                    result[entry[0]][key] = value
+                    result[user_id]['Alliance'][key] = value
 
         return result
 
+
+    @staticmethod
+    def __create_user_dict_from_data_v5(users: list, fleet_data: dict) -> dict:
+        result = {}
+        for user in users:
+            fleet_id = str(user[2])
+            user_id = str(user[0])
+            result[user_id] = {
+                'Id': user_id,
+                'AllianceId': fleet_id,
+                'Trophy': str(user[3]),
+                'AllianceScore': str(user[4]),
+                'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
+                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]),
+                'LastLoginDate': TourneyData.__convert_timestamp_v4(user[7]),
+                'Name': user[1],
+                'LastHeartBeatDate': TourneyData.__convert_timestamp_v4(user[8]),
+                'CrewDonated': str(user[9]),
+                'CrewReceived': str(user[10]),
+                'PVPAttackWins': str(user[11]),
+                'PVPAttackLosses': str(user[12]),
+                'PVPAttackDraws': str(user[13]),
+                'PVPDefenceWins': str(user[14]),
+                'PVPDefenceLosses': str(user[15]),
+                'PVPDefenceDraws': str(user[16]),
+                'Alliance': {}
+            }
+            if fleet_id and fleet_id != '0':
+                fleet_info = fleet_data.get(fleet_id, {})
+                for key, value in fleet_info.items():
+                    result[user_id]['Alliance'][key] = value
+
+        return result
+
+
+    @staticmethod
+    def __convert_timestamp_v4(timestamp: int) -> str:
+        minutes, seconds = divmod(timestamp, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        td = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+        dt = settings.PSS_START_DATETIME + td
+        result = util.format_pss_datetime(dt)
+        return result
 
 
 

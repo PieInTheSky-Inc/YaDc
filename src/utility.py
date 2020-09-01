@@ -156,8 +156,11 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
 
 
 def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True):
-    total_seconds = delta.total_seconds()
-    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+    if delta:
+        total_seconds = delta.total_seconds()
+        return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+    else:
+        return ''
 
 
 def get_utcnow():
@@ -172,6 +175,11 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
         except ValueError:
             result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
         result = pytz.utc.localize(result)
+    return result
+
+
+def format_pss_datetime(dt: datetime) -> str:
+    result = dt.strftime(settings.API_DATETIME_FORMAT_ISO)
     return result
 
 
@@ -478,9 +486,12 @@ def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
 
 
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
-    dt = parse_pss_datetime(pss_timestamp)
-    result = format_excel_datetime(dt)
-    return result
+    if pss_timestamp:
+        dt = parse_pss_datetime(pss_timestamp)
+        result = format_excel_datetime(dt)
+        return result
+    else:
+        return ''
 
 
 def compare_versions(version_1: str, version_2: str) -> int:
