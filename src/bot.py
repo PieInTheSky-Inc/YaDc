@@ -1392,23 +1392,33 @@ async def cmd_time(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        now = datetime.datetime.now()
-        pss_stardate = util.get_star_date(now)
-        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
+        utc_now = util.get_utcnow()
+        star_date = f'Star date {util.get_star_date(utc_now)}'
 
         mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
-        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
+        mel_time = utc_now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
+        melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
 
-        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
-        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-        if mel_time in aus_holidays:
-            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
+        aus_holidays = holidays.Australia(years=utc_now.year, prov='ACT')
+        mel_date = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
 
-        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
-        td = first_day_of_next_month - now
-        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-    await ctx.send(str_time)
+        first_day_of_next_month = util.get_first_of_following_month(utc_now)
+        time_till_next_month = ('Time until next monthly reset', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        while (first_day_of_next_month.month - 1) % 3:
+            first_day_of_next_month = util.get_first_of_following_month(first_day_of_next_month)
+        time_till_next_prestige_change = ('Time until next prestige recipe changes', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
+        as_embed = __get_use_embeds(ctx.guild)
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            output = [util.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
+        else:
+            output = [star_date, melbourne_time]
+            [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
+    await util.post_output(ctx, output)
 
 
 @BOT.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)

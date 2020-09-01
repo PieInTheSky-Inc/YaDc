@@ -305,7 +305,7 @@ async def get_news(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS, 
         if as_embed:
             return (await news_details_collection.get_entity_details_as_embed(ctx)), True
         else:
-            return _get_news_as_text(news_infos), True
+            return (await news_details_collection.get_entity_details_as_text()), True
 
 
 async def _get_news_as_embed(ctx: commands.Context, news_infos: dict) -> List[discord.Embed]:
@@ -400,6 +400,10 @@ def __create_news_details_collection_from_infos(news_infos: List[entity.EntityIn
 
 # ---------- Transformation functions ----------
 
+def __get_news_footer(news_info: entity.EntityInfo, **kwargs) -> str:
+    return 'PSS News'
+
+
 def __get_pss_datetime(*args, **kwargs) -> datetime:
     entity_property = kwargs.get('entity_property')
     result = util.parse_pss_datetime(entity_property)
@@ -460,6 +464,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPr
     ),
     'embed_settings': {
         'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'footer': entity.EntityDetailProperty('footer', False, transform_function=__get_news_footer),
         'timestamp': entity.EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
     }
 }

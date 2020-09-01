@@ -534,7 +534,8 @@ class EntityDetails(object):
         image_url = embed_settings.get('image_url')
         thumbnail_url = embed_settings.get('thumbnail_url')
         timestamp = embed_settings.get('timestamp')
-        result = util.create_embed(title=title, description=description, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, timestamp=timestamp)
+        footer = embed_settings.get('footer')
+        result = util.create_embed(title=title, description=description, colour=colour, footer=footer, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, timestamp=timestamp)
         return result
 
 
