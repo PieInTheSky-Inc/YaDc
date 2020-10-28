@@ -40,8 +40,6 @@ _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: str = 'dailylatestmessageid'
 _COLUMN_NAME_USE_PAGINATION: str = 'usepagination'
 _COLUMN_NAME_PREFIX: str = 'prefix'
 _COLUMN_NAME_DAILY_CHANGE_MODE: str = 'dailychangemode'
-_COLUMN_NAME_DAILY_NOTIFY_ID: str = 'dailynotifyid'
-_COLUMN_NAME_DAILY_NOTIFY_TYPE: str = 'dailynotifytype'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: str = 'dailylatestmessagecreatedate'
 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: str = 'dailylatestmessagemodifydate'
 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
@@ -57,11 +55,6 @@ _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
 
 # ---------- Classes ----------
 
-class AutoDailyNotifyType(IntEnum):
-    USER = 1
-    ROLE = 2
-
-
 class AutoDailyChangeMode(IntEnum):
     POST_NEW = 1 # Formerly None
     DELETE_AND_POST_NEW = 2 # Formerly True
@@ -72,7 +65,7 @@ class AutoDailyChangeMode(IntEnum):
 
 
 class AutoDailySettings():
-    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, notify: Union[discord.Member, discord.Role], latest_message_created_at: datetime.datetime, latest_message_modified_at: datetime.datetime):
+    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime.datetime, latest_message_modified_at: datetime.datetime):
         self.__can_post: bool = can_post
         self.__channel: discord.TextChannel = channel
         self.__change_mode: AutoDailyChangeMode = change_mode or AutoDailyChangeMode.POST_NEW
@@ -80,13 +73,6 @@ class AutoDailySettings():
         self.__latest_message_id: int = latest_message_id or None
         self.__latest_message_created_at: datetime.datetime = latest_message_created_at or None
         self.__latest_message_modified_at: datetime.datetime = latest_message_modified_at or None
-        self.__notify: Union[discord.Member, discord.Role] = notify
-        self.__notify_type: AutoDailyNotifyType = None
-        if notify is not None:
-            if isinstance(notify, discord.Member):
-                self.__notify_type = AutoDailyNotifyType.USER
-            elif isinstance(notify, discord.Role):
-                self.__notify_type = AutoDailyNotifyType.ROLE
 
 
     @property
@@ -131,32 +117,12 @@ class AutoDailySettings():
     def latest_message_modified_at(self) -> datetime:
         return self.__latest_message_modified_at
 
-    @property
-    def notify(self) -> Union[discord.Member, discord.Role]:
-        return self.__notify
-
-    @property
-    def notify_id(self) -> int:
-        if self.notify:
-            return self.notify.id
-        else:
-            return None
-
-    @property
-    def notify_type(self) -> AutoDailyNotifyType:
-        if isinstance(self.notify, discord.Role):
-            return AutoDailyNotifyType.ROLE
-        elif isinstance(self.notify, (discord.Member, discord.User)):
-            return AutoDailyNotifyType.USER
-        return None
-
 
     def get_pretty_settings(self) -> List[str]:
-        if self.channel_id is not None or self.change_mode is not None or self.notify_id is not None:
+        if self.channel_id is not None or self.change_mode is not None:
             result = []
             result.extend(self.get_pretty_setting_channel())
             result.extend(self.get_pretty_setting_changemode())
-            result.extend(self.get_pretty_setting_notify())
         else:
             result = ['Auto-posting of the daily announcement is not configured for this server.']
         return result
@@ -183,28 +149,6 @@ class AutoDailySettings():
         return result
 
 
-    def _get_pretty_notify_settings(self) -> str:
-        if self.notify_id is not None and self.notify_type is not None:
-            type_str = ''
-            name = ''
-            if self.notify_type == AutoDailyNotifyType.USER:
-                member: discord.Member = self.guild.get_member(self.notify_id)
-                name = f'{member.display_name} ({member.name}#{member.discriminator})'
-                type_str = 'user'
-            elif self.notify_type == AutoDailyNotifyType.ROLE:
-                role: discord.Role = self.guild.get_role(self.notify_id)
-                name = role.name
-                type_str = 'role'
-
-            if type_str and name:
-                result = f'{name} ({type_str})'
-            else:
-                result = f'An error occured on retrieving the notify settings. Please contact the bot\'s author (in `/about`).'
-        else:
-            result = '<not set>'
-        return result
-
-
     def get_pretty_setting_channel(self) -> List[str]:
         if self.channel:
             result = [f'Auto-daily channel: {self.channel.mention}']
@@ -218,18 +162,11 @@ class AutoDailySettings():
         return result
 
 
-    def get_pretty_setting_notify(self) -> List[str]:
-        result = [f'Notify on auto-daily change: `{self._get_pretty_notify_settings()}`']
-        return result
-
-
     async def reset(self) -> bool:
         settings = {
             _COLUMN_NAME_DAILY_CHANNEL_ID: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
             _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE,
-            _COLUMN_NAME_DAILY_NOTIFY_ID: None,
-            _COLUMN_NAME_DAILY_NOTIFY_TYPE: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
@@ -237,7 +174,6 @@ class AutoDailySettings():
         if success:
             self.__channel = None
             self.__delete_on_change = None
-            self.__notify = None
             self.__latest_message_id = None
             self.__latest_message_created_at = None
             self.__latest_message_modified_at = None
@@ -281,17 +217,6 @@ class AutoDailySettings():
             self.__latest_message_id = None
             self.__latest_message_created_at = None
             self.__latest_message_modified_at = None
-        return success
-
-
-    async def reset_notify(self) -> bool:
-        settings = {
-            _COLUMN_NAME_DAILY_NOTIFY_ID: None,
-            _COLUMN_NAME_DAILY_NOTIFY_TYPE: None
-        }
-        success = await _db_update_server_settings(self.guild_id, settings)
-        if success:
-            self.__notify = None
         return success
 
 
@@ -339,29 +264,6 @@ class AutoDailySettings():
             return True
 
 
-    async def set_notify(self, notify: Union[discord.Role, discord.User]) -> bool:
-        if notify:
-            notify_id = notify.id
-            if isinstance(notify, discord.Role):
-                notify_type = AutoDailyNotifyType.ROLE
-            elif isinstance(notify, (discord.Member, discord.User)):
-                notify_type = AutoDailyNotifyType.USER
-            else:
-                raise TypeError(f'Could not set autodaily notify: the provided mention is neither a role nor a user"')
-            if not self.notify_id or notify_id != self.notify_id:
-                settings = {
-                    _COLUMN_NAME_DAILY_NOTIFY_ID: notify_id,
-                    _COLUMN_NAME_DAILY_NOTIFY_TYPE: convert_from_autodaily_notify_type(notify_type)
-                }
-                success = await _db_update_server_settings(self.guild_id, settings)
-                if success:
-                    self.__notify = notify
-                return success
-            return True
-        else:
-            return False
-
-
     async def toggle_change_mode(self) -> bool:
         int_value = int(self.change_mode)
         new_value = AutoDailyChangeMode((int_value % 3) + 1)
@@ -374,12 +276,11 @@ class AutoDailySettings():
         return success
 
 
-    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, notify: Union[discord.Role, discord.User] = None, store_now_as_created_at: bool = False) -> bool:
+    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, store_now_as_created_at: bool = False) -> bool:
         settings: Dict[str, object] = {}
         update_channel = channel is not None and channel != self.channel
         update_can_post = can_post is not None and can_post != self.can_post
         update_latest_message = (latest_message is None and store_now_as_created_at) or (latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at)
-        update_notify = notify is not None and notify != self.notify
         update_change_mode = change_mode is not None and change_mode != self.change_mode
         if update_channel:
             settings[_COLUMN_NAME_DAILY_CHANNEL_ID] = channel.id
@@ -392,13 +293,6 @@ class AutoDailySettings():
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
-        if update_notify:
-            if isinstance(notify, discord.Role):
-                notify_type = AutoDailyNotifyType.ROLE
-            elif isinstance(notify, discord.Member):
-                notify_type = AutoDailyNotifyType.USER
-            settings[_COLUMN_NAME_DAILY_NOTIFY_ID] = notify.id
-            settings[_COLUMN_NAME_DAILY_NOTIFY_TYPE] = convert_from_autodaily_notify_type(notify_type)
         if update_change_mode:
             settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = change_mode
         success = await _db_update_server_settings(self.guild_id, settings)
@@ -411,8 +305,6 @@ class AutoDailySettings():
                 self.__latest_message_id = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
                 self.__latest_message_created_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
                 self.__latest_message_modified_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
-            if update_notify:
-                self.__notify = notify
             if update_change_mode:
                 self.__delete_on_change = settings[_COLUMN_NAME_DAILY_CHANGE_MODE]
         return success
@@ -440,8 +332,6 @@ class GuildSettings(object):
         can_post_daily = row.get(_COLUMN_NAME_DAILY_CAN_POST)
         daily_latest_message_id = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
         daily_post_mode = row.get(_COLUMN_NAME_DAILY_CHANGE_MODE)
-        daily_notify_id = row.get(_COLUMN_NAME_DAILY_NOTIFY_ID)
-        daily_notify_type = convert_to_autodaily_notify_type(row.get(_COLUMN_NAME_DAILY_NOTIFY_TYPE))
         daily_latest_message_created_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
         daily_latest_message_modified_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
 
@@ -469,14 +359,7 @@ class GuildSettings(object):
         if self.__bot_news_channel is None and self.__bot_news_channel_id is not None:
             print(f'Could not get channel for id {self.__bot_news_channel_id}')
 
-        notify = None
-        if daily_notify_id and daily_notify_type and self.__guild:
-            if daily_notify_type == AutoDailyNotifyType.USER:
-                notify = self.__guild.get_member(daily_notify_id)
-            elif daily_notify_type == AutoDailyNotifyType.ROLE:
-                notify = self.__guild.get_role(daily_notify_id)
-
-        self.__autodaily_settings: AutoDailySettings = AutoDailySettings(self.__guild, channel, can_post_daily, daily_latest_message_id, daily_post_mode, notify, daily_latest_message_created_at, daily_latest_message_modified_at)
+        self.__autodaily_settings: AutoDailySettings = AutoDailySettings(self.__guild, channel, can_post_daily, daily_latest_message_id, daily_post_mode, daily_latest_message_created_at, daily_latest_message_modified_at)
 
 
     @property
@@ -699,7 +582,7 @@ async def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int
         raise Exception('No parameters given. You need to specify both parameters \'bot\' and \'guild_id\'.')
 
     autodaily_settings = await _prepare_create_autodaily_settings(guild_id)
-    _, channel_id, can_post, latest_message_id, delete_on_change, notify_id, notify_type, latest_message_create_date, latest_message_modify_date = autodaily_settings[0]
+    _, channel_id, can_post, latest_message_id, delete_on_change, latest_message_create_date, latest_message_modify_date = autodaily_settings[0]
     try:
         channel = bot.get_channel(channel_id)
     except Exception as error:
@@ -709,14 +592,7 @@ async def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int
     except Exception as error:
         guild = None
 
-    notify = None
-    if notify_id and notify_type and guild:
-        if notify_type == AutoDailyNotifyType.USER:
-            notify = guild.get_member(notify_id)
-        elif notify_type == AutoDailyNotifyType.ROLE:
-            notify = guild.get_role(notify_id)
-
-    return AutoDailySettings(guild, channel, can_post, latest_message_id, delete_on_change, notify, latest_message_create_date, latest_message_modify_date)
+    return AutoDailySettings(guild, channel, can_post, latest_message_id, delete_on_change, latest_message_create_date, latest_message_modify_date)
 
 
 async def _prepare_create_autodaily_settings(guild_id: int) -> list:
@@ -753,13 +629,6 @@ async def clean_up_invalid_server_settings(bot: commands.Bot) -> None:
         await GUILD_SETTINGS.delete_guild_settings(invalid_guild_id)
 
 
-def convert_from_autodaily_notify_type(notify_type: AutoDailyNotifyType) -> int:
-    if notify_type:
-        return notify_type.value
-    else:
-        return None
-
-
 def convert_from_on_off(switch: str) -> bool:
     if switch is None:
         return None
@@ -770,16 +639,6 @@ def convert_from_on_off(switch: str) -> bool:
             return result
         else:
             return None
-
-
-def convert_to_autodaily_notify_type(notify_type: int) -> AutoDailyNotifyType:
-    if notify_type:
-        for _, member in AutoDailyNotifyType.__members__.items():
-            if member.value == notify_type:
-                return member
-        return None
-    else:
-        return None
 
 
 def convert_to_on_off(value: bool) -> str:
@@ -862,13 +721,6 @@ async def reset_prefix(guild_id: int) -> bool:
     return success
 
 
-async def set_autodaily_notify(guild_id: int, notify_id: int, notify_type: AutoDailyNotifyType) -> bool:
-    await db_create_server_settings(guild_id)
-
-    success = await db_update_daily_notify_settings(guild_id, notify_id, notify_type)
-    return success
-
-
 async def set_pagination(guild: discord.Guild, switch: str) -> bool:
     await db_create_server_settings(guild.id)
 
@@ -945,7 +797,7 @@ async def db_delete_server_settings(guild_id: int) -> bool:
 
 
 async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> list:
-    wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL or {_COLUMN_NAME_DAILY_NOTIFY_ID} IS NOT NULL)']
+    wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL)']
     if guild_id is not None:
         wheres.append(util.db_get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
     if can_post is not None:
@@ -955,7 +807,7 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
     if only_guild_ids:
         setting_names = [_COLUMN_NAME_GUILD_ID]
     else:
-        setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_CHANGE_MODE, _COLUMN_NAME_DAILY_NOTIFY_ID, _COLUMN_NAME_DAILY_NOTIFY_TYPE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
+        setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_CHANGE_MODE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
     settings = await _db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
     for setting in settings:
@@ -971,9 +823,7 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
                 setting[3],
                 setting[4],
                 setting[5],
-                convert_to_autodaily_notify_type(setting[6]),
-                setting[7],
-                setting[8]
+                setting[6]
             ))
     if not result:
         if guild_id:
@@ -1007,12 +857,6 @@ async def db_get_daily_latest_message_id(guild_id: int) -> int:
     setting_names = [_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None if result else None
-
-
-async def db_get_daily_notify_settings(guild_id: int) -> (int, AutoDailyNotifyType):
-    setting_names = [_COLUMN_NAME_DAILY_NOTIFY_ID, _COLUMN_NAME_DAILY_NOTIFY_TYPE]
-    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
-    return result or None
 
 
 async def db_get_has_settings(guild_id: int) -> bool:
@@ -1084,19 +928,6 @@ async def db_reset_autodaily_mode(guild_id: int) -> bool:
     return True
 
 
-async def db_reset_autodaily_notify(guild_id: int) -> bool:
-    current_autodaily_settings = await db_get_autodaily_settings(guild_id)
-    for current_setting in current_autodaily_settings:
-        if current_setting is not None:
-            settings = {
-                _COLUMN_NAME_DAILY_NOTIFY_ID: None,
-                _COLUMN_NAME_DAILY_NOTIFY_TYPE: None
-            }
-            success = await _db_update_server_settings(guild_id, settings)
-            return success
-    return True
-
-
 async def db_reset_autodaily_settings(guild_id: int) -> bool:
     current_autodaily_settings = await db_get_autodaily_settings(guild_id)
     for current_setting in current_autodaily_settings:
@@ -1105,8 +936,6 @@ async def db_reset_autodaily_settings(guild_id: int) -> bool:
                 _COLUMN_NAME_DAILY_CHANNEL_ID: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
                 _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE,
-                _COLUMN_NAME_DAILY_NOTIFY_ID: None,
-                _COLUMN_NAME_DAILY_NOTIFY_TYPE: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
             }
@@ -1137,22 +966,18 @@ async def db_reset_use_pagination(guild: discord.Guild) -> bool:
     return True
 
 
-async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, notify_id: int = None, notify_type: AutoDailyNotifyType = None, latest_message_modify_date: datetime.datetime = None) -> bool:
+async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, latest_message_modify_date: datetime.datetime = None) -> bool:
     autodaily_settings = await db_get_autodaily_settings(guild_id)
     current_can_post = None
     current_channel_id = None
     current_latest_message_id = None
     current_delete_on_change = None
-    current_notify_id = None
-    current_notify_type = None
     if autodaily_settings:
-        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change, current_notify_id, current_notify_type, current_latest_message_create_date, current_latest_message_modify_date) = autodaily_settings[0]
+        (_, current_channel_id, current_can_post, current_latest_message_id, current_delete_on_change, current_latest_message_create_date, current_latest_message_modify_date) = autodaily_settings[0]
     if (current_channel_id != channel_id
             or current_latest_message_id != latest_message_id
             or current_can_post != can_post
             or current_delete_on_change != delete_on_change
-            or current_notify_id != notify_id
-            or current_notify_type != notify_type
             or latest_message_modify_date and (current_latest_message_create_date is None or current_latest_message_modify_date != latest_message_modify_date)):
         settings = {}
         if channel_id is not None:
@@ -1163,10 +988,6 @@ async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, ca
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message_id
         if delete_on_change is not None:
             settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = delete_on_change
-        if notify_id is not None:
-            settings[_COLUMN_NAME_DAILY_NOTIFY_ID] = notify_id
-        if notify_type is not None:
-            settings[_COLUMN_NAME_DAILY_NOTIFY_TYPE] = convert_from_autodaily_notify_type(notify_type)
         if latest_message_modify_date is not None:
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message_modify_date
             if current_latest_message_create_date is None:
@@ -1221,18 +1042,6 @@ async def db_update_daily_latest_message(guild_id: int, message: discord.Message
             return success
     else:
         success = await db_reset_autodaily_latest_message_id(guild_id)
-        return success
-    return True
-
-
-async def db_update_daily_notify_settings(guild_id: int, notify_id: int, notify_type: AutoDailyNotifyType) -> bool:
-    current_daily_notify_id, _ = await db_get_daily_notify_settings(guild_id)
-    if not current_daily_notify_id or notify_id != current_daily_notify_id:
-        settings = {
-            _COLUMN_NAME_DAILY_NOTIFY_ID: notify_id,
-            _COLUMN_NAME_DAILY_NOTIFY_TYPE: convert_from_autodaily_notify_type(notify_type)
-        }
-        success = await _db_update_server_settings(guild_id, settings)
         return success
     return True
 

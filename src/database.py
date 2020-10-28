@@ -71,9 +71,7 @@ async def init_schema():
         ('dailylatestmessageid', 'TEXT', False, False),
         ('usepagination', 'BOOLEAN', False, False),
         ('prefix', 'TEXT', False, False),
-        ('dailydeleteonchange', 'BOOLEAN', False, False),
-        ('dailynotifyid', 'TEXT', False, False),
-        ('dailynotifytype', 'TEXT', False, False)
+        ('dailydeleteonchange', 'BOOLEAN', False, False)
     ])
     if not success_serversettings:
         print('[init_schema] DB initialization failed upon creating the table \'serversettings\'.')
