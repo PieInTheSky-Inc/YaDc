@@ -104,12 +104,13 @@ async def get_dropship_text(bot: commands.Bot = None, guild: discord.Guild = Non
         lines.append(settings.EMPTY_LINE)
         lines.extend(part)
 
-    title = f'Star date {util.get_star_date(utc_now)}'
+    title = 'Pixel Starships Dropships'
+    footer = f'Star date {util.get_star_date(utc_now)}'
     description = ''.join(daily_msg)
     fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
     sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
     colour = util.get_bot_member_colour(bot, guild)
-    embed = util.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour)
+    embed = util.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)
 
     return lines, [embed], True
 
