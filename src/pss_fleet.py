@@ -166,8 +166,8 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
     }
 
     lines = [f'**```{fleet_name}```**```']
-    if description is not None:
-        lines.append(f'{description} ``````')
+    if description:
+        lines.append(f'{description}``````')
     for detail_name, detail_value in details.items():
         if detail_value is not None:
             lines.append(f'{detail_name} - {detail_value}')
