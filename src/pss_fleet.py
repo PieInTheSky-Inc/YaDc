@@ -2,9 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
-import discord
-import os
-import urllib.parse
+from typing import Tuple
 
 import emojis
 import excel
@@ -169,7 +167,7 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
 
     lines = [f'**```{fleet_name}```**```']
     if description is not None:
-        lines.append(f'{description}``````')
+        lines.append(f'{description} ``````')
     for detail_name, detail_value in details.items():
         if detail_value is not None:
             lines.append(f'{detail_name} - {detail_value}')
@@ -233,7 +231,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> (list, list):
+async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
