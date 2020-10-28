@@ -118,6 +118,9 @@ def compare_dropship_messages(message: discord.Message, dropship_text: str, drop
     """
     Returns True, if messages are equal.
     """
+    dropship_embed_fields = []
+    message_embed_fields = []
+
     if dropship_embed:
         dropship_embed_fields = dropship_embed.to_dict()['fields']
     for message_embed in message.embeds:
