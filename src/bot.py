@@ -1342,7 +1342,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
         try:
-            char_output, char_success = await crew.get_char_details_by_name(ctx, name, level, as_embed=(await __get_use_embeds(ctx.guild)))
+            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=(await __get_use_embeds(ctx.guild)))
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
