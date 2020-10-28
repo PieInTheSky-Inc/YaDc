@@ -295,10 +295,9 @@ async def get_news(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS, 
         raw_data = core.xmltree_to_dict3(raw_text)
     except Exception as err:
         raw_data = None
-
-    if not raw_data:
         return [f'Could not get news: {err}'], False
-    else:
+
+    if raw_data:
         news_infos = sorted(list(raw_data.values()), key=lambda news_info: news_info['UpdateDate'])
         news_count = len(news_infos)
         if news_count > 5:
