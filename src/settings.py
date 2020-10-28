@@ -71,6 +71,7 @@ PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
 
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
+PSS_START_DATETIME = datetime.datetime(year=2016, month=1, day=6)
 
 
 RAW_COMMAND_USERS_RAW = os.environ.get('RAW_COMMAND_USERS', '[]')

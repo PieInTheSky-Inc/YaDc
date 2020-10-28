@@ -326,8 +326,13 @@ async def __get_build_requirement(room_info: entity.EntityInfo, rooms_data: enti
 
             if 'x' in required_id:
                 required_id, required_amount = required_id.split('x')
+            elif '>=' in required_id:
+                required_id, required_amount = required_id.split('>=')
             else:
                 required_amount = '1'
+
+            required_id = required_id.strip()
+            required_amount = required_amount.strip()
 
             if required_type == 'item':
                 item_details = item.get_item_details_by_id(required_id, items_data, None)
@@ -513,7 +518,7 @@ def __get_reload_time(room_info: entity.EntityInfo, rooms_data: entity.EntitiesD
             reload_ticks = float(reload_time)
             reload_seconds = reload_ticks / 40.0
             reload_speed = 60.0 / reload_seconds
-            result = f'{reload_seconds:0.{settings.DEFAULT_FLOAT_PRECISION}f}s (~ {util.format_up_to_decimals(reload_speed)}/min)'
+            result = f'{util.format_up_to_decimals(reload_seconds, 3)}s (~ {util.format_up_to_decimals(reload_speed)}/min)'
             return result
         else:
             return None

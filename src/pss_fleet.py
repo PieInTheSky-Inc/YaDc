@@ -2,9 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
-import discord
-import os
-import urllib.parse
+from typing import Tuple
 
 import emojis
 import excel
@@ -168,7 +166,7 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
     }
 
     lines = [f'**```{fleet_name}```**```']
-    if description is not None:
+    if description:
         lines.append(f'{description}``````')
     for detail_name, detail_value in details.items():
         if detail_value is not None:
@@ -205,8 +203,14 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     result = [FLEET_SHEET_COLUMN_NAMES]
 
     for user_info in fleet_users_infos.values():
-        logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate'])
-        joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate'])
+        last_login_date = user_info.get('LastLoginDate')
+        alliance_join_date = user_info.get('AllianceJoinDate')
+        logged_in_ago = None
+        joined_ago = None
+        if last_login_date:
+            logged_in_ago = retrieval_date - util.parse_pss_datetime(last_login_date)
+        if alliance_join_date:
+            joined_ago = retrieval_date - util.parse_pss_datetime(alliance_join_date)
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
@@ -214,10 +218,10 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             fleet_name,
             user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
             user_info['AllianceMembership'],
-            util.convert_pss_timestamp_to_excel(user_info['LastLoginDate']),
+            util.convert_pss_timestamp_to_excel(last_login_date),
             int(user_info['Trophy']),
             int(user_info['AllianceScore']),
-            util.convert_pss_timestamp_to_excel(user_info['AllianceJoinDate']),
+            util.convert_pss_timestamp_to_excel(alliance_join_date),
             int(user_info.get('CrewDonated', '0')),
             int(user_info.get('CrewReceived', '0')),
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
@@ -227,7 +231,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> (list, list):
+async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]

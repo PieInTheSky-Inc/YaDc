@@ -284,7 +284,6 @@ async def post_dailies(current_daily_message: str, current_daily_embed: discord.
             posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now, yesterday, latest_daily_message_contents, latest_daily_message_embed)
             if posted:
                 posted_count += 1
-                await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
             await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
@@ -405,20 +404,6 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
                 print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
 
     return can_post, result
-
-
-async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member, discord.Role], notify_type: server_settings.AutoDailyNotifyType) -> None:
-    if guild is not None and notify is not None and notify_type is not None:
-        message = f'The auto-daily has been reposted on Discord server \'{guild.name}\''
-        members = []
-        if notify_type == server_settings.AutoDailyNotifyType.USER:
-            if guild.id == notify.guild.id:
-                members.append(notify)
-        elif notify_type == server_settings.AutoDailyNotifyType.ROLE:
-            if guild.id == notify.guild.id:
-                members = notify.members
-        for member in members:
-            await member.send(content=message)
 
 
 
@@ -2160,33 +2145,6 @@ async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get_autodaily.command(name='notify', brief='Retrieve auto-daily notify')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
-    """
-    Retrieve the auto-daily setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings autodaily notify
-      /settings daily notify
-
-    Examples:
-      /settings autodaily notify - Prints the auto-daily notification settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            output = guild_settings.autodaily.get_pretty_setting_notify()
-        await util.post_output(ctx, output)
-
-
 @cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_botnews(ctx: commands.Context):
@@ -2446,39 +2404,6 @@ async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(name='notify', brief='Reset auto-daily notifications')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
-    """
-    Reset the auto-daily notification settings for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset autodaily notify
-      /settings reset daily notify
-
-    Examples:
-      /settings reset autodaily notify - Turns off notifications on auto-daily changes for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_notify()
-            if success:
-                output = ['Successfully reset the auto-daily notifications.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
 @cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
@@ -2712,38 +2637,6 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
     else:
         output = [f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
-
-
-@cmd_settings_set_autodaily.command(name='notify', brief='Set auto-daily notify settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: Union[discord.Role, discord.Member] = None):
-    """
-    Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role. If nothing is being specified, this setting will be reset.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set autodaily notify <member/role mention>
-      /settings set daily notify <member/role mention>
-
-    Examples:
-      /settings set autodaily notify @notify - Sets the role 'notify' to be notified on changes.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if mention is None:
-        await ctx.invoke(BOT.get_command('settings reset autodaily notify'))
-    else:
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.set_notify(mention)
-        if success:
-            await ctx.invoke(BOT.get_command('settings autodaily notify'))
-        else:
-            output = [f'Could not set notify on autodaily settings for this server. Please try again or contact the bot\'s author.']
-            await util.post_output(ctx, output)
 
 
 @cmd_settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')

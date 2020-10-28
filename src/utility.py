@@ -155,9 +155,12 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
 
 
 
-def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True):
-    total_seconds = delta.total_seconds()
-    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True) -> str:
+    if delta:
+        total_seconds = delta.total_seconds()
+        return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+    else:
+        return ''
 
 
 def get_utcnow():
@@ -166,12 +169,17 @@ def get_utcnow():
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
     result = None
-    if pss_datetime is not None:
+    if pss_datetime:
         try:
             result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
         except ValueError:
             result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO_DETAILED)
         result = pytz.utc.localize(result)
+    return result
+
+
+def format_pss_datetime(dt: datetime) -> str:
+    result = dt.strftime(settings.API_DATETIME_FORMAT_ISO)
     return result
 
 
@@ -501,17 +509,23 @@ def url_escape(s: str) -> str:
 
 
 def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
-    format_str = '%Y-%m-%d %H:%M'
-    if include_seconds:
-        format_str += ':%S'
-    result = dt.strftime(format_str)
-    return result
+    if dt:
+        format_str = '%Y-%m-%d %H:%M'
+        if include_seconds:
+            format_str += ':%S'
+        result = dt.strftime(format_str)
+        return result
+    else:
+        return None
 
 
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
-    dt = parse_pss_datetime(pss_timestamp)
-    result = format_excel_datetime(dt)
-    return result
+    if pss_timestamp:
+        dt = parse_pss_datetime(pss_timestamp)
+        result = format_excel_datetime(dt)
+        return result
+    else:
+        return ''
 
 
 def compare_versions(version_1: str, version_2: str) -> int:

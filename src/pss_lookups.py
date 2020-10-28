@@ -18,6 +18,17 @@ ALLIANCE_MEMBERSHIP: Dict[str, str] = {
 }
 
 
+ALLIANCE_MEMBERSHIP_LOOKUP: List[str] = [
+    'FleetAdmiral',
+    'ViceAdmiral',
+    'Commander',
+    'Lieutenant',
+    'Major',
+    'Ensign',
+    'Candidate'
+]
+
+
 COLLECTION_PERK_LOOKUP: Dict[str, str] = {
     'BloodThirstSkill': 'Vampirism',
     'EmpSkill': 'EMP Discharge',
