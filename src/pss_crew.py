@@ -866,7 +866,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
     ),
     'prestige_from_properties': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty('Prestige', False, transform_function=__get_prestige_names)
+            entity.EntityDetailProperty('2nd crew', False, transform_function=__get_prestige_names)
         ]
     ),
     'prestige_to_title': entity.EntityDetailPropertyCollection(
@@ -875,7 +875,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
     ),
     'prestige_to_properties': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty('Prestige', False, transform_function=__get_prestige_names)
+            entity.EntityDetailProperty('2nd crew', False, transform_function=__get_prestige_names)
         ]
     )
 }
