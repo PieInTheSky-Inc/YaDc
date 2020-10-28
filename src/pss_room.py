@@ -264,7 +264,7 @@ def _get_reload_time(room_reload_time: str) -> str:
         reload_ticks = float(room_reload_time)
         reload_seconds = reload_ticks / 40.0
         reload_speed = 60.0 / reload_seconds
-        result = f'{reload_seconds:0.{settings.DEFAULT_FLOAT_PRECISION}f}s (~ {util.format_up_to_decimals(reload_speed)}/min)'
+        result = f'{util.format_up_to_decimals(reload_seconds, 3)}s (~ {util.format_up_to_decimals(reload_speed)}/min)'
         return result
     else:
         return ''
