@@ -103,8 +103,13 @@ def _get_build_requirement(requirement_string: str, items_designs_data: entity.E
 
         if 'x' in required_id:
             required_id, required_amount = required_id.split('x')
+        elif '>=' in required_id:
+            required_id, required_amount = required_id.split('>=')
         else:
             required_amount = '1'
+
+        required_id = required_id.strip()
+        required_amount = required_amount.strip()
 
         if required_type == 'item':
             item_info = items_designs_data[required_id]
