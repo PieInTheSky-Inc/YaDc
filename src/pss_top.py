@@ -77,10 +77,12 @@ async def get_top_fleets(ctx: commands.Context, take: int = 100, as_embed: bool 
             body_lines = [f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})' for position, fleet_name, trophies, _ in prepared_data]
 
         if as_embed:
-            body = '\n'.join(body_lines)
+            bodies = util.create_posts_from_lines(body_lines, 2048)
             colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-            result = util.create_embed(title, description=body, colour=colour)
-            return [result], True
+            result = []
+            for body in bodies:
+                result.append(util.create_embed(title, description=body, colour=colour))
+            return result, True
         else:
             result = [f'**{title}**']
             result.extend(body_lines)
