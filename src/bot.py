@@ -1463,7 +1463,7 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
       /top 30 captains - prints top 30 captains."""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await pss_top.get_top_captains(count)
+        output, _ = await pss_top.get_top_captains(ctx, count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 

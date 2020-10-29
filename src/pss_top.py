@@ -4,7 +4,7 @@
 from datetime import datetime
 import discord
 import discord.ext.commands as commands
-from typing import List, Tuple
+from typing import Callable, List, Tuple, Union
 
 from discord.utils import escape_markdown
 
@@ -16,6 +16,7 @@ import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
+import pss_user as user
 import settings
 import utility as util
 
@@ -46,12 +47,12 @@ def is_valid_division_letter(div_letter: str) -> bool:
     return result
 
 
-
-async def get_top_captains_dict(skip: int = 0, take: int = 100) -> dict:
-    path = await _get_top_captains_path(skip, take)
-    raw_data = await core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data)
-    return data
+def __create_top_embeds(title: str, body_lines: List[str], colour: discord.Colour) -> List[discord.Embed]:
+    bodies = util.create_posts_from_lines(body_lines, 2048)
+    result = []
+    for body in bodies:
+        result.append(util.create_embed(title, description=body, colour=colour))
+    return result
 
 
 
@@ -71,29 +72,46 @@ async def get_top_fleets(ctx: commands.Context, take: int = 100, as_embed: bool 
     if data:
         title = f'Top {take} fleets'
         prepared_data = __prepare_top_fleets(data)
-        if tourney_running:
-            body_lines = [f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})' for position, fleet_name, trophies, stars in prepared_data]
-        else:
-            body_lines = [f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})' for position, fleet_name, trophies, _ in prepared_data]
+        body_lines = __create_body_lines_top_fleets(prepared_data, tourney_running)
 
         if as_embed:
-            bodies = util.create_posts_from_lines(body_lines, 2048)
             colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-            result = []
-            for body in bodies:
-                result.append(util.create_embed(title, description=body, colour=colour))
-            return result, True
+            return __create_top_embeds(title, body_lines, colour), True
         else:
             result = [f'**{title}**']
             result.extend(body_lines)
             return result, True
     else:
-        return ['An unknown error occured. Please contact the bot\'s author!'], False
+        return ['An unknown error occured while retrieving the top fleets. Please contact the bot\'s author!'], False
 
 
-def __prepare_top_fleets(alliance_data: entity.EntitiesData) -> List[Tuple]:
-    result = [(position, discord.utils.escape_markdown(alliance_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]), alliance_info['Trophy'], alliance_info['Score']) for position, alliance_info in enumerate(alliance_data.values(), start=1)]
+def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]], tourney_running: bool) -> List[str]:
+    if tourney_running:
+        result = [
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})'
+            for position, fleet_name, trophies, stars
+            in prepared_data
+        ]
+    else:
+        result = [
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})'
+            for position, fleet_name, trophies, _
+            in prepared_data
+        ]
     return result
+
+
+def __prepare_top_fleets(fleets_data: entity.EntitiesData) -> List[Tuple]:
+    result = [
+        (
+            position,
+            discord.utils.escape_markdown(fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
+            fleet_info['Trophy'],
+            fleet_info['Score']
+        ) for position, fleet_info in enumerate(fleets_data.values(), start=1)
+    ]
+    return result
+
 
 
 
@@ -106,43 +124,63 @@ def __prepare_top_fleets(alliance_data: entity.EntitiesData) -> List[Tuple]:
 
 # ---------- Top 100 Captains ----------
 
-async def get_top_captains(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
-    data = await get_top_captains_dict(0, take)
-    if as_embed:
-        return _get_top_captains_as_embed(data, take), True
+async def get_top_captains(ctx: commands.Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    skip = 0
+    data = await __get_top_captains_dict(skip, take)
+
+    if data:
+        title = f'Top {take} captains'
+        prepared_data = __prepare_top_captains(data, skip, take)
+        body_lines = __create_body_lines_top_captains(prepared_data)
+
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = __create_top_embeds(title, body_lines, colour)
+        else:
+            result = [f'**{title}**']
+            result.extend(body_lines)
+        return result, True
     else:
-        return _get_top_captains_as_text(data, take), True
+        return ['An unknown error occured while retrieving the top captains. Please contact the bot\'s author!'], False
 
 
-def _get_top_captains_as_embed(captain_data: dict, take: int = 100):
-    return ''
+def __create_body_lines_top_captains(prepared_data: List[Tuple[int, str, str, str]]) -> List[str]:
+    result = [
+        f'**{position}.** {user_name} ({fleet_name}) - {trophies} {emojis.trophy}'
+        for position, user_name, fleet_name, trophies
+        in prepared_data
+    ]
+    return result
 
 
-def _get_top_captains_as_text(captain_data: dict, take: int = 100):
-    headline = f'**Top {take} captains**'
-    lines = [headline]
-
-    position = 0
-    for entry in captain_data.values():
-        position += 1
-        name = util.escape_markdown(entry['Name'])
-        trophies = entry['Trophy']
-        fleet_name = entry['AllianceName']
-
-        trophy_txt = f'{trophies} {emojis.trophy}'
-
-        line = f'**{position}.** {name} ({fleet_name}): {trophy_txt}'
-        lines.append(line)
-        if position == take:
-            break
-
-    return lines
+async def __get_top_captains_dict(skip: int, take: int) -> dict:
+    path = await __get_top_captains_path(skip, take)
+    raw_data = await core.get_data_from_path(path)
+    data = core.xmltree_to_dict3(raw_data)
+    return data
 
 
-async def _get_top_captains_path(skip: int, take: int):
+async def __get_top_captains_path(skip: int, take: int):
     skip += 1
     access_token = await login.DEVICES.get_access_token()
     result = f'LadderService/ListUsersByRanking?accessToken={access_token}&from={skip}&to={take}'
+    return result
+
+
+def __prepare_top_captains(users_data: entity.EntitiesData, skip: int, take: int) -> List[Tuple]:
+    start = skip + 1
+    end = skip + take
+    result = [
+        (
+            position,
+            discord.utils.escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME]),
+            discord.utils.escape_markdown(user_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
+            user_info['Trophy']
+        )
+        for position, user_info
+        in enumerate(users_data.values(), start=start)
+        if position >= start and position <= end
+    ]
     return result
 
 
