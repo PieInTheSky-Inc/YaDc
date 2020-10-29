@@ -1486,7 +1486,7 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
       /top 30 fleets - prints top 30 fleets."""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await pss_top.get_top_fleets(count)
+        output, _ = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 

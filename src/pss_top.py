@@ -2,12 +2,17 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
-import math
-import os
+import discord
+import discord.ext.commands as commands
+from typing import List, Tuple
+
+from discord.utils import escape_markdown
 
 import emojis
 import pss_assert
 import pss_core as core
+import pss_entity as entity
+import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
@@ -59,42 +64,34 @@ async def get_top_captains_dict(skip: int = 0, take: int = 100) -> dict:
 
 # ---------- Top 100 Alliances ----------
 
-async def get_top_fleets(take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+async def get_top_fleets(ctx: commands.Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS):
+    tourney_running = tourney.is_tourney_running()
     raw_data = await core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = core.xmltree_to_dict3(raw_data)
-    if as_embed:
-        return _get_top_fleets_as_embed(data, take), True
-    else:
-        return _get_top_fleets_as_text(data, take), True
-
-
-def _get_top_fleets_as_embed(alliance_data: dict, take: int = 100):
-    return ''
-
-
-def _get_top_fleets_as_text(alliance_data: dict, take: int = 100):
-    tourney_running = tourney.is_tourney_running()
-
-    headline = f'**Top {take} fleets**'
-    lines = [headline]
-
-    position = 0
-    for entry in alliance_data.values():
-        position += 1
-        name = util.escape_markdown(entry['AllianceName'])
-        trophies = entry['Trophy']
-        stars = entry['Score']
-
-        trophy_txt = f'{trophies} {emojis.trophy}'
+    if data:
+        title = f'Top {take} fleets'
+        prepared_data = __prepare_top_fleets(data)
         if tourney_running:
-            stars_txt = f', {stars} {emojis.star}'
+            body_lines = [f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})' for position, fleet_name, trophies, stars in prepared_data]
         else:
-            stars_txt = ''
+            body_lines = [f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})' for position, fleet_name, trophies, _ in prepared_data]
 
-        line = f'**{position}.** {name} ({trophy_txt}{stars_txt})'
-        lines.append(line)
+        if as_embed:
+            body = '\n'.join(body_lines)
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = util.create_embed(title, description=body, colour=colour)
+            return [result], True
+        else:
+            result = [f'**{title}**']
+            result.extend(body_lines)
+            return result, True
+    else:
+        return ['An unknown error occured. Please contact the bot\'s author!'], False
 
-    return lines
+
+def __prepare_top_fleets(alliance_data: entity.EntitiesData) -> List[Tuple]:
+    result = [(position, discord.utils.escape_markdown(alliance_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]), alliance_info['Trophy'], alliance_info['Score']) for position, alliance_info in enumerate(alliance_data.values(), start=1)]
+    return result
 
 
 
