@@ -447,7 +447,10 @@ class TourneyDataClient():
 
 
     def __ensure_initialized(self) -> None:
-        self.__initialize()
+        try:
+            self.__drive.ListFile({'q': f'\'{self._folder_id}\' in parents and title contains \'highaöegjoyödfmj giod\''}).GetList()
+        except pydrive.auth.InvalidConfigError:
+            self.__initialize()
 
 
     def __get_first_file(self, file_name: str) -> pydrive.files.GoogleDriveFile:
@@ -458,8 +461,7 @@ class TourneyDataClient():
 
 
     def __get_latest_file(self, year: int, month: int, day: int = None, initializing: bool = False) -> pydrive.files.GoogleDriveFile:
-        #if initializing is False:
-        #    self.__initialize()
+        self.__ensure_initialized()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
             file_name_part += f'{day:02d}'
@@ -517,9 +519,7 @@ class TourneyDataClient():
 
 
     def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
-        #if initializing is False:
-        #    initializing = True
-        #    self.__initialize()
+        self.__ensure_initialized()
         g_file = self.__get_latest_file(year, month, initializing=initializing)
         if g_file:
             raw_data = g_file.GetContentString()
