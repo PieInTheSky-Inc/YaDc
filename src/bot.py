@@ -2599,7 +2599,8 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     This command can only be used on Discord servers/guilds.
     """
     __log_command_use(ctx)
-    await ctx.send_help('settings set autodaily')
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set autodaily')
 
 
 @cmd_settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
@@ -2627,6 +2628,8 @@ async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel
 
     async with ctx.typing():
         autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        if not text_channel:
+            text_channel = ctx.channel
         success = await autodaily_settings.set_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily channel'))

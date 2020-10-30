@@ -622,6 +622,15 @@ def __get_crew_card_hyperlink(character_info: entity.EntityInfo, characters_data
         return None
 
 
+def __get_pixel_prestige_hyperlink(character_info: entity.EntityInfo, characters_data: entity.EntitiesData, collections_data: entity.EntitiesData, level: int, **kwargs) -> str:
+    crew_id: str = character_info.get(CHARACTER_DESIGN_KEY_NAME)
+    if crew_id:
+        url = f'https://pixel-prestige.com/crew.php?nId={crew_id}'
+        return f'<{url}>'
+    else:
+        return None
+
+
 def __get_embed_color(collection_info: entity.EntityInfo, collections_data: entity.EntitiesData, characters_data: entity.EntitiesData, **kwargs) -> discord.Color:
     color_string = collection_info.get('ColorString')
     if entity.has_value(color_string):
@@ -826,7 +835,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
             entity.EntityDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
             entity.EntityDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
             entity.EntityDetailProperty('Slots', True, transform_function=__get_slots),
-            entity.EntityDetailProperty('Roles', True, transform_function=__get_crew_card_hyperlink)
+            entity.EntityDetailProperty('Role scores', True, transform_function=__get_pixel_prestige_hyperlink)
         ],
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
