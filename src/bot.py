@@ -509,7 +509,27 @@ async def cmd_links(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output = core.read_links_file()
+        links = core.read_links_file()
+        output = []
+        if (await __get_use_embeds(ctx.guild)):
+            title = 'Pixel Starships weblinks'
+            colour = util.get_bot_member_colour(BOT, ctx.guild)
+            fields = []
+            for field_name, hyperlinks in links.items():
+                field_value = []
+                for (description, hyperlink) in hyperlinks:
+                    field_value.append(f'[{description}]({hyperlink})')
+                fields.append((field_name, '\n'.join(field_value), False))
+            embed = util.create_embed(title, fields=fields, colour=colour)
+            output.append(embed)
+        else:
+            for category, hyperlinks in links.items():
+                output.append(f'**{category}**')
+                for (description, hyperlink) in hyperlinks:
+                    output.append(f'{description}: <{hyperlink}>')
+                output.append(settings.EMPTY_LINE)
+            if output:
+                output = output[:-1]
     await util.post_output(ctx, output)
 
 
@@ -900,7 +920,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
                     error = str(err)
                     tourney_data = None
                 if tourney_data:
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
+                    output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
                 elif error:
                     output = [error]
     await util.post_output(ctx, output)
@@ -1258,7 +1278,7 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
                 await ctx.invoke(subcommand, fleet_name=division)
                 return
             else:
-                output, _ = await pss_top.get_division_stars(division=division, as_embed=(await __get_use_embeds(ctx.guild)))
+                output, _ = await pss_top.get_division_stars(ctx, division=division, as_embed=(await __get_use_embeds(ctx.guild)))
         await util.post_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')

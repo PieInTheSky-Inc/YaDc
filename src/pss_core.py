@@ -382,7 +382,7 @@ async def get_base_url(use_default: bool = False) -> str:
 
 
 # ---------- Links ----------
-def read_links_file() -> str:
+def read_links_file() -> Dict[str, List[List[str]]]:
     result = []
     links = {}
     for pss_links_file in settings.PSS_LINKS_FILES:
@@ -392,14 +392,7 @@ def read_links_file() -> str:
             break
         except:
             pass
-    for category, hyperlinks in links.items():
-        result.append(settings.EMPTY_LINE)
-        result.append(f'**{category}**')
-        for (description, hyperlink) in hyperlinks:
-            result.append(f'{description}: <{hyperlink}>')
-    if len(result) > 1:
-        result = result[1:]
-    return result
+    return links
 
 
 def read_about_file() -> dict:
