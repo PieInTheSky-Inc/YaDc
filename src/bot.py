@@ -1454,7 +1454,7 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
         return
 
 
-@cmd_top.command(name='players', aliases=['captains', 'users'], brief='Prints top captains')
+@cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     """
@@ -1477,7 +1477,7 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     await util.post_output(ctx, output)
 
 
-@cmd_top.command(name='fleets', aliases=['alliances'], brief='Prints top fleets')
+@cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
     """
