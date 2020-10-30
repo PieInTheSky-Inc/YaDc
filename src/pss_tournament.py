@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import date, datetime, time, timedelta, timezone
+from typing import List
 import discord
 
 import pss_core as core
@@ -53,6 +54,13 @@ def embed_tourney_start(start_date, utc_now, colour=None):
         delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
         fields.append(util.get_embed_field_def('Ends', delta_end_formatted, True))
     result = util.create_embed(f'{tourney_month} tournament', colour=colour, fields=fields)
+    return result
+
+
+def convert_tourney_embed_to_plain_text(embed: discord.Embed) -> List[str]:
+    result = [embed.title]
+    for field in embed.fields:
+        result.append(f'**{field.name}:** {field.value}')
     return result
 
 

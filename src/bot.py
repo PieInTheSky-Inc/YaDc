@@ -433,15 +433,7 @@ async def cmd_about(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        guilds = [guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING]
-        all_users = set(BOT.users)
-        users = []
-        bots = []
-        for user in all_users:
-            if user.bot:
-                bots.append(user)
-            else:
-                users.append(user)
+        guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
         user_name = BOT.user.display_name
         if ctx.guild is None:
             nick = BOT.user.display_name
@@ -450,25 +442,22 @@ async def cmd_about(ctx: commands.Context):
         has_nick = BOT.user.display_name != nick
         pfp_url = BOT.user.avatar_url
         about_info = core.read_about_file()
+
         title = f'About {nick}'
         if has_nick:
             title += f' ({user_name})'
         description = about_info['description']
-        footer = f'Serving {len(users)} users & {len(bots)} bots on {len(guilds)} guilds.'
-        version = f'v{settings.VERSION}'
-        support_link = about_info['support']
-        authors = ', '.join(about_info['authors'])
-        pfp_author = about_info['pfp']
-        color = util.get_bot_member_colour(BOT, ctx.guild)
+        footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
+        fields = [
+            ('version', f'v{settings.VERSION}', True),
+            ('authors', ', '.join(about_info['authors']), True),
+            ('profile pic by', about_info['pfp'], True),
+            ('support', about_info['support'], False)
+        ]
+        colour = util.get_bot_member_colour(BOT, ctx.guild)
 
-        embed = discord.Embed(title=title, type='rich', color=color, description=description)
-        embed.add_field(name="version", value=version)
-        embed.add_field(name="authors", value=authors)
-        embed.add_field(name="profile pic by", value=pfp_author)
-        embed.add_field(name="support", value=support_link)
-        embed.set_footer(text=footer)
-        embed.set_thumbnail(url=pfp_url)
-    await ctx.send(embed=embed)
+        embed = util.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
+    await util.post_output(ctx, [embed])
 
 
 @BOT.command(name='invite', brief='Get an invite link')
@@ -1360,13 +1349,14 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
     async with ctx.typing():
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
+        use_embeds = (await __get_use_embeds(ctx.guild))
         try:
-            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=(await __get_use_embeds(ctx.guild)))
+            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=use_embeds)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=use_embeds)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -1375,7 +1365,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         await util.post_output(ctx, char_output)
 
     if item_success:
-        if char_success:
+        if char_success and not use_embeds:
             await ctx.send(settings.EMPTY_LINE)
         await util.post_output(ctx, item_output)
 
@@ -1547,7 +1537,12 @@ async def cmd_tournament_current(ctx: commands.Context):
         start_of_tourney = tourney.get_current_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
 
 
 @cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
@@ -1568,7 +1563,12 @@ async def cmd_tournament_next(ctx: commands.Context):
         start_of_tourney = tourney.get_next_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
 
 
 @BOT.command(name='training', brief='Get training infos')
