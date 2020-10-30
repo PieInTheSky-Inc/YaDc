@@ -218,12 +218,12 @@ async def get_division_stars(division: str = None, fleet_data: dict = None, retr
     divisions = {}
     if division:
         division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID[division.upper()]
-        divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+        divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info[DIVISION_DESIGN_KEY_NAME] == division_design_id]
         pass
     else:
         for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
             if division_design_id != '0':
-                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info[DIVISION_DESIGN_KEY_NAME] == division_design_id]
 
     if divisions:
         divisions_texts = []
