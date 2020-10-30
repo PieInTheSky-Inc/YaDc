@@ -772,8 +772,13 @@ def __get_required_details(requirement_string: str) -> Tuple[str, str, str]:
 
     if 'x' in required_id:
         required_id, required_amount = required_id.split('x')
+    elif '>=' in required_id:
+        required_id, required_amount = required_id.split('>=')
     else:
         required_amount = '1'
+    required_type = required_type.strip()
+    required_id = required_id.strip()
+    required_amount = required_amount.strip()
     return required_type, required_id, required_amount
 
 
