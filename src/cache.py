@@ -68,9 +68,15 @@ class PssCache:
         return result
 
 
+    async def get_raw_data_dict(self) -> str:
+        raw_data = await self.get_raw_data()
+        result = core.convert_raw_xml_to_dict(raw_data)
+        return result
+
+
     async def get_data_dict3(self) -> dict:
         data = await self.get_raw_data()
-        return dict(core.xmltree_to_dict3(data))
+        return core.xmltree_to_dict3(data)
 
 
     def __get_is_data_outdated(self) -> bool:

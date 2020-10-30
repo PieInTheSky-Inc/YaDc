@@ -17,7 +17,7 @@ class Paginator():
         self.__search_term: str = search_term
         self.__available_options: List[dict] = list(available_options)
         self.__short_text_function: Callable[[dict], Union[str, Awaitable[str]]] = short_text_function
-        self.__retrieve_short_text_async: bool = inspect.isawaitable(short_text_function)
+        self.__retrieve_short_text_async: bool = inspect.iscoroutinefunction(short_text_function)
         self.__page_size: int = page_size
         self.__timeout: int = timeout
         self.__use_emojis: bool = None

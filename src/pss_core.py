@@ -196,22 +196,25 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     fixed_value = fix_data_delegate(property_value)
     fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
 
-    similarity_map = {}
-    for entry_id, entry_property in fixed_data.items():
-        if entry_property.startswith(fixed_value) or fixed_value in entry_property:
-            similarity_value = util.get_similarity(entry_property, fixed_value)
-            if similarity_value in similarity_map.keys():
-                similarity_map[similarity_value].append((entry_id, entry_property))
-            else:
-                similarity_map[similarity_value] = [(entry_id, entry_property)]
-    for similarity_value, entries in similarity_map.items():
-        similarity_map[similarity_value] = sorted(entries, key=lambda entry: entry[1])
-    similarity_values = sorted(list(similarity_map.keys()), reverse=True)
-    results = []
-    for similarity_value in similarity_values:
-        if not match_exact or (match_exact is True and similarity_value.is_integer()):
-            entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
-            results.extend(entry_ids)
+    if match_exact:
+        results = [key for key, value in fixed_data.items() if value == property_value]
+    else:
+        similarity_map = {}
+        for entry_id, entry_property in fixed_data.items():
+            if entry_property.startswith(fixed_value) or fixed_value in entry_property:
+                similarity_value = util.get_similarity(entry_property, fixed_value)
+                if similarity_value in similarity_map.keys():
+                    similarity_map[similarity_value].append((entry_id, entry_property))
+                else:
+                    similarity_map[similarity_value] = [(entry_id, entry_property)]
+        for similarity_value, entries in similarity_map.items():
+            similarity_map[similarity_value] = sorted(entries, key=lambda entry: entry[1])
+        similarity_values = sorted(list(similarity_map.keys()), reverse=True)
+        results = []
+        for similarity_value in similarity_values:
+            if not match_exact or (match_exact is True and similarity_value.is_integer()):
+                entry_ids = [entry_id for (entry_id, _) in similarity_map[similarity_value]]
+                results.extend(entry_ids)
 
     return results
 
@@ -379,7 +382,7 @@ async def get_base_url(use_default: bool = False) -> str:
 
 
 # ---------- Links ----------
-def read_links_file() -> str:
+def read_links_file() -> Dict[str, List[List[str]]]:
     result = []
     links = {}
     for pss_links_file in settings.PSS_LINKS_FILES:
@@ -389,14 +392,7 @@ def read_links_file() -> str:
             break
         except:
             pass
-    for category, hyperlinks in links.items():
-        result.append(settings.EMPTY_LINE)
-        result.append(f'**{category}**')
-        for (description, hyperlink) in hyperlinks:
-            result.append(f'{description}: <{hyperlink}>')
-    if len(result) > 1:
-        result = result[1:]
-    return result
+    return links
 
 
 def read_about_file() -> dict:

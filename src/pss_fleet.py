@@ -2,9 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
-import discord
-import os
-import urllib.parse
+from typing import Tuple
 
 import emojis
 import excel
@@ -15,6 +13,7 @@ import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
+import pss_top
 import pss_user as user
 import settings
 import utility as util
@@ -63,7 +62,7 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 # ---------- Helper functions ----------
 
-def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_description_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     description = fleet_info.get('AllianceDescription')
     if description is not None:
@@ -71,7 +70,7 @@ def __get_description_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     division_name = get_division_name_as_text(fleet_info)
     if division_name is not None and division_name != '-':
@@ -83,16 +82,16 @@ def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityDesignInfo)
     return result
 
 
-def get_division_name_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     if fleet_info:
-        division_design_id = fleet_info.get('DivisionDesignId')
+        division_design_id = fleet_info.get(pss_top.DIVISION_DESIGN_KEY_NAME)
         if division_design_id is not None and division_design_id != '0':
             result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
     return result
 
 
-def __get_member_count(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+def __get_member_count(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
     result = None
     member_count = fleet_info.get('NumberOfMembers')
     if member_count is not None:
@@ -102,12 +101,12 @@ def __get_member_count(fleet_info: entity.EntityDesignInfo, fleet_users_infos: e
     return result
 
 
-def __get_min_trophies(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_min_trophies(fleet_info: entity.EntityInfo) -> str:
     result = fleet_info.get('MinTrophyRequired')
     return result
 
 
-def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_name(fleet_info: entity.EntityInfo) -> str:
     result = None
     fleet_name = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
     if fleet_name is not None:
@@ -118,7 +117,7 @@ def __get_name(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     ranking = fleet_info.get('Ranking')
     if ranking is not None and ranking != '0':
@@ -126,7 +125,7 @@ def __get_ranking_as_text(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_stars(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_stars(fleet_info: entity.EntityInfo) -> str:
     result = None
     stars = fleet_info.get('Score')
     if stars is not None and stars != '0':
@@ -134,7 +133,7 @@ def __get_stars(fleet_info: entity.EntityDesignInfo) -> str:
     return result
 
 
-def __get_trophies(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entity.EntitiesDesignsData) -> str:
+def __get_trophies(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
     result = None
     member_count = fleet_info.get('Trophy')
     if member_count is not None:
@@ -144,7 +143,7 @@ def __get_trophies(fleet_info: entity.EntityDesignInfo, fleet_users_infos: entit
     return result
 
 
-def __get_type_as_text(fleet_info: entity.EntityDesignInfo) -> str:
+def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     requires_approval = fleet_info.get('RequiresApproval')
     if requires_approval is not None:
@@ -168,8 +167,8 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
     }
 
     lines = [f'**```{fleet_name}```**```']
-    if description is not None:
-        lines.append(f'{description}``````')
+    if description:
+        lines.append(f'{description} ``````')
     for detail_name, detail_value in details.items():
         if detail_value is not None:
             lines.append(f'{detail_name} - {detail_value}')
@@ -206,9 +205,13 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
 
     for user_info in fleet_users_infos.values():
         last_login_date = user_info.get('LastLoginDate')
-        logged_in_ago = retrieval_date - util.parse_pss_datetime(user_info['LastLoginDate']) if last_login_date else None
-        join_date = user_info.get('AllianceJoinDate')
-        joined_ago = retrieval_date - util.parse_pss_datetime(user_info['AllianceJoinDate']) if join_date else None
+        alliance_join_date = user_info.get('AllianceJoinDate')
+        logged_in_ago = None
+        joined_ago = None
+        if last_login_date:
+            logged_in_ago = retrieval_date - util.parse_pss_datetime(last_login_date)
+        if alliance_join_date:
+            joined_ago = retrieval_date - util.parse_pss_datetime(alliance_join_date)
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
@@ -219,7 +222,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             util.convert_pss_timestamp_to_excel(last_login_date),
             int(user_info['Trophy']),
             int(user_info['AllianceScore']),
-            util.convert_pss_timestamp_to_excel(join_date),
+            util.convert_pss_timestamp_to_excel(alliance_join_date),
             int(user_info.get('CrewDonated', '0')),
             int(user_info.get('CrewReceived', '0')),
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
@@ -229,7 +232,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> (list, list):
+async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -360,7 +363,7 @@ async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data:
 
 def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None) -> list:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info['DivisionDesignId']]
+    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME]]
 
     fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
@@ -385,7 +388,7 @@ def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dic
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
-        fleet_info['DivisionDesignId'] = fleet_data[fleet_id]['DivisionDesignId']
+        fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][pss_top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
     return get_fleet_users_stars_from_info(fleet_info, fleet_users_infos, retrieved_date=retrieved_date)
 
