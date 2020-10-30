@@ -174,7 +174,7 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
             lines.append(f'{detail_name} - {detail_value}')
 
     if is_past_data:
-        lines.append(f'```{util.get_historic_data_note(retrieved_at)}')
+        lines.append(f'``````{util.get_historic_data_note(retrieved_at)}```')
     else:
         lines[-1] += '```'
 
@@ -379,7 +379,7 @@ def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, r
         lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name}')
 
     if retrieved_date is not None:
-        lines.append(util.get_historic_data_note(retrieved_date))
+        lines.append(f'```{util.get_historic_data_note(retrieved_date)}```')
 
     return lines
 
