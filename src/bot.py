@@ -1292,7 +1292,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             if exact_name:
                 fleet_name = exact_name
             fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
 
         if fleet_infos:
             if len(fleet_infos) == 1:
