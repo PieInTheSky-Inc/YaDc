@@ -39,6 +39,7 @@ DAILY_INFO_FIELDS = [
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
     'News',
+    'NewsSpriteId',
     'SaleArgument',
     'SaleItemMask',
     'SaleQuantity',
@@ -214,7 +215,6 @@ async def db_get_sales_info(skip_cache: bool = False) -> List[Dict]:
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
-    success = True
     settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
     settings_success = await db.set_settings(settings)
     if settings_success:

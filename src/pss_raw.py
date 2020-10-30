@@ -42,7 +42,7 @@ def __flatten_raw_dict_for_excel(raw_dict: dict) -> list:
     return result
 
 
-def __flatten_raw_data(data: entity.EntitiesDesignsData) -> list:
+def __flatten_raw_data(data: entity.EntitiesData) -> list:
     flat_data = []
     for row in data.values():
         result_row = __flatten_raw_entity(row)
@@ -50,7 +50,7 @@ def __flatten_raw_data(data: entity.EntitiesDesignsData) -> list:
     return flat_data
 
 
-def __flatten_raw_entity(entity_info: entity.EntityDesignInfo) -> dict:
+def __flatten_raw_entity(entity_info: entity.EntityInfo) -> dict:
     result = {}
     for field_name, field in entity_info.items():
         if __should_include_raw_field(field):
@@ -62,7 +62,7 @@ def __flatten_raw_entity(entity_info: entity.EntityDesignInfo) -> dict:
     return result
 
 
-async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str, mode: str, retrieved_at: datetime.datetime):
+async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime.datetime):
     async with ctx.typing():
         retrieved_at = retrieved_at or util.get_utcnow()
         entity_name = entity_name.replace(' ', '_')
@@ -87,24 +87,24 @@ async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityDesigns
     os.remove(file_path)
 
 
-async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime.datetime):
+async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime.datetime):
     async with ctx.typing():
         output = []
         data = await retriever.get_data_dict3()
-        entity_design_info = data.get(entity_id, None)
-        if entity_design_info is None:
+        entity_info = data.get(entity_id, None)
+        if entity_info is None:
             title = [f'Could not find raw **{entity_name}** data for id **{entity_id}**.']
         else:
             title = [f'Raw **{entity_name}** data for id **{entity_id}**:']
             if not mode:
-                flat_entity = __flatten_raw_entity(entity_design_info)
+                flat_entity = __flatten_raw_entity(entity_info)
                 for key, value in flat_entity.items():
                     output.append(f'{key} = {value}')
             else:
                 if mode == 'xml':
-                    result = await retriever.get_raw_entity_design_info_by_id_as_xml(entity_id)
+                    result = await retriever.get_raw_entity_info_by_id_as_xml(entity_id)
                 elif mode == 'json':
-                    result = await retriever.get_raw_entity_design_info_by_id_as_json(entity_id, fix_xml_attributes=True)
+                    result = await retriever.get_raw_entity_info_by_id_as_json(entity_id, fix_xml_attributes=True)
                 output = result.split('\n')
         output_len = len(output) + sum([len(row) for row in output])
     if output_len > settings.MAXIMUM_CHARACTERS:
@@ -128,7 +128,7 @@ def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retri
     return file_name
 
 
-async def post_raw_data(ctx: commands.Context, retriever: entity.EntityDesignsRetriever, entity_name: str, entity_id: str):
+async def post_raw_data(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str):
     if ctx.author.id in settings.RAW_COMMAND_USERS:
         retrieved_at = util.get_utcnow()
         mode = None

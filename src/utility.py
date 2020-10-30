@@ -160,7 +160,7 @@ def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool =
         total_seconds = delta.total_seconds()
         return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
     else:
-        return None
+        return ''
 
 
 def get_utcnow():
@@ -178,9 +178,18 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+def format_pss_datetime(dt: datetime) -> str:
+    result = dt.strftime(settings.API_DATETIME_FORMAT_ISO)
+    return result
+
+
+async def post_output(ctx: commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
-        await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+        if isinstance(output[0], discord.Embed):
+            for embed in output:
+                await ctx.send(embed=embed)
+        elif isinstance(output[0], str):
+            await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
 
 
 async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
@@ -220,11 +229,23 @@ async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_cha
         await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
-def create_embed(title, description=None, colour=None, fields=None):
-    result = discord.Embed(title=title, description=description, colour=colour)
+def create_embed(title, description=None, colour=None, fields=None, thumbnail_url=None, image_url=None, icon_url=None, author_url=None, footer=None, footer_icon_url=None, timestamp=None):
+    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty, timestamp=timestamp or discord.Embed.Empty)
+    if title and title != discord.Embed.Empty:
+        result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
     if fields is not None:
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
+    if thumbnail_url:
+        result.set_thumbnail(url=thumbnail_url)
+    if image_url:
+        result.set_image(url=image_url)
+    if footer:
+        result.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+    else:
+        if timestamp:
+            result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+
     return result
 
 
@@ -268,6 +289,11 @@ def create_posts_from_lines(lines, char_limit) -> list:
         result = ['']
 
     return result
+
+
+def get_star_date(utc_now: datetime) -> int:
+    today = date(utc_now.year, utc_now.month, utc_now.day)
+    return (today - settings.PSS_START_DATE).days
 
 
 def escape_escape_sequences(txt: str) -> str:
@@ -410,6 +436,16 @@ def sort_tuples_by(data: list, order_info: list) -> list:
         return result
 
 
+def convert_color_string_to_embed_color(color_string: str) -> discord.Color:
+    if color_string:
+        split_color_string = color_string.split(',')
+        r, g, b = [int(c) for c in split_color_string]
+        result = discord.Color.from_rgb(r, g, b)
+    else:
+        result = discord.Embed.Empty
+    return result
+
+
 def convert_input_to_boolean(s: str) -> bool:
     result = None
     if s:
@@ -484,9 +520,12 @@ def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
 
 
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
-    dt = parse_pss_datetime(pss_timestamp)
-    result = format_excel_datetime(dt)
-    return result
+    if pss_timestamp:
+        dt = parse_pss_datetime(pss_timestamp)
+        result = format_excel_datetime(dt)
+        return result
+    else:
+        return ''
 
 
 def compare_versions(version_1: str, version_2: str) -> int:
@@ -554,9 +593,12 @@ def get_month_from_short_name(month_short_name: str) -> int:
 
 
 def get_historic_data_note(dt: datetime) -> str:
-    timestamp = get_formatted_datetime(dt)
-    result = f'```This is historic data from: {timestamp}```'
-    return result
+    if dt is not None:
+        timestamp = get_formatted_datetime(dt)
+        result = f'{settings.HISTORIC_DATA_NOTE}: {timestamp}'
+        return result
+    else:
+        return None
 
 
 def should_escape_entity_name(entity_name: str) -> bool:
@@ -671,6 +713,12 @@ def is_valid_month(month: str) -> bool:
         except (TypeError, ValueError):
             pass
     return result
+
+
+def make_dict_value_lists_unique(d: Dict[str, Iterable[object]]) -> Dict[str, List[object]]:
+    for key in d.keys():
+        d[key] = list(set(d[key]))
+    return d
 
 
 

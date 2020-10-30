@@ -31,7 +31,7 @@ SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
 
 # ---------- Initilization ----------
 
-ships_designs_retriever = entity.EntityDesignsRetriever(
+ships_designs_retriever = entity.EntityRetriever(
     SHIP_DESIGN_BASE_PATH,
     SHIP_DESIGN_KEY_NAME,
     SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME,
