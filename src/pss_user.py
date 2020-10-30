@@ -101,7 +101,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
             lines.append(f'{detail_name} - {detail_value}')
 
     if is_past_data:
-        lines.append(f'```{util.get_historic_data_note(retrieved_at)}')
+        lines.append(f'``````{util.get_historic_data_note(retrieved_at)}```')
     else:
         lines[-1] += '```'
 
