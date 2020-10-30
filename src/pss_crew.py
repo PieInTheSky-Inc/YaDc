@@ -835,7 +835,7 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
             entity.EntityDetailProperty('Fire resist', True, entity_property_name='FireResistance'),
             entity.EntityDetailProperty('Training cap', True, entity_property_name='TrainingCapacity'),
             entity.EntityDetailProperty('Slots', True, transform_function=__get_slots),
-            entity.EntityDetailProperty('Roles', True, transform_function=__get_pixel_prestige_hyperlink)
+            entity.EntityDetailProperty('Role scores', True, transform_function=__get_pixel_prestige_hyperlink)
         ],
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
