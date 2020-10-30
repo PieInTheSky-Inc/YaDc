@@ -593,9 +593,12 @@ def get_month_from_short_name(month_short_name: str) -> int:
 
 
 def get_historic_data_note(dt: datetime) -> str:
-    timestamp = get_formatted_datetime(dt)
-    result = f'```This is historic data from: {timestamp}```'
-    return result
+    if dt is not None:
+        timestamp = get_formatted_datetime(dt)
+        result = f'{settings.HISTORIC_DATA_NOTE}: {timestamp}'
+        return result
+    else:
+        return None
 
 
 def should_escape_entity_name(entity_name: str) -> bool:

@@ -42,6 +42,9 @@ GDRIVE_SETTINGS_FILE = 'settings.yaml'
 GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
+HISTORIC_DATA_NOTE = 'This is historic data from'
+
+
 IGNORE_SERVER_IDS_FOR_COUNTING = [
     110373943822540800,
     264445053596991498,
@@ -54,6 +57,7 @@ LATEST_SETTINGS_BASE_PATH = 'SettingService/GetLatestVersion3?deviceType=DeviceT
 
 
 MAXIMUM_CHARACTERS = 1900
+MAXIMUM_CHARACTERS_EMBED_DESCRIPTION = 2048
 MIN_ENTITY_NAME_LENGTH = 3
 
 
@@ -93,9 +97,6 @@ VERSION = '1.3.1.0'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
-
-
-
 
 
 

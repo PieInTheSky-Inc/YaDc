@@ -15,6 +15,7 @@ import pss_entity as entity
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
+import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_user as user
 import settings
@@ -22,6 +23,10 @@ import utility as util
 
 
 # ---------- Constants ----------
+
+DIVISION_DESIGN_BASE_PATH = 'DivisionService/ListAllDivisionDesigns2'
+DIVISION_DESIGN_KEY_NAME = 'DivisionDesignId'
+DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'DivisionName'
 
 TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
@@ -48,7 +53,7 @@ def is_valid_division_letter(div_letter: str) -> bool:
 
 
 def __create_top_embeds(title: str, body_lines: List[str], colour: discord.Colour) -> List[discord.Embed]:
-    bodies = util.create_posts_from_lines(body_lines, 2048)
+    bodies = util.create_posts_from_lines(body_lines, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
     result = []
     for body in bodies:
         result.append(util.create_embed(title, description=body, colour=colour))
@@ -208,37 +213,56 @@ async def get_division_stars(division: str = None, fleet_data: dict = None, retr
     else:
         fleet_infos = fleet_data
 
+    divisions_designs_infos = await divisions_designs_retriever.get_data_dict3()
+
     divisions = {}
     if division:
         division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID[division.upper()]
-        divisions[division.upper()] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+        divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
         pass
     else:
         for division_design_id in lookups.DIVISION_DESIGN_ID_TO_CHAR.keys():
             if division_design_id != '0':
-                division_letter = lookups.DIVISION_DESIGN_ID_TO_CHAR[division_design_id]
-                divisions[division_letter] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
+                divisions[division_design_id] = [fleet_info for fleet_info in fleet_infos.values() if fleet_info['DivisionDesignId'] == division_design_id]
 
     if divisions:
+        divisions_texts = []
+        for division_design_id, fleet_infos in divisions.items():
+            divisions_texts.append((division_design_id, _get_division_stars_as_text(fleet_infos)))
+
         result = []
-        for division_letter, fleet_infos in divisions.items():
-            result.extend(_get_division_stars_as_text(division_letter, fleet_infos))
-            result.append(settings.EMPTY_LINE)
-        if result:
+        footer = util.get_historic_data_note(retrieved_date)
+        for division_design_id, division_text in divisions_texts:
+            if as_embed:
+                division_title = _get_division_title(division_design_id, divisions_designs_infos, False)
+                thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
+                embed_bodies = util.create_posts_from_lines(division_text, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                for i, embed_body in enumerate(embed_bodies):
+                    thumbnail_url = thumbnail_url if i == 0 else None
+                    embed = util.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url)
+                    result.append(embed)
+            else:
+                division_title = _get_division_title(division_design_id, divisions_designs_infos, True)
+                result.append(division_title)
+                result.extend(division_text)
+                result.append(settings.EMPTY_LINE)
+
+        if not as_embed:
             result = result[:-1]
-            if retrieved_date is not None:
-                result.append(util.get_historic_data_note(retrieved_date))
+            if footer:
+                result.append(f'```{footer}```')
+
         return result, True
     else:
-        return [], False
+        return [f'An unknown error occured while retrieving division info. Please contact the bot\'s author!'], False
 
 
 def _get_division_stars_as_embed(division_letter: str, fleet_infos: dict):
     return ''
 
 
-def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list:
-    lines = [f'__**Division {division_letter.upper()}**__']
+def _get_division_stars_as_text(fleet_infos: list) -> Tuple[str, list]:
+    lines = []
     fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
     fleet_infos_count = len(fleet_infos)
     for i, fleet_info in enumerate(fleet_infos, start=1):
@@ -255,3 +279,29 @@ def _get_division_stars_as_text(division_letter: str, fleet_infos: list) -> list
             difference = 0
         lines.append(f'**{i:d}.** {stars} (+{difference}) {emojis.star} {fleet_name}{trophy_str}')
     return lines
+
+
+def _get_division_title(division_design_id: str, divisions_designs_infos: entity.EntitiesData, include_markdown: bool) -> str:
+    title = divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    if include_markdown:
+        return f'__**{title}**__'
+    else:
+        return title
+
+
+
+
+
+
+
+
+
+
+# ---------- Initilization ----------
+
+divisions_designs_retriever = entity.EntityRetriever(
+    DIVISION_DESIGN_BASE_PATH,
+    DIVISION_DESIGN_KEY_NAME,
+    DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='DivisionDesigns'
+)

@@ -891,6 +891,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
             if not pss_top.is_valid_division_letter(division):
                 subcommand = BOT.get_command('past stars fleet')
                 await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+                return
             else:
                 month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
                 try:
@@ -899,7 +900,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
                     error = str(err)
                     tourney_data = None
                 if tourney_data:
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
                 elif error:
                     output = [error]
     await util.post_output(ctx, output)
@@ -1124,10 +1125,8 @@ async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=True)
-        output2, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=False)
+        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
-    await util.post_output(ctx, output2)
 
 
 @BOT.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
@@ -1254,18 +1253,17 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
     __log_command_use(ctx)
     if tourney.is_tourney_running():
         async with ctx.typing():
-            async with ctx.typing():
-                output = []
-                if not pss_top.is_valid_division_letter(division):
-                    subcommand = BOT.get_command('stars fleet')
-                    await ctx.invoke(subcommand, fleet_name=division)
-                else:
-                    async with ctx.typing():
-                        output, _ = await pss_top.get_division_stars(division=division)
-            await util.post_output(ctx, output)
+            if not pss_top.is_valid_division_letter(division):
+                subcommand = BOT.get_command('stars fleet')
+                await ctx.invoke(subcommand, fleet_name=division)
+                return
+            else:
+                output, _ = await pss_top.get_division_stars(division=division, as_embed=(await __get_use_embeds(ctx.guild)))
+        await util.post_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')
         await ctx.invoke(cmd, month=None, year=None, division=division)
+        return
 
 
 @cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
@@ -1314,6 +1312,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
     else:
         cmd = BOT.get_command('past stars fleet')
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
+        return
 
 
 @BOT.command(name='stats', aliases=['stat'], brief='Get item/crew stats')
@@ -1442,6 +1441,7 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
             command = 'fleets'
         cmd = BOT.get_command(f'top {command}')
         await ctx.invoke(cmd, count=count)
+        return
 
 
 @cmd_top.command(name='players', aliases=['captains', 'users'], brief='Prints top captains')
@@ -1506,6 +1506,7 @@ async def cmd_tournament(ctx: commands.Context):
     if ctx.invoked_subcommand is None:
         cmd = BOT.get_command('tournament current')
         await ctx.invoke(cmd)
+        return
 
 
 @cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
@@ -2244,6 +2245,7 @@ async def cmd_settings_get_prefix(ctx: commands.Context):
 
     command = BOT.get_command('prefix')
     await ctx.invoke(command)
+    return
 
 
 @BOT.command(name='prefix', brief='Retrieve prefix settings')
@@ -2303,6 +2305,7 @@ async def cmd_settings_reset(ctx: commands.Context):
         await ctx.invoke(reset_autodaily)
         await ctx.invoke(reset_pagination)
         await ctx.invoke(reset_prefix)
+        return
 
 
 @cmd_settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
@@ -2462,6 +2465,7 @@ async def cmd_settings_reset_embeds(ctx: commands.Context):
             success = await guild_settings.reset_use_embeds()
         if success:
             await ctx.invoke(BOT.get_command(f'settings embed'))
+            return
         else:
             output = [
                 'An error ocurred while trying to reset the embed settings for this server.',
@@ -2495,6 +2499,7 @@ async def cmd_settings_reset_pagination(ctx: commands.Context):
             success = await guild_settings.reset_use_pagination()
         if success:
             await ctx.invoke(BOT.get_command(f'settings pagination'))
+            return
         else:
             output = [
                 'An error ocurred while trying to reset the pagination settings for this server.',
@@ -2605,6 +2610,7 @@ async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel
         success = await autodaily_settings.set_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily channel'))
+        return
     else:
         output = [f'Could not set autodaily channel for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2634,6 +2640,7 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
         success = await autodaily_settings.toggle_change_mode()
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily changemode'))
+        return
     else:
         output = [f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2665,6 +2672,7 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
         success = await guild_settings.set_bot_news_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings botnews'))
+        return
     else:
         output = [f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2701,6 +2709,7 @@ async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
         success = await guild_settings.set_use_embeds(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings embed'))
+        return
     else:
         output = [f'Could not set embed settings for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2737,6 +2746,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
         success = await guild_settings.set_use_pagination(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings pagination'))
+        return
     else:
         output = [f'Could not set pagination settings for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2769,6 +2779,7 @@ async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
         success = await guild_settings.set_prefix(prefix)
     if success:
         await ctx.invoke(BOT.get_command('settings prefix'))
+        return
     else:
         output = [f'Could not set prefix for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
