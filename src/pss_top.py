@@ -199,7 +199,7 @@ def __prepare_top_captains(users_data: entity.EntitiesData, skip: int, take: int
 
 # ---------- Stars info ----------
 
-async def get_division_stars(division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
+async def get_division_stars(ctx: commands.Context, division: str = None, fleet_data: dict = None, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS):
     if division:
         pss_assert.valid_parameter_value(division, 'division', min_length=1, allowed_values=ALLOWED_DIVISION_LETTERS)
         if division == '-':
@@ -232,6 +232,7 @@ async def get_division_stars(division: str = None, fleet_data: dict = None, retr
 
         result = []
         footer = util.get_historic_data_note(retrieved_date)
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
         for division_design_id, division_text in divisions_texts:
             if as_embed:
                 division_title = _get_division_title(division_design_id, divisions_designs_infos, False)
@@ -239,7 +240,7 @@ async def get_division_stars(division: str = None, fleet_data: dict = None, retr
                 embed_bodies = util.create_posts_from_lines(division_text, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
                 for i, embed_body in enumerate(embed_bodies):
                     thumbnail_url = thumbnail_url if i == 0 else None
-                    embed = util.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url)
+                    embed = util.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     result.append(embed)
             else:
                 division_title = _get_division_title(division_design_id, divisions_designs_infos, True)
