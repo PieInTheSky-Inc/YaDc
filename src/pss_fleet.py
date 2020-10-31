@@ -13,7 +13,7 @@ import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
 import pss_tournament as tourney
-import pss_top
+import pss_top as top
 import pss_user as user
 import settings
 import utility as util
@@ -85,7 +85,7 @@ def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityInfo) -> st
 def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
     result = None
     if fleet_info:
-        division_design_id = fleet_info.get(pss_top.DIVISION_DESIGN_KEY_NAME)
+        division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
         if division_design_id is not None and division_design_id != '0':
             result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
     return result
@@ -277,6 +277,14 @@ async def _get_search_fleet_users_base_path(fleet_id: str) -> str:
     return result
 
 
+def is_tournament_fleet(fleet_info: entity.EntityInfo) -> bool:
+    try:
+        division_design_id = int(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME, '0'))
+        return division_design_id > 0
+    except:
+        return False
+
+
 
 
 
@@ -363,7 +371,7 @@ async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data:
 
 def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None) -> list:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME]]
+    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
     fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
@@ -388,7 +396,7 @@ def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dic
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
-        fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][pss_top.DIVISION_DESIGN_KEY_NAME]
+        fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
     return get_fleet_users_stars_from_info(fleet_info, fleet_users_infos, retrieved_date=retrieved_date)
 
