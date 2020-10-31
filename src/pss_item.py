@@ -760,7 +760,6 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
 
 def get_include_partial_artifacts(item_info: entity.EntityInfo) -> bool:
     item_name = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-    result = any(artifact_indicator in item_name for artifact_indicator in ARTIFACTS_INDICATORS)
     result = RX_ARTIFACTS_INDICATORS.search(item_name) is not None
     return result
 
