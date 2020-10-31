@@ -37,6 +37,18 @@ ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ItemDesignName'
 
+RX_ARTIFACTS_INDICATORS = re.compile(r'\(\w{1,2}\)|fragment', re.IGNORECASE)
+
+ARTIFACTS_INDICATORS = [
+    '(au)',
+    '(c)',
+    '(dm)',
+    '(fe)',
+    'fragment',
+    '(si)',
+    '(ti)'
+]
+
 CANNOT_BE_SOLD = 'Can\'t be sold'
 
 
@@ -327,7 +339,7 @@ def _get_item_ingredients_as_text(item_info, ingredients_dicts, item_design_data
     return lines
 
 
-def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent_amount: int = 1) -> List[Tuple[str, str, list]]:
+def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, include_partial_artifacts: bool, parent_amount: int = 1) -> List[Tuple[str, str, list]]:
     """returns a tree structure: [(item_id, item_amount, item_ingredients[])]"""
     if not ingredients_str:
         return []
@@ -341,9 +353,9 @@ def _parse_ingredients_tree(ingredients_str: str, item_design_data: dict, parent
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME].lower()
         item_amount = int(item_amount)
         # Filter out void particles and fragments
-        if 'void particle' not in item_name and ' fragment' not in item_name:
+        if include_partial_artifacts or ('void particle' not in item_name and ' fragment' not in item_name):
             combined_amount = item_amount * parent_amount
-            item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, combined_amount)
+            item_ingredients = _parse_ingredients_tree(item_info['Ingredients'], item_design_data, include_partial_artifacts, combined_amount)
             result.append((item_id, combined_amount, item_ingredients))
 
     return result
@@ -554,7 +566,8 @@ def __create_upgrade_details_collection_from_infos(items_designs_infos: List[ent
 # ---------- Transformation functions ----------
 
 def __get_all_ingredients(item_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData = None, **kwargs) -> str:
-    ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], items_data)
+    include_partial_artifacts = get_include_partial_artifacts(item_info)
+    ingredients_tree = _parse_ingredients_tree(item_info['Ingredients'], items_data, include_partial_artifacts)
     ingredients_dicts = _flatten_ingredients_tree(ingredients_tree)
     ingredients_dicts = [d for d in ingredients_dicts if d]
     lines = []
@@ -743,6 +756,13 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
                 if temp_slot in lookups.STAT_TYPES_LOOKUP and temp_stat in lookups.EQUIPMENT_SLOTS_LOOKUP:
                     slot, stat = temp_stat, temp_slot
     return slot, stat
+
+
+def get_include_partial_artifacts(item_info: entity.EntityInfo) -> bool:
+    item_name = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    result = any(artifact_indicator in item_name for artifact_indicator in ARTIFACTS_INDICATORS)
+    result = RX_ARTIFACTS_INDICATORS.search(item_name) is not None
+    return result
 
 
 def get_item_details_by_id(item_design_id: str, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> entity.EntityDetails:
