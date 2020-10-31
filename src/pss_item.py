@@ -459,7 +459,7 @@ def _get_item_upgrades_as_text(item_name: str, item_infos: dict, item_design_dat
                 ingredient_info = item_design_data[item_id]
                 lines.append(f'> {ingredient_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]} x{amount}')
     else:
-        lines.append(f'No item with the a name like {item_name} can be upgraded.')
+        lines.append(f'No item with a name like {item_name} can be upgraded.')
 
     return lines
 
