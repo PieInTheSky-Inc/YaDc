@@ -79,9 +79,9 @@ async def get_item_details_by_name(item_name: str, ctx: commands.Context, as_emb
         items_details_collection = __create_base_details_collection_from_infos(item_infos, items_data, trainings_data)
 
         if as_embed:
-            return (await items_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await items_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
         else:
-            return (await items_details_collection.get_entity_details_as_text()), True
+            return (await items_details_collection.get_entity_details_as_text(custom_footer_text=resources.get_resource('PRICE_NOTE'))), True
 
 
 def _get_key_for_base_items_sort(item_info: dict, items_data: entity.EntitiesData) -> str:
