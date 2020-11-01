@@ -2120,7 +2120,7 @@ async def cmd_settings(ctx: commands.Context):
             output.extend(guild_settings.autodaily.get_pretty_settings())
             output.extend(guild_settings.get_pretty_bot_news_channel())
             output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
-            output.append(f'Prefix = {guild_settings.prefix}')
+            output.append(f'Prefix = `{guild_settings.prefix}``')
             output.append(f'Use embeds = {guild_settings.pretty_use_embeds}')
         await util.post_output(ctx, output)
 
@@ -2599,7 +2599,7 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
             success = await guild_settings.reset_prefix()
         if success:
-            output = [f'Successfully reset the prefix for this server to: {guild_settings.prefix}']
+            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}``']
             await util.post_output(ctx, output)
         else:
             output = [
