@@ -25,6 +25,8 @@ import settings
 
 ONE_DAY = timedelta(days=1)
 
+RX_DISCORD_INVITE = re.compile(r'(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?')
+
 
 
 
@@ -229,7 +231,7 @@ async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_cha
         await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
-def create_embed(title, description=None, colour=None, fields=None, thumbnail_url=None, image_url=None, icon_url=None, author_url=None, footer=None, footer_icon_url=None, timestamp=None):
+def create_embed(title: str, description: str = None, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, image_url: str = None, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, timestamp: datetime = None) -> discord.Embed:
     result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty, timestamp=timestamp or discord.Embed.Empty)
     if title and title != discord.Embed.Empty:
         result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
@@ -242,11 +244,34 @@ def create_embed(title, description=None, colour=None, fields=None, thumbnail_ur
         result.set_image(url=image_url)
     if footer:
         result.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
-    else:
-        if timestamp:
-            result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+    elif timestamp:
+        result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
 
     return result
+
+
+def create_basic_embeds(title: str, repeat_title: bool = True, description: List[str] = None, colour: discord.Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+    result = []
+    if description:
+        embed_bodies = create_posts_from_lines(description, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+        body_count = len(embed_bodies)
+        for i, embed_body in enumerate(embed_bodies):
+            embed = create_embed(discord.Embed.Empty, description=embed_body, colour=colour)
+            if title and title != discord.Embed.Empty and (i == 0 or repeat_title):
+                embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+            if thumbnail_url and (i == 0 or repeat_thumbnail):
+                embed.set_thumbnail(url=thumbnail_url)
+            if image_url and (i == body_count or repeat_image):
+                embed.set_image(url=image_url)
+            if timestamp and (i == body_count or repeat_timestamp):
+                embed.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+                embed.timestamp = timestamp
+            if footer and (i == body_count or repeat_footer):
+                embed.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+            result.append(embed)
+        return result
+    else:
+        return [create_embed(title, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, footer=footer, timestamp=timestamp)]
 
 
 def get_bot_member_colour(bot, guild):

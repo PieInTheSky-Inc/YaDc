@@ -14,6 +14,7 @@ import pss_login as login
 import pss_lookups as lookups
 import pss_ship as ship
 import pss_top as top
+import pss_tournament as tourney
 import pss_user as user
 import settings
 import utility as util
@@ -68,6 +69,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
 
     user_id = user_info[USER_KEY_NAME]
     retrieved_at = retrieved_at or util.get_utcnow()
+    tourney_running = tourney.is_tourney_running(utc_now=retrieved_at)
     if past_fleet_infos:
         ship_info = {}
         fleet_info = past_fleet_infos.get(user_info.get(fleet.FLEET_KEY_NAME))
@@ -77,6 +79,8 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
 
     user_name = __get_user_name_as_text(user_info)
 
+    is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
+
     details = {
         'Account created': __get_timestamp_as_text(user_info, 'CreationDate', retrieved_at),
         'Last login': __get_timestamp_as_text(user_info, 'LastLoginDate', retrieved_at),
@@ -85,7 +89,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
         'Joined fleet': __get_fleet_joined_at_as_text(user_info, fleet_info, retrieved_at),
         'Trophies': __get_trophies_as_text(user_info),
         'League': __get_league_as_text(user_info),
-        'Stars': __get_stars_as_text(user_info),
+        'Stars': __get_stars_as_text(user_info, is_in_tourney_fleet),
         'Crew donated': __get_crew_donated_as_text(user_info, fleet_info),
         'Crew borrowed': __get_crew_borrowed_as_text(user_info, fleet_info),
         'PVP win/lose/draw': __get_pvp_attack_stats_as_text(user_info),
@@ -245,11 +249,14 @@ def __get_ship_status_as_text(ship_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_stars_as_text(user_info: entity.EntityInfo) -> str:
+def __get_stars_as_text(user_info: entity.EntityInfo, is_in_tourney_fleet: bool) -> str:
     result = None
     stars = user_info.get('AllianceScore')
-    if stars is not None and stars != '0':
+    if is_in_tourney_fleet or (stars is not None and stars != '0'):
         result = stars
+        attempts = user_info.get('TournamentBonusScore')
+        if attempts is not None and is_in_tourney_fleet:
+            result += f' ({attempts} attempts today)'
     return result
 
 

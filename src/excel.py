@@ -1,4 +1,7 @@
 import datetime
+from enum import IntEnum
+import os
+from typing import Dict
 import openpyxl
 import openpyxl.utils.dataframe
 import pandas
@@ -17,13 +20,35 @@ __BASE_TABLE_STYLE = openpyxl.worksheet.table.TableStyleInfo(name="TableStyleLig
 __EARLIEST_EXCEL_DATETIME = datetime.datetime(1900, 1, 1, tzinfo=datetime.timezone.utc)
 
 
+class FILE_ENDING(IntEnum):
+    CSV = 1
+    JSON = 2
+    XL = 3
+    XML = 4
+
+
+__FILE_ENDING_LOOKUP: Dict[FILE_ENDING, str] = {
+    FILE_ENDING.CSV: 'csv',
+    FILE_ENDING.JSON: 'json',
+    FILE_ENDING.XL: 'xlsx',
+    FILE_ENDING.XML: 'xml'
+}
+
+
+
+
+
+
+
+
+
 def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetime.datetime, column_formats: list, file_name: str = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = util.get_utcnow()
     if file_name:
         save_to = file_name
     else:
-        save_to = get_file_name(file_prefix, data_retrieved_at)
+        save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -43,10 +68,36 @@ def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetim
     return save_to
 
 
+def create_csv_from_data(data: list, file_prefix: str, data_retrieved_at: datetime.datetime, column_formats: list, file_name: str = None, delimiter: str = '\t') -> str:
+    if data_retrieved_at is None:
+        data_retrieved_at = util.get_utcnow()
+    if file_name:
+        save_to = file_name
+    else:
+        save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.CSV)
+
+    if not delimiter:
+        delimiter = '\t'
+
+    lines = [
+        delimiter.join([
+            str(field)
+            for field
+            in line
+        ])
+        for line
+        in data
+    ]
+
+    with open(save_to, mode='w') as fp:
+        fp.write('\n'.join(lines))
+    return save_to
+
+
 def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, file_prefix: str, data_retrieved_at: datetime.datetime = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = util.get_utcnow()
-    save_to = get_file_name(file_prefix, data_retrieved_at, consider_tourney=False)
+    save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
 
     #wb = openpyxl.Workbook()
     #ws: openpyxl.worksheet.worksheet.Worksheet = wb.active
@@ -71,13 +122,16 @@ def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, fil
     return save_to
 
 
-def get_file_name(file_prefix: str, data_retrieved_at: datetime, consider_tourney: bool = True) -> str:
+def get_file_name(file_prefix: str, data_retrieved_at: datetime, file_ending: FILE_ENDING, consider_tourney: bool = True) -> str:
+    if not file_ending or file_ending not in __FILE_ENDING_LOOKUP.keys():
+        file_ending = FILE_ENDING.XL
     file_prefix = file_prefix.replace(' ', '_')
     if consider_tourney and tourney.is_tourney_running(utc_now=data_retrieved_at):
         file_timestamp = f'tournament-{data_retrieved_at.year}-{util.get_month_short_name(data_retrieved_at).lower()}'
     else:
         file_timestamp = data_retrieved_at.strftime('%Y%m%d-%H%M%S')
-    result = f'{file_prefix}_{file_timestamp}.xlsx'
+    suffix = __FILE_ENDING_LOOKUP[file_ending]
+    result = f'{file_prefix}_{file_timestamp}.{suffix}'
     return result
 
 

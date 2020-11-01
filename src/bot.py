@@ -959,7 +959,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
 
         if fleet_info:
             async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+                output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     elif error:
         output = [str(error)]
     else:
@@ -1020,6 +1020,46 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
         output = [str(error)]
     else:
         output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+    await util.post_output(ctx, output)
+
+
+@cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        try:
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        except ValueError as err:
+            error = str(err)
+            tourney_data = None
+
+    if tourney_data and tourney_data.fleets and tourney_data.users:
+        async with ctx.typing():
+            file_name = f'tournament_results_{year}-{month}.csv'
+            file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+        await util.post_output_with_files(ctx, [], file_paths)
+        for file_path in file_paths:
+            os.remove(file_path)
+        return
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!']
     await util.post_output(ctx, output)
 
 
@@ -1314,7 +1354,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             if fleet_info:
                 async with ctx.typing():
                     fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
-                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
+                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await __get_use_embeds(ctx.guild)))
                 await util.post_output(ctx, output)
         else:
             await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
@@ -2080,7 +2120,7 @@ async def cmd_settings(ctx: commands.Context):
             output.extend(guild_settings.autodaily.get_pretty_settings())
             output.extend(guild_settings.get_pretty_bot_news_channel())
             output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
-            output.append(f'Prefix = {guild_settings.prefix}')
+            output.append(f'Prefix = `{guild_settings.prefix}``')
             output.append(f'Use embeds = {guild_settings.pretty_use_embeds}')
         await util.post_output(ctx, output)
 
@@ -2283,10 +2323,18 @@ async def cmd_prefix(ctx: commands.Context):
       /prefix - Prints the prefix setting for the current Discord server/guild.
     """
     __log_command_use(ctx)
-    channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
+
     async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
+        channel_type = ''
+        prefix = ''
+        if util.is_guild_channel(ctx.channel):
+            channel_type = 'server'
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            prefix = guild_settings.prefix
+        else:
+            channel_type = 'channel'
+            prefix = settings.DEFAULT_PREFIX
+        output = [f'Prefix for this {channel_type} is: `{prefix}`']
     await util.post_output(ctx, output)
 
 
@@ -2551,7 +2599,7 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
             success = await guild_settings.reset_prefix()
         if success:
-            output = [f'Successfully reset the prefix for this server to: {guild_settings.prefix}']
+            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}``']
             await util.post_output(ctx, output)
         else:
             output = [
