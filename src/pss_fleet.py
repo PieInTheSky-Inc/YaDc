@@ -218,15 +218,15 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
             util.format_excel_datetime(retrieval_date),
-            fleet_name,
-            user_info[user.USER_DESCRIPTION_PROPERTY_NAME],
-            user_info['AllianceMembership'],
+            fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, '')),
+            user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''),
+            user_info.get('AllianceMembership', ''),
             util.convert_pss_timestamp_to_excel(last_login_date),
-            int(user_info['Trophy']),
-            int(user_info['AllianceScore']),
+            int(user_info['Trophy']) if 'Trophy' in user_info else '',
+            int(user_info['AllianceScore'] if 'AllianceScore' in user_info else ''),
             util.convert_pss_timestamp_to_excel(alliance_join_date),
-            int(user_info.get('CrewDonated', '0')),
-            int(user_info.get('CrewReceived', '0')),
+            int(user_info['CrewDonated']) if 'CrewDonated' in user_info else '',
+            int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False)
         ]
@@ -253,12 +253,23 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
         fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
 
     post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, retrieved_at=retrieved_at, is_past_data=is_past_data)
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
-    fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, consider_tourney=False)
-    fleet_sheet_path_current = excel.create_xl_from_data(fleet_sheet_contents, fleet_name, retrieved_at, FLEET_SHEET_COLUMN_TYPES, file_name=fleet_sheet_file_name)
+    fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
+    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_infos, retrieved_at, fleet_sheet_file_name)
     file_paths = [fleet_sheet_path_current]
 
     return post_content, file_paths
+
+
+def create_fleet_sheet_csv(fleet_users_infos: entity.EntitiesData, retrieved_at: datetime, file_name: str) -> str:
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
+    fleet_sheet_path = excel.create_csv_from_data(fleet_sheet_contents, None, None, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
+    return fleet_sheet_path
+
+
+def create_fleet_sheet_xl(fleet_users_infos: entity.EntitiesData, retrieved_at: datetime, file_name: str) -> str:
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
+    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
+    return fleet_sheet_path
 
 
 async def _get_search_fleets_base_path(fleet_name: str) -> str:

@@ -1023,6 +1023,46 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
     await util.post_output(ctx, output)
 
 
+@cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        try:
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        except ValueError as err:
+            error = str(err)
+            tourney_data = None
+
+    if tourney_data and tourney_data.fleets and tourney_data.users:
+        async with ctx.typing():
+            file_name = f'tournament_results_{year}-{month}.csv'
+            file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+        await util.post_output_with_files(ctx, [], file_paths)
+        for file_path in file_paths:
+            os.remove(file_path)
+        return
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!']
+    await util.post_output(ctx, output)
+
+
 @cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
