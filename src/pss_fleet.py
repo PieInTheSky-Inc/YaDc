@@ -155,7 +155,6 @@ def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-
 async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, retrieved_at: datetime = None, is_past_data: bool = False) -> list:
     fleet_name = __get_name(fleet_info)
     description = __get_description_as_text(fleet_info)
