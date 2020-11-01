@@ -1050,7 +1050,7 @@ async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = 
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
         async with ctx.typing():
-            file_name = f'tournament_results_{year}-{month}.csv'
+            file_name = f'tournament_results_{year}-{util.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
             file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
         await util.post_output_with_files(ctx, [], file_paths)
         for file_path in file_paths:
