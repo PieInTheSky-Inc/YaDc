@@ -38,7 +38,8 @@ FLEET_SHEET_COLUMN_NAMES = [
     'Crew Donated',
     'Crew Borrowed',
     'Logged in ago',
-    'Joined ago'
+    'Joined ago',
+    'Tournament battle attempts today'
 ]
 FLEET_SHEET_COLUMN_TYPES = [
     settings.EXCEL_COLUMN_FORMAT_DATETIME,
@@ -52,7 +53,8 @@ FLEET_SHEET_COLUMN_TYPES = [
     settings.EXCEL_COLUMN_FORMAT_NUMBER,
     settings.EXCEL_COLUMN_FORMAT_NUMBER,
     None,
-    None
+    None,
+    settings.EXCEL_COLUMN_FORMAT_NUMBER
 ]
 
 
@@ -204,6 +206,7 @@ async def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_inf
 
 def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None) -> list:
     result = [FLEET_SHEET_COLUMN_NAMES]
+    tourney_running = tourney.is_tourney_running(retrieval_date)
 
     for user_info in fleet_users_infos.values():
         last_login_date = user_info.get('LastLoginDate')
@@ -228,7 +231,8 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             int(user_info['CrewDonated']) if 'CrewDonated' in user_info else '',
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
-            util.get_formatted_timedelta(joined_ago, include_relative_indicator=False)
+            util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
+            int(user_info['TournamentBonusScore']) if tourney_running and 'TournamentBonusScore' in user_info else ''
         ]
         result.append(line)
     return result
