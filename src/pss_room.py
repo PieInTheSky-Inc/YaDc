@@ -244,7 +244,7 @@ def _get_room_infos(room_name: str, rooms_data: entity.EntitiesData) -> List[ent
 
 
 def _get_room_design_ids_from_name(room_name: str, rooms_data: entity.EntitiesData, room_level: str = None) -> List[str]:
-    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name, fix_data_delegate=__fix_room_data_delegate)
+    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, room_name)
     if room_level and room_level > 0:
         results = [result for result in results if int(rooms_data[result].get('Level', '-1')) == room_level]
     return results
@@ -716,12 +716,6 @@ def __is_allowed_room_type(room_info: entity.EntityInfo, allowed_room_types: Ite
 
 # ---------- Helper functions ----------
 
-def __fix_room_data_delegate(room_name: str):
-    result = RX_FIX_ROOM_NAME.sub('', room_name)
-    result = core._fix_property_value(result)
-    return result
-
-
 def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: str, volley_delay: str, print_percent: bool) -> str:
     """Returns base dps and dps per power"""
     if dmg:
@@ -858,8 +852,7 @@ async def init():
         ROOM_DESIGN_KEY_NAME,
         ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
         cache_name='RoomDesigns',
-        sorted_key_function=_get_key_for_room_sort,
-        fix_data_delegate=__fix_room_data_delegate
+        sorted_key_function=_get_key_for_room_sort
     )
     rooms_designs_purchases_retriever = entity.EntityRetriever(
         ROOM_DESIGN_PURCHASE_BASE_PATH,
