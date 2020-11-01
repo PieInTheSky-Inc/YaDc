@@ -2323,10 +2323,18 @@ async def cmd_prefix(ctx: commands.Context):
       /prefix - Prints the prefix setting for the current Discord server/guild.
     """
     __log_command_use(ctx)
-    channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
+
     async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
+        channel_type = ''
+        prefix = ''
+        if util.is_guild_channel(ctx.channel):
+            channel_type = 'server'
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            prefix = guild_settings.prefix
+        else:
+            channel_type = 'channel'
+            prefix = settings.DEFAULT_PREFIX
+        output = [f'Prefix for this {channel_type} is: `{prefix}`']
     await util.post_output(ctx, output)
 
 
