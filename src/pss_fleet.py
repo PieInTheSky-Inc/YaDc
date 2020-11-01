@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
+import discord.ext.commands as commands
 from typing import Tuple
 
 import emojis
@@ -12,6 +13,7 @@ import pss_entity as entity
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
+import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_top as top
 import pss_user as user
@@ -369,36 +371,46 @@ async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data:
     return list(result.values())
 
 
-def get_fleet_users_stars_from_info(fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None) -> list:
+async def get_fleet_users_stars_from_info(ctx: commands.Context, fleet_info: dict, fleet_users_infos: dict, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> list:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
     fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
 
-    lines = [f'**{fleet_name} member stars (division {division})**']
+    title = f'{fleet_name} member stars (division {division})'
+    lines = []
     for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
         user_name = util.escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
+        fleet_membership = user_info.get('AllianceMembership')
         if i < fleet_users_infos_count:
             difference = int(user_info['AllianceScore']) - int(fleet_users_infos[i]['AllianceScore'])
         else:
             difference = 0
-        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name}')
+        user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
+        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({user_rank})')
 
-    if retrieved_date is not None:
-        lines.append(f'```{util.get_historic_data_note(retrieved_date)}```')
+    footer_text = util.get_historic_data_note(retrieved_date)
 
-    return lines
+    if as_embed:
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
+        result = util.create_basic_embeds(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
+        return result
+    else:
+        if retrieved_date is not None:
+            lines.append(f'```{footer_text}```')
+        return lines
 
 
-def get_fleet_users_stars_from_tournament_data(fleet_info: dict, fleet_data: dict, user_data: dict, retrieved_date: datetime) -> list:
+async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: dict, fleet_data: dict, user_data: dict, retrieved_date: datetime, as_embed: bool = settings.USE_EMBEDS) -> list:
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return get_fleet_users_stars_from_info(fleet_info, fleet_users_infos, retrieved_date=retrieved_date)
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_date=retrieved_date, as_embed=as_embed)
 
 
 

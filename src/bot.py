@@ -959,7 +959,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
 
         if fleet_info:
             async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+                output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     elif error:
         output = [str(error)]
     else:
@@ -1314,7 +1314,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             if fleet_info:
                 async with ctx.typing():
                     fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
-                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
+                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await __get_use_embeds(ctx.guild)))
                 await util.post_output(ctx, output)
         else:
             await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
