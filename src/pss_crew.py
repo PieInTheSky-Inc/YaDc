@@ -450,7 +450,7 @@ def get_level_costs(ctx: commands.Context, from_level: int, to_level: int = None
         embed_color = util.get_bot_member_colour(ctx.bot, ctx.guild)
         fields = [
             ('Non-legendary crew', '\n'.join(crew_cost_txt), False),
-            ('Legendary crew', '\n'.join(crew_cost_txt), False)
+            ('Legendary crew', '\n'.join(legendary_crew_cost_txt), False)
         ]
         result = [util.create_embed(title='Level costs', fields=fields, colour=embed_color, footer='Note: Gas costs are higher, if "Advanced Training 7" hasn\'t been reseached, yet.')]
     else:
