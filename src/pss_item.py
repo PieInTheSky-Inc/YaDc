@@ -130,16 +130,35 @@ async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_
         result = []
         if as_embed:
             for title, best_items_collection in groups.items():
-                embeds = await best_items_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))
+                footer = __get_footer_text_for_group(title, as_embed)
+                embeds = await best_items_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_footer_text=footer)
                 result.extend(embeds)
             return result, True
         else:
+            module_title = None
             for title, best_items_collection in groups.items():
+                if 'module' in title.lower():
+                    module_title = title
                 texts = await best_items_collection.get_entity_details_as_text(custom_title=title)
                 result.extend(texts)
                 result.append(settings.EMPTY_LINE)
-            result.append(resources.get_resource('PRICE_NOTE'))
+            footer = __get_footer_text_for_group(module_title, as_embed)
+            result.append(footer)
             return result, True
+
+
+def __get_footer_text_for_group(group_title: str, as_embed: bool) -> str:
+    result = []
+    if group_title and 'module' in group_title.lower():
+        if as_embed:
+            result.append(resources.get_resource('HERO_MODULE_NOTE_EMBED'))
+        else:
+            result.append(resources.get_resource('HERO_MODULE_NOTE'))
+    if as_embed:
+        result.append(resources.get_resource('PRICE_NOTE_EMBED'))
+    else:
+        result.append(resources.get_resource('PRICE_NOTE'))
+    return '\n'.join(result)
 
 
 async def __get_collection_groups(best_items: Dict[str, List[entity.EntityDetails]], ctx: commands.Context, stat: str, as_embed: bool) -> Dict[str, entity.EntityDetailsCollection]:
