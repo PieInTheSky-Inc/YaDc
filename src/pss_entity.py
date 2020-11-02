@@ -14,6 +14,7 @@ from xml.etree import ElementTree
 
 from cache import PssCache
 import pss_core as core
+import pss_exception
 import settings
 import utility as util
 
@@ -501,7 +502,10 @@ class EntityDetails(object):
 
 
     async def get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
-        title, description = await self.__get_title_and_description(EntityDetailsType.EMBED if as_embed else details_type)
+        details_type = details_type or (EntityDetailsType.EMBED if as_embed else None)
+        if not details_type:
+            raise pss_exception.Error('You have to specify a details_type or set as_embed to True!')
+        title, description = await self.__get_title_and_description(details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
 
