@@ -10,8 +10,8 @@ import emojis
 ALLIANCE_MEMBERSHIP: Dict[str, str] = {
     'Candidate': 'Candidate',
     'Ensign': 'Ensign',
-    'Major': 'Major',
     'Lieutenant': 'Lieutenant',
+    'Major': 'Major',
     'Commander': 'Commander',
     'ViceAdmiral': 'Vice Admiral',
     'FleetAdmiral': 'Fleet Admiral'
@@ -22,8 +22,8 @@ ALLIANCE_MEMBERSHIP_LOOKUP: List[str] = [
     'FleetAdmiral',
     'ViceAdmiral',
     'Commander',
-    'Lieutenant',
     'Major',
+    'Lieutenant',
     'Ensign',
     'Candidate'
 ]
