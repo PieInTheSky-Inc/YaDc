@@ -48,9 +48,9 @@ BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
 async def get_training_details_from_id(training_id: str, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData = None, researches_data: entity.EntitiesData = None) -> entity.EntityDetails:
     if not items_data:
-        items_data = item.items_designs_retriever.get_data_dict3()
+        items_data = await item.items_designs_retriever.get_data_dict3()
     if not researches_data:
-        researches_data = research.researches_designs_retriever.get_data_dict3()
+        researches_data = await research.researches_designs_retriever.get_data_dict3()
     training_info = trainings_data[training_id]
     result = __create_training_details_from_info(training_info, trainings_data, items_data, researches_data)
     return result
