@@ -17,6 +17,7 @@ import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_top as top
 import pss_user as user
+from pss_user import USER_KEY_NAME
 import settings
 import utility as util
 
@@ -203,8 +204,12 @@ async def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_inf
     return await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
 
 
-def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None) -> list:
+def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> list:
     result = [FLEET_SHEET_COLUMN_NAMES]
+    if include_player_id:
+        result[0].append('Player ID')
+    if include_fleet_id:
+        result[0].append('Fleet ID')
     tourney_running = tourney.is_tourney_running(retrieval_date)
 
     for user_info in fleet_users_infos.values():
@@ -231,7 +236,9 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
-            int(user_info['TournamentBonusScore']) if tourney_running and 'TournamentBonusScore' in user_info else ''
+            int(user_info['TournamentBonusScore']) if tourney_running and 'TournamentBonusScore' in user_info else '',
+            user_info.get(user.USER_KEY_NAME, '') if include_player_id else '',
+            user_info.get(FLEET_KEY_NAME, '') if include_fleet_id else ''
         ]
         result.append(line)
     return result
@@ -264,7 +271,7 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
 
 
 def create_fleet_sheet_csv(fleet_users_infos: entity.EntitiesData, retrieved_at: datetime, file_name: str) -> str:
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at, include_player_id=True, include_fleet_id=True)
     fleet_sheet_path = excel.create_csv_from_data(fleet_sheet_contents, None, None, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
     return fleet_sheet_path
 
