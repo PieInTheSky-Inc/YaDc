@@ -689,7 +689,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
       collection_name: The name of the collection to get details on.
 
     Examples:
-      /collection_name savy - Will print information on a collection having 'savy' in its name.
+      /collection savy - Will print information on a collection having 'savy' in its name.
       /collection - Will print less information on all collections.
 
     Notes:
