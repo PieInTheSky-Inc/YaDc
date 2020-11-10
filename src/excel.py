@@ -56,8 +56,8 @@ def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetim
     for item in data:
         ws.append(item)
 
-    col_count = len(list(ws.columns)) + 1
-    row_count = len(list(ws.rows)) + 1
+    col_count = len(data[0]) + 1
+    row_count = len(data) + 1
     for i, col_no in enumerate(range(1, col_count)):
         column_format = column_formats[i]
         if column_format:
