@@ -3042,17 +3042,15 @@ async def cmd_device_login(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        error = None
         try:
             access_token = await login.DEVICES.get_access_token()
+            device = login.DEVICES.current
         except Exception as err:
-            error = err
             access_token = None
-        device = login.DEVICES.current
     if access_token is not None:
         await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
     else:
-        await ctx.send(f'Could not log in with device \'{device.key}\':```{error}```')
+        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
 
 
 @cmd_device.command(name='remove', aliases=['delete', 'yeet'], brief='remove device', hidden=True)
