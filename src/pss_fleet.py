@@ -16,6 +16,7 @@ import pss_lookups as lookups
 import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_top as top
+from pss_tournament import is_tourney_running
 import pss_user as user
 from pss_user import USER_KEY_NAME
 import settings
@@ -207,13 +208,13 @@ async def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_inf
     return await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
 
 
-def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> list:
+def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> list:
     result = [FLEET_SHEET_COLUMN_NAMES]
     if include_player_id:
         result[0].append('Player ID')
     if include_fleet_id:
         result[0].append('Fleet ID')
-    tourney_running = tourney.is_tourney_running(retrieval_date)
+    tourney_running = tourney.is_tourney_running(retrieved_at)
 
     for user_info in fleet_users_infos.values():
         last_login_date = user_info.get('LastLoginDate')
@@ -221,13 +222,18 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
         logged_in_ago = None
         joined_ago = None
         if last_login_date:
-            logged_in_ago = retrieval_date - util.parse_pss_datetime(last_login_date)
+            logged_in_ago = retrieved_at - util.parse_pss_datetime(last_login_date)
         if alliance_join_date:
-            joined_ago = retrieval_date - util.parse_pss_datetime(alliance_join_date)
+            joined_ago = retrieved_at - util.parse_pss_datetime(alliance_join_date)
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+        attempts_left = None
+        if tourney_running:
+            attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
+            if attempts and max_tourney_battle_attempts:
+                attempts_left = max_tourney_battle_attempts - attempts
         line = [
-            util.format_excel_datetime(retrieval_date),
+            util.format_excel_datetime(retrieved_at),
             fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, '')),
             user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''),
             user_info.get('AllianceMembership', ''),
@@ -239,7 +245,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
-            int(user_info['TournamentBonusScore']) if tourney_running and 'TournamentBonusScore' in user_info else '',
+            attempts_left or '',
             user_info.get(user.USER_KEY_NAME, '') if include_player_id else '',
             user_info.get(FLEET_KEY_NAME, '') if include_fleet_id else ''
         ]
@@ -247,7 +253,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attempts = None, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
+async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attempts: int = None, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -267,7 +273,7 @@ async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attem
 
     post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
-    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_infos, retrieved_at, fleet_sheet_file_name)
+    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_infos, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
     file_paths = [fleet_sheet_path_current]
 
     return post_content, file_paths
@@ -279,8 +285,8 @@ def create_fleet_sheet_csv(fleet_users_infos: entity.EntitiesData, retrieved_at:
     return fleet_sheet_path
 
 
-def create_fleet_sheet_xl(fleet_users_infos: entity.EntitiesData, retrieved_at: datetime, file_name: str) -> str:
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at)
+def create_fleet_sheet_xl(fleet_users_infos: entity.EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
+    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
     fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
     return fleet_sheet_path
 
