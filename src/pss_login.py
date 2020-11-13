@@ -20,7 +20,7 @@ import utility as util
 
 # ---------- Constants & Internals ----------
 
-ACCESS_TOKEN_TIMEOUT: datetime.timedelta = datetime.timedelta(seconds=299)
+ACCESS_TOKEN_TIMEOUT: datetime.timedelta = datetime.timedelta(hours=11, minutes=30)
 FIFTEEN_HOURS: datetime.timedelta = datetime.timedelta(hours=15)
 ONE_DAY: datetime.timedelta = datetime.timedelta(days=1)
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
