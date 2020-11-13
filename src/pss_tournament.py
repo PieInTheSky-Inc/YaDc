@@ -90,3 +90,12 @@ def is_tourney_running(start_date=None, utc_now=None):
         start_date = get_current_tourney_start(utc_now)
 
     return start_date < utc_now
+
+
+async def get_max_tourney_battle_attempts() -> int:
+    latest_settings = await core.get_latest_settings()
+    max_tourney_battle_attempts = latest_settings.get('TournamentBonusScore')
+    if max_tourney_battle_attempts:
+        return int(max_tourney_battle_attempts)
+    else:
+        return None

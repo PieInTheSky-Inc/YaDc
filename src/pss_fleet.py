@@ -130,11 +130,14 @@ def __get_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_stars(fleet_info: entity.EntityInfo) -> str:
+def __get_stars(fleet_info: entity.EntityInfo, fleet_users_infos: dict = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None) -> str:
     result = None
     stars = fleet_info.get('Score')
     if stars is not None and stars != '0':
         result = stars
+        if max_tourney_battle_attempts is not None and fleet_users_infos and retrieved_at:
+            attempts_left = sum([max_tourney_battle_attempts - user.__get_tourney_battle_attempts(user_info, retrieved_at) for user_info in fleet_users_infos.values()])
+            result += f' ({attempts_left} attempts left)'
     return result
 
 
@@ -156,7 +159,7 @@ def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, retrieved_at: datetime = None, is_past_data: bool = False) -> list:
+async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = False) -> list:
     fleet_name = __get_name(fleet_info)
     description = __get_description_as_text(fleet_info)
 
@@ -166,7 +169,7 @@ async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, 
         'Members': __get_member_count(fleet_info, fleet_users_infos),
         'Trophies': __get_trophies(fleet_info, fleet_users_infos),
         'Division': __get_division_name_and_ranking_as_text(fleet_info),
-        'Stars': __get_stars(fleet_info),
+        'Stars': __get_stars(fleet_info, fleet_users_infos, max_tourney_battle_attempts, retrieved_at),
         'Type': __get_type_as_text(fleet_info)
     }
 
@@ -244,7 +247,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieval_date: datetime, fl
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
+async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attempts = None, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -262,7 +265,7 @@ async def get_full_fleet_info_as_text(fleet_info: dict, past_fleets_data: dict =
         fleet_info = await _get_fleet_info_by_id(fleet_id)
         fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
 
-    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, retrieved_at=retrieved_at, is_past_data=is_past_data)
+    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
     fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_infos, retrieved_at, fleet_sheet_file_name)
     file_paths = [fleet_sheet_path_current]

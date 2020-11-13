@@ -757,7 +757,8 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
 
         if fleet_info:
             async with ctx.typing():
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info)
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1107,7 +1108,7 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
 
         if user_info:
             async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
+                output = await user.get_user_details_by_info(user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets)
     elif error:
         output = [str(error)]
     else:
@@ -1148,7 +1149,8 @@ async def cmd_player(ctx: commands.Context, *, player_name: str):
 
         if user_info:
             async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info)
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                output = await user.get_user_details_by_info(user_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')

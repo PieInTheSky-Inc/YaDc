@@ -64,7 +64,7 @@ def _get_league_from_trophies(trophies: int) -> str:
     return result
 
 
-async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = None, past_fleet_infos: entity.EntitiesData = None) -> list:
+async def get_user_details_by_info(user_info: dict, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: entity.EntitiesData = None) -> list:
     is_past_data = past_fleet_infos is not None and past_fleet_infos
 
     user_id = user_info[USER_KEY_NAME]
@@ -80,6 +80,11 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
     user_name = __get_user_name_as_text(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
+    attempts = __get_tourney_battle_attempts(user_info, retrieved_at)
+    if attempts and max_tourney_battle_attempts:
+        attempts_left = max_tourney_battle_attempts - int(attempts)
+    else:
+        attempts_left = None
 
     details = {
         'Account created': __get_timestamp_as_text(user_info, 'CreationDate', retrieved_at),
@@ -89,7 +94,7 @@ async def get_user_details_by_info(user_info: dict, retrieved_at: datetime = Non
         'Joined fleet': __get_fleet_joined_at_as_text(user_info, fleet_info, retrieved_at),
         'Trophies': __get_trophies_as_text(user_info),
         'League': __get_league_as_text(user_info),
-        'Stars': __get_stars_as_text(user_info, is_in_tourney_fleet),
+        'Stars': __get_stars_as_text(user_info, is_in_tourney_fleet, attempts_left),
         'Crew donated': __get_crew_donated_as_text(user_info, fleet_info),
         'Crew borrowed': __get_crew_borrowed_as_text(user_info, fleet_info),
         'PVP win/lose/draw': __get_pvp_attack_stats_as_text(user_info),
@@ -249,14 +254,13 @@ def __get_ship_status_as_text(ship_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_stars_as_text(user_info: entity.EntityInfo, is_in_tourney_fleet: bool) -> str:
+def __get_stars_as_text(user_info: entity.EntityInfo, is_in_tourney_fleet: bool, attempts_left: int = None) -> str:
     result = None
     stars = user_info.get('AllianceScore')
     if is_in_tourney_fleet or (stars is not None and stars != '0'):
         result = stars
-        attempts = user_info.get('TournamentBonusScore')
-        if attempts is not None and is_in_tourney_fleet:
-            result += f' ({attempts} attempts today)'
+        if attempts_left is not None and is_in_tourney_fleet:
+            result += f' ({attempts_left} attempts left)'
     return result
 
 
@@ -277,6 +281,17 @@ def __get_trophies_as_text(user_info: entity.EntityInfo) -> str:
         if highest_trophies is not None:
             result += f' (highest: {highest_trophies})'
     return result
+
+
+def __get_tourney_battle_attempts(user_info: entity.EntityInfo, utc_now: datetime) -> int:
+    attempts = user_info.get('TournamentBonusScore')
+    if attempts:
+        attempts = int(attempts)
+        last_login_date = util.parse_pss_datetime(user_info.get('LastLoginDate'))
+        if last_login_date:
+            if last_login_date.day != utc_now.day:
+                attempts = 0
+    return attempts
 
 
 async def __get_user_info_by_id(user_id: int) -> entity.EntityInfo:
