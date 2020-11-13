@@ -67,7 +67,7 @@ class TourneyData(object):
         return list(self.__fleets.keys())
 
     @property
-    def fleets(self) -> entity.EntitiesDesignsData:
+    def fleets(self) -> entity.EntitiesData:
         """
         Copy of fleet data
         """
@@ -99,7 +99,7 @@ class TourneyData(object):
         return list(self.__users.keys())
 
     @property
-    def users(self) -> entity.EntitiesDesignsData:
+    def users(self) -> entity.EntitiesData:
         """
         Copy of user data
         """
@@ -113,14 +113,14 @@ class TourneyData(object):
         return self.__data_date.year
 
 
-    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityDesignInfo:
+    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityInfo:
         """
         Look up fleet by id
         """
         return dict(self.__fleets.get(fleet_id, None))
 
 
-    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesDesignsData:
+    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesData:
         """
         Looks up fleets having the specified fleet_name in their name.
         Case-insensitive.
@@ -133,14 +133,14 @@ class TourneyData(object):
         return result
 
 
-    def get_user_data_by_id(self, user_id: str) -> entity.EntityDesignInfo:
+    def get_user_data_by_id(self, user_id: str) -> entity.EntityInfo:
         """
         Look up user by id
         """
         return dict(self.__users.get(user_id, None))
 
 
-    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesDesignsData:
+    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesData:
         """
         Looks up users having the specified user_name in their name.
         Case-insensitive.
@@ -360,10 +360,10 @@ class TourneyDataClient():
             if month < self.from_month:
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
-            if year > self.to_year:
-                raise ValueError(f'There\'s no data from {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
-            if year == self.to_year and month > self.to_month:
-                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+            if year > self.to_year or (year == self.to_year and month > self.to_month):
+                utc_now = util.get_utcnow()
+                if utc_now.year <= self.to_year and utc_now.month - 1 <= self.to_month:
+                    raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
         result = self.__read_data(year, month)
 
@@ -447,7 +447,10 @@ class TourneyDataClient():
 
 
     def __ensure_initialized(self) -> None:
-        self.__initialize()
+        try:
+            self.__drive.ListFile({'q': f'\'{self._folder_id}\' in parents and title contains \'highaöegjoyödfmj giod\''}).GetList()
+        except pydrive.auth.InvalidConfigError:
+            self.__initialize()
 
 
     def __get_first_file(self, file_name: str) -> pydrive.files.GoogleDriveFile:
@@ -458,8 +461,7 @@ class TourneyDataClient():
 
 
     def __get_latest_file(self, year: int, month: int, day: int = None, initializing: bool = False) -> pydrive.files.GoogleDriveFile:
-        if initializing is False:
-            self.__initialize()
+        self.__ensure_initialized()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
             file_name_part += f'{day:02d}'
@@ -517,8 +519,7 @@ class TourneyDataClient():
 
 
     def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
-        if initializing is False:
-            self.__initialize()
+        self.__ensure_initialized()
         g_file = self.__get_latest_file(year, month, initializing=initializing)
         if g_file:
             raw_data = g_file.GetContentString()

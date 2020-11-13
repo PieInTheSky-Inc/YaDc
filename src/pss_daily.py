@@ -39,6 +39,7 @@ DAILY_INFO_FIELDS = [
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
     'News',
+    'NewsSpriteId',
     'SaleArgument',
     'SaleItemMask',
     'SaleQuantity',
@@ -77,7 +78,18 @@ DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_n
 
 
 
-# ---------- ----------
+# ---------- Sales ----------
+
+
+
+
+
+
+
+
+
+
+# ---------- Utilities ----------
 
 async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
@@ -114,16 +126,6 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
         db_daily_info.pop('News', None)
         return not util.dicts_equal(daily_info, db_daily_info)
 
-
-
-
-
-
-
-
-
-
-# ---------- Utilities ----------
 
 def convert_to_daily_info(dropship_info: dict) -> dict:
     result = {}
@@ -213,7 +215,6 @@ async def db_get_sales_info(skip_cache: bool = False) -> List[Dict]:
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
-    success = True
     settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
     settings_success = await db.set_settings(settings)
     if settings_success:

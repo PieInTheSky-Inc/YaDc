@@ -58,19 +58,31 @@ import pss_user as user
 
 
 
-# ----- Setup ---------------------------------------------------------
-RATE = 5
-COOLDOWN = 15.0
 
-RAW_RATE = 5
-RAW_COOLDOWN = 10.0
 
-PWD = os.getcwd()
-sys.path.insert(0, PWD + '/src/')
+# ############################################################################ #
+# ----------                       Bot Setup                        ---------- #
+# ############################################################################ #
 
-ACTIVITY = discord.Activity(type=discord.ActivityType.playing, name='/help')
+async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
+    result = await server_settings.get_prefix(bot, message)
+    return commands.when_mentioned_or(result)(bot, message)
 
-tourney_data_client = TourneyDataClient(
+
+BOT = commands.Bot(command_prefix=get_prefix,
+                    description='This is a Discord Bot for Pixel Starships',
+                    activity=discord.Activity(type=discord.ActivityType.playing, name='/help'))
+
+__COMMANDS = []
+COOLDOWN: float = 15.0
+
+PWD: str = os.getcwd()
+
+RATE: int = 5
+RAW_COOLDOWN: float = 10.0
+RAW_RATE: int = 5
+
+TOURNEY_DATA_CLIENT: TourneyDataClient = TourneyDataClient(
     settings.GDRIVE_PROJECT_ID,
     settings.GDRIVE_PRIVATE_KEY_ID,
     settings.GDRIVE_PRIVATE_KEY,
@@ -83,34 +95,13 @@ tourney_data_client = TourneyDataClient(
     settings.TOURNAMENT_DATA_START_DATE
 )
 
-__COMMANDS = []
-
-
-
-
-
-
-
-
-
-# ----- Bot Setup -------------------------------------------------------------
-
-async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
-    result = await server_settings.get_prefix(bot, message)
-    return commands.when_mentioned_or(result)(bot, message)
-
-
 logging.basicConfig(
     level=logging.INFO,
     style = '{',
     datefmt = '%Y%m%d %H:%M:%S',
     format = '{asctime} [{levelname:<8}] {name}: {message}')
 
-bot = commands.Bot(command_prefix=get_prefix,
-                               description='This is a Discord Bot for Pixel Starships',
-                               activity=ACTIVITY)
-
-setattr(bot, 'logger', logging.getLogger('bot.py'))
+setattr(BOT, 'logger', logging.getLogger('bot.py'))
 
 
 
@@ -121,17 +112,19 @@ setattr(bot, 'logger', logging.getLogger('bot.py'))
 
 
 
+# ############################################################################ #
+# ----------                       Bot Events                       ---------- #
+# ############################################################################ #
 
-# ----- Bot Events ------------------------------------------------------------
-@bot.event
+@BOT.event
 async def on_ready() -> None:
     print(f'sys.argv: {sys.argv}')
     print(f'Current Working Directory: {PWD}')
-    print(f'Bot logged in as {bot.user.name} (id={bot.user.id}) on {len(bot.guilds)} servers')
+    print(f'Bot logged in as {BOT.user.name} (id={BOT.user.id}) on {len(BOT.guilds)} servers')
     await db.init()
     schema_version = await db.get_schema_version()
-    await server_settings.init(bot)
-    await server_settings.clean_up_invalid_server_settings(bot)
+    await server_settings.init(BOT)
+    await server_settings.clean_up_invalid_server_settings(BOT)
     await login.init()
     await daily.init()
 
@@ -140,76 +133,82 @@ async def on_ready() -> None:
     await room.init()
     await user.init()
     global __COMMANDS
-    __COMMANDS = sorted([key for key, value in bot.all_commands.items() if value.hidden == False])
+    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
     print(f'Initialized!')
     print(f'Bot version is: {settings.VERSION}')
+    schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
-    bot.loop.create_task(post_dailies_loop())
+    print(f'discord.py version: {discord.__version__}')
+    BOT.loop.create_task(post_dailies_loop())
 
 
-@bot.event
+@BOT.event
 async def on_connect():
     print('+ on_connect()')
 
 
-@bot.event
+@BOT.event
 async def on_resumed():
     print('+ on_resumed()')
 
 
-@bot.event
+@BOT.event
 async def on_disconnect():
     print('+ on_disconnect()')
 
 
-@bot.event
+@BOT.event
 async def on_shard_ready():
     print('+ on_shard_ready()')
 
 
-@bot.event
+@BOT.event
 async def on_command_error(ctx: commands.Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
-    error_message = str(err)
-    retry_after = None
-    if isinstance(err, commands.CommandOnCooldown):
-        retry_after = err.retry_after
-    elif isinstance(err, commands.CommandNotFound):
-        prefix = await server_settings.get_prefix(bot, ctx.message)
-        invoked_with = ctx.invoked_with.split(' ')[0]
-        commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
-        bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
-        error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(bot_commands)}?'
-    elif isinstance(err, commands.CheckFailure):
-        error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
-    elif isinstance(err, commands.CommandInvokeError):
-        if err.original:
-            if isinstance(err.original, pss_exception.Error):
-                error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+    if settings.THROW_COMMAND_ERRORS:
+        raise err
     else:
-        if not isinstance(err, commands.MissingRequiredArgument):
-            logging.getLogger().error(err, exc_info=True)
-        command_args = util.get_exact_args(ctx)
-        help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-        command = bot.get_command(help_args)
-        await ctx.send_help(command)
-    error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-    if retry_after:
-        await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
-    else:
-        await ctx.send(f'**Error**\n{error_message}')
+        error_message = str(err)
+        retry_after = None
+        if isinstance(err, commands.CommandOnCooldown):
+            error_message += f'\nThis message will delete itself, when you may use the command again.'
+            retry_after = err.retry_after
+        elif isinstance(err, commands.CommandNotFound):
+            prefix = await server_settings.get_prefix(BOT, ctx.message)
+            invoked_with = ctx.invoked_with.split(' ')[0]
+            commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
+            bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
+            error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(bot_commands)}?'
+        elif isinstance(err, commands.CheckFailure):
+            error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
+        elif isinstance(err, commands.CommandInvokeError):
+            if err.original:
+                if isinstance(err.original, pss_exception.Error):
+                    error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+        else:
+            if not isinstance(err, commands.MissingRequiredArgument):
+                logging.getLogger().error(err, exc_info=True)
+            command_args = util.get_exact_args(ctx)
+            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+            command = BOT.get_command(help_args)
+            await ctx.send_help(command)
+        error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+        if retry_after:
+            await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+        else:
+            await ctx.send(f'**Error**\n{error_message}')
 
 
-@bot.event
+@BOT.event
 async def on_guild_join(guild: discord.Guild) -> None:
     print(f'Joined guild with id {guild.id} ({guild.name})')
-    success = await GUILD_SETTINGS.create_guild_settings(bot, guild.id)
+    success = await GUILD_SETTINGS.create_guild_settings(BOT, guild.id)
     if not success:
         print(f'[on_guild_join] Could not create server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
 
-@bot.event
+@BOT.event
 async def on_guild_remove(guild: discord.Guild) -> None:
     print(f'Left guild with id {guild.id} ({guild.name})')
     success = await GUILD_SETTINGS.delete_guild_settings(guild.id)
@@ -225,7 +224,9 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 
 
-# ----- Tasks ----------------------------------------------------------
+# ############################################################################ #
+# ----------                         Tasks                          ---------- #
+# ############################################################################ #
 
 async def post_dailies_loop() -> None:
     print(f'Started post dailies loop')
@@ -243,12 +244,12 @@ async def post_dailies_loop() -> None:
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        autodaily_settings = await server_settings.get_autodaily_settings(bot, no_post_yet=True)
+        autodaily_settings = await server_settings.get_autodaily_settings(BOT, no_post_yet=True)
         if autodaily_settings:
             print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} channels')
         if has_daily_changed:
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-            post_here = await server_settings.get_autodaily_settings(bot)
+            post_here = await server_settings.get_autodaily_settings(BOT)
             print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
             autodaily_settings.extend(post_here)
 
@@ -258,12 +259,14 @@ async def post_dailies_loop() -> None:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
-            latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
-            latest_daily_message = '\n'.join(latest_message_output)
-            output, created_output = await dropship.get_dropship_text(daily_info=daily_info)
+            latest_message_output_text, latest_message_output_embeds, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_daily_message = '\n'.join(latest_message_output_text)
+            lastest_daily_embed = latest_message_output_embeds[0]
+            output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
-                posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
+                current_daily_embed = output_embeds[0]
+                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now, yesterday, latest_daily_message, lastest_daily_embed)
             print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed:
@@ -274,18 +277,18 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: discord.Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> int:
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now, yesterday, latest_daily_message_contents, latest_daily_message_embed)
             if posted:
                 posted_count += 1
             await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: discord.Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> (bool, bool, discord.Message):
     """
     Returns (posted, can_post, latest_message)
     """
@@ -304,12 +307,12 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         latest_message: discord.Message = None
 
         if can_post:
-            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
+            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message, latest_daily_message_embed, current_daily_embed)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
-                if latest_message.content == current_daily_message:
+                if dropship.compare_dropship_messages(latest_message, current_daily_message, current_daily_embed):
                     post_new = False
                 elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
@@ -342,7 +345,14 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
 
             if can_post and post_new:
                 try:
-                    latest_message = await text_channel.send(current_daily_message)
+                    use_embeds = await __get_use_embeds(text_channel.guild)
+                    if use_embeds:
+                        colour = util.get_bot_member_colour(BOT, text_channel.guild)
+                        embed = current_daily_embed.copy()
+                        embed.colour = colour
+                        latest_message = await text_channel.send(embed=embed)
+                    else:
+                        latest_message = await text_channel.send(current_daily_message)
                     posted = True
                     print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except discord.Forbidden:
@@ -362,7 +372,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str) -> (bool, discord.Message):
+async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: discord.Embed, current_daily_embed: discord.Embed) -> (bool, discord.Message):
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
@@ -383,7 +393,7 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
         if result is None:
             try:
                 async for message in text_channel.history(after=yesterday):
-                    if message.author == bot.user and (message.content == latest_daily or message.content == current_daily):
+                    if message.author == BOT.user and (dropship.compare_dropship_messages(message, latest_daily, latest_daily_embed) or dropship.compare_dropship_messages(message, current_daily, current_daily_embed)) and (message.content == latest_daily or message.content == current_daily):
                         result = message
                         print(f'[daily_fetch_latest_message] found latest message by content in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {result.id}')
                         break
@@ -404,10 +414,115 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
 
 
 
+# ############################################################################ #
+# ----------                  General Bot Commands                  ---------- #
+# ############################################################################ #
 
-# ----- General Bot Commands ----------------------------------------------------------
+@BOT.command(name='about', aliases=['info'], brief='Display info on this bot')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_about(ctx: commands.Context):
+    """
+    Displays information about this bot and its authors.
 
-@bot.command(brief='Ping the server', name='ping')
+    Usage:
+      /about
+      /info
+
+    Examples:
+      /about - Displays information on this bot and its authors.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
+        user_name = BOT.user.display_name
+        if ctx.guild is None:
+            nick = BOT.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        has_nick = BOT.user.display_name != nick
+        pfp_url = BOT.user.avatar_url
+        about_info = core.read_about_file()
+
+        title = f'About {nick}'
+        if has_nick:
+            title += f' ({user_name})'
+        description = about_info['description']
+        footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
+        fields = [
+            ('version', f'v{settings.VERSION}', True),
+            ('authors', ', '.join(about_info['authors']), True),
+            ('profile pic by', about_info['pfp'], True),
+            ('support', about_info['support'], False)
+        ]
+        colour = util.get_bot_member_colour(BOT, ctx.guild)
+
+        embed = util.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
+    await util.post_output(ctx, [embed])
+
+
+@BOT.command(name='invite', brief='Get an invite link')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_invite(ctx: commands.Context):
+    """
+    Produces an invite link for this bot and sends it via DM.
+
+    Usage:
+      /invite
+
+    Examples:
+      /invite - Produces an invite link for this bot and sends it via DM.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        if ctx.guild is None:
+            nick = BOT.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{BOT.user.id}']
+    await util.dm_author(ctx, output)
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+
+
+@BOT.command(name='links', brief='Show links')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_links(ctx: commands.Context):
+    """
+    Shows the links for useful sites regarding Pixel Starships.
+
+    Usage:
+      /links
+
+    Examples:
+      /links - Shows the links for useful sites regarding Pixel Starships.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        links = core.read_links_file()
+        output = []
+        if (await __get_use_embeds(ctx.guild)):
+            title = 'Pixel Starships weblinks'
+            colour = util.get_bot_member_colour(BOT, ctx.guild)
+            fields = []
+            for field_name, hyperlinks in links.items():
+                field_value = []
+                for (description, hyperlink) in hyperlinks:
+                    field_value.append(f'[{description}]({hyperlink})')
+                fields.append((field_name, '\n'.join(field_value), False))
+            embed = util.create_embed(title, fields=fields, colour=colour)
+            output.append(embed)
+        else:
+            for category, hyperlinks in links.items():
+                output.append(f'**{category}**')
+                for (description, hyperlink) in hyperlinks:
+                    output.append(f'{description}: <{hyperlink}>')
+                output.append(settings.EMPTY_LINE)
+            if output:
+                output = output[:-1]
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='ping', brief='Ping the server')
 async def cmd_ping(ctx: commands.Context):
     """
     Ping the bot to verify that it\'s listening for commands.
@@ -424,242 +539,39 @@ async def cmd_ping(ctx: commands.Context):
     await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
 
 
-
-
-
-
-
-
-
-
-# ---------- PSS Bot Commands ----------
-
-@bot.command(brief='Get prestige combos of crew', name='prestige')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
+@BOT.command(name='support', brief='Invite to bot\'s support server')
+async def cmd_support(ctx: commands.Context):
     """
-    Get the prestige combinations of the crew specified.
+    Produces an invite link to the support server for this bot and sends it via DM.
 
     Usage:
-      /prestige [crew_name]
-
-    Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+      /support
 
     Examples:
-      /prestige xin - Will print all prestige combinations including the crew 'Xin'.
-
-    Notes:
-      This command will only print recipes for the crew with the best matching crew name.
+      /support - Produces an invite link to the support server and sends it via DM.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(crew_name)
-    await util.post_output(ctx, output)
+        about = core.read_about_file()
+        output = [about['support']]
+    await util.dm_author(ctx, output)
+    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
+        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
 
 
-@bot.command(brief='Get character recipes', name='recipe')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
-    """
-    Get the prestige recipes of the crew specified.
-
-    Usage:
-      /recipe [crew_name]
-
-    Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
-
-    Examples:
-      /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
-
-    Notes:
-      This command will only print recipes for the crew with the best matching crew name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(crew_name)
-    await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item ingredients', name='ingredients', aliases=['ing'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
-    """
-    Get the ingredients for an item to be crafted with their estimated crafting costs.
-
-    Usage:
-      /ingredients [item_name]
-      /ing [item_name]
-
-    Parameters:
-      item_name: (Part of) the name of an item to be crafted. Mandatory.
-
-    Examples:
-      /ingredients large mineral crate - Prints the crafting costs and recipe for a 'Large Mineral Crate'.
-
-    Notes:
-      This command will only print crafting costs for the item with the best matching item name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name)
-    await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get crafting recipes', name='craft', aliases=['upg', 'upgrade'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_craft(ctx: commands.Context, *, item_name: str):
-    """
-    Get the items a specified item can be crafted into.
-
-    Usage:
-      /craft [item_name]
-      /upgrade [item_name]
-      /upg [item_name]
-
-    Parameters:
-      item_name: (Part of) the name of an item to be upgraded. Mandatory.
-
-    Examples:
-      /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
-
-    Notes:
-      This command will only print crafting costs for the item with the best matching item name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name)
-    await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item\'s market prices and fair prices from the PSS API', name='price', aliases=['fairprice', 'cost'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_price(ctx: commands.Context, *, item_name: str):
-    """
-    Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
-
-    Usage:
-      /price [item_name]
-      /fairprice [item_name]
-      /cost [item_name]
-
-    Parameters:
-      item_name: (Part of) the name of an item to be crafted. Mandatory.
-
-    Examples:
-      /price mineral crate - Prints prices for all items having 'mineral crate' in their names.
-
-    Notes:
-      Market prices returned may not reflect the real market value, due to transfers between alts/friends.
-      This command will print prices for all items matching the specified item_name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_item_price(item_name)
-    await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get item/crew stats', name='stats', aliases=['stat'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
-    """
-    Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
+# ############################################################################ #
+# ----------                    PSS Bot Commands                    ---------- #
+# ############################################################################ #
 
-    Usage:
-      /stats <level> [name]
-
-    Parameters:
-      level: Level of a crew. Will only apply to crew stats. Optional.
-      name:  (Part of) the name of a crew or item. Mandatory.
-
-    Examples:
-      /stats hug - Will output results of the commands '/char hug' and '/item hug'
-      /stats 25 hug - Will output results of the command '/char 25 hug' and '/item hug'
-
-    Notes:
-      This command will only print stats for the crew with the best matching name.
-      This command will print information for all items matching the specified name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        full_name = ' '.join([x for x in [level, name] if x])
-        level, name = util.get_level_and_name(level, name)
-        try:
-            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
-        except pss_exception.InvalidParameter:
-            char_output = None
-            char_success = False
-        try:
-            item_output, item_success = await item.get_item_details_by_name(name)
-        except pss_exception.InvalidParameter:
-            item_output = None
-            item_success = False
-
-    if char_success:
-        await util.post_output(ctx, char_output)
-
-    if item_success:
-        if char_success:
-            await ctx.send(settings.EMPTY_LINE)
-        await util.post_output(ctx, item_output)
-
-    if not char_success and not item_success:
-        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
-
-
-@bot.command(brief='Get character stats', name='char', aliases=['crew'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
-    """
-    Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
-
-    Usage:
-      /stats <level> [name]
-
-    Parameters:
-      level: Level of a crew. Optional.
-      name:  (Part of) the name of a crew. Mandatory.
-
-    Examples:
-      /stats hug - Will print the stats range for a crew having 'hug' in its name.
-      /stats 25 hug - Will print the stats range for a level 25 crew having 'hug' in its name.
-
-    Notes:
-      This command will only print stats for the crew with the best matching crew_name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get item stats', name='item')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_item(ctx: commands.Context, *, item_name: str):
-    """
-    Get the stats of any item matching the given item_name.
-
-    Usage:
-      /item [item_name]
-
-    Parameters:
-      item_name:  (Part of) the name of an item. Mandatory.
-
-    Examples:
-      /item hug - Will print some stats for an item having 'hug' in its name.
-
-    Notes:
-      This command will print information for all items matching the specified name.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get best items for a slot', name='best')
+@BOT.command(name='best', brief='Get best items for a slot')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
     """
@@ -688,163 +600,108 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
         item_name = item_name.strip().lower()
 
         if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
-            items_designs_details = await item.get_items_designs_details_by_name(item_name)
-            found_matching_items = items_designs_details and len(items_designs_details) > 0
-            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+            items_details = await item.get_items_details_by_name(item_name)
+            found_matching_items = items_details and len(items_details) > 0
+            items_details = item.filter_items_details_for_equipment(items_details)
         else:
-            items_designs_details = []
+            items_details = []
             found_matching_items = False
-        if items_designs_details:
-            if len(items_designs_details) == 1:
-                item_design_details = items_designs_details[0]
+        if items_details:
+            if len(items_details) == 1:
+                item_details = items_details[0]
             else:
                 use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
-                _, item_design_details = await paginator.wait_for_option_selection()
-            slot, stat = item.get_slot_and_stat_type(item_design_details)
+                paginator = pagination.Paginator(ctx, item_name, items_details, item.get_item_search_details, use_pagination)
+                _, item_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_details)
         else:
             if found_matching_items:
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat)
+        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get research data', name='research')
+@BOT.command(name='char', aliases=['crew'], brief='Get character stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_research(ctx: commands.Context, *, research_name: str):
+async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
     """
-    Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
+    Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
 
     Usage:
-      /research [research_name]
+      /stats <level> [name]
 
     Parameters:
-      research_name: The name of the research to get details on.
+      level: Level of a crew. Optional.
+      name:  (Part of) the name of a crew. Mandatory.
 
     Examples:
-      /research python - Will print information on all researches having 'python' in their names.
+      /stats hug - Will print the stats range for a crew having 'hug' in its name.
+      /stats 25 hug - Will print the stats range for a level 25 crew having 'hug' in its name.
 
     Notes:
-      This command will print information for all researches matching the specified name.
+      This command will only print stats for the crew with the best matching crew_name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name)
+        level, crew_name = util.get_level_and_name(level, crew_name)
+        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
-@bot.command(brief='Get collections', name='collection', aliases=['coll'])
+@BOT.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_collection(ctx: commands.Context, *, collection_name: str):
+async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
-    Get the details on a specific collection.
+    Get the items a specified item can be crafted into.
 
     Usage:
-      /collection [collection_name]
+      /craft [item_name]
+      /upgrade [item_name]
+      /upg [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be upgraded. Mandatory.
+
+    Examples:
+      /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
+
+    Notes:
+      This command will only print crafting costs for the item with the best matching item name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='collection', aliases=['coll'], brief='Get collections')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
+    """
+    Get the details on a specific collection. If the collection name is omitted, it will display all collections.
+
+    Usage:
+      /collection <collection_name>
 
     Parameters:
       collection_name: The name of the collection to get details on.
 
     Examples:
-      /collection_name savy - Will print information on a collection having 'savy' in its name.
+      /collection savy - Will print information on a collection having 'savy' in its name.
+      /collection - Will print less information on all collections.
 
     Notes:
       This command will only print stats for the collection with the best matching collection_name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
-@bot.group(brief='Division stars', name='stars', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars(ctx: commands.Context, *, division: str = None):
-    """
-    Get stars earned by each fleet during the current final tournament week.
-
-    Usage:
-      /stars
-      /stars <division>
-
-    Parameters:
-      division: The letter of the division to show the star counts for. Optional. Valid values: [A, B, C, D]
-
-    Examples:
-      /stars - Prints the star count for every fleet competing in the current tournament finals.
-      /stars A - Prints the star count for every fleet competing in division A in the current tournament finals.
-
-    Notes:
-      This command does not work outside of the tournament finals week.
-    """
-    __log_command_use(ctx)
-    if tourney.is_tourney_running():
-        async with ctx.typing():
-            async with ctx.typing():
-                output = []
-                if not pss_top.is_valid_division_letter(division):
-                    subcommand = bot.get_command('stars fleet')
-                    await ctx.invoke(subcommand, fleet_name=division)
-                else:
-                    async with ctx.typing():
-                        output, _ = await pss_top.get_division_stars(division=division)
-            await util.post_output(ctx, output)
-    else:
-        cmd = bot.get_command('past stars')
-        await ctx.invoke(cmd, month=None, year=None, division=division)
-
-
-@cmd_stars.command(brief='Fleet stars', name='fleet', aliases=['alliance'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
-    """
-    Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
-
-    Usage:
-      /stars
-      /stars fleet [fleet_name]
-
-    Parameters:
-      fleet_name: The (beginning of the) name of a fleet to show the star counts for. Mandatory.
-
-    Examples:
-      /stars fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection, prints the star count for every member of the fleet, if it competes in the current tournament finals.
-
-    Notes:
-      If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
-    """
-    __log_command_use(ctx)
-    if tourney.is_tourney_running():
-        async with ctx.typing():
-            exact_name = util.get_exact_args(ctx)
-            if exact_name:
-                fleet_name = exact_name
-            fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
-
-        if fleet_infos:
-            if len(fleet_infos) == 1:
-                fleet_info = fleet_infos[0]
-            else:
-                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-                _, fleet_info = await paginator.wait_for_option_selection()
-
-            if fleet_info:
-                async with ctx.typing():
-                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
-                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
-                await util.post_output(ctx, output)
-        else:
-            await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
-    else:
-        cmd = bot.get_command('past stars fleet')
-        await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
-
-
-@bot.command(brief='Show the dailies', name='daily')
+@BOT.command(name='daily', brief='Show the dailies')
 @commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
 async def cmd_daily(ctx: commands.Context):
     """
@@ -859,450 +716,15 @@ async def cmd_daily(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_dropship_text()
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Show the news', name='news')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_news(ctx: commands.Context):
-    """
-    Prints all news in ascending order.
-
-    Usage:
-      /news
-
-    Examples:
-      /news - Prints the information described above.
-    """
-    __log_command_use(ctx)
-    await util.try_delete_original_message(ctx)
-    async with ctx.typing():
-        output, _ = await dropship.get_news()
-    await util.post_output(ctx, output)
-
-
-@bot.group(brief='Configure auto-daily for the server', name='autodaily', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily(ctx: commands.Context):
-    """
-    This command can be used to get an overview of the autodaily settings for this bot.
-
-    In order to use this command or any sub commands, you need to be the owner of this bot.
-    """
-    __log_command_use(ctx)
-    pass
-
-
-@cmd_autodaily.group(brief='List configured auto-daily channels', name='list', invoke_without_command=False)
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list(ctx: commands.Context):
-    __log_command_use(ctx)
-    pass
-
-
-@cmd_autodaily_list.command(brief='List all configured auto-daily channels', name='all')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_all(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, None)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily_list.command(brief='List all invalid configured auto-daily channels', name='invalid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_invalid(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, False)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily_list.command(brief='List all valid configured auto-daily channels', name='valid')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_list_valid(ctx: commands.Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, True)
-    await util.post_output(ctx, output)
-
-
-@cmd_autodaily.command(brief='Post a daily message on this server\'s auto-daily channel', name='post')
-@commands.is_owner()
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_autodaily_post(ctx: commands.Context):
-    __log_command_use(ctx)
-    guild = ctx.guild
-    channel_id = await server_settings.db_get_daily_channel_id(guild.id)
-    if channel_id is not None:
-        text_channel = bot.get_channel(channel_id)
-        output, _ = await dropship.get_dropship_text()
-        await util.post_output_to_channel(text_channel, output)
-
-
-@bot.command(brief='Get crew levelling costs', name='level', aliases=['lvl'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
-    """
-    Shows the cost for a crew to reach a certain level.
-
-    Usage:
-      /level <from_level> [to_level]
-      /lvl <from_level> [to_level]
-
-    Parameters:
-      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
-      to_level:   The level to which the requirements shall be calculated. Mandatory.
-
-    Examples:
-      /level 35 - Prints exp and gas requirements from level 1 to 35
-      /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
-    await util.post_output(ctx, output)
-
-
-@bot.group(brief='Prints top fleets or captains', name='top', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top(ctx: commands.Context, *, count: str = '100'):
-    """
-    Prints either top fleets or captains. Prints top 100 fleets by default.
-
-    Usage:
-      /top <count>
-
-    Parameters:
-      count: The number of rows to be printed. Optional.
-
-    Examples:
-      /top - prints top 100 fleets.
-      /top 30 - prints top 30 fleets."""
-    __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        if ' ' in count:
-            split_count = count.split(' ')
-            try:
-                count = int(split_count[0])
-                command = split_count[1]
-            except:
-                try:
-                    count = int(split_count[1])
-                    command = split_count[0]
-                except:
-                    raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
-        else:
-            try:
-                count = int(count)
-            except:
-                raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
-            command = 'fleets'
-        cmd = bot.get_command(f'top {command}')
-        await ctx.invoke(cmd, count=count)
-
-
-@cmd_top.command(brief='Prints top fleets', name='fleets', aliases=['alliances'])
-async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
-    """
-    Prints top fleets. Prints top 100 fleets by default.
-
-    Usage:
-      /top fleets <count>
-      /top <count> fleets
-
-    Parameters:
-      count: The number of rows to be printed. Optional.
-
-    Examples:
-      /top fleets - prints top 100 fleets.
-      /top fleets 30 - prints top 30 fleets.
-      /top 30 fleets - prints top 30 fleets."""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await pss_top.get_top_fleets(count)
-    await util.post_output(ctx, output)
-
-
-@cmd_top.command(brief='Prints top captains', name='players', aliases=['captains', 'users'])
-async def cmd_top_captains(ctx: commands.Context, count: int = 100):
-    """
-    Prints top captains. Prints top 100 captains by default.
-
-    Usage:
-      /top captains <count>
-      /top <count> captains
-
-    Parameters:
-      count: The number of rows to be printed. Optional.
-
-    Examples:
-      /top captains - prints top 100 captains.
-      /top captains 30 - prints top 30 captains.
-      /top 30 captains - prints top 30 captains."""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await pss_top.get_top_captains(count)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get room infos', name='room')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_room(ctx: commands.Context, *, room_name: str):
-    """
-    Get detailed information on a room. If more than 2 results are found, details will be omitted.
-
-    Usage:
-      /room [name]
-      /room [short name] [room level]
-
-    Parameters:
-      name:       A room's name or part of it. Mandatory.
-      short name: A room's short name (2 or 3 characters). Mandatory.
-      room level: A room's level. Mandatory.
-
-    Examples:
-      /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
-      /room cloak generator lv2 - Searches for rooms having 'cloak generator lv2' in their names and prints their details.
-      /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await room.get_room_details_from_name(room_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get training infos', name='training')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_training(ctx: commands.Context, *, training_name: str):
-    """
-    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
-
-    Usage:
-      /training [name]
-
-    Parameters:
-      name: A room's name or part of it. Mandatory.
-
-    Examples:
-      /training bench - Searches for trainings having 'bench' in their names and prints their details.
-
-    Notes:
-      The training yields displayed represent the upper bound of possible yields.
-      The highest yield will always be displayed on the far left.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name)
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Get PSS stardate & Melbourne time', name='time')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_time(ctx: commands.Context):
-    """
-    Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
-
-    Usage:
-      /time
-
-    Examples:
-      /time - Prints PSS stardate, day & time in Melbourne and public holidays.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        now = datetime.datetime.now()
-        today = datetime.date(now.year, now.month, now.day)
-        pss_stardate = (today - settings.PSS_START_DATE).days
-        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
-
-        mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
-        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
-
-        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
-        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-        if mel_time in aus_holidays:
-            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
-
-        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
-        td = first_day_of_next_month - now
-        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-    await ctx.send(str_time)
-
-
-@bot.command(brief='Show links', name='links')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_links(ctx: commands.Context):
-    """
-    Shows the links for useful sites regarding Pixel Starships.
-
-    Usage:
-      /links
-
-    Examples:
-      /links - Shows the links for useful sites regarding Pixel Starships.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = core.read_links_file()
-    await util.post_output(ctx, output)
-
-
-@bot.command(brief='Display info on this bot', name='about', aliases=['info'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_about(ctx: commands.Context):
-    """
-    Displays information about this bot and its authors.
-
-    Usage:
-      /about
-      /info
-
-    Examples:
-      /about - Displays information on this bot and its authors.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        if ctx.guild is None:
-            nick = bot.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        pfp_url = bot.user.avatar_url
-        about_info = core.read_about_file()
-        title = f'About {nick}'
-        description = about_info['description']
-        footer = f'Serving {len(bot.users)} users on {len(bot.guilds)} guilds.'
-        version = f'v{settings.VERSION}'
-        support_link = about_info['support']
-        authors = ', '.join(about_info['authors'])
-        pfp_author = about_info['pfp']
-        color = util.get_bot_member_colour(bot, ctx.guild)
-
-        embed = discord.Embed(title=title, type='rich', color=color, description=description)
-        embed.add_field(name="version", value=version)
-        embed.add_field(name="authors", value=authors)
-        embed.add_field(name="profile pic by", value=pfp_author)
-        embed.add_field(name="support", value=support_link)
-        embed.set_footer(text=footer)
-        embed.set_thumbnail(url=pfp_url)
-    await ctx.send(embed=embed)
-
-
-@bot.command(brief='Get an invite link', name='invite')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_invite(ctx: commands.Context):
-    """
-    Produces an invite link for this bot and sends it via DM.
-
-    Usage:
-      /invite
-
-    Examples:
-      /invite - Produces an invite link for this bot and sends it via DM.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        if ctx.guild is None:
-            nick = bot.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{bot.user.id}']
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
-
-
-@bot.group(brief='Information on tournament time', name='tournament', aliases=['tourney'])
-@commands.cooldown(rate=RATE*10, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_tournament(ctx: commands.Context):
-    """
-    Get information about the starting time of the tournament.
-
-    Usage:
-      /tournament
-      /tourney
-
-    Examples:
-      /tournament - Displays information about the starting time of this month's tournament.
-    """
-    __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        cmd = bot.get_command('tournament current')
-        await ctx.invoke(cmd)
-
-
-@cmd_tournament.command(brief='Information on this month\'s tournament time', name='current')
-async def cmd_tournament_current(ctx: commands.Context):
-    """
-    Get information about the starting time of the current month's tournament.
-
-    Usage:
-      /tournament current
-      /tourney current
-
-    Examples:
-      /tournament current - Displays information about the starting time of this month's tournament.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = util.get_utcnow()
-        start_of_tourney = tourney.get_current_tourney_start()
-        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
-
-
-@cmd_tournament.command(brief='Information on next month\'s tournament time', name='next')
-async def cmd_tournament_next(ctx: commands.Context):
-    """
-    Get information about the starting time of the next month's tournament.
-
-    Usage:
-      /tournament next
-      /tourney next
-
-    Examples:
-      /tournament next - Displays information about the starting time of next month's tournament.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = util.get_utcnow()
-        start_of_tourney = tourney.get_next_tourney_start()
-        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
-
-
-@bot.command(brief='Updates all caches manually', name='updatecache', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=1, per=1, type=commands.BucketType.user)
-async def cmd_updatecache(ctx: commands.Context):
-    """This command is to be used to update all caches manually."""
-    __log_command_use(ctx)
-    async with ctx.typing():
-        await crew.characters_designs_retriever.update_cache()
-        await crew.collections_designs_retriever.update_cache()
-        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
-        for prestige_to_cache in prestige_to_caches:
-            await prestige_to_cache.update_data()
-        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
-        for prestige_from_cache in prestige_from_caches:
-            await prestige_from_cache.update_data()
-        await item.items_designs_retriever.update_cache()
-        await research.researches_designs_retriever.update_cache()
-        await room.rooms_designs_retriever.update_cache()
-        await training.trainings_designs_retriever.update_cache()
-    await ctx.send('Updated all caches successfully!')
-
-
-
-@bot.command(brief='Get infos on a fleet', name='fleet', aliases=['alliance'])
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
+    if as_embed:
+        await util.post_output(ctx, output_embed)
+    else:
+        await util.post_output(ctx, output)
+
+
+@BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
     """
@@ -1343,729 +765,98 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
         await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
 
 
-
-@bot.command(brief='Get infos on a player', name='player', aliases=['user'])
+@BOT.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_player(ctx: commands.Context, *, player_name: str):
+async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
-    Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
+    Get the ingredients for an item to be crafted with their estimated crafting costs.
 
     Usage:
-      /player [player_name]
-      /user [player_name]
+      /ingredients [item_name]
+      /ing [item_name]
 
     Parameters:
-      player_name: The (beginning of the) name of the player to search for. Mandatory.
+      item_name: (Part of) the name of an item to be crafted. Mandatory.
 
     Examples:
-      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
+      /ingredients large mineral crate - Prints the crafting costs and recipe for a 'Large Mineral Crate'.
+
+    Notes:
+      This command will only print crafting costs for the item with the best matching item name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        exact_name = util.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        user_infos = await user.get_user_details_by_name(player_name)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info)
-            await util.post_output(ctx, output)
-    else:
-        await ctx.send(f'Could not find a player named `{player_name}`.')
-
-
-@bot.command(brief='Invite to bot\'s support server', name='support')
-async def cmd_support(ctx: commands.Context):
-    """
-    Produces an invite link to the support server for this bot and sends it via DM.
-
-    Usage:
-      /support
-
-    Examples:
-      /support - Produces an invite link to the support server and sends it via DM.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        about = core.read_about_file()
-        output = [about['support']]
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
-
-
-
-
-
-
-
-
-
-
-@bot.group(brief='Server settings', name='settings', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings(ctx: commands.Context):
-    """
-    Retrieve settings for this Discord server/guild.
-    Set settings for this server using the subcommands 'set' and 'reset'.
-
-    You need the 'Manage Server' permission to use any of these commands.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings
-
-    Examples:
-      /settings - Prints all settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-
-            output = [f'**```Server settings for {ctx.guild.name}```**']
-            output.extend(guild_settings.autodaily.get_pretty_settings())
-            output.extend(guild_settings.get_pretty_bot_news_channel())
-            output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
-            output.append(f'Prefix = {guild_settings.prefix}')
-        await util.post_output(ctx, output)
-
-
-@cmd_settings.group(brief='Retrieve auto-daily settings', name='autodaily', aliases=['daily'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily(ctx: commands.Context):
-    """
-    Retrieve the auto-daily setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings autodaily
-      /settings daily
-
-    Examples:
-      /settings autodaily - Prints all auto-daily settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = guild_settings.autodaily.get_pretty_settings()
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily channel', name='channel', aliases=['ch'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_channel(ctx: commands.Context):
-    """
-    Retrieve the auto-daily setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings autodaily channel
-      /settings daily ch
-
-    Examples:
-      /settings autodaily ch - Prints the auto-daily channel settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = guild_settings.autodaily.get_pretty_setting_channel()
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_get_autodaily.command(brief='Retrieve auto-daily mode', name='changemode', aliases=['mode'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
-    """
-    Retrieve the auto-daily setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings autodaily changemode
-      /settings daily mode
-
-    Examples:
-      /settings autodaily mode - Prints the auto-daily change mode settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = guild_settings.autodaily.get_pretty_setting_changemode()
-        await util.post_output(ctx, output)
-
-
-@cmd_settings.command(brief='Retrieve the bot news channel', name='botnews', aliases=['botchannel'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_botnews(ctx: commands.Context):
-    """
-    Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings botnews
-      /settings botchannel
-
-    Examples:
-      /settings botnews - Gets the channel configured for this server to receive bot news.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = guild_settings.get_pretty_bot_news_channel()
-        await util.post_output(ctx, output)
-
-
-@cmd_settings.command(brief='Retrieve pagination settings', name='pagination', aliases=['pages'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_pagination(ctx: commands.Context):
-    """
-    Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings pagination
-      /settings pages
-
-    Examples:
-      /settings pagination - Prints the pagination setting for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            output = [f'Pagination on this server has been set to: `{guild_settings.pretty_use_pagination}`']
-        await util.post_output(ctx, output)
-
-
-@cmd_settings.command(brief='Retrieve prefix settings', name='prefix')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_prefix(ctx: commands.Context):
-    """
-    Retrieve the prefix setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings prefix
-
-    Examples:
-      /settings prefix - Prints the prefix setting for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    command = bot.get_command('prefix')
-    await ctx.invoke(command)
-
-
-@bot.command(brief='Retrieve prefix settings', name='prefix')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prefix(ctx: commands.Context):
-    """
-    Retrieve the prefix setting for this server.
-
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /prefix
-
-    Examples:
-      /prefix - Prints the prefix setting for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-
-    channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
-    async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-        output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
+        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
-
-
-
-
-
-
-
-@cmd_settings.group(brief='Reset server settings', name='reset', invoke_without_command=True)
+@BOT.command(name='item', brief='Get item stats')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset(ctx: commands.Context):
+async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
-    Reset settings for this server.
-
-    You need the 'Manage Server' permission to use any of these commands.
-    This command can only be used on Discord servers/guilds.
+    Get the stats of any item matching the given item_name.
 
     Usage:
-      /settings reset
-
-    Examples:
-      /settings reset - Resets all settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if not util.is_guild_channel(ctx.channel):
-        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
-    elif ctx.invoked_subcommand is None:
-        reset_autodaily = bot.get_command(f'settings reset autodaily')
-        reset_pagination = bot.get_command(f'settings reset pagination')
-        reset_prefix = bot.get_command(f'settings reset prefix')
-        await ctx.invoke(reset_autodaily)
-        await ctx.invoke(reset_pagination)
-        await ctx.invoke(reset_prefix)
-
-
-@cmd_settings_reset.group(brief='Reset auto-daily settings to defaults', name='autodaily', aliases=['daily'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily(ctx: commands.Context):
-    """
-    Reset the auto-daily settings for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset autodaily
-      /settings reset daily
-
-    Examples:
-      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset()
-            if success:
-                output = ['Successfully removed all auto-daily settings for this server.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the auto-daily settings for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily channel', name='channel', aliases=['ch'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
-    """
-    Reset the auto-daily channel settings for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset autodaily channel
-      /settings reset daily ch
-
-    Examples:
-      /settings reset autodaily - Removes the auto-daily channel settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_channel()
-            if success:
-                output = ['Successfully removed the auto-daily channel.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the auto-daily channel setting for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_reset_autodaily.command(brief='Reset auto-daily change mode', name='changemode', aliases=['mode'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
-    """
-    Reset the auto-daily change mode settings for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset autodaily changemode
-      /settings reset daily mode
-
-    Examples:
-      /settings reset autodaily mode - Resets the change mode for auto-daily changes for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-            success = await autodaily_settings.cmd_settings_reset_autodaily_mode()
-            if success:
-                output = ['Successfully reset the auto-daily change mode.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_reset.command(brief='Reset bot news channel', name='botnews', aliases=['botchannel'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
-    """
-    Resets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset botnews
-      /settings reset botchannel
-
-    Examples:
-      /settings reset botnews - Removes the channel '#announcements' from the list of channels to receive bot news.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            success = await guild_settings.reset_bot_news_channel()
-            if success:
-                output = ['Successfully removed the bot news channel.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the bot news channel setting for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_reset.command(brief='Reset pagination settings', name='pagination', aliases=['pages'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_pagination(ctx: commands.Context):
-    """
-    Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset pagination
-      /settings reset pages
-
-    Examples:
-      /settings reset pagination - Resets the pagination settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            success = await guild_settings.reset_use_pagination()
-        if success:
-            await ctx.invoke(bot.get_command(f'settings pagination'))
-        else:
-            output = [
-                'An error ocurred while trying to reset the pagination settings for this server.',
-                'Please try again or contact the bot\'s author.'
-            ]
-            await util.post_output(ctx, output)
-
-
-@cmd_settings_reset.command(brief='Reset prefix settings', name='prefix')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_prefix(ctx: commands.Context):
-    """
-    Reset the prefix settings for this server to '/'.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset prefix
-
-    Examples:
-      /settings reset prefix - Resets the prefix settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-            success = await guild_settings.reset_prefix()
-        if success:
-            output = [f'Successfully reset the prefix for this server to: {guild_settings.prefix}']
-            await util.post_output(ctx, output)
-        else:
-            output = [
-                'An error ocurred while trying to reset the prefix settings for this server.',
-                'Please try again or contact the bot\'s author.'
-            ]
-            await util.post_output(ctx, output)
-
-
-
-
-
-
-
-
-
-
-@cmd_settings.group(brief='Change server settings', name='set', invoke_without_command=False)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set(ctx: commands.Context):
-    """
-    Sets settings for this server.
-
-    You need the 'Manage Server' permission to use any of these commands.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      Refer to sub-command help.
-
-    Examples:
-      Refer to sub-command help.
-    """
-    __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        await ctx.send_help('settings set')
-
-
-@cmd_settings_set.group(brief='Change auto-daily settings', name='autodaily', aliases=['daily'], invoke_without_command=False)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: commands.Context):
-    """
-    Change auto-daily settings for this server.
-
-    You need the 'Manage Server' permission to use any of these commands.
-    This command can only be used on Discord servers/guilds.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('settings set autodaily')
-
-
-@cmd_settings_set_autodaily.command(brief='Set auto-daily channel', name='channel', aliases=['ch'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
-    """
-    Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set autodaily channel <text_channel_mention>
-      /settings set daily ch <text_channel_mention>
+      /item [item_name]
 
     Parameters:
-      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will try to set the current channel.
+      item_name:  (Part of) the name of an item. Mandatory.
 
     Examples:
-      /settings set daily channel - Sets the current channel to receive the /daily message once a day.
-      /settings set autodaily ch #announcements - Sets the channel #announcements to receive the /daily message once a day.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    async with ctx.typing():
-        autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-        success = await autodaily_settings.set_channel(text_channel)
-    if success:
-        await ctx.invoke(bot.get_command('settings autodaily channel'))
-    else:
-        output = [f'Could not set autodaily channel for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_set_autodaily.command(brief='Set auto-daily repost mode', name='changemode', aliases=['mode'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_change(ctx: commands.Context):
-    """
-    Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set autodaily changemode
-      /settings set daily change
-
-    Examples:
-      /settings set autodaily changemode - Toggles the change mode.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    async with ctx.typing():
-        autodaily_settings = (await GUILD_SETTINGS.get(bot, ctx.guild.id)).autodaily
-        success = await autodaily_settings.toggle_change_mode()
-    if success:
-        await ctx.invoke(bot.get_command('settings autodaily changemode'))
-    else:
-        output = [f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_set.command(brief='Set the bot news channel', name='botnews', aliases=['botchannel'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel=None):
-    """
-    Sets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set botnews <text channel mention>
-      /settings set botchannel <text channel mention>
-
-    Examples:
-      /settings set botnews #announcements - Sets the channel '#announcements' to receive bot news.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    async with ctx.typing():
-        if text_channel is None:
-            text_channel = ctx.channel
-        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-        success = await guild_settings.set_bot_news_channel(text_channel)
-    if success:
-        await ctx.invoke(bot.get_command('settings botnews'))
-    else:
-        output = [f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
-
-
-@cmd_settings_set.command(brief='Set pagination', name='pagination', aliases=['pages'])
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None):
-    """
-    Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set pagination <switch>
-      /settings set pages <switch>
-
-    Parameters:
-      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
+      /item hug - Will print some stats for an item having 'hug' in its name.
 
     Notes:
-      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
-
-    Examples:
-      /settings set pagination - Toggles the pagination setting for the current Discord server/guild depending on the current setting.
-      /settings set pagination off - Turns off pagination for the current Discord server/guild.
+      This command will print information for all items matching the specified name.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
     async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-        success = await guild_settings.set_use_pagination(switch)
-    if success:
-        await ctx.invoke(bot.get_command('settings pagination'))
-    else:
-        output = [f'Could not set pagination settings for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
+        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
 
 
-@cmd_settings_set.command(brief='Set prefix', name='prefix')
+@BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
+async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
     """
-    Set the prefix for this server. The default is '/'.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
+    Shows the cost for a crew to reach a certain level.
 
     Usage:
-      /settings set prefix [prefix]
+      /level <from_level> [to_level]
+      /lvl <from_level> [to_level]
 
     Parameters:
-      prefix: A string determining the new prefix. Mandatory. Leading whitespace will be omitted.
+      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
+      to_level:   The level to which the requirements shall be calculated. Mandatory.
 
     Examples:
-      /settings set prefix & - Sets the bot's prefix for the current Discord server/guild to '&'
+      /level 35 - Prints exp and gas requirements from level 1 to 35
+      /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='news', brief='Show the news')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_news(ctx: commands.Context):
+    """
+    Prints all news in ascending order.
+
+    Usage:
+      /news
+
+    Examples:
+      /news - Prints the information described above.
     """
     __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
+    await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        prefix = prefix.lstrip()
-        guild_settings = await GUILD_SETTINGS.get(bot, ctx.guild.id)
-        success = await guild_settings.set_prefix(prefix)
-    if success:
-        await ctx.invoke(bot.get_command('settings prefix'))
-    else:
-        output = [f'Could not set prefix for this server. Please try again or contact the bot\'s author.']
-        await util.post_output(ctx, output)
+        output, _ = await dropship.get_news(ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
 
 
-
-
-
-
-
-
-
-
-@bot.group(name='past', brief='Get historic data', aliases=['history'], invoke_without_command=True)
+@BOT.group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
     """
@@ -2107,23 +898,24 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
             raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         else:
             if not pss_top.is_valid_division_letter(division):
-                subcommand = bot.get_command('past stars fleet')
+                subcommand = BOT.get_command('past stars fleet')
                 await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+                return
             else:
                 month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
                 try:
-                    tourney_data = tourney_data_client.get_data(year, month)
+                    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
                 except ValueError as err:
                     error = str(err)
                     tourney_data = None
                 if tourney_data:
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+                    output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
                 elif error:
                     output = [error]
     await util.post_output(ctx, output)
 
 
-@cmd_past_stars.command(name='fleet', brief='Get historic fleet stars', aliases=['alliance'])
+@cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
@@ -2147,7 +939,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
         else:
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
-                tourney_data = tourney_data_client.get_data(year, month)
+                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
             except ValueError as err:
                 error = str(err)
                 tourney_data = None
@@ -2167,7 +959,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
 
         if fleet_info:
             async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+                output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     elif error:
         output = [str(error)]
     else:
@@ -2175,7 +967,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='fleet', brief='Get historic fleet data', aliases=['alliance'])
+@cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
     """
@@ -2199,7 +991,7 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
         else:
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
-                tourney_data = tourney_data_client.get_data(year, month)
+                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
             except ValueError as err:
                 error = str(err)
                 tourney_data = None
@@ -2231,7 +1023,47 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
     await util.post_output(ctx, output)
 
 
-@cmd_past.command(name='player', brief='Get historic player data', aliases=['user'])
+@cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        try:
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        except ValueError as err:
+            error = str(err)
+            tourney_data = None
+
+    if tourney_data and tourney_data.fleets and tourney_data.users:
+        async with ctx.typing():
+            file_name = f'tournament_results_{year}-{util.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
+            file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+        await util.post_output_with_files(ctx, [], file_paths)
+        for file_path in file_paths:
+            os.remove(file_path)
+        return
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!']
+    await util.post_output(ctx, output)
+
+
+@cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
     """
@@ -2255,7 +1087,7 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
         else:
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             try:
-                tourney_data = tourney_data_client.get_data(year, month)
+                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
             except ValueError as err:
                 error = str(err)
                 tourney_data = None
@@ -2283,6 +1115,525 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
     await util.post_output(ctx, output)
 
 
+@BOT.command(name='player', aliases=['user'], brief='Get infos on a player')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_player(ctx: commands.Context, *, player_name: str):
+    """
+    Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
+
+    Usage:
+      /player [player_name]
+      /user [player_name]
+
+    Parameters:
+      player_name: The (beginning of the) name of the player to search for. Mandatory.
+
+    Examples:
+      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        exact_name = util.get_exact_args(ctx)
+        if exact_name:
+            player_name = exact_name
+        user_infos = await user.get_user_details_by_name(player_name)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = await user.get_user_details_by_info(user_info)
+            await util.post_output(ctx, output)
+    else:
+        await ctx.send(f'Could not find a player named `{player_name}`.')
+
+
+@BOT.command(name='prestige', brief='Get prestige combos of crew')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
+    """
+    Get the prestige combinations of the crew specified.
+
+    Usage:
+      /prestige [crew_name]
+
+    Parameters:
+      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+
+    Examples:
+      /prestige xin - Will print all prestige combinations including the crew 'Xin'.
+
+    Notes:
+      This command will only print recipes for the crew with the best matching crew name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_price(ctx: commands.Context, *, item_name: str):
+    """
+    Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
+
+    Usage:
+      /price [item_name]
+      /fairprice [item_name]
+      /cost [item_name]
+
+    Parameters:
+      item_name: (Part of) the name of an item to be crafted. Mandatory.
+
+    Examples:
+      /price mineral crate - Prints prices for all items having 'mineral crate' in their names.
+
+    Notes:
+      Market prices returned may not reflect the real market value, due to transfers between alts/friends.
+      This command will print prices for all items matching the specified item_name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='recipe', brief='Get character recipes')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
+    """
+    Get the prestige recipes of the crew specified.
+
+    Usage:
+      /recipe [crew_name]
+
+    Parameters:
+      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
+
+    Examples:
+      /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
+
+    Notes:
+      This command will only print recipes for the crew with the best matching crew name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='research', brief='Get research data')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_research(ctx: commands.Context, *, research_name: str):
+    """
+    Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
+
+    Usage:
+      /research [research_name]
+
+    Parameters:
+      research_name: The name of the research to get details on.
+
+    Examples:
+      /research python - Will print information on all researches having 'python' in their names.
+
+    Notes:
+      This command will print information for all researches matching the specified name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='room', brief='Get room infos')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_room(ctx: commands.Context, *, room_name: str):
+    """
+    Get detailed information on a room. If more than 2 results are found, details will be omitted.
+
+    Usage:
+      /room [name]
+      /room [short name] [room level]
+
+    Parameters:
+      name:       A room's name or part of it. Mandatory.
+      short name: A room's short name (2 or 3 characters). Mandatory.
+      room level: A room's level. Mandatory.
+
+    Examples:
+      /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
+      /room cloak generator lv2 - Searches for rooms having 'cloak generator lv2' in their names and prints their details.
+      /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_stars(ctx: commands.Context, *, division: str = None):
+    """
+    Get stars earned by each fleet during the current final tournament week.
+
+    Usage:
+      /stars
+      /stars <division>
+
+    Parameters:
+      division: The letter of the division to show the star counts for. Optional. Valid values: [A, B, C, D]
+
+    Examples:
+      /stars - Prints the star count for every fleet competing in the current tournament finals.
+      /stars A - Prints the star count for every fleet competing in division A in the current tournament finals.
+
+    Notes:
+      This command does not work outside of the tournament finals week.
+    """
+    __log_command_use(ctx)
+    if tourney.is_tourney_running():
+        async with ctx.typing():
+            if not pss_top.is_valid_division_letter(division):
+                subcommand = BOT.get_command('stars fleet')
+                await ctx.invoke(subcommand, fleet_name=division)
+                return
+            else:
+                output, _ = await pss_top.get_division_stars(ctx, division=division, as_embed=(await __get_use_embeds(ctx.guild)))
+        await util.post_output(ctx, output)
+    else:
+        cmd = BOT.get_command('past stars')
+        await ctx.invoke(cmd, month=None, year=None, division=division)
+        return
+
+
+@cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
+    """
+    Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
+
+    Usage:
+      /stars
+      /stars fleet [fleet_name]
+
+    Parameters:
+      fleet_name: The (beginning of the) name of a fleet to show the star counts for. Mandatory.
+
+    Examples:
+      /stars fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection, prints the star count for every member of the fleet, if it competes in the current tournament finals.
+
+    Notes:
+      If this command is being called outside of the tournament finals week, it will show historic data for the last tournament.
+    """
+    __log_command_use(ctx)
+    if tourney.is_tourney_running():
+        async with ctx.typing():
+            exact_name = util.get_exact_args(ctx)
+            if exact_name:
+                fleet_name = exact_name
+            fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
+
+        if fleet_infos:
+            if len(fleet_infos) == 1:
+                fleet_info = fleet_infos[0]
+            else:
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+                _, fleet_info = await paginator.wait_for_option_selection()
+
+            if fleet_info:
+                async with ctx.typing():
+                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
+                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await __get_use_embeds(ctx.guild)))
+                await util.post_output(ctx, output)
+        else:
+            await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+    else:
+        cmd = BOT.get_command('past stars fleet')
+        await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
+        return
+
+
+@BOT.command(name='stats', aliases=['stat'], brief='Get item/crew stats')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
+    """
+    Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
+
+    Usage:
+      /stats <level> [name]
+
+    Parameters:
+      level: Level of a crew. Will only apply to crew stats. Optional.
+      name:  (Part of) the name of a crew or item. Mandatory.
+
+    Examples:
+      /stats hug - Will output results of the commands '/char hug' and '/item hug'
+      /stats 25 hug - Will output results of the command '/char 25 hug' and '/item hug'
+
+    Notes:
+      This command will only print stats for the crew with the best matching name.
+      This command will print information for all items matching the specified name.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        full_name = ' '.join([x for x in [level, name] if x])
+        level, name = util.get_level_and_name(level, name)
+        use_embeds = (await __get_use_embeds(ctx.guild))
+        try:
+            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=use_embeds)
+        except pss_exception.InvalidParameter:
+            char_output = None
+            char_success = False
+        try:
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=use_embeds)
+        except pss_exception.InvalidParameter:
+            item_output = None
+            item_success = False
+
+    if char_success:
+        await util.post_output(ctx, char_output)
+
+    if item_success:
+        if char_success and not use_embeds:
+            await ctx.send(settings.EMPTY_LINE)
+        await util.post_output(ctx, item_output)
+
+    if not char_success and not item_success:
+        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
+
+
+@BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
+async def cmd_time(ctx: commands.Context):
+    """
+    Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
+
+    Usage:
+      /time
+
+    Examples:
+      /time - Prints PSS stardate, day & time in Melbourne and public holidays.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        star_date = f'Star date {util.get_star_date(utc_now)}'
+
+        mel_tz = pytz.timezone('Australia/Melbourne')
+        mel_time = utc_now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
+        melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
+
+        aus_holidays = holidays.Australia(years=utc_now.year, prov='ACT')
+        mel_date = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
+
+        first_day_of_next_month = util.get_first_of_following_month(utc_now)
+        time_till_next_month = ('Time until next monthly reset', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        while (first_day_of_next_month.month - 1) % 3:
+            first_day_of_next_month = util.get_first_of_following_month(first_day_of_next_month)
+        time_till_next_prestige_change = ('Time until next prestige recipe changes', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
+        as_embed = __get_use_embeds(ctx.guild)
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            output = [util.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
+        else:
+            output = [star_date, melbourne_time]
+            [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
+    await util.post_output(ctx, output)
+
+
+@BOT.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_top(ctx: commands.Context, *, count: str = '100'):
+    """
+    Prints either top fleets or captains. Prints top 100 fleets by default.
+
+    Usage:
+      /top <count>
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top - prints top 100 fleets.
+      /top 30 - prints top 30 fleets."""
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        if ' ' in count:
+            split_count = count.split(' ')
+            try:
+                count = int(split_count[0])
+                command = split_count[1]
+            except:
+                try:
+                    count = int(split_count[1])
+                    command = split_count[0]
+                except:
+                    raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+        else:
+            try:
+                count = int(count)
+            except:
+                raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+            command = 'fleets'
+        cmd = BOT.get_command(f'top {command}')
+        await ctx.invoke(cmd, count=count)
+        return
+
+
+@cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_top_captains(ctx: commands.Context, count: int = 100):
+    """
+    Prints top captains. Prints top 100 captains by default.
+
+    Usage:
+      /top captains <count>
+      /top <count> captains
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top captains - prints top 100 captains.
+      /top captains 30 - prints top 30 captains.
+      /top 30 captains - prints top 30 captains."""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await pss_top.get_top_captains(ctx, count, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
+    """
+    Prints top fleets. Prints top 100 fleets by default.
+
+    Usage:
+      /top fleets <count>
+      /top <count> fleets
+
+    Parameters:
+      count: The number of rows to be printed. Optional.
+
+    Examples:
+      /top fleets - prints top 100 fleets.
+      /top fleets 30 - prints top 30 fleets.
+      /top 30 fleets - prints top 30 fleets."""
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
+
+
+@BOT.group(name='tournament', aliases=['tourney'], brief='Information on tournament time')
+async def cmd_tournament(ctx: commands.Context):
+    """
+    Get information about the starting time of the tournament.
+
+    Usage:
+      /tournament
+      /tourney
+
+    Examples:
+      /tournament - Displays information about the starting time of this month's tournament.
+    """
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        cmd = BOT.get_command('tournament current')
+        await ctx.invoke(cmd)
+        return
+
+
+@cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
+async def cmd_tournament_current(ctx: commands.Context):
+    """
+    Get information about the starting time of the current month's tournament.
+
+    Usage:
+      /tournament current
+      /tourney current
+
+    Examples:
+      /tournament current - Displays information about the starting time of this month's tournament.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_current_tourney_start()
+        embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
+
+
+@cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
+async def cmd_tournament_next(ctx: commands.Context):
+    """
+    Get information about the starting time of the next month's tournament.
+
+    Usage:
+      /tournament next
+      /tourney next
+
+    Examples:
+      /tournament next - Displays information about the starting time of next month's tournament.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        utc_now = util.get_utcnow()
+        start_of_tourney = tourney.get_next_tourney_start()
+        embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
+        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
+
+
+@BOT.command(name='training', brief='Get training infos')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_training(ctx: commands.Context, *, training_name: str):
+    """
+    Get detailed information on a training. If more than 2 results are found, some details will be omitted.
+
+    Usage:
+      /training [name]
+
+    Parameters:
+      name: A room's name or part of it. Mandatory.
+
+    Examples:
+      /training bench - Searches for trainings having 'bench' in their names and prints their details.
+
+    Notes:
+      The training yields displayed represent the upper bound of possible yields.
+      The highest yield will always be displayed on the far left.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
 
 
 
@@ -2291,7 +1642,13 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
 
 
 
-@bot.group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
+
+
+# ############################################################################ #
+# ----------                      Raw commands                      ---------- #
+# ############################################################################ #
+
+@BOT.group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw(ctx: commands.Context):
     """
@@ -2316,7 +1673,7 @@ async def cmd_raw(ctx: commands.Context):
     await ctx.send_help('raw')
 
 
-@cmd_raw.command(name='achievement', brief='Get raw achievement data', aliases=['achievements'])
+@cmd_raw.command(name='achievement', aliases=['achievements'], brief='Get raw achievement data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
     """
@@ -2364,7 +1721,7 @@ async def cmd_raw_ai(ctx: commands.Context):
     await ctx.send_help('raw ai')
 
 
-@cmd_raw_ai.command(name='action', brief='Get raw ai action data', aliases=['actions'])
+@cmd_raw_ai.command(name='action', aliases=['actions'], brief='Get raw ai action data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     """
@@ -2388,7 +1745,7 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
     await raw.post_raw_data(ctx, ai.action_types_designs_retriever, 'ai_action', ai_action_id)
 
 
-@cmd_raw_ai.command(name='condition', brief='Get raw ai condition data', aliases=['conditions'])
+@cmd_raw_ai.command(name='condition', aliases=['conditions'], brief='Get raw ai condition data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
     """
@@ -2412,7 +1769,7 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
     await raw.post_raw_data(ctx, ai.condition_types_designs_retriever, 'ai_condition', ai_condition_id)
 
 
-@cmd_raw.command(name='char', brief='Get raw crew data', aliases=['crew', 'chars', 'crews'])
+@cmd_raw.command(name='char', aliases=['crew', 'chars', 'crews'], brief='Get raw crew data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     """
@@ -2436,7 +1793,7 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
     await raw.post_raw_data(ctx, crew.characters_designs_retriever, 'character', char_id)
 
 
-@cmd_raw.command(name='collection', brief='Get raw collection data', aliases=['coll', 'collections'])
+@cmd_raw.command(name='collection', aliases=['coll', 'collections'], brief='Get raw collection data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
     """
@@ -2460,7 +1817,7 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
     await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
 
 
-@cmd_raw.group(name='gm', brief='Get raw gm data', aliases=['galaxymap', 'galaxy'], invoke_without_command=True)
+@cmd_raw.group(name='gm', aliases=['galaxymap', 'galaxy'], brief='Get raw gm data', invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm(ctx: commands.Context):
     """
@@ -2484,7 +1841,7 @@ async def cmd_raw_gm(ctx: commands.Context):
     await ctx.send_help('raw gm')
 
 
-@cmd_raw_gm.command(name='system', brief='Get raw gm system data', aliases=['systems', 'star', 'stars'])
+@cmd_raw_gm.command(name='system', aliases=['systems', 'star', 'stars'], brief='Get raw gm system data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
     """
@@ -2508,7 +1865,7 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
     await raw.post_raw_data(ctx, gm.star_systems_designs_retriever, 'star system', star_system_id)
 
 
-@cmd_raw_gm.command(name='path', brief='Get raw gm path data', aliases=['paths', 'link', 'links'])
+@cmd_raw_gm.command(name='path', aliases=['paths', 'link', 'links'], brief='Get raw gm path data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
     """
@@ -2532,7 +1889,7 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
     await raw.post_raw_data(ctx, gm.star_system_links_designs_retriever, 'star system link', star_system_link_id)
 
 
-@cmd_raw.command(name='item', brief='Get raw item data', aliases=['items'])
+@cmd_raw.command(name='item', aliases=['items'], brief='Get raw item data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     """
@@ -2556,7 +1913,7 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
     await raw.post_raw_data(ctx, item.items_designs_retriever, 'item', item_id)
 
 
-@cmd_raw.command(name='mission', brief='Get raw mission data', aliases=['missions'])
+@cmd_raw.command(name='mission', aliases=['missions'], brief='Get raw mission data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     """
@@ -2580,7 +1937,7 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
     await raw.post_raw_data(ctx, mission.missions_designs_retriever, 'mission', mission_id)
 
 
-@cmd_raw.command(name='promotion', brief='Get raw promotion data', aliases=['promo', 'promotions', 'promos'])
+@cmd_raw.command(name='promotion', aliases=['promo', 'promotions', 'promos'], brief='Get raw promotion data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     """
@@ -2604,7 +1961,7 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
     await raw.post_raw_data(ctx, promo.promotion_designs_retriever, 'promotion', promo_id)
 
 
-@cmd_raw.command(name='research', brief='Get raw research data', aliases=['researches'])
+@cmd_raw.command(name='research', aliases=['researches'], brief='Get raw research data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     """
@@ -2628,7 +1985,7 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
     await raw.post_raw_data(ctx, research.researches_designs_retriever, 'research', research_id)
 
 
-@cmd_raw.group(name='room', brief='Get raw room data', aliases=['rooms'], invoke_without_command=True)
+@cmd_raw.group(name='room', aliases=['rooms'], brief='Get raw room data', invoke_without_command=True)
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     """
@@ -2652,7 +2009,7 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
     await raw.post_raw_data(ctx, room.rooms_designs_retriever, 'room', room_id)
 
 
-@cmd_raw_room.command(name='purchase', brief='Get raw room purchase data', aliases=['purchases'])
+@cmd_raw_room.command(name='purchase', aliases=['purchases'], brief='Get raw room purchase data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
     """
@@ -2676,7 +2033,7 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
     await raw.post_raw_data(ctx, room.rooms_designs_purchases_retriever, 'room purchase', room_purchase_id)
 
 
-@cmd_raw.command(name='ship', brief='Get raw ship data', aliases=['ships', 'hull', 'hulls'])
+@cmd_raw.command(name='ship', aliases=['ships', 'hull', 'hulls'], brief='Get raw ship data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     """
@@ -2700,7 +2057,7 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
     await raw.post_raw_data(ctx, ship.ships_designs_retriever, 'ship', ship_id)
 
 
-@cmd_raw.command(name='training', brief='Get raw training data', aliases=['trainings'])
+@cmd_raw.command(name='training', aliases=['trainings'], brief='Get raw training data')
 @commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
 async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
     """
@@ -2732,11 +2089,1058 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
 
 
 
+# ############################################################################ #
+# ----------                Server settings commands                ---------- #
+# ############################################################################ #
 
-@bot.command(brief='These are testing commands, usually for debugging purposes', name='test', hidden=True)
+@BOT.group(name='settings', brief='Server settings', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings(ctx: commands.Context):
+    """
+    Retrieve settings for this Discord server/guild.
+    Set settings for this server using the subcommands 'set' and 'reset'.
+
+    You need the 'Manage Server' permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings
+
+    Examples:
+      /settings - Prints all settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+
+            output = [f'**```Server settings for {ctx.guild.name}```**']
+            output.extend(guild_settings.autodaily.get_pretty_settings())
+            output.extend(guild_settings.get_pretty_bot_news_channel())
+            output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
+            output.append(f'Prefix = `{guild_settings.prefix}`')
+            output.append(f'Use embeds = {guild_settings.pretty_use_embeds}')
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_autodaily(ctx: commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily
+      /settings daily
+
+    Examples:
+      /settings autodaily - Prints all auto-daily settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
+        output = []
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = guild_settings.autodaily.get_pretty_settings()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_get_autodaily.command(name='channel', aliases=['ch'], brief='Retrieve auto-daily channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_autodaily_channel(ctx: commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily channel
+      /settings daily ch
+
+    Examples:
+      /settings autodaily ch - Prints the auto-daily channel settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = guild_settings.autodaily.get_pretty_setting_channel()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_get_autodaily.command(name='changemode', aliases=['mode'], brief='Retrieve auto-daily mode')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
+    """
+    Retrieve the auto-daily setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings autodaily changemode
+      /settings daily mode
+
+    Examples:
+      /settings autodaily mode - Prints the auto-daily change mode settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = guild_settings.autodaily.get_pretty_setting_changemode()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_botnews(ctx: commands.Context):
+    """
+    Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings botnews
+      /settings botchannel
+
+    Examples:
+      /settings botnews - Gets the channel configured for this server to receive bot news.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        output = []
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = guild_settings.get_pretty_bot_news_channel()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_embeds(ctx: commands.Context):
+    """
+    Retrieve the embed setting for this server. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings embed
+      /settings embeds
+
+    Examples:
+      /settings embed - Prints the embed setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = [f'Embeds on this server are turned: `{guild_settings.pretty_use_embeds}`']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_pagination(ctx: commands.Context):
+    """
+    Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings pagination
+      /settings pages
+
+    Examples:
+      /settings pagination - Prints the pagination setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = [f'Pagination on this server has been set to: `{guild_settings.pretty_use_pagination}`']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(name='prefix', brief='Retrieve prefix settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_prefix(ctx: commands.Context):
+    """
+    Retrieve the prefix setting for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings prefix
+
+    Examples:
+      /settings prefix - Prints the prefix setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    command = BOT.get_command('prefix')
+    await ctx.invoke(command)
+    return
+
+
+@BOT.command(name='prefix', brief='Retrieve prefix settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_prefix(ctx: commands.Context):
+    """
+    Retrieve the prefix setting for this server.
+
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /prefix
+
+    Examples:
+      /prefix - Prints the prefix setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+
+    async with ctx.typing():
+        channel_type = ''
+        prefix = ''
+        if util.is_guild_channel(ctx.channel):
+            channel_type = 'server'
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            prefix = guild_settings.prefix
+        else:
+            channel_type = 'channel'
+            prefix = settings.DEFAULT_PREFIX
+        output = [f'Prefix for this {channel_type} is: `{prefix}`']
+    await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@cmd_settings.group(name='reset', brief='Reset server settings', invoke_without_command=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset(ctx: commands.Context):
+    """
+    Reset settings for this server.
+
+    You need the 'Manage Server' permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset
+
+    Examples:
+      /settings reset - Resets all settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if not util.is_guild_channel(ctx.channel):
+        await ctx.send('This command cannot be used in DMs or group chats, but only on Discord servers!')
+    elif ctx.invoked_subcommand is None:
+        reset_autodaily = BOT.get_command(f'settings reset autodaily')
+        reset_pagination = BOT.get_command(f'settings reset pagination')
+        reset_prefix = BOT.get_command(f'settings reset prefix')
+        await ctx.invoke(reset_autodaily)
+        await ctx.invoke(reset_pagination)
+        await ctx.invoke(reset_prefix)
+        return
+
+
+@cmd_settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_autodaily(ctx: commands.Context):
+    """
+    Reset the auto-daily settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily
+      /settings reset daily
+
+    Examples:
+      /settings reset autodaily - Resets the auto-daily settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel) and ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+            success = await autodaily_settings.reset()
+            if success:
+                output = ['Successfully removed all auto-daily settings for this server.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset_autodaily.command(name='channel', aliases=['ch'], brief='Reset auto-daily channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
+    """
+    Reset the auto-daily channel settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily channel
+      /settings reset daily ch
+
+    Examples:
+      /settings reset autodaily - Removes the auto-daily channel settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+            success = await autodaily_settings.reset_channel()
+            if success:
+                output = ['Successfully removed the auto-daily channel.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily channel setting for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
+    """
+    Reset the auto-daily change mode settings for this server.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset autodaily changemode
+      /settings reset daily mode
+
+    Examples:
+      /settings reset autodaily mode - Resets the change mode for auto-daily changes for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+            success = await autodaily_settings.cmd_settings_reset_autodaily_mode()
+            if success:
+                output = ['Successfully reset the auto-daily change mode.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
+    """
+    Resets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset botnews
+      /settings reset botchannel
+
+    Examples:
+      /settings reset botnews - Removes the channel '#announcements' from the list of channels to receive bot news.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_bot_news_channel()
+            if success:
+                output = ['Successfully removed the bot news channel.']
+            else:
+                output = [
+                    'An error ocurred while trying to remove the bot news channel setting for this server.',
+                    'Please try again or contact the bot\'s author.'
+                ]
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_embeds(ctx: commands.Context):
+    """
+    Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset embed
+      /settings reset embeds
+
+    Examples:
+      /settings reset embed - Resets the embed settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_use_embeds()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings embed'))
+            return
+        else:
+            output = [
+                'An error ocurred while trying to reset the embed settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
+
+
+@cmd_settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_pagination(ctx: commands.Context):
+    """
+    Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset pagination
+      /settings reset pages
+
+    Examples:
+      /settings reset pagination - Resets the pagination settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_use_pagination()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings pagination'))
+            return
+        else:
+            output = [
+                'An error ocurred while trying to reset the pagination settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
+
+
+@cmd_settings_reset.command(name='prefix', brief='Reset prefix settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_prefix(ctx: commands.Context):
+    """
+    Reset the prefix settings for this server to '/'.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset prefix
+
+    Examples:
+      /settings reset prefix - Resets the prefix settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_prefix()
+        if success:
+            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}``']
+            await util.post_output(ctx, output)
+        else:
+            output = [
+                'An error ocurred while trying to reset the prefix settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+@cmd_settings.group(name='set', brief='Change server settings', invoke_without_command=False)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set(ctx: commands.Context):
+    """
+    Sets settings for this server.
+
+    You need the 'Manage Server' permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      Refer to sub-command help.
+
+    Examples:
+      Refer to sub-command help.
+    """
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set')
+
+
+@cmd_settings_set.group(name='autodaily', aliases=['daily'], brief='Change auto-daily settings', invoke_without_command=False)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily(ctx: commands.Context):
+    """
+    Change auto-daily settings for this server.
+
+    You need the 'Manage Server' permission to use any of these commands.
+    This command can only be used on Discord servers/guilds.
+    """
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set autodaily')
+
+
+@cmd_settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
+    """
+    Sets the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily channel <text_channel_mention>
+      /settings set daily ch <text_channel_mention>
+
+    Parameters:
+      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will try to set the current channel.
+
+    Examples:
+      /settings set daily channel - Sets the current channel to receive the /daily message once a day.
+      /settings set autodaily ch #announcements - Sets the channel #announcements to receive the /daily message once a day.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        if not text_channel:
+            text_channel = ctx.channel
+        success = await autodaily_settings.set_channel(text_channel)
+    if success:
+        await ctx.invoke(BOT.get_command('settings autodaily channel'))
+        return
+    else:
+        output = [f'Could not set autodaily channel for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily repost mode')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_autodaily_change(ctx: commands.Context):
+    """
+    Sets the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set autodaily changemode
+      /settings set daily change
+
+    Examples:
+      /settings set autodaily changemode - Toggles the change mode.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        success = await autodaily_settings.toggle_change_mode()
+    if success:
+        await ctx.invoke(BOT.get_command('settings autodaily changemode'))
+        return
+    else:
+        output = [f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel=None):
+    """
+    Sets the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set botnews <text channel mention>
+      /settings set botchannel <text channel mention>
+
+    Examples:
+      /settings set botnews #announcements - Sets the channel '#announcements' to receive bot news.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        if text_channel is None:
+            text_channel = ctx.channel
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_bot_news_channel(text_channel)
+    if success:
+        await ctx.invoke(BOT.get_command('settings botnews'))
+        return
+    else:
+        output = [f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
+    """
+    Sets or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set embed <switch>
+      /settings set embeds <switch>
+
+    Parameters:
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+
+    Notes:
+      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
+
+    Examples:
+      /settings set embed - Toggles the embed setting for the current Discord server/guild depending on the current setting.
+      /settings set embed off - Turns off embeds for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_use_embeds(switch)
+    if success:
+        await ctx.invoke(BOT.get_command('settings embed'))
+        return
+    else:
+        output = [f'Could not set embed settings for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None):
+    """
+    Sets or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set pagination <switch>
+      /settings set pages <switch>
+
+    Parameters:
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+
+    Notes:
+      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
+
+    Examples:
+      /settings set pagination - Toggles the pagination setting for the current Discord server/guild depending on the current setting.
+      /settings set pagination off - Turns off pagination for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_use_pagination(switch)
+    if success:
+        await ctx.invoke(BOT.get_command('settings pagination'))
+        return
+    else:
+        output = [f'Could not set pagination settings for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(name='prefix', brief='Set prefix')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
+    """
+    Set the prefix for this server. The default is '/'.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set prefix [prefix]
+
+    Parameters:
+      prefix: A string determining the new prefix. Mandatory. Leading whitespace will be omitted.
+
+    Examples:
+      /settings set prefix & - Sets the bot's prefix for the current Discord server/guild to '&'
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        prefix = prefix.lstrip()
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_prefix(prefix)
+    if success:
+        await ctx.invoke(BOT.get_command('settings prefix'))
+        return
+    else:
+        output = [f'Could not set prefix for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+
+
+
+
+
+
+
+
+# ############################################################################ #
+# ----------                     Owner commands                     ---------- #
+# ############################################################################ #
+
+@BOT.group(name='autodaily', brief='Configure auto-daily for the server', hidden=True)
 @commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_autodaily(ctx: commands.Context):
+    """
+    This command can be used to get an overview of the autodaily settings for this bot.
+
+    In order to use this command or any sub commands, you need to be the owner of this bot.
+    """
+    __log_command_use(ctx)
+    pass
+
+
+@cmd_autodaily.group(name='list', brief='List configured auto-daily channels', invoke_without_command=False, hidden=True)
+@commands.is_owner()
+async def cmd_autodaily_list(ctx: commands.Context):
+    __log_command_use(ctx)
+    pass
+
+
+@cmd_autodaily_list.command(name='all', brief='List all configured auto-daily channels', hidden=True)
+@commands.is_owner()
+async def cmd_autodaily_list_all(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, None)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily_list.command(name='invalid', brief='List all invalid configured auto-daily channels', hidden=True)
+@commands.is_owner()
+async def cmd_autodaily_list_invalid(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, False)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily_list.command(name='valid', brief='List all valid configured auto-daily channels', hidden=True)
+@commands.is_owner()
+async def cmd_autodaily_list_valid(ctx: commands.Context):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = await daily.get_daily_channels(ctx, None, True)
+    await util.post_output(ctx, output)
+
+
+@cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
+@commands.is_owner()
+async def cmd_autodaily_post(ctx: commands.Context):
+    __log_command_use(ctx)
+    guild = ctx.guild
+    channel_id = await server_settings.db_get_daily_channel_id(guild.id)
+    if channel_id is not None:
+        text_channel = BOT.get_channel(channel_id)
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text()
+        if as_embed:
+            await util.post_output_to_channel(text_channel, output_embed)
+        else:
+            await util.post_output_to_channel(text_channel, output)
+
+
+@BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
+@commands.is_owner()
+async def cmd_db(ctx: commands.Context):
+    __log_command_use(ctx)
+    await ctx.send_help('db')
+
+
+@cmd_db.command(name='query', brief='Try to execute a DB query', hidden=True)
+@commands.is_owner()
+async def cmd_db_query(ctx: commands.Context, *, query: str):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        success = await db.try_execute(query)
+    if not success:
+        await ctx.send(f'The query \'{query}\' failed.')
+    else:
+        await ctx.send(f'The query \'{query}\' has been executed successfully.')
+
+
+@cmd_db.command(name='select', brief='Try to select from DB', hidden=True)
+@commands.is_owner()
+async def cmd_db_select(ctx: commands.Context, *, query: str):
+    __log_command_use(ctx)
+    async with ctx.typing():
+        if not query.lower().startswith('select '):
+            query = f'SELECT {query}'
+        try:
+            result = await db.fetchall(query)
+            error = None
+        except Exception as error:
+            result = []
+    if error:
+        await ctx.send(f'The query \'{query}\' failed.')
+    elif result:
+        await ctx.send(f'The query \'{query}\' has been executed successfully.')
+        result = [str(record) for record in result]
+        await util.post_output(ctx, result)
+    else:
+        await ctx.send(f'The query \'{query}\' didn\'t return any results.')
+
+
+@BOT.group(name='device', brief='list available devices', hidden=True)
+@commands.is_owner()
+async def cmd_device(ctx: commands.Context):
+    """
+    Returns all known devices stored in the DB.
+    """
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            output = []
+            for device in login.DEVICES.devices:
+                output.append(settings.EMPTY_LINE)
+                if device.can_login_until:
+                    login_until = util.get_formatted_datetime(device.can_login_until)
+                else:
+                    login_until = '-'
+                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
+            output = output[1:]
+            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
+        for post in posts:
+            await ctx.send(post)
+
+
+@cmd_device.command(name='add', brief='store device', hidden=True)
+@commands.is_owner()
+async def cmd_device_add(ctx: commands.Context, device_key: str):
+    """
+    Attempts to store a device with the given device_key in the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            device = await login.DEVICES.add_device_by_key(device_key)
+            added = True
+        except Exception as err:
+            added = False
+    if added:
+        await ctx.send(f'Added device with device key \'{device.key}\'.')
+    else:
+        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
+
+
+@cmd_device.command(name='create', brief='create & store random device', hidden=True)
+@commands.is_owner()
+async def cmd_device_create(ctx: commands.Context):
+    """
+    Creates a new random device_key and attempts to store the new device in the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        device = await login.DEVICES.create_device()
+        try:
+            await device.get_access_token()
+            created = True
+        except Exception as err:
+            await login.DEVICES.remove_device(device)
+            created = False
+    if created is True:
+        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
+    else:
+        await ctx.send(f'Failed to create and store device:```{err}```')
+
+
+@cmd_device.command(name='login', brief='login to a device', hidden=True)
+@commands.is_owner()
+async def cmd_device_login(ctx: commands.Context):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            access_token = await login.DEVICES.get_access_token()
+            device = login.DEVICES.current
+        except Exception as err:
+            access_token = None
+    if access_token is not None:
+        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
+    else:
+        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
+
+
+@cmd_device.command(name='remove', aliases=['delete', 'yeet'], brief='remove device', hidden=True)
+@commands.is_owner()
+async def cmd_device_remove(ctx: commands.Context, device_key: str):
+    """
+    Attempts to remove a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            await login.DEVICES.remove_device_by_key(device_key)
+            yeeted = True
+        except Exception as err:
+            yeeted = False
+    if yeeted:
+        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
+    else:
+        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
+
+
+@cmd_device.command(name='select', brief='select a device', hidden=True)
+@commands.is_owner()
+async def cmd_device_select(ctx: commands.Context, device_key: str):
+    """
+    Attempts to select a device with the given device_key from the DB.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        device = login.DEVICES.select_device(device_key)
+    await ctx.send(f'Selected device \'{device.key}\'.')
+
+
+@BOT.command(name='embed', brief='Embeds your message.', hidden=True)
+@commands.is_owner()
+async def cmd_embed(ctx: commands.Context, *, message: str = None):
+    __log_command_use(ctx)
+    colour = util.get_bot_member_colour(BOT, ctx.guild)
+    embed = util.create_embed('Your message in an embed', description=message, colour=colour)
+    await ctx.send(embed=embed)
+
+
+@BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
+@commands.is_owner()
+async def cmd_repeat(ctx: commands.Context, *, message: str = None):
+    __log_command_use(ctx)
+    await ctx.send(message)
+
+
+@BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
+@commands.is_owner()
+async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
+    """
+    Sends an embed to all guilds which have a bot news channel configured.
+
+    Usage:
+      /sendnews [--<property_key>=<property_value> ...]
+
+    Available property keys:
+      title:   The title of the news.
+      content: The contents of the news.
+
+    Example:
+      /sendnews --title=This is a title. --content=This is the content.
+    """
+    __log_command_use(ctx)
+    if not news:
+        return
+
+    async with ctx.typing():
+        split_news = news.split('--')
+        news_parts = {key: value.strip() for key, value in [part.split('=', maxsplit=1) for part in split_news if '=' in part]}
+        if 'title' not in news_parts:
+            raise ValueError('You need to specify a title!')
+        avatar_url = BOT.user.avatar_url
+        for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
+            embed_colour = util.get_bot_member_colour(BOT, bot_news_channel.guild)
+            embed: discord.Embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+            embed.set_thumbnail(url=avatar_url)
+            await bot_news_channel.send(embed=embed)
+        embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
+        embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+        embed.set_thumbnail(url=avatar_url)
+    await ctx.send(embed=embed)
+
+
+@BOT.command(name='test', brief='These are testing commands, usually for debugging purposes', hidden=True)
+@commands.is_owner()
 async def cmd_test(ctx: commands.Context, action, *, params = None):
+    __log_command_use(ctx)
     print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utcnow = util.get_utcnow()
@@ -2747,7 +3151,7 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await ctx.send('Initialized the database from scratch')
         await util.try_delete_original_message(ctx)
     elif action == 'commands':
-        output = [', '.join(sorted(bot.all_commands.keys()))]
+        output = [', '.join(sorted(BOT.all_commands.keys()))]
         await util.post_output(ctx, output)
     elif action == 'setting':
         setting_name = params.replace(' ', '_').upper()
@@ -2773,207 +3177,53 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
         await util.post_output(ctx, output)
 
 
-@bot.command(brief='Try to execute a DB query', name='dbquery', hidden=True)
+@BOT.command(name='updatecache', brief='Updates all caches manually', hidden=True)
 @commands.is_owner()
-async def cmd_query(ctx: commands.Context, *, query: str):
+async def cmd_updatecache(ctx: commands.Context):
+    """This command is to be used to update all caches manually."""
+    __log_command_use(ctx)
     async with ctx.typing():
-        success = await db.try_execute(query)
-    if not success:
-        await ctx.send(f'The query \'{query}\' failed.')
+        await crew.characters_designs_retriever.update_cache()
+        await crew.collections_designs_retriever.update_cache()
+        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+        for prestige_to_cache in prestige_to_caches:
+            await prestige_to_cache.update_data()
+        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+        for prestige_from_cache in prestige_from_caches:
+            await prestige_from_cache.update_data()
+        await item.items_designs_retriever.update_cache()
+        await research.researches_designs_retriever.update_cache()
+        await room.rooms_designs_retriever.update_cache()
+        await training.trainings_designs_retriever.update_cache()
+    await ctx.send('Updated all caches successfully!')
+
+
+
+
+
+
+
+
+
+
+# ############################################################################ #
+# ----------                Command Helper Functions                ---------- #
+# ############################################################################ #
+
+async def __assert_settings_command_valid(ctx: commands.Context) -> None:
+    if util.is_guild_channel(ctx.channel):
+        permissions = ctx.channel.permissions_for(ctx.author)
+        if getattr(permissions, 'manage_guild') is not True:
+            raise commands.MissingPermissions(['manage_guild'])
     else:
-        await ctx.send(f'The query \'{query}\' has been executed successfully.')
+        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
-@bot.command(brief='Try to select from DB', name='dbselect', hidden=True)
-@commands.is_owner()
-async def cmd_query(ctx: commands.Context, *, query: str):
-    async with ctx.typing():
-        if not query.lower().startswith('select '):
-            query = f'SELECT {query}'
-        try:
-            result = await db.fetchall(query)
-            error = None
-        except Exception as error:
-            result = []
-    if error:
-        await ctx.send(f'The query \'{query}\' failed.')
-    elif result:
-        await ctx.send(f'The query \'{query}\' has been executed successfully.')
-        await ctx.send(result)
-    else:
-        await ctx.send(f'The query \'{query}\' didn\'t return any results.')
-
-
-
-@bot.command(brief='Send bot news to all servers.', name='sendnews', aliases=['botnews'], hidden=True)
-@commands.is_owner()
-async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
-    """
-    Sends an embed to all guilds which have a bot news channel configured.
-
-    Usage:
-      /sendnews [--<property_key>=<property_value> ...]
-
-    Available property keys:
-      title:   The title of the news.
-      content: The contents of the news.
-
-    Example:
-      /sendnews --title=This is a title. --content=This is the content.
-    """
-    __log_command_use(ctx)
-
-    if not news:
-        return
-
-    async with ctx.typing():
-        split_news = news.split('--')
-        news_parts = {key: value.strip() for key, value in [part.split('=', maxsplit=1) for part in split_news if '=' in part]}
-        if 'title' not in news_parts:
-            raise ValueError('You need to specify a title!')
-        avatar_url = bot.user.avatar_url
-        for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
-            embed_colour = util.get_bot_member_colour(bot, bot_news_channel.guild)
-            embed: discord.Embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
-            embed.set_thumbnail(url=avatar_url)
-            await bot_news_channel.send(embed=embed)
-        embed_colour = util.get_bot_member_colour(bot, ctx.guild)
-        embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
-        embed.set_thumbnail(url=avatar_url)
-    await ctx.send(embed=embed)
-
-
-@bot.group(brief='list available devices', name='device', hidden=True)
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device(ctx: commands.Context):
-    """
-    Returns all known devices stored in the DB.
-    """
-    __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            output = []
-            for device in login.DEVICES.devices:
-                output.append(settings.EMPTY_LINE)
-                if device.can_login_until:
-                    login_until = util.get_formatted_datetime(device.can_login_until)
-                else:
-                    login_until = '-'
-                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
-            output = output[1:]
-            posts = util.create_posts_from_lines(output, settings.MAXIMUM_CHARACTERS)
-        for post in posts:
-            await ctx.send(post)
-
-
-@cmd_device.command(brief='create & store random device', name='create')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_create(ctx: commands.Context):
-    """
-    Creates a new random device_key and attempts to store the new device in the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        device = await login.DEVICES.create_device()
-        try:
-            await device.get_access_token()
-            created = True
-        except Exception as err:
-            await login.DEVICES.remove_device(device)
-            created = False
-    if created is True:
-        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
-    else:
-        await ctx.send(f'Failed to create and store device:```{err}```')
-
-
-@cmd_device.command(brief='store device', name='add')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_add(ctx: commands.Context, device_key: str):
-    """
-    Attempts to store a device with the given device_key in the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            device = await login.DEVICES.add_device_by_key(device_key)
-            added = True
-        except Exception as err:
-            added = False
-    if added:
-        await ctx.send(f'Added device with device key \'{device.key}\'.')
-    else:
-        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
-
-
-@cmd_device.command(brief='remove device', name='remove', aliases=['delete', 'yeet'])
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_remove(ctx: commands.Context, device_key: str):
-    """
-    Attempts to remove a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            await login.DEVICES.remove_device_by_key(device_key)
-            yeeted = True
-        except Exception as err:
-            yeeted = False
-    if yeeted:
-        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
-    else:
-        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
-
-
-@cmd_device.command(brief='login to a device', name='login')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_login(ctx: commands.Context):
-    """
-    Attempts to remove a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            access_token = await login.DEVICES.get_access_token()
-            device = login.DEVICES.current
-        except Exception as err:
-            access_token = None
-    if access_token is not None:
-        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
-    else:
-        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
-
-
-@cmd_device.command(brief='select a device', name='select')
-@commands.is_owner()
-@commands.cooldown(rate=2*RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_device_select(ctx: commands.Context, device_key: str):
-    """
-    Attempts to select a device with the given device_key from the DB.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        device = login.DEVICES.select_device(device_key)
-    await ctx.send(f'Selected device \'{device.key}\'.')
-
-
-
-
-
-
-
-
-
-
-# ---------- Command Helper Functions ----------
-
-
-
+async def __get_use_embeds(guild: discord.Guild) -> bool:
+    if not guild:
+        return settings.USE_EMBEDS
+    guild_settings = await GUILD_SETTINGS.get(BOT, guild.id)
+    return guild_settings.use_embeds
 
 
 def __log_command_use(ctx: commands.Context):
@@ -2988,13 +3238,6 @@ def __log_command_use_error(ctx: commands.Context, err: Exception):
             print(str(err))
 
 
-async def __assert_settings_command_valid(ctx: commands.Context) -> None:
-    if util.is_guild_channel(ctx.channel):
-        permissions = ctx.channel.permissions_for(ctx.author)
-        if getattr(permissions, 'manage_guild') is not True:
-            raise commands.MissingPermissions(['manage_guild'])
-    else:
-        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
 
@@ -3003,12 +3246,10 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
 
 
 
+# ############################################################################ #
+# ----------                      Run the Bot                       ---------- #
+# ############################################################################ #
 
-
-
-
-# ----- Run the Bot -----------------------------------------------------------
 if __name__ == '__main__':
-    print(f'discord.py version: {discord.__version__}')
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
-    bot.run(token)
+    BOT.run(token)

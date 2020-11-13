@@ -20,7 +20,7 @@ import utility as util
 
 # ---------- Constants & Internals ----------
 
-ACCESS_TOKEN_TIMEOUT: datetime.timedelta = datetime.timedelta(hours=8)
+ACCESS_TOKEN_TIMEOUT: datetime.timedelta = datetime.timedelta(hours=11, minutes=30)
 FIFTEEN_HOURS: datetime.timedelta = datetime.timedelta(hours=15)
 ONE_DAY: datetime.timedelta = datetime.timedelta(days=1)
 ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
@@ -256,19 +256,6 @@ class DeviceCollection():
 
     async def get_access_token(self) -> str:
         async with self.__token_lock:
-            result = None
-            while result is None:
-                try:
-                    result = await self.current.get_access_token()
-                except:
-                    result = None
-                if result is None:
-                    self.__devices = [Device(create_device_key())]
-            return result
-
-
-    async def get_access_token_broken(self) -> str:
-        async with self.__token_lock:
             if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')
             result: str = None
@@ -414,7 +401,6 @@ async def _db_try_update_device(device: Device) -> bool:
 # ---------- Initialization ----------
 
 async def init():
-    #__devices = await _db_get_devices()
+    __devices = await _db_get_devices()
     global DEVICES
-    #DEVICES = DeviceCollection(__devices)
-    DEVICES = DeviceCollection()
+    DEVICES = DeviceCollection(__devices)
