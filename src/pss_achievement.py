@@ -24,7 +24,7 @@ ACHIEVEMENT_DESIGN_DESCRIPTION_PROPERTY_NAME = 'AchievementTitle'
 
 # ---------- Initialization ----------
 
-achievements_designs_retriever: entity.EntityDesignsRetriever = entity.EntityDesignsRetriever(
+achievements_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     ACHIEVEMENT_DESIGN_BASE_PATH,
     ACHIEVEMENT_DESIGN_KEY_NAME,
     ACHIEVEMENT_DESIGN_DESCRIPTION_PROPERTY_NAME,

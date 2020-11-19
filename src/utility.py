@@ -25,6 +25,8 @@ import settings
 
 ONE_DAY = timedelta(days=1)
 
+RX_DISCORD_INVITE = re.compile(r'(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?')
+
 
 
 
@@ -155,9 +157,12 @@ def get_formatted_duration(total_seconds: int, include_relative_indicator: bool 
 
 
 
-def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True):
-    total_seconds = delta.total_seconds()
-    return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool = True, include_seconds: bool = True) -> str:
+    if delta:
+        total_seconds = delta.total_seconds()
+        return get_formatted_duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
+    else:
+        return ''
 
 
 def get_utcnow():
@@ -166,7 +171,7 @@ def get_utcnow():
 
 def parse_pss_datetime(pss_datetime: str) -> datetime:
     result = None
-    if pss_datetime is not None:
+    if pss_datetime:
         try:
             result = datetime.strptime(pss_datetime, settings.API_DATETIME_FORMAT_ISO)
         except ValueError:
@@ -175,9 +180,18 @@ def parse_pss_datetime(pss_datetime: str) -> datetime:
     return result
 
 
-async def post_output(ctx, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+def format_pss_datetime(dt: datetime) -> str:
+    result = dt.strftime(settings.API_DATETIME_FORMAT_ISO)
+    return result
+
+
+async def post_output(ctx: commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
-        await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+        if isinstance(output[0], discord.Embed):
+            for embed in output:
+                await ctx.send(embed=embed)
+        elif isinstance(output[0], str):
+            await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
 
 
 async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
@@ -217,12 +231,47 @@ async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_cha
         await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
 
 
-def create_embed(title, description=None, colour=None, fields=None):
-    result = discord.Embed(title=title, description=description, colour=colour)
+def create_embed(title: str, description: str = None, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, image_url: str = None, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, timestamp: datetime = None) -> discord.Embed:
+    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty, timestamp=timestamp or discord.Embed.Empty)
+    if title and title != discord.Embed.Empty:
+        result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
     if fields is not None:
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
+    if thumbnail_url:
+        result.set_thumbnail(url=thumbnail_url)
+    if image_url:
+        result.set_image(url=image_url)
+    if footer:
+        result.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+    elif timestamp:
+        result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+
     return result
+
+
+def create_basic_embeds(title: str, repeat_title: bool = True, description: List[str] = None, colour: discord.Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+    result = []
+    if description:
+        embed_bodies = create_posts_from_lines(description, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+        body_count = len(embed_bodies)
+        for i, embed_body in enumerate(embed_bodies):
+            embed = create_embed(discord.Embed.Empty, description=embed_body, colour=colour)
+            if title and title != discord.Embed.Empty and (i == 0 or repeat_title):
+                embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+            if thumbnail_url and (i == 0 or repeat_thumbnail):
+                embed.set_thumbnail(url=thumbnail_url)
+            if image_url and (i == body_count or repeat_image):
+                embed.set_image(url=image_url)
+            if timestamp and (i == body_count or repeat_timestamp):
+                embed.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+                embed.timestamp = timestamp
+            if footer and (i == body_count or repeat_footer):
+                embed.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+            result.append(embed)
+        return result
+    else:
+        return [create_embed(title, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, footer=footer, timestamp=timestamp)]
 
 
 def get_bot_member_colour(bot, guild):
@@ -265,6 +314,11 @@ def create_posts_from_lines(lines, char_limit) -> list:
         result = ['']
 
     return result
+
+
+def get_star_date(utc_now: datetime) -> int:
+    today = date(utc_now.year, utc_now.month, utc_now.day)
+    return (today - settings.PSS_START_DATE).days
 
 
 def escape_escape_sequences(txt: str) -> str:
@@ -407,6 +461,16 @@ def sort_tuples_by(data: list, order_info: list) -> list:
         return result
 
 
+def convert_color_string_to_embed_color(color_string: str) -> discord.Color:
+    if color_string:
+        split_color_string = color_string.split(',')
+        r, g, b = [int(c) for c in split_color_string]
+        result = discord.Color.from_rgb(r, g, b)
+    else:
+        result = discord.Embed.Empty
+    return result
+
+
 def convert_input_to_boolean(s: str) -> bool:
     result = None
     if s:
@@ -470,17 +534,23 @@ def url_escape(s: str) -> str:
 
 
 def format_excel_datetime(dt: datetime, include_seconds: bool = True) -> str:
-    format_str = '%Y-%m-%d %H:%M'
-    if include_seconds:
-        format_str += ':%S'
-    result = dt.strftime(format_str)
-    return result
+    if dt:
+        format_str = '%Y-%m-%d %H:%M'
+        if include_seconds:
+            format_str += ':%S'
+        result = dt.strftime(format_str)
+        return result
+    else:
+        return None
 
 
 def convert_pss_timestamp_to_excel(pss_timestamp: str) -> str:
-    dt = parse_pss_datetime(pss_timestamp)
-    result = format_excel_datetime(dt)
-    return result
+    if pss_timestamp:
+        dt = parse_pss_datetime(pss_timestamp)
+        result = format_excel_datetime(dt)
+        return result
+    else:
+        return ''
 
 
 def compare_versions(version_1: str, version_2: str) -> int:
@@ -548,9 +618,12 @@ def get_month_from_short_name(month_short_name: str) -> int:
 
 
 def get_historic_data_note(dt: datetime) -> str:
-    timestamp = get_formatted_datetime(dt)
-    result = f'```This is historic data from: {timestamp}```'
-    return result
+    if dt is not None:
+        timestamp = get_formatted_datetime(dt)
+        result = f'{settings.HISTORIC_DATA_NOTE}: {timestamp}'
+        return result
+    else:
+        return None
 
 
 def should_escape_entity_name(entity_name: str) -> bool:
@@ -665,6 +738,12 @@ def is_valid_month(month: str) -> bool:
         except (TypeError, ValueError):
             pass
     return result
+
+
+def make_dict_value_lists_unique(d: Dict[str, Iterable[object]]) -> Dict[str, List[object]]:
+    for key in d.keys():
+        d[key] = list(set(d[key]))
+    return d
 
 
 

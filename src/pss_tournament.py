@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import date, datetime, time, timedelta, timezone
+from typing import List
 import discord
 
 import pss_core as core
@@ -50,9 +51,16 @@ def embed_tourney_start(start_date, utc_now, colour=None):
     if currently_running:
         end_date = util.get_first_of_following_month(start_date)
         delta_end = end_date - utc_now
-        delta_end_formatted = util.get_formatted_timedelta(delta_end, False)
+        delta_end_formatted = util.get_formatted_timedelta(delta_end, True)
         fields.append(util.get_embed_field_def('Ends', delta_end_formatted, True))
     result = util.create_embed(f'{tourney_month} tournament', colour=colour, fields=fields)
+    return result
+
+
+def convert_tourney_embed_to_plain_text(embed: discord.Embed) -> List[str]:
+    result = [f'**{embed.author.name}**']
+    for field in embed.fields:
+        result.append(f'{field.name} {field.value}')
     return result
 
 
@@ -82,3 +90,12 @@ def is_tourney_running(start_date=None, utc_now=None):
         start_date = get_current_tourney_start(utc_now)
 
     return start_date < utc_now
+
+
+async def get_max_tourney_battle_attempts() -> int:
+    latest_settings = await core.get_latest_settings()
+    max_tourney_battle_attempts = latest_settings.get('TournamentBonusScore')
+    if max_tourney_battle_attempts:
+        return int(max_tourney_battle_attempts)
+    else:
+        return None

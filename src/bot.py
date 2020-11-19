@@ -136,6 +136,7 @@ async def on_ready() -> None:
     __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
     print(f'Initialized!')
     print(f'Bot version is: {settings.VERSION}')
+    schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
     print(f'discord.py version: {discord.__version__}')
     BOT.loop.create_task(post_dailies_loop())
@@ -191,12 +192,19 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
             command_args = util.get_exact_args(ctx)
             help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
             command = BOT.get_command(help_args)
-            await ctx.send_help(command)
+            try:
+                await ctx.send_help(command)
+            except discord.errors.Forbidden:
+                __log_command_use_error(ctx, err, force_printing=True)
         error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-        if retry_after:
-            await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
-        else:
-            await ctx.send(f'**Error**\n{error_message}')
+
+        try:
+            if retry_after:
+                await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+            else:
+                await ctx.send(f'**Error**\n{error_message}')
+        except discord.errors.Forbidden:
+            __log_command_use_error(ctx, err, force_printing=True)
 
 
 @BOT.event
@@ -258,12 +266,14 @@ async def post_dailies_loop() -> None:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
 
-            latest_message_output, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
-            latest_daily_message = '\n'.join(latest_message_output)
-            output, created_output = await dropship.get_dropship_text(daily_info=daily_info)
+            latest_message_output_text, latest_message_output_embeds, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
+            latest_daily_message = '\n'.join(latest_message_output_text)
+            lastest_daily_embed = latest_message_output_embeds[0]
+            output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
-                posted_count = await post_dailies(current_daily_message, autodaily_settings, utc_now, yesterday, latest_daily_message)
+                current_daily_embed = output_embeds[0]
+                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now, yesterday, latest_daily_message, lastest_daily_embed)
             print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed:
@@ -274,19 +284,18 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: discord.Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> int:
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, utc_now, yesterday, latest_daily_message_contents)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now, yesterday, latest_daily_message_contents, latest_daily_message_embed)
             if posted:
                 posted_count += 1
-                await notify_on_autodaily(settings.guild, settings.notify, settings.notify_type)
             await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: discord.Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> (bool, bool, discord.Message):
     """
     Returns (posted, can_post, latest_message)
     """
@@ -305,12 +314,12 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         latest_message: discord.Message = None
 
         if can_post:
-            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message)
+            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message, latest_daily_message_embed, current_daily_embed)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
-                if latest_message.content == current_daily_message:
+                if dropship.compare_dropship_messages(latest_message, current_daily_message, current_daily_embed):
                     post_new = False
                 elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
@@ -343,7 +352,14 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
 
             if can_post and post_new:
                 try:
-                    latest_message = await text_channel.send(current_daily_message)
+                    use_embeds = await __get_use_embeds(text_channel.guild)
+                    if use_embeds:
+                        colour = util.get_bot_member_colour(BOT, text_channel.guild)
+                        embed = current_daily_embed.copy()
+                        embed.colour = colour
+                        latest_message = await text_channel.send(embed=embed)
+                    else:
+                        latest_message = await text_channel.send(current_daily_message)
                     posted = True
                     print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except discord.Forbidden:
@@ -363,7 +379,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str) -> (bool, discord.Message):
+async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: discord.Embed, current_daily_embed: discord.Embed) -> (bool, discord.Message):
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
@@ -384,7 +400,7 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
         if result is None:
             try:
                 async for message in text_channel.history(after=yesterday):
-                    if message.author == BOT.user and (message.content == latest_daily or message.content == current_daily):
+                    if message.author == BOT.user and (dropship.compare_dropship_messages(message, latest_daily, latest_daily_embed) or dropship.compare_dropship_messages(message, current_daily, current_daily_embed)) and (message.content == latest_daily or message.content == current_daily):
                         result = message
                         print(f'[daily_fetch_latest_message] found latest message by content in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {result.id}')
                         break
@@ -395,20 +411,6 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
                 print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
 
     return can_post, result
-
-
-async def notify_on_autodaily(guild: discord.Guild, notify: Union[discord.Member, discord.Role], notify_type: server_settings.AutoDailyNotifyType) -> None:
-    if guild is not None and notify is not None and notify_type is not None:
-        message = f'The auto-daily has been reposted on Discord server \'{guild.name}\''
-        members = []
-        if notify_type == server_settings.AutoDailyNotifyType.USER:
-            if guild.id == notify.guild.id:
-                members.append(notify)
-        elif notify_type == server_settings.AutoDailyNotifyType.ROLE:
-            if guild.id == notify.guild.id:
-                members = notify.members
-        for member in members:
-            await member.send(content=message)
 
 
 
@@ -438,15 +440,7 @@ async def cmd_about(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        guilds = [guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING]
-        all_users = set(BOT.users)
-        users = []
-        bots = []
-        for user in all_users:
-            if user.bot:
-                bots.append(user)
-            else:
-                users.append(user)
+        guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
         user_name = BOT.user.display_name
         if ctx.guild is None:
             nick = BOT.user.display_name
@@ -455,25 +449,22 @@ async def cmd_about(ctx: commands.Context):
         has_nick = BOT.user.display_name != nick
         pfp_url = BOT.user.avatar_url
         about_info = core.read_about_file()
+
         title = f'About {nick}'
         if has_nick:
             title += f' ({user_name})'
         description = about_info['description']
-        footer = f'Serving {len(users)} users & {len(bots)} bots on {len(guilds)} guilds.'
-        version = f'v{settings.VERSION}'
-        support_link = about_info['support']
-        authors = ', '.join(about_info['authors'])
-        pfp_author = about_info['pfp']
-        color = util.get_bot_member_colour(BOT, ctx.guild)
+        footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
+        fields = [
+            ('version', f'v{settings.VERSION}', True),
+            ('authors', ', '.join(about_info['authors']), True),
+            ('profile pic by', about_info['pfp'], True),
+            ('support', about_info['support'], False)
+        ]
+        colour = util.get_bot_member_colour(BOT, ctx.guild)
 
-        embed = discord.Embed(title=title, type='rich', color=color, description=description)
-        embed.add_field(name="version", value=version)
-        embed.add_field(name="authors", value=authors)
-        embed.add_field(name="profile pic by", value=pfp_author)
-        embed.add_field(name="support", value=support_link)
-        embed.set_footer(text=footer)
-        embed.set_thumbnail(url=pfp_url)
-    await ctx.send(embed=embed)
+        embed = util.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
+    await util.post_output(ctx, [embed])
 
 
 @BOT.command(name='invite', brief='Get an invite link')
@@ -514,7 +505,27 @@ async def cmd_links(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output = core.read_links_file()
+        links = core.read_links_file()
+        output = []
+        if (await __get_use_embeds(ctx.guild)):
+            title = 'Pixel Starships weblinks'
+            colour = util.get_bot_member_colour(BOT, ctx.guild)
+            fields = []
+            for field_name, hyperlinks in links.items():
+                field_value = []
+                for (description, hyperlink) in hyperlinks:
+                    field_value.append(f'[{description}]({hyperlink})')
+                fields.append((field_name, '\n'.join(field_value), False))
+            embed = util.create_embed(title, fields=fields, colour=colour)
+            output.append(embed)
+        else:
+            for category, hyperlinks in links.items():
+                output.append(f'**{category}**')
+                for (description, hyperlink) in hyperlinks:
+                    output.append(f'{description}: <{hyperlink}>')
+                output.append(settings.EMPTY_LINE)
+            if output:
+                output = output[:-1]
     await util.post_output(ctx, output)
 
 
@@ -596,26 +607,26 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
         item_name = item_name.strip().lower()
 
         if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
-            items_designs_details = await item.get_items_designs_details_by_name(item_name)
-            found_matching_items = items_designs_details and len(items_designs_details) > 0
-            items_designs_details = item.filter_items_designs_details_for_equipment(items_designs_details)
+            items_details = await item.get_items_details_by_name(item_name)
+            found_matching_items = items_details and len(items_details) > 0
+            items_details = item.filter_items_details_for_equipment(items_details)
         else:
-            items_designs_details = []
+            items_details = []
             found_matching_items = False
-        if items_designs_details:
-            if len(items_designs_details) == 1:
-                item_design_details = items_designs_details[0]
+        if items_details:
+            if len(items_details) == 1:
+                item_details = items_details[0]
             else:
                 use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, item_name, items_designs_details, item.get_item_search_details, use_pagination)
-                _, item_design_details = await paginator.wait_for_option_selection()
-            slot, stat = item.get_slot_and_stat_type(item_design_details)
+                paginator = pagination.Paginator(ctx, item_name, items_details, item.get_item_search_details, use_pagination)
+                _, item_details = await paginator.wait_for_option_selection()
+            slot, stat = item.get_slot_and_stat_type(item_details)
         else:
             if found_matching_items:
                 raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat)
+        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -642,7 +653,7 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_design_details_by_name(crew_name, level=level)
+        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -668,7 +679,7 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name)
+        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -685,7 +696,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
       collection_name: The name of the collection to get details on.
 
     Examples:
-      /collection_name savy - Will print information on a collection having 'savy' in its name.
+      /collection savy - Will print information on a collection having 'savy' in its name.
       /collection - Will print less information on all collections.
 
     Notes:
@@ -693,7 +704,7 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_design_details_by_name(collection_name)
+        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -712,8 +723,12 @@ async def cmd_daily(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_dropship_text()
-    await util.post_output(ctx, output)
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
+    if as_embed:
+        await util.post_output(ctx, output_embed)
+    else:
+        await util.post_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
@@ -749,7 +764,8 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
 
         if fleet_info:
             async with ctx.typing():
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info)
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
             await util.post_output_with_files(ctx, output, file_paths)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -778,7 +794,7 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name)
+        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -802,7 +818,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name)
+        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -825,7 +841,7 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = crew.get_level_costs(from_level, to_level)
+        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -844,7 +860,7 @@ async def cmd_news(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_news()
+        output, _ = await dropship.get_news(ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -892,6 +908,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
             if not pss_top.is_valid_division_letter(division):
                 subcommand = BOT.get_command('past stars fleet')
                 await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+                return
             else:
                 month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
                 try:
@@ -900,7 +917,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
                     error = str(err)
                     tourney_data = None
                 if tourney_data:
-                    output, _ = await pss_top.get_division_stars(division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at)
+                    output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
                 elif error:
                     output = [error]
     await util.post_output(ctx, output)
@@ -950,7 +967,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
 
         if fleet_info:
             async with ctx.typing():
-                output = fleet.get_fleet_users_stars_from_tournament_data(fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at)
+                output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     elif error:
         output = [str(error)]
     else:
@@ -1014,6 +1031,46 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
     await util.post_output(ctx, output)
 
 
+@cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = None):
+    """
+    Get historic tournament fleet data.
+
+    Parameters:
+    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+
+    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        output = []
+        error = None
+        utc_now = util.get_utcnow()
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        try:
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        except ValueError as err:
+            error = str(err)
+            tourney_data = None
+
+    if tourney_data and tourney_data.fleets and tourney_data.users:
+        async with ctx.typing():
+            file_name = f'tournament_results_{year}-{util.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
+            file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+        await util.post_output_with_files(ctx, [], file_paths)
+        for file_path in file_paths:
+            os.remove(file_path)
+        return
+    elif error:
+        output = [str(error)]
+    else:
+        output = [f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!']
+    await util.post_output(ctx, output)
+
+
 @cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
@@ -1058,7 +1115,7 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
 
         if user_info:
             async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info, tourney_data.retrieved_at, tourney_data.fleets)
+                output = await user.get_user_details_by_info(user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets)
     elif error:
         output = [str(error)]
     else:
@@ -1099,7 +1156,8 @@ async def cmd_player(ctx: commands.Context, *, player_name: str):
 
         if user_info:
             async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info)
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                output = await user.get_user_details_by_info(user_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
             await util.post_output(ctx, output)
     else:
         await ctx.send(f'Could not find a player named `{player_name}`.')
@@ -1125,7 +1183,7 @@ async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(crew_name)
+        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1152,7 +1210,7 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_price(item_name)
+        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1176,7 +1234,7 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(crew_name)
+        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1200,7 +1258,7 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name)
+        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1226,7 +1284,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name)
+        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1260,18 +1318,17 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
     __log_command_use(ctx)
     if tourney.is_tourney_running():
         async with ctx.typing():
-            async with ctx.typing():
-                output = []
-                if not pss_top.is_valid_division_letter(division):
-                    subcommand = BOT.get_command('stars fleet')
-                    await ctx.invoke(subcommand, fleet_name=division)
-                else:
-                    async with ctx.typing():
-                        output, _ = await pss_top.get_division_stars(division=division)
-            await util.post_output(ctx, output)
+            if not pss_top.is_valid_division_letter(division):
+                subcommand = BOT.get_command('stars fleet')
+                await ctx.invoke(subcommand, fleet_name=division)
+                return
+            else:
+                output, _ = await pss_top.get_division_stars(ctx, division=division, as_embed=(await __get_use_embeds(ctx.guild)))
+        await util.post_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')
         await ctx.invoke(cmd, month=None, year=None, division=division)
+        return
 
 
 @cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
@@ -1300,7 +1357,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             if exact_name:
                 fleet_name = exact_name
             fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info['DivisionDesignId'] != '0']
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
 
         if fleet_infos:
             if len(fleet_infos) == 1:
@@ -1313,13 +1370,14 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             if fleet_info:
                 async with ctx.typing():
                     fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
-                    output = fleet.get_fleet_users_stars_from_info(fleet_info, fleet_users_infos)
+                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await __get_use_embeds(ctx.guild)))
                 await util.post_output(ctx, output)
         else:
             await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
     else:
         cmd = BOT.get_command('past stars fleet')
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
+        return
 
 
 @BOT.command(name='stats', aliases=['stat'], brief='Get item/crew stats')
@@ -1347,13 +1405,14 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
     async with ctx.typing():
         full_name = ' '.join([x for x in [level, name] if x])
         level, name = util.get_level_and_name(level, name)
+        use_embeds = (await __get_use_embeds(ctx.guild))
         try:
-            char_output, char_success = await crew.get_char_design_details_by_name(name, level)
+            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=use_embeds)
         except pss_exception.InvalidParameter:
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name)
+            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=use_embeds)
         except pss_exception.InvalidParameter:
             item_output = None
             item_success = False
@@ -1362,7 +1421,7 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         await util.post_output(ctx, char_output)
 
     if item_success:
-        if char_success:
+        if char_success and not use_embeds:
             await ctx.send(settings.EMPTY_LINE)
         await util.post_output(ctx, item_output)
 
@@ -1383,24 +1442,33 @@ async def cmd_time(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        now = datetime.datetime.now()
-        today = datetime.date(now.year, now.month, now.day)
-        pss_stardate = (today - settings.PSS_START_DATE).days
-        str_time = 'Today is Stardate {}\n'.format(pss_stardate)
+        utc_now = util.get_utcnow()
+        star_date = f'Star date {util.get_star_date(utc_now)}'
 
         mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
-        str_time += mel_time.strftime('It is %A, %H:%M in Melbourne')
+        mel_time = utc_now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
+        melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
 
-        aus_holidays = holidays.Australia(years=now.year, prov='ACT')
-        mel_time = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-        if mel_time in aus_holidays:
-            str_time += '\nIt is also a holiday ({}) in Australia'.format(aus_holidays[mel_time])
+        aus_holidays = holidays.Australia(years=utc_now.year, prov='ACT')
+        mel_date = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
 
-        first_day_of_next_month = datetime.datetime(now.year, (now.month + 1) % 12 or 12, 1)
-        td = first_day_of_next_month - now
-        str_time += '\nTime until the beginning of next month: {}d {}h {}m'.format(td.days, td.seconds//3600, (td.seconds//60) % 60)
-    await ctx.send(str_time)
+        first_day_of_next_month = util.get_first_of_following_month(utc_now)
+        time_till_next_month = ('Time until next monthly reset', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        while (first_day_of_next_month.month - 1) % 3:
+            first_day_of_next_month = util.get_first_of_following_month(first_day_of_next_month)
+        time_till_next_prestige_change = ('Time until next prestige recipe changes', util.get_formatted_timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+
+        fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
+        as_embed = __get_use_embeds(ctx.guild)
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            output = [util.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
+        else:
+            output = [star_date, melbourne_time]
+            [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
+    await util.post_output(ctx, output)
 
 
 @BOT.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -1439,9 +1507,10 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
             command = 'fleets'
         cmd = BOT.get_command(f'top {command}')
         await ctx.invoke(cmd, count=count)
+        return
 
 
-@cmd_top.command(name='players', aliases=['captains', 'users'], brief='Prints top captains')
+@cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_captains(ctx: commands.Context, count: int = 100):
     """
@@ -1460,11 +1529,11 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
       /top 30 captains - prints top 30 captains."""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await pss_top.get_top_captains(count)
+        output, _ = await pss_top.get_top_captains(ctx, count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
-@cmd_top.command(name='fleets', aliases=['alliances'], brief='Prints top fleets')
+@cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
     """
@@ -1483,7 +1552,7 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
       /top 30 fleets - prints top 30 fleets."""
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await pss_top.get_top_fleets(count)
+        output, _ = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -1503,6 +1572,7 @@ async def cmd_tournament(ctx: commands.Context):
     if ctx.invoked_subcommand is None:
         cmd = BOT.get_command('tournament current')
         await ctx.invoke(cmd)
+        return
 
 
 @cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
@@ -1523,7 +1593,12 @@ async def cmd_tournament_current(ctx: commands.Context):
         start_of_tourney = tourney.get_current_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
 
 
 @cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
@@ -1544,7 +1619,12 @@ async def cmd_tournament_next(ctx: commands.Context):
         start_of_tourney = tourney.get_next_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
-    await ctx.send(embed=embed)
+        if (await __get_use_embeds(ctx.guild)):
+            output = [embed]
+        else:
+            output = tourney.convert_tourney_embed_to_plain_text(embed)
+
+    await util.post_output(ctx, output)
 
 
 @BOT.command(name='training', brief='Get training infos')
@@ -1568,7 +1648,7 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name)
+        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -2056,7 +2136,8 @@ async def cmd_settings(ctx: commands.Context):
             output.extend(guild_settings.autodaily.get_pretty_settings())
             output.extend(guild_settings.get_pretty_bot_news_channel())
             output.append(f'Pagination = {guild_settings.pretty_use_pagination}')
-            output.append(f'Prefix = {guild_settings.prefix}')
+            output.append(f'Prefix = `{guild_settings.prefix}`')
+            output.append(f'Use embeds = {guild_settings.pretty_use_embeds}')
         await util.post_output(ctx, output)
 
 
@@ -2141,33 +2222,6 @@ async def cmd_settings_get_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_get_autodaily.command(name='notify', brief='Retrieve auto-daily notify')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_notify(ctx: commands.Context):
-    """
-    Retrieve the auto-daily setting for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings autodaily notify
-      /settings daily notify
-
-    Examples:
-      /settings autodaily notify - Prints the auto-daily notification settings for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        output = []
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            output = guild_settings.autodaily.get_pretty_setting_notify()
-        await util.post_output(ctx, output)
-
-
 @cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_get_botnews(ctx: commands.Context):
@@ -2192,6 +2246,32 @@ async def cmd_settings_get_botnews(ctx: commands.Context):
         async with ctx.typing():
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
             output = guild_settings.get_pretty_bot_news_channel()
+        await util.post_output(ctx, output)
+
+
+@cmd_settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_get_embeds(ctx: commands.Context):
+    """
+    Retrieve the embed setting for this server. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings embed
+      /settings embeds
+
+    Examples:
+      /settings embed - Prints the embed setting for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            output = [f'Embeds on this server are turned: `{guild_settings.pretty_use_embeds}`']
         await util.post_output(ctx, output)
 
 
@@ -2241,6 +2321,7 @@ async def cmd_settings_get_prefix(ctx: commands.Context):
 
     command = BOT.get_command('prefix')
     await ctx.invoke(command)
+    return
 
 
 @BOT.command(name='prefix', brief='Retrieve prefix settings')
@@ -2258,10 +2339,18 @@ async def cmd_prefix(ctx: commands.Context):
       /prefix - Prints the prefix setting for the current Discord server/guild.
     """
     __log_command_use(ctx)
-    channel_type = 'server' if util.is_guild_channel(ctx.channel) else 'channel'
+
     async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        output = [f'Prefix for this {channel_type} is: `{guild_settings.prefix}`']
+        channel_type = ''
+        prefix = ''
+        if util.is_guild_channel(ctx.channel):
+            channel_type = 'server'
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            prefix = guild_settings.prefix
+        else:
+            channel_type = 'channel'
+            prefix = settings.DEFAULT_PREFIX
+        output = [f'Prefix for this {channel_type} is: `{prefix}`']
     await util.post_output(ctx, output)
 
 
@@ -2300,6 +2389,7 @@ async def cmd_settings_reset(ctx: commands.Context):
         await ctx.invoke(reset_autodaily)
         await ctx.invoke(reset_pagination)
         await ctx.invoke(reset_prefix)
+        return
 
 
 @cmd_settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
@@ -2401,39 +2491,6 @@ async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
-@cmd_settings_reset_autodaily.command(name='notify', brief='Reset auto-daily notifications')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_notify(ctx: commands.Context):
-    """
-    Reset the auto-daily notification settings for this server.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings reset autodaily notify
-      /settings reset daily notify
-
-    Examples:
-      /settings reset autodaily notify - Turns off notifications on auto-daily changes for the current Discord server/guild.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if util.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_notify()
-            if success:
-                output = ['Successfully reset the auto-daily notifications.']
-            else:
-                output = [
-                    'An error ocurred while trying to remove the auto-daily notification settings for this server.',
-                    'Please try again or contact the bot\'s author.'
-                ]
-        await util.post_output(ctx, output)
-
-
 @cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
@@ -2467,6 +2524,40 @@ async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
         await util.post_output(ctx, output)
 
 
+@cmd_settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_reset_embeds(ctx: commands.Context):
+    """
+    Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings reset embed
+      /settings reset embeds
+
+    Examples:
+      /settings reset embed - Resets the embed settings for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    if util.is_guild_channel(ctx.channel):
+        async with ctx.typing():
+            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+            success = await guild_settings.reset_use_embeds()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings embed'))
+            return
+        else:
+            output = [
+                'An error ocurred while trying to reset the embed settings for this server.',
+                'Please try again or contact the bot\'s author.'
+            ]
+            await util.post_output(ctx, output)
+
+
 @cmd_settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_settings_reset_pagination(ctx: commands.Context):
@@ -2492,6 +2583,7 @@ async def cmd_settings_reset_pagination(ctx: commands.Context):
             success = await guild_settings.reset_use_pagination()
         if success:
             await ctx.invoke(BOT.get_command(f'settings pagination'))
+            return
         else:
             output = [
                 'An error ocurred while trying to reset the pagination settings for this server.',
@@ -2523,7 +2615,7 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
             success = await guild_settings.reset_prefix()
         if success:
-            output = [f'Successfully reset the prefix for this server to: {guild_settings.prefix}']
+            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}``']
             await util.post_output(ctx, output)
         else:
             output = [
@@ -2571,7 +2663,8 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
     This command can only be used on Discord servers/guilds.
     """
     __log_command_use(ctx)
-    await ctx.send_help('settings set autodaily')
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('settings set autodaily')
 
 
 @cmd_settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
@@ -2599,9 +2692,12 @@ async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel
 
     async with ctx.typing():
         autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        if not text_channel:
+            text_channel = ctx.channel
         success = await autodaily_settings.set_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily channel'))
+        return
     else:
         output = [f'Could not set autodaily channel for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2631,41 +2727,10 @@ async def cmd_settings_set_autodaily_change(ctx: commands.Context):
         success = await autodaily_settings.toggle_change_mode()
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily changemode'))
+        return
     else:
         output = [f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
-
-
-@cmd_settings_set_autodaily.command(name='notify', brief='Set auto-daily notify settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_notify(ctx: commands.Context, *, mention: Union[discord.Role, discord.Member] = None):
-    """
-    Sets the auto-daily notifications for this server. If the contents of the daily post change, this setting decides, who will get notified about that change. You can specify a user or a role. If nothing is being specified, this setting will be reset.
-
-    You need the 'Manage Server' permission to use this command.
-    This command can only be used on Discord servers/guilds.
-
-    Usage:
-      /settings set autodaily notify <member/role mention>
-      /settings set daily notify <member/role mention>
-
-    Examples:
-      /settings set autodaily notify @notify - Sets the role 'notify' to be notified on changes.
-    """
-    __log_command_use(ctx)
-    await __assert_settings_command_valid(ctx)
-
-    if mention is None:
-        await ctx.invoke(BOT.get_command('settings reset autodaily notify'))
-    else:
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.set_notify(mention)
-        if success:
-            await ctx.invoke(BOT.get_command('settings autodaily notify'))
-        else:
-            output = [f'Could not set notify on autodaily settings for this server. Please try again or contact the bot\'s author.']
-            await util.post_output(ctx, output)
 
 
 @cmd_settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
@@ -2694,8 +2759,46 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
         success = await guild_settings.set_bot_news_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings botnews'))
+        return
     else:
         output = [f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.']
+        await util.post_output(ctx, output)
+
+
+@cmd_settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
+async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
+    """
+    Sets or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
+
+    You need the 'Manage Server' permission to use this command.
+    This command can only be used on Discord servers/guilds.
+
+    Usage:
+      /settings set embed <switch>
+      /settings set embeds <switch>
+
+    Parameters:
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+
+    Notes:
+      If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
+
+    Examples:
+      /settings set embed - Toggles the embed setting for the current Discord server/guild depending on the current setting.
+      /settings set embed off - Turns off embeds for the current Discord server/guild.
+    """
+    __log_command_use(ctx)
+    await __assert_settings_command_valid(ctx)
+
+    async with ctx.typing():
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.set_use_embeds(switch)
+    if success:
+        await ctx.invoke(BOT.get_command('settings embed'))
+        return
+    else:
+        output = [f'Could not set embed settings for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
 
 
@@ -2713,7 +2816,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
       /settings set pages <switch>
 
     Parameters:
-      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, true, yes, 1, off, false, no, 0]
+      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
 
     Notes:
       If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
@@ -2730,6 +2833,7 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
         success = await guild_settings.set_use_pagination(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings pagination'))
+        return
     else:
         output = [f'Could not set pagination settings for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2762,6 +2866,7 @@ async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
         success = await guild_settings.set_prefix(prefix)
     if success:
         await ctx.invoke(BOT.get_command('settings prefix'))
+        return
     else:
         output = [f'Could not set prefix for this server. Please try again or contact the bot\'s author.']
         await util.post_output(ctx, output)
@@ -2833,8 +2938,12 @@ async def cmd_autodaily_post(ctx: commands.Context):
     channel_id = await server_settings.db_get_daily_channel_id(guild.id)
     if channel_id is not None:
         text_channel = BOT.get_channel(channel_id)
-        output, _ = await dropship.get_dropship_text()
-        await util.post_output_to_channel(text_channel, output)
+        as_embed = await __get_use_embeds(ctx.guild)
+        output, output_embed, _ = await dropship.get_dropship_text()
+        if as_embed:
+            await util.post_output_to_channel(text_channel, output_embed)
+        else:
+            await util.post_output_to_channel(text_channel, output)
 
 
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
@@ -3126,13 +3235,20 @@ async def __assert_settings_command_valid(ctx: commands.Context) -> None:
         raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
+async def __get_use_embeds(guild: discord.Guild) -> bool:
+    if not guild:
+        return settings.USE_EMBEDS
+    guild_settings = await GUILD_SETTINGS.get(BOT, guild.id)
+    return guild_settings.use_embeds
+
+
 def __log_command_use(ctx: commands.Context):
     if settings.PRINT_DEBUG_COMMAND:
         print(f'Invoked command: {ctx.message.content}')
 
 
-def __log_command_use_error(ctx: commands.Context, err: Exception):
-    if settings.PRINT_DEBUG_COMMAND:
+def __log_command_use_error(ctx: commands.Context, err: Exception, force_printing: bool = False):
+    if settings.PRINT_DEBUG_COMMAND or force_printing:
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:
             print(str(err))

@@ -16,9 +16,11 @@ BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions
 
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
-DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
+DEFAULT_EMBED_INLINE: bool = True
 DEFAULT_FLOAT_PRECISION: int = 1
+DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
+DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 
@@ -27,6 +29,10 @@ EMPTY_LINE = '\u200b'
 
 EXCEL_COLUMN_FORMAT_DATETIME = 'YYYY-MM-DD hh:MM:ss'
 EXCEL_COLUMN_FORMAT_NUMBER = '0'
+
+
+FLEETS_COMMAND_USERS_RAW = os.environ.get('FLEETS_COMMAND_USERS', '[]')
+FLEETS_COMMAND_USERS = json.loads(str(FLEETS_COMMAND_USERS_RAW))
 
 
 GDRIVE_CLIENT_EMAIL = str(os.environ.get('GDRIVE_SERVICE_CLIENT_EMAIL'))
@@ -38,6 +44,9 @@ GDRIVE_PROJECT_ID = str(os.environ.get('GDRIVE_SERVICE_PROJECT_ID'))
 GDRIVE_SERVICE_ACCOUNT_FILE = 'client_secrets.json'
 GDRIVE_SETTINGS_FILE = 'settings.yaml'
 GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
+
+
+HISTORIC_DATA_NOTE = 'This is historic data from'
 
 
 IGNORE_SERVER_IDS_FOR_COUNTING = [
@@ -52,6 +61,7 @@ LATEST_SETTINGS_BASE_PATH = 'SettingService/GetLatestVersion3?deviceType=DeviceT
 
 
 MAXIMUM_CHARACTERS = 1900
+MAXIMUM_CHARACTERS_EMBED_DESCRIPTION = 2048
 MIN_ENTITY_NAME_LENGTH = 3
 
 
@@ -69,6 +79,7 @@ PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
 PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
 
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
+PSS_START_DATETIME = datetime.datetime(year=2016, month=1, day=6)
 
 
 RAW_COMMAND_USERS_RAW = os.environ.get('RAW_COMMAND_USERS', '[]')
@@ -84,15 +95,12 @@ THROW_COMMAND_ERRORS = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
 TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=12)
 
 
-USE_EMBEDS = False
+USE_EMBEDS = True
 
-VERSION = '1.3.0.2'
+VERSION = '1.3.1.2'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
-
-
-
 
 
 
