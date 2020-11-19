@@ -11,9 +11,6 @@ import utility as util
 
 # ---------- tournament command methods ----------
 
-__A_WEEK_PRIOR = timedelta(-7)
-
-
 def format_tourney_start(start_date, utc_now):
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
@@ -66,13 +63,13 @@ def convert_tourney_embed_to_plain_text(embed: discord.Embed) -> List[str]:
 
 def get_current_tourney_start(utc_now: datetime = None):
     first_of_next_month = util.get_first_of_next_month(utc_now)
-    result = first_of_next_month + __A_WEEK_PRIOR
+    result = first_of_next_month + util.A_WEEK_PRIOR
     return result
 
 
 def get_next_tourney_start(utc_now: datetime = None):
     next_first_of_next_month = util.get_first_of_following_month(util.get_first_of_next_month(utc_now))
-    result = next_first_of_next_month + __A_WEEK_PRIOR
+    result = next_first_of_next_month + util.A_WEEK_PRIOR
     return result
 
 

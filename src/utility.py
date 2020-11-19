@@ -23,7 +23,11 @@ import settings
 
 # ---------- Constants ----------
 
-ONE_DAY = timedelta(days=1)
+A_WEEK_PRIOR: timedelta = timedelta(-7)
+FIFTEEN_HOURS: timedelta = timedelta(hours=15)
+FIVE_MINUTES: timedelta = timedelta(minutes=5)
+ONE_DAY: timedelta = timedelta(days=1)
+ONE_SECOND: timedelta = timedelta(seconds=1)
 
 RX_DISCORD_INVITE = re.compile(r'(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?')
 

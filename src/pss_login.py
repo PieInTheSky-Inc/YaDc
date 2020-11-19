@@ -21,9 +21,6 @@ import utility as util
 # ---------- Constants & Internals ----------
 
 ACCESS_TOKEN_TIMEOUT: datetime.timedelta = datetime.timedelta(hours=11, minutes=30)
-FIFTEEN_HOURS: datetime.timedelta = datetime.timedelta(hours=15)
-ONE_DAY: datetime.timedelta = datetime.timedelta(days=1)
-ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
 
 DEVICES: 'DeviceCollection' = None
 
@@ -156,8 +153,8 @@ class Device():
 
     def __set_can_login_until(self, last_login: datetime.datetime) -> None:
         if not self.__can_login_until or last_login > self.__can_login_until:
-            next_day = util.get_next_day(self.__can_login_until) - ONE_SECOND
-            login_until = last_login + FIFTEEN_HOURS
+            next_day = util.get_next_day(self.__can_login_until) - util.ONE_SECOND
+            login_until = last_login + util.FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
             self.__can_login_until_changed = True
 

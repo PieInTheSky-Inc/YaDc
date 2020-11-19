@@ -245,7 +245,7 @@ async def post_dailies_loop() -> None:
 
     while True:
         utc_now = util.get_utcnow()
-        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - settings.ONE_SECOND
+        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - util.ONE_SECOND
 
         daily_info = await daily.get_daily_info()
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()

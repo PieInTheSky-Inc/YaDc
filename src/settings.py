@@ -65,9 +65,6 @@ MAXIMUM_CHARACTERS_EMBED_DESCRIPTION = 2048
 MIN_ENTITY_NAME_LENGTH = 3
 
 
-ONE_SECOND: datetime.timedelta = datetime.timedelta(seconds=1)
-
-
 POST_AUTODAILY_FROM: datetime.datetime = datetime.datetime(2020, 2, 7, tzinfo=datetime.timezone.utc)
 PRINT_DEBUG = int(os.environ.get('PRINT_DEBUG', '0'))
 PRINT_DEBUG_DB = int(os.environ.get('PRINT_DEBUG_DB', '0'))
