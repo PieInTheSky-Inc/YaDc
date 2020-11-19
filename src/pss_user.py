@@ -100,7 +100,7 @@ async def get_user_details_by_info(user_info: dict, max_tourney_battle_attempts:
         'PVP win/lose/draw': __get_pvp_attack_stats_as_text(user_info),
         'Defense win/lose/draw': __get_pvp_defense_stats_as_text(user_info),
         'Level': await __get_level_as_text(ship_info),
-        'Status': __get_ship_status_as_text(ship_info),
+        #'Status': __get_ship_status_as_text(ship_info),
         'User type': __get_user_type_as_text(user_info)
     }
 
