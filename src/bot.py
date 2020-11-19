@@ -2608,7 +2608,7 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
             guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
             success = await guild_settings.reset_prefix()
         if success:
-            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}``']
+            output = [f'Successfully reset the prefix for this server to: `{guild_settings.prefix}`']
             await util.post_output(ctx, output)
         else:
             output = [
