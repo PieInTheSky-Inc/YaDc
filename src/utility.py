@@ -711,8 +711,9 @@ def get_exact_args(ctx: discord.ext.commands.Context, additional_parameters: int
         command_names = [ctx.command.name]
         if ctx.command.aliases:
             command_names.extend(ctx.command.aliases)
+        command_names = [re.escape(command_name) for command_name in command_names]
         rx_command_names = '|'.join(command_names)
-        rx_command = f'{full_parent_command}({rx_command_names}) (.*? ){{{additional_parameters}}}'
+        rx_command = f'{re.escape(full_parent_command)}({rx_command_names}) (.*? ){{{additional_parameters}}}'
         rx_match = re.search(rx_command, ctx.message.content)
         if rx_match is not None:
             return str(ctx.message.content[len(rx_match.group(0)):])
