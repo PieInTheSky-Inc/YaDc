@@ -41,7 +41,7 @@ FLEET_SHEET_COLUMN_NAMES = [
     'Crew Borrowed',
     'Logged in ago',
     'Joined ago',
-    'Tournament battle attempts today'
+    'Tournament attempts left'
 ]
 FLEET_SHEET_COLUMN_TYPES = [
     settings.EXCEL_COLUMN_FORMAT_DATETIME,
@@ -246,9 +246,11 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
             attempts_left or '',
-            user_info.get(user.USER_KEY_NAME, '') if include_player_id else '',
-            user_info.get(FLEET_KEY_NAME, '') if include_fleet_id else ''
         ]
+        if include_player_id:
+            line.append(user_info.get(user.USER_KEY_NAME, ''))
+        if include_fleet_id:
+            line.append(user_info.get(FLEET_KEY_NAME, ''))
         result.append(line)
     return result
 

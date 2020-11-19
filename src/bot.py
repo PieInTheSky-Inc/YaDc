@@ -192,12 +192,19 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
             command_args = util.get_exact_args(ctx)
             help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
             command = BOT.get_command(help_args)
-            await ctx.send_help(command)
+            try:
+                await ctx.send_help(command)
+            except discord.errors.Forbidden:
+                __log_command_use_error(ctx, err, force_printing=True)
         error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-        if retry_after:
-            await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
-        else:
-            await ctx.send(f'**Error**\n{error_message}')
+
+        try:
+            if retry_after:
+                await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+            else:
+                await ctx.send(f'**Error**\n{error_message}')
+        except discord.errors.Forbidden:
+            __log_command_use_error(ctx, err, force_printing=True)
 
 
 @BOT.event
@@ -3233,8 +3240,8 @@ def __log_command_use(ctx: commands.Context):
         print(f'Invoked command: {ctx.message.content}')
 
 
-def __log_command_use_error(ctx: commands.Context, err: Exception):
-    if settings.PRINT_DEBUG_COMMAND:
+def __log_command_use_error(ctx: commands.Context, err: Exception, force_printing: bool = False):
+    if settings.PRINT_DEBUG_COMMAND or force_printing:
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:
             print(str(err))
