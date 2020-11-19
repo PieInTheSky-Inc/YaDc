@@ -302,7 +302,6 @@ async def __get_user_info_by_id(user_id: int) -> entity.EntityInfo:
     return result
 
 
-
 def __get_user_type_as_text(user_info: entity.EntityInfo) -> str:
     result = None
     user_type = user_info.get('UserType')
