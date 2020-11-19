@@ -97,7 +97,7 @@ TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=
 
 USE_EMBEDS = True
 
-VERSION = '1.3.1.0'
+VERSION = '1.3.1.2'
 
 
 WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
