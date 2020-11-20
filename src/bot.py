@@ -3268,6 +3268,7 @@ async def cmd_updatecache(ctx: commands.Context):
         await research.researches_designs_retriever.update_cache()
         await room.rooms_designs_retriever.update_cache()
         await training.trainings_designs_retriever.update_cache()
+        await daily.__update_db_sales_info_cache()
     await ctx.send('Updated all caches successfully!')
 
 
