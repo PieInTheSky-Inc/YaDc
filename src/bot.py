@@ -1289,7 +1289,6 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
 
 
 @BOT.command(name='sales', brief='List expired sales')
-@commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
     """
@@ -1297,9 +1296,11 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
 
     Usage:
       /sales <object_name>
+      /sales <object_name> --reverse
 
     Parameter:
       object_name: The name of the object you want to see the shop history for. Optional
+      --reverse:   Will sort the output from old to new
 
     Examples:
       /sales - Prints information on the last 30 sales.
@@ -1307,6 +1308,10 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
       /sales Flower - Prints information on the sale history of the room Flower Gardens
     """
     __log_command_use(ctx)
+
+    reverse_output = object_name and '--reverse' in object_name
+    if reverse_output:
+        object_name = object_name.replace('--reverse', '').strip()
 
     if object_name:
         async with ctx.typing():
@@ -1341,14 +1346,14 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
 
             if entity_info:
                 async with ctx.typing():
-                    output = await daily.get_sales_history(ctx, entity_info, as_embed=(await __get_use_embeds(ctx.guild)))
+                    output = await daily.get_sales_history(ctx, entity_info, reverse=reverse_output, as_embed=(await __get_use_embeds(ctx.guild)))
             else:
                 output = []
         else:
             output = [f'Could not find an object with the name `{object_name}`']
     else:
         async with ctx.typing():
-            output = await daily.get_sales_details(ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+            output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
@@ -3310,6 +3315,7 @@ def __log_command_use_error(ctx: commands.Context, err: Exception, force_printin
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:
             print(str(err))
+
 
 
 
