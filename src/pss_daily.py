@@ -106,28 +106,24 @@ async def get_sales_details(ctx: commands.Context, as_embed: bool = settings.USE
     title = 'Expired sales'
     description = f'The things listed below have been sold in the {emojis.pss_shop} shop over the past 30 days. You\'ve got the chance to buy them on the Pixel Starships website for an additional 25% on the original price.'
 
+    sales_details = []
+    for sales_info in sales_infos:
+        expires_in = sales_info['expires_in']
+        day = 'day' + ('' if expires_in == 1 else 's')
+        details = f'**{expires_in}** {day}: **{sales_info["name"]}** ({sales_info["type"]}) {sales_info["currency"]} {sales_info["price"]}'
+        sales_details.append(details)
     if as_embed:
-        fields = []
-        for sales_info in sales_infos:
-            expires_in = sales_info['expires_in']
-            day = 'day' + ('' if expires_in == 1 else 's')
-            field_name = f'{sales_info["name"]} ({sales_info["type"]})'
-            field_value = f'{sales_info["price"]} {sales_info["currency"]}{entity.DEFAULT_DETAILS_PROPERTIES_SEPARATOR}{expires_in} {day}'
-            fields.append((field_name, field_value, True))
-
+        body_lines = [description, settings.EMPTY_LINE]
+        body_lines.extend(sales_details)
         colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
         footer = 'Click on the title to get redirected to the Late Sales portal, where you can purchase these offers.'
-        result = util.create_basic_embeds_from_fields(title, description=description, repeat_description=False, colour=colour, fields=fields, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
+        result = util.create_basic_embeds_from_description(title, description=body_lines, colour=colour, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
     else:
         result = [
             f'**{title}**',
             f'_{description}_'
         ]
-        for sales_info in sales_infos:
-            expires_in = sales_info['expires_in']
-            day = 'day' + ('' if expires_in == 1 else 's')
-            details = f'{expires_in} {day}: {sales_info["name"]} ({sales_info["type"]}) {settings.DEFAULT_HYPHEN} {sales_info["price"]} {sales_info["currency"]}'
-            result.append(details)
+        result.extend(sales_details)
         result.append(f'_Visit <{LATE_SALES_PORTAL_HYPERLINK}> to purchase these offers._')
     return result
 
