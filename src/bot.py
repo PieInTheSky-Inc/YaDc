@@ -1309,9 +1309,7 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
     """
     __log_command_use(ctx)
 
-    reverse_output = object_name and '--reverse' in object_name
-    if reverse_output:
-        object_name = object_name.replace('--reverse', '').strip()
+    object_name, reverse_output = __extract_dash_parameters(object_name, '--reverse')
 
     if object_name:
         async with ctx.typing():
@@ -3199,18 +3197,17 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
         return
 
     async with ctx.typing():
-        split_news = news.split('--')
-        news_parts = {key: value.strip() for key, value in [part.split('=', maxsplit=1) for part in split_news if '=' in part]}
-        if 'title' not in news_parts:
+        _, title, content = __extract_dash_parameters(news, '--title=', '--content=')
+        if not title:
             raise ValueError('You need to specify a title!')
         avatar_url = BOT.user.avatar_url
         for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
             embed_colour = util.get_bot_member_colour(BOT, bot_news_channel.guild)
-            embed: discord.Embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+            embed: discord.Embed = util.create_embed(title, description=content, colour=embed_colour)
             embed.set_thumbnail(url=avatar_url)
             await bot_news_channel.send(embed=embed)
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
-        embed = util.create_embed(news_parts['title'], description=news_parts.get('content'), colour=embed_colour)
+        embed = util.create_embed(title, description=content, colour=embed_colour)
         embed.set_thumbnail(url=avatar_url)
     await ctx.send(embed=embed)
 
@@ -3315,6 +3312,39 @@ def __log_command_use_error(ctx: commands.Context, err: Exception, force_printin
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:
             print(str(err))
+
+
+def __extract_dash_parameters(full_arg: str, *dash_parameters) -> Tuple[Union[bool, str], ...]:
+    new_arg = full_arg
+    result = []
+
+    for dash_parameter in dash_parameters:
+        if dash_parameter:
+            if dash_parameter in new_arg:
+                remove = ''
+                parameter_pos = new_arg.find(dash_parameter)
+                if '=' in dash_parameter:
+                    value_start = parameter_pos + len(dash_parameter)
+                    value_end = new_arg.find('--', value_start)
+                    if value_end < 0:
+                        value_len = len(new_arg) - value_start
+                    else:
+                        value_len = value_end - value_start - 1
+                    value = new_arg[value_start:value_start + value_len]
+                    remove = f'{dash_parameter}{value}'
+                    result.append(value)
+                else:
+                    remove = dash_parameter
+                    result.append(True)
+                if parameter_pos > 0:
+                    remove = f' {remove}'
+                new_arg = new_arg.replace(remove, '').strip()
+            else:
+                if '=' in dash_parameter:
+                    result.append(None)
+                else:
+                    result.append(False)
+    return new_arg, *result
 
 
 
