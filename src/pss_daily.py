@@ -138,7 +138,7 @@ async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: b
         expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
         price = sales_info['price']
         currency = sales_info['currency']
-        result = f'{expiring_entity_details}{entity.DEFAULT_DETAILS_PROPERTIES_SEPARATOR}{currency} {price}'
+        result = f'{expiring_entity_details}: {price} {currency}'
         return [result]
     return None
 
