@@ -1288,7 +1288,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     await util.post_output(ctx, output)
 
 
-@BOT.command(name='sales', brief='List expired sales', hidden=True)
+@BOT.command(name='sales', brief='List expired sales')
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
