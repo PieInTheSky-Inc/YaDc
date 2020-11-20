@@ -1293,7 +1293,7 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
     """
-    Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down). If a parameter is given, the command will output the sales history for that object.
+    Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down, so 0 days means only available today). If a parameter is given, the command will output the sales history for that object.
 
     Usage:
       /sales <object_name>
