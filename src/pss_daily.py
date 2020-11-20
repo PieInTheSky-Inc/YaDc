@@ -197,7 +197,7 @@ async def get_sales_history(ctx: commands.Context, entity_info: Dict, as_embed: 
 
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    #sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
+    sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
 
     if sales_infos:
         title = f'{entity_name} has been sold on'
