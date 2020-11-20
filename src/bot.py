@@ -3315,7 +3315,7 @@ def __log_command_use_error(ctx: commands.Context, err: Exception, force_printin
 
 
 def __extract_dash_parameters(full_arg: str, *dash_parameters) -> Tuple[Union[bool, str], ...]:
-    new_arg = full_arg
+    new_arg = full_arg or ''
     result = []
 
     for dash_parameter in dash_parameters:
