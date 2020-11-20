@@ -130,12 +130,16 @@ async def get_sales_details(ctx: commands.Context, reverse: bool = False, as_emb
     return result
 
 
-async def get_oldest_expired_sale_entity_details(utc_now: datetime) -> List[str]:
+async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: bool = False) -> List[str]:
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
-    db_sales_infos = [db_sales_infos[-1]]
-    sales_infos = __process_db_sales_infos(db_sales_infos, utc_now)
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
+    sales_infos = reversed([sales_info for sales_info in sales_infos if sales_info['expires_in'] >= 0])
     for sales_info in sales_infos:
-        return sales_info['entity_details']
+        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
+        price = sales_info['price']
+        currency = sales_info['currency']
+        result = f'{expiring_entity_details}{entity.DEFAULT_DETAILS_PROPERTIES_SEPARATOR}{currency} {price}'
+        return [result]
     return None
 
 
@@ -189,9 +193,9 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict], utc_now: datetime
 async def get_sales_history(ctx: commands.Context, entity_info: Dict, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[discord.Embed], List[str]]:
     utc_now = util.get_utcnow()
 
-    entity_id = entity_info.get('EntityId')
+    entity_id = entity_info.get('entity_id')
     entity_id = int(entity_id) if entity_id else None
-    entity_name = entity_info.get('EntityName')
+    entity_name = entity_info.get('entity_name')
 
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
@@ -223,7 +227,7 @@ async def get_sales_history(ctx: commands.Context, entity_info: Dict, reverse: b
 
 
 def get_sales_search_details(entity_info: Dict) -> str:
-    entity_type = entity_info.get('EntityType')
+    entity_type = entity_info.get('entity_type')
     if entity_type == 'Crew':
         entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
     elif entity_type == 'Item':

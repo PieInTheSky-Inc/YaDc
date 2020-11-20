@@ -12,6 +12,7 @@ from cache import PssCache
 import emojis
 import pss_core as core
 import pss_crew as crew
+import pss_daily as daily
 import pss_entity as entity
 import pss_item as item
 import pss_lookups as lookups
@@ -97,17 +98,26 @@ async def get_dropship_text(bot: commands.Bot = None, guild: discord.Guild = Non
         print(e)
         return [], False
 
+    expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
+    expiring_sale_details_embed = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=True)
+
     parts = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
     lines = list(daily_msg)
     for part in parts:
         lines.append(settings.EMPTY_LINE)
         lines.extend(part)
+    lines.append(settings.EMPTY_LINE)
+    lines.append('**Sale expiring today**')
+    lines.extend(expiring_sale_details_text)
+    lines.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
 
     title = 'Pixel Starships Dropships'
     footer = f'Star date {util.get_star_date(utc_now)}'
     description = ''.join(daily_msg)
     fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
+    expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
+    fields.append(('Sale expiring today', '\n'.join(expiring_sale_details_embed), False))
     sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
     colour = util.get_bot_member_colour(bot, guild)
     embed = util.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)

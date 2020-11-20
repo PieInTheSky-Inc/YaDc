@@ -1316,28 +1316,28 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
             entities_infos = []
             characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
             for entity_info in characters_designs_infos:
-                entity_info['EntityType'] = 'Crew'
-                entity_info['EntityId'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
-                entity_info['EntityName'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entity_info['entity_type'] = 'Crew'
+                entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
                 entities_infos.append(entity_info)
             items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
             for entity_info in items_designs_infos:
-                entity_info['EntityType'] = 'Item'
-                entity_info['EntityId'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
-                entity_info['EntityName'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entity_info['entity_type'] = 'Item'
+                entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
                 entities_infos.append(entity_info)
             rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
             for entity_info in rooms_designs_infos:
-                entity_info['EntityType'] = 'Room'
-                entity_info['EntityId'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
-                entity_info['EntityName'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entity_info['entity_type'] = 'Room'
+                entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
                 entities_infos.append(entity_info)
 
         if entities_infos:
             if len(entities_infos) == 1:
                 entity_info = entities_infos[0]
             else:
-                entities_infos = sorted(entities_infos, key=lambda x: x['EntityName'])
+                entities_infos = sorted(entities_infos, key=lambda x: x['entity_name'])
                 use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
                 paginator = pagination.Paginator(ctx, object_name, entities_infos, daily.get_sales_search_details, use_pagination)
                 _, entity_info = await paginator.wait_for_option_selection()
