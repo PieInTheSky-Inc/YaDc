@@ -4,18 +4,21 @@
 from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
-import os
 import random
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Union
 
 import database as db
+import emojis
 import pss_core as core
+import pss_entity as entity
 import pss_item as item
 import pss_crew as crew
 import pss_lookups as lookups
 import pss_research as research
 import pss_room as room
+import pss_training as training
 import server_settings
+import settings
 import utility as util
 
 
@@ -72,13 +75,15 @@ SALES_DAILY_INFO_FIELDS = {
     'LimitedCatalogType': str
 }
 
+LATE_SALES_PORTAL_HYPERLINK: str = 'https://pixelstarships.com/PlayerCenter/Sales'
+
 DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
 
 LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
-    'item': item.get_item_design_details_by_id,
-    'character': crew.get_char_design_details_by_id,
-    'research': research.get_research_design_details_by_id,
-    'room': room.get_room_design_details_by_id
+    'item': item.get_item_details_by_id,
+    'character': crew.get_char_details_by_id,
+    'research': research.get_research_details_by_id,
+    'room': room.get_room_details_by_id
 }
 
 
@@ -92,26 +97,144 @@ LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 
 # ---------- Sales ----------
 
-async def get_sales_details(utc_now: datetime = None) -> List[str]:
-    if utc_now is None:
-        utc_now = util.get_utcnow()
+async def get_sales_details(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
+    utc_now = util.get_utcnow()
+    db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
+    processed_db_sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
+    sales_infos = [sales_info for sales_info in processed_db_sales_infos if sales_info['expires_in'] >= 0]
+
+    title = 'Expired sales'
+    description = f'The things listed below have been sold in the {emojis.pss_shop} shop over the past 30 days. You\'ve got the chance to buy them on the Pixel Starships website for an additional 25% on the original price.'
+
+    if as_embed:
+        fields = []
+        for sales_info in sales_infos:
+            expires_in = sales_info['expires_in']
+            day = 'day' + ('' if expires_in == 1 else 's')
+            field_name = f'{sales_info["name"]} ({sales_info["type"]})'
+            field_value = f'{sales_info["price"]} {sales_info["currency"]}{entity.DEFAULT_DETAILS_PROPERTIES_SEPARATOR}{expires_in} {day}'
+            fields.append((field_name, field_value, True))
+
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        footer = 'Click on the title to get redirected to the Late Sales portal, where you can purchase these offers.'
+        result = util.create_basic_embeds_from_fields(title, description=description, repeat_description=False, colour=colour, fields=fields, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
+    else:
+        result = [
+            f'**{title}**',
+            f'_{description}_'
+        ]
+        for sales_info in sales_infos:
+            expires_in = sales_info['expires_in']
+            day = 'day' + ('' if expires_in == 1 else 's')
+            details = f'{expires_in} {day}: {sales_info["name"]} ({sales_info["type"]}) {settings.DEFAULT_HYPHEN} {sales_info["price"]} {sales_info["currency"]}'
+            result.append(details)
+        result.append(f'_Visit <{LATE_SALES_PORTAL_HYPERLINK}> to purchase these offers._')
+    return result
+
+
+async def get_oldest_expired_sale_entity_details(utc_now: datetime) -> List[str]:
+    db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
+    db_sales_infos = [db_sales_infos[-1]]
+    sales_infos = __process_db_sales_infos(db_sales_infos, utc_now)
+    for sales_info in sales_infos:
+        return sales_info['entity_details']
+    return None
+
+
+async def __process_db_sales_infos(db_sales_infos: List[Dict], utc_now: datetime) -> List[Dict]:
+    chars_data = await crew.characters_designs_retriever.get_data_dict3()
+    collections_data = await crew.collections_designs_retriever.get_data_dict3()
+    items_data = await item.items_designs_retriever.get_data_dict3()
+    researches_data = await research.researches_designs_retriever.get_data_dict3()
+    rooms_data = await room.rooms_designs_retriever.get_data_dict3()
+    rooms_designs_sprites_data = await room.rooms_designs_sprites_retriever.get_data_dict3()
+    trainings_data = await training.trainings_designs_retriever.get_data_dict3()
 
     result = []
-    db_sales_infos = await db_get_sales_infos()
-    sales_infos = []
-    for db_sales_info in db_sales_infos:
-        expiry_date = util.parse_pss_datetime(db_sales_info['LimitedCatalogExpiryDate'])
-        if utc_now >= expiry_date:
-            entity_id = int(db_sales_info['LimitedCatalogArgument'])
-            entity_type = db_sales_info['LimitedCatalogType']
-            currency_type = lookups.CURRENCY_EMOJI_LOOKUP[db_sales_info['LimitedCatalogCurrencyType']]
-            currency_amount = int(db_sales_info['LimitedCatalogCurrencyAmount'])
-            expires_in = (utc_now - expiry_date).days
-            # Depending on entity type, get short details
-            # Add details and expires_in
 
-    sales_infos = sorted(sales_infos, key=lambda x: x['expires_in'])
-    # Create output like: {expires_in} - details
+    for db_sales_info in db_sales_infos:
+        expiry_date = db_sales_info['limitedcatalogexpirydate']
+        expires_in = 29 - (utc_now - expiry_date).days
+        entity_id = db_sales_info['limitedcatalogargument']
+        entity_type = db_sales_info['limitedcatalogtype']
+        currency_type = db_sales_info['limitedcatalogcurrencytype']
+        currency = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+        currency_amount = db_sales_info['limitedcatalogcurrencyamount']
+        price = int(currency_amount * 1.25)
+        if entity_type == 'Character':
+            entity_details = crew.get_char_details_by_id(str(entity_id), chars_data, collections_data)
+            entity_name = entity_details.entity_info.get(crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+            entity_type = 'Crew'
+        elif entity_type == 'Item':
+            entity_details = item.get_item_details_by_id(str(entity_id), items_data, trainings_data)
+            entity_name = entity_details.entity_info.get(item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+        elif entity_type == 'Room':
+            entity_details = room.get_room_details_by_id(str(entity_id), rooms_data, items_data, researches_data, rooms_designs_sprites_data)
+            entity_name = entity_details.entity_info.get(room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+        else:
+            entity_details = None
+            entity_name = ''
+        result.append({
+            'name': entity_name,
+            'type': entity_type,
+            'price': price,
+            'original_price': currency_amount,
+            'currency': currency,
+            'original_currency': currency_type,
+            'expiry_date': expiry_date,
+            'expires_in': expires_in,
+            'entity_details': entity_details
+        })
+    return result
+
+
+async def get_sales_history(ctx: commands.Context, entity_info: Dict, as_embed: bool = settings.USE_EMBEDS) -> Union[List[discord.Embed], List[str]]:
+    utc_now = util.get_utcnow()
+
+    entity_id = entity_info.get('EntityId')
+    entity_id = int(entity_id) if entity_id else None
+    entity_name = entity_info.get('EntityName')
+
+    db_sales_infos = await db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
+    #sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
+
+    if sales_infos:
+        title = f'{entity_name} has been sold on'
+        sales_details = []
+        for sales_info in sales_infos:
+            sold_on_date = sales_info['expiry_date'] - util.ONE_DAY
+            sold_on = util.get_formatted_datetime(sold_on_date, include_time=False, include_tz=False)
+            star_date = util.get_star_date(sold_on_date)
+            sold_ago = (utc_now - sold_on_date).days
+            price = sales_info['original_price']
+            currency = sales_info['currency']
+            day = 'day' + 's' if sold_ago != 1 else ''
+            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago) for {price} {currency}')
+
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = util.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
+        else:
+            result = [f'**{title}**']
+            result.extend(sales_details)
+        return result
+    return [f'There is no past sales data available for {entity_name}']
+
+
+def get_sales_search_details(entity_info: Dict) -> str:
+    entity_type = entity_info.get('EntityType')
+    if entity_type == 'Crew':
+        entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    elif entity_type == 'Item':
+        entity_name = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    elif entity_type == 'Room':
+        entity_name = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        entity_name = None
+
+    result = f'{entity_name} ({entity_type})'
+    return result
 
 
 
@@ -239,12 +362,16 @@ async def db_get_daily_info(skip_cache: bool = False) -> Tuple[Dict, datetime]:
         return (__daily_info_cache, __daily_info_modified_at)
 
 
-async def db_get_sales_infos(skip_cache: bool = False) -> List[Dict]:
-    if __sales_info_cache is None or skip_cache:
+async def db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> List[Dict]:
+    if not skip_cache and utc_now is not None and (__sales_info_cache_retrieved_at is None or __sales_info_cache_retrieved_at.day != utc_now.day):
+        await __update_db_sales_info_cache()
+    if skip_cache:
         result = await db.get_sales_infos()
-        return result or None
     else:
-        return __sales_info_cache
+        result = __sales_info_cache
+    if entity_id:
+        result = [db_sales_info for db_sales_info in result if db_sales_info['limitedcatalogargument'] == entity_id]
+    return result
 
 
 async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
@@ -339,8 +466,9 @@ def __mock_get_daily_info_2():
 # ---------- Initialization ----------
 
 __daily_info_cache: dict = None
-__daily_info_modified_at: datetime
+__daily_info_modified_at: datetime = None
 __sales_info_cache: dict = None
+__sales_info_cache_retrieved_at: datetime = None
 
 
 async def __update_db_daily_info_cache():
@@ -351,7 +479,9 @@ async def __update_db_daily_info_cache():
 
 async def __update_db_sales_info_cache():
     global __sales_info_cache
+    global __sales_info_cache_retrieved_at
     __sales_info_cache = await db_get_sales_infos(skip_cache=True)
+    __sales_info_cache_retrieved_at = util.get_utcnow()
 
 
 async def init():

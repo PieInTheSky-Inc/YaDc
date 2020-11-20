@@ -10,7 +10,7 @@ import pytz
 import re
 import subprocess
 from threading import get_ident
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union
 import urllib.parse
 
 
@@ -79,14 +79,16 @@ def get_first_of_next_month(utc_now: datetime = None):
     return get_first_of_following_month(utc_now)
 
 
-def get_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True):
-    result = date_time.strftime('%Y-%m-%d %H:%M:%S')
+def get_formatted_datetime(date_time, include_time=True, include_tz=True, include_tz_brackets=True):
+    output_format = '%Y-%m-%d'
+    if include_time:
+        output_format += ' %H:%M:%S'
     if include_tz:
-        tz = date_time.strftime('%Z')
         if include_tz_brackets:
-            result += ' ({})'.format(tz)
+            output_format += ' (%Z)'
         else:
-            result += ' {}'.format(tz)
+            output_format += ' %Z'
+    result = date_time.strftime(output_format)
     return result
 
 
@@ -250,16 +252,16 @@ def create_embed(title: str, description: str = None, colour: discord.Colour = N
     return result
 
 
-def create_basic_embeds(title: str, repeat_title: bool = True, description: List[str] = None, colour: discord.Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+def create_basic_embeds_from_description(title: str, repeat_title: bool = True, description: List[str] = None, colour: discord.Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
     result = []
     if description:
         embed_bodies = create_posts_from_lines(description, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
         body_count = len(embed_bodies)
-        for i, embed_body in enumerate(embed_bodies):
+        for i, embed_body in enumerate(embed_bodies, start=1):
             embed = create_embed(discord.Embed.Empty, description=embed_body, colour=colour)
-            if title and title != discord.Embed.Empty and (i == 0 or repeat_title):
+            if title and title != discord.Embed.Empty and (i == 1 or repeat_title):
                 embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
-            if thumbnail_url and (i == 0 or repeat_thumbnail):
+            if thumbnail_url and (i == 1 or repeat_thumbnail):
                 embed.set_thumbnail(url=thumbnail_url)
             if image_url and (i == body_count or repeat_image):
                 embed.set_image(url=image_url)
@@ -272,6 +274,37 @@ def create_basic_embeds(title: str, repeat_title: bool = True, description: List
         return result
     else:
         return [create_embed(title, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, footer=footer, timestamp=timestamp)]
+
+
+def create_basic_embeds_from_fields(title: str, repeat_title: bool = True, description: str = None, repeat_description: bool = True, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+    result = []
+    if fields:
+        embed_fields = list(chunk_list(fields, 25))
+        body_count = len(embed_fields)
+        for i, embed_fields in enumerate(embed_fields, start=1):
+            embed = create_embed(discord.Embed.Empty, fields=embed_fields, colour=colour)
+            if title and title != discord.Embed.Empty and (i == 1 or repeat_title):
+                embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+            if description and (i == 1 or repeat_description):
+                embed.description = description
+            if thumbnail_url and (i == 1 or repeat_thumbnail):
+                embed.set_thumbnail(url=thumbnail_url)
+            if image_url and (i == body_count or repeat_image):
+                embed.set_image(url=image_url)
+            if timestamp and (i == body_count or repeat_timestamp):
+                embed.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+                embed.timestamp = timestamp
+            if footer and (i == body_count or repeat_footer):
+                embed.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+            result.append(embed)
+        return result
+    else:
+        return [create_embed(title, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, footer=footer, timestamp=timestamp)]
+
+
+def chunk_list(l: List[Any], chunk_size: int) -> List[List[Any]]:
+    for i in range(0, len(l), chunk_size):
+        yield l[i:i+chunk_size]
 
 
 def get_bot_member_colour(bot, guild):

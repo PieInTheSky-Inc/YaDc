@@ -428,7 +428,7 @@ async def get_fleet_users_stars_from_info(ctx: commands.Context, fleet_info: dic
     if as_embed:
         colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
         icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
-        result = util.create_basic_embeds(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
+        result = util.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
         return result
     else:
         if retrieved_date is not None:

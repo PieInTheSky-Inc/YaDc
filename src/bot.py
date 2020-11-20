@@ -1288,11 +1288,68 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     await util.post_output(ctx, output)
 
 
-@BOT.command(name='sales', brief='List past sales', hidden=True)
+@BOT.command(name='sales', brief='List expired sales', hidden=True)
 @commands.is_owner()
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_sales(ctx: commands.Context):
-    pass
+async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
+    """
+    Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down). If a parameter is given, the command will output the sales history for that object.
+
+    Usage:
+      /sales <object_name>
+
+    Parameter:
+      object_name: The name of the object you want to see the shop history for. Optional
+
+    Examples:
+      /sales - Prints information on the last 30 sales.
+      /sales Virgo - Prints information on the sale history of the crew Virgo
+      /sales Flower - Prints information on the sale history of the room Flower Gardens
+    """
+    __log_command_use(ctx)
+
+    if object_name:
+        async with ctx.typing():
+            entities_infos = []
+            characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in characters_designs_infos:
+                entity_info['EntityType'] = 'Crew'
+                entity_info['EntityId'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+                entity_info['EntityName'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
+            items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in items_designs_infos:
+                entity_info['EntityType'] = 'Item'
+                entity_info['EntityId'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+                entity_info['EntityName'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
+            rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in rooms_designs_infos:
+                entity_info['EntityType'] = 'Room'
+                entity_info['EntityId'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+                entity_info['EntityName'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
+
+        if entities_infos:
+            if len(entities_infos) == 1:
+                entity_info = entities_infos[0]
+            else:
+                entities_infos = sorted(entities_infos, key=lambda x: x['EntityName'])
+                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                paginator = pagination.Paginator(ctx, object_name, entities_infos, daily.get_sales_search_details, use_pagination)
+                _, entity_info = await paginator.wait_for_option_selection()
+
+            if entity_info:
+                async with ctx.typing():
+                    output = await daily.get_sales_history(ctx, entity_info, as_embed=(await __get_use_embeds(ctx.guild)))
+            else:
+                output = []
+        else:
+            output = [f'Could not find an object with the name `{object_name}`']
+    else:
+        async with ctx.typing():
+            output = await daily.get_sales_details(ctx, as_embed=(await __get_use_embeds(ctx.guild)))
+    await util.post_output(ctx, output)
 
 
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)

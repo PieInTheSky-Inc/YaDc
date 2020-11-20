@@ -681,16 +681,11 @@ async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[objec
     return result
 
 
-async def get_sales_infos(expiry_date: datetime = None) -> List[Dict[str, Union[int, str, datetime]]]:
+async def get_sales_infos() -> List[Dict[str, Union[int, str, datetime]]]:
     __log_db_function_enter('get_sales_infos')
 
     args = []
-    query = 'SELECT * FROM sales'
-    if expiry_date is not None:
-        query += f' WHERE limitedcatalogexpirydate = $1'
-        args.append(expiry_date)
-    else:
-        query += ' ORDER BY limitedcatalogexpirydate DESC limit 31'
+    query = 'SELECT * FROM sales ORDER BY limitedcatalogexpirydate DESC'
     records = await fetchall(query, args)
     if records:
         result = [dict(record) for record in records]
@@ -777,7 +772,7 @@ async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
 async def update_sales_info(sales_info: dict) -> bool:
     __log_db_function_enter('update_sales_info', sales_info=sales_info)
 
-    db_sales_infos = await get_sales_info(expiry_date=sales_info['LimitedCatalogExpiryDate'])
+    db_sales_infos = await get_sales_infos(expiry_date=sales_info['LimitedCatalogExpiryDate'])
     column_names = []
     placeholders = []
     set_fields = []
