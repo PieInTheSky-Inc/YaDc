@@ -97,11 +97,13 @@ LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 
 # ---------- Sales ----------
 
-async def get_sales_details(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
+async def get_sales_details(ctx: commands.Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
     utc_now = util.get_utcnow()
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
     processed_db_sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = [sales_info for sales_info in processed_db_sales_infos if sales_info['expires_in'] >= 0]
+    if reverse:
+        sales_infos = reversed(sales_infos)
 
     title = 'Expired sales'
     description = f'The things listed below have been sold in the {emojis.pss_shop} shop over the past 30 days. You\'ve got the chance to buy them on the Pixel Starships website for an additional 25% on the original price.'
@@ -184,7 +186,7 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict], utc_now: datetime
     return result
 
 
-async def get_sales_history(ctx: commands.Context, entity_info: Dict, as_embed: bool = settings.USE_EMBEDS) -> Union[List[discord.Embed], List[str]]:
+async def get_sales_history(ctx: commands.Context, entity_info: Dict, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[discord.Embed], List[str]]:
     utc_now = util.get_utcnow()
 
     entity_id = entity_info.get('EntityId')
@@ -194,6 +196,8 @@ async def get_sales_history(ctx: commands.Context, entity_info: Dict, as_embed: 
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
+    if reverse:
+        sales_infos = reversed(sales_infos)
 
     if sales_infos:
         title = f'{entity_name} has been sold on'
