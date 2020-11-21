@@ -1,5 +1,5 @@
 import discord.ext.commands as commands
-from typing import List
+from typing import Any, List
 
 import settings
 
@@ -22,9 +22,17 @@ class Error(Exception):
         return self.__msg
 
 
-class InvalidParameter(Error):
-    """Exception raised for invalid parameters."""
-    def __init__(self, parameter_name: str = None, invalid_value = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False):
+class MissingParameterError(Error):
+    pass
+
+
+class ParameterTypeError(TypeError):
+    pass
+
+
+class InvalidParameterValueError(Error):
+    """Exception raised for invalid parameter values."""
+    def __init__(self, parameter_name: str = None, invalid_value: Any = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False):
         self.__parameter_name: str = parameter_name or '<unknown>'
         self.__invalid_value: str = invalid_value
         self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH

@@ -16,7 +16,7 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1,
         if allow_none_or_empty:
             return
         else:
-            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
+            raise pss_exception.InvalidParameterValueError(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values)
 
     if allowed_values:
         valids = list(allowed_values)
@@ -27,7 +27,7 @@ def valid_parameter_value(value: str, parameter_name: str, min_length: int = -1,
         valids = []
 
     if len(value) < min_length and not value in valids:
-        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values, allow_none_or_empty=allow_none_or_empty)
+        raise pss_exception.InvalidParameterValueError(parameter_name=parameter_name, invalid_value=value, min_length=min_length, valid_values=allowed_values, allow_none_or_empty=allow_none_or_empty)
 
 
 def parameter_is_valid_integer(value: object, parameter_name: str, min_value: int = None, max_value: int = None, allow_none: bool = False):
@@ -35,12 +35,16 @@ def parameter_is_valid_integer(value: object, parameter_name: str, min_value: in
         if allow_none is True:
             return
         else:
-            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
+            raise pss_exception.InvalidParameterValueError(parameter_name=parameter_name, invalid_value=value)
+    try:
+        value = int(value)
+    except:
+        pass
     if isinstance(value, int):
         if (min_value is not None and value < min_value) or (max_value is not None and value > max_value):
-            raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
+            raise pss_exception.InvalidParameterValueError(parameter_name=parameter_name, invalid_value=value)
     else:
-        raise pss_exception.InvalidParameter(parameter_name=parameter_name, invalid_value=value)
+        raise pss_exception.InvalidParameterValueError(parameter_name=parameter_name, invalid_value=value)
 
 
 def string_in_list(string, lst: list, case_sensitive: bool = True) -> bool:

@@ -11,6 +11,7 @@ import pss_assert
 from cache import PssCache
 import pss_core as core
 import pss_entity as entity
+from pss_exception import Error
 import pss_lookups as lookups
 import pss_sprites as sprites
 import pss_training as training
@@ -115,7 +116,7 @@ async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_
     items_details = await items_designs_retriever.get_data_dict3()
     error = _get_best_items_error(slot, stat)
     if error:
-        return error, False
+        raise Error(error)
 
     any_slot = not slot or slot == 'all' or slot == 'any'
     slot_filter = _get_slot_filter(slot, any_slot)
@@ -123,7 +124,7 @@ async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_
     best_items = _get_best_items_designs(slot_filter, stat_filter, items_details)
 
     if not best_items:
-        return [f'Could not find an item for slot **{slot}** providing bonus **{stat}**.'], False
+        raise Error(f'Could not find an item for slot `{slot}` providing bonus `{stat}`.')
     else:
         groups = await __get_collection_groups(best_items, ctx, stat_filter, as_embed)
 
@@ -249,7 +250,7 @@ async def get_item_price(item_name: str, ctx: commands.Context = None, as_embed:
     item_infos = _get_item_infos_by_name(item_name, items_data)
 
     if not item_infos:
-        return [f'Could not find an item named **{item_name}**.'], False
+        raise Error(f'Could not find an item named `{item_name}`.')
     else:
         get_best_match = util.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
@@ -283,7 +284,7 @@ async def get_ingredients_for_item(item_name: str, ctx: commands.Context = None,
     item_infos = _get_item_infos_by_name(item_name, items_data, return_best_match=True)
 
     if not item_infos:
-        return [f'Could not find an item named **{item_name}**.'], False
+        raise Error(f'Could not find an item named **{item_name}**.')
     else:
         ingredients_details_collection = __create_ingredients_details_collection_from_infos([item_infos[0]], items_data)
         if as_embed:
@@ -431,7 +432,7 @@ async def get_item_upgrades_from_name(item_name: str, ctx: commands.Context, as_
     item_ids = _get_item_design_ids_from_name(item_name, items_data)
 
     if not item_ids:
-        return [f'Could not find an item named **{item_name}**.'], False
+        raise Error(f'Could not find an item named `{item_name}`.')
     else:
         item_infos = []
         for item_id in item_ids:

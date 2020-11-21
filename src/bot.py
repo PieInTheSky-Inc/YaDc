@@ -26,6 +26,7 @@ import excel
 import gdrive
 from gdrive import TourneyDataClient
 import pagination
+from pss_exception import Error, MissingParameterError, ParameterTypeError
 import server_settings
 from server_settings import GUILD_SETTINGS
 import settings
@@ -169,6 +170,7 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
     if settings.THROW_COMMAND_ERRORS:
         raise err
     else:
+        error_type = type(err).__name__
         error_message = str(err)
         retry_after = None
         if isinstance(err, commands.CommandOnCooldown):
@@ -184,8 +186,11 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
             error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
         elif isinstance(err, commands.CommandInvokeError):
             if err.original:
-                if isinstance(err.original, pss_exception.Error):
+                error_type = type(err.original).__name__
+                if isinstance(err.original, Error):
                     error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+                else:
+                    error_message = f'`{ctx.message.clean_content}`\n{err.original}'
         else:
             if not isinstance(err, commands.MissingRequiredArgument):
                 logging.getLogger().error(err, exc_info=True)
@@ -196,13 +201,21 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
                 await ctx.send_help(command)
             except discord.errors.Forbidden:
                 __log_command_use_error(ctx, err, force_printing=True)
-        error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
 
+        as_embed = await __get_use_embeds(ctx.guild)
         try:
-            if retry_after:
-                await ctx.send(f'**Error**\n> {ctx.author.mention}\n{error_message}', delete_after=retry_after)
+
+            if as_embed:
+                colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+                if retry_after:
+                    error_message = f'{ctx.author.mention}\n{error_message}'
+                embed = util.create_embed(error_type, description=error_message, colour=colour)
+                await ctx.send(embed=embed, delete_after=retry_after)
             else:
-                await ctx.send(f'**Error**\n{error_message}')
+                error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+                if retry_after:
+                    error_message = f'> {ctx.author.mention}\n{error_message}'
+                await ctx.send(f'**{error_type}**\n{error_message}', delete_after=retry_after)
         except discord.errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
@@ -654,7 +667,7 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
             slot, stat = item.get_slot_and_stat_type(item_details)
         else:
             if found_matching_items:
-                raise pss_exception.Error(f'The item `{item_name}` is not a gear type item!')
+                raise ValueError(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
         output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await __get_use_embeds(ctx.guild)))
@@ -801,7 +814,7 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
             for file_path in file_paths:
                 os.remove(file_path)
     else:
-        await ctx.send(f'Could not find a fleet named `{fleet_name}`.')
+        raise Error(f'Could not find a fleet named `{fleet_name}`.')
 
 
 @BOT.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
@@ -855,7 +868,7 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
 
 @BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None):
+async def cmd_level(ctx: commands.Context, from_level: str, to_level: str = None):
     """
     Shows the cost for a crew to reach a certain level.
 
@@ -865,13 +878,24 @@ async def cmd_level(ctx: commands.Context, from_level: int, to_level: int = None
 
     Parameters:
       from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
-      to_level:   The level to which the requirements shall be calculated. Mandatory.
+      to_level:   The level to which the requirements shall be calculated. Must be greater than 0 and lower than 41. Mandatory.
 
     Examples:
       /level 35 - Prints exp and gas requirements from level 1 to 35
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
+        try:
+            from_level = int(from_level)
+        except:
+            raise ParameterTypeError('Parameter `from_level` must be a natural number from 1 to 39.')
+        if to_level:
+            try:
+                to_level = int(to_level)
+            except:
+                raise ParameterTypeError('Parameter `to_level` must be a natural number from 2 to 40.')
+        if from_level and to_level and from_level >= to_level:
+            raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
         output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
@@ -902,8 +926,8 @@ async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
     Get historic tournament data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
 
@@ -920,9 +944,9 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
     Get historic tournament division stars data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
@@ -934,36 +958,30 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
 
         (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+
+        if not pss_top.is_valid_division_letter(division):
+            subcommand = BOT.get_command('past stars fleet')
+            await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+            return
         else:
-            if not pss_top.is_valid_division_letter(division):
-                subcommand = BOT.get_command('past stars fleet')
-                await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
-                return
-            else:
-                month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-                try:
-                    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-                except ValueError as err:
-                    error = str(err)
-                    tourney_data = None
-                if tourney_data:
-                    output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
-                elif error:
-                    output = [error]
+            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+            if tourney_data:
+                output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
 
 
 @cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+async def cmd_past_stars_fleet(ctx: commands.Context, month: str = None, year: str = None, *, fleet_name: str = None):
     """
     Get historic tournament fleet stars data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
@@ -974,19 +992,17 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
         utc_now = util.get_utcnow()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
+            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        if not fleet_name:
+            raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-            if tourney_data is None:
-                fleet_infos = []
-            else:
-                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+
+        if tourney_data is None:
+            fleet_infos = []
+        else:
+            fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1000,22 +1016,22 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str, year: str = No
             async with ctx.typing():
                 output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await __get_use_embeds(ctx.guild)))
     elif error:
-        output = [str(error)]
+        raise Error(str(error))
     else:
-        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        raise Error (f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
     await util.post_output(ctx, output)
 
 
 @cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *, fleet_name: str = None):
+async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = None, *, fleet_name: str = None):
     """
     Get historic tournament fleet data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
@@ -1026,19 +1042,17 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
         utc_now = util.get_utcnow()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
+            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        if not fleet_name:
+            raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-            if tourney_data is None:
-                fleet_infos = []
-            else:
-                fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+
+        if tourney_data is None:
+            fleet_infos = []
+        else:
+            fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1056,9 +1070,9 @@ async def cmd_past_fleet(ctx: commands.Context, month: str, year: str = None, *,
                 os.remove(file_path)
             return
     elif error:
-        output = [str(error)]
+        raise Error(str(error))
     else:
-        output = [f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        raise Error(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
     await util.post_output(ctx, output)
 
 
@@ -1069,23 +1083,23 @@ async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = 
     Get historic tournament fleet data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - fleet_name: Mandatory. The fleet for which the data should be displayed.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output = []
         error = None
         utc_now = util.get_utcnow()
+        month, year = TourneyDataClient.retr
+        (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+        if year is not None and month is None:
+            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+
         month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        try:
-            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-        except ValueError as err:
-            error = str(err)
-            tourney_data = None
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
         async with ctx.typing():
@@ -1096,22 +1110,21 @@ async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = 
             os.remove(file_path)
         return
     elif error:
-        output = [str(error)]
+        raise Error(str(error))
     else:
-        output = [f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!']
-    await util.post_output(ctx, output)
+        raise Error(f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!')
 
 
 @cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *, player_name: str = None):
+async def cmd_past_player(ctx: commands.Context, month: str = None, year: str = None, *, player_name: str = None):
     """
     Get historic tournament player data.
 
     Parameters:
-    - month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-    - year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-    - player_name: Mandatory. The player for which the data should be displayed.
+      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      player_name: Mandatory. The player for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
@@ -1122,19 +1135,21 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
         utc_now = util.get_utcnow()
         (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
-            raise pss_exception.Error('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            try:
-                tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-            except ValueError as err:
-                error = str(err)
-                tourney_data = None
+            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        if not player_name:
+            raise MissingParameterError('The parameter `player_name` is mandatory.')
 
-            if tourney_data is None:
-                user_infos = []
-            else:
-                user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        try:
+            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        except ValueError as err:
+            error = str(err)
+            tourney_data = None
+
+        if tourney_data is None:
+            user_infos = []
+        else:
+            user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -1148,15 +1163,15 @@ async def cmd_past_player(ctx: commands.Context, month: str, year: str = None, *
             async with ctx.typing():
                 output = await user.get_user_details_by_info(user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets)
     elif error:
-        output = [str(error)]
+        raise Error(str(error))
     else:
-        output = [f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.']
+        raise Error(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='player', aliases=['user'], brief='Get infos on a player')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_player(ctx: commands.Context, *, player_name: str):
+async def cmd_player(ctx: commands.Context, *, player_name: str = None):
     """
     Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
@@ -1175,6 +1190,8 @@ async def cmd_player(ctx: commands.Context, *, player_name: str):
         exact_name = util.get_exact_args(ctx)
         if exact_name:
             player_name = exact_name
+        if not player_name:
+            raise MissingParameterError('The parameter `player_name` is mandatory.')
         user_infos = await user.get_user_details_by_name(player_name)
 
     if user_infos:
@@ -1191,7 +1208,7 @@ async def cmd_player(ctx: commands.Context, *, player_name: str):
                 output = await user.get_user_details_by_info(user_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
             await util.post_output(ctx, output)
     else:
-        await ctx.send(f'Could not find a player named `{player_name}`.')
+        raise Error(f'Could not find a player named `{player_name}`.')
 
 
 @BOT.command(name='prestige', brief='Get prestige combos of crew')
@@ -1379,7 +1396,7 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
             else:
                 output = []
         else:
-            output = [f'Could not find an object with the name `{object_name}`']
+            raise Error(f'Could not find an object with the name `{object_name}`.')
     else:
         async with ctx.typing():
             output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await __get_use_embeds(ctx.guild)))
@@ -1424,7 +1441,7 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
 
 @cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
+async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str = None):
     """
     Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
@@ -1447,6 +1464,9 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
             exact_name = util.get_exact_args(ctx)
             if exact_name:
                 fleet_name = exact_name
+            if not fleet_name:
+                raise MissingParameterError('The parameter `fleet_name` is mandatory.')
+
             fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
 
@@ -1464,7 +1484,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str):
                     output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await __get_use_embeds(ctx.guild)))
                 await util.post_output(ctx, output)
         else:
-            await ctx.send(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+            raise Error(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
     else:
         cmd = BOT.get_command('past stars fleet')
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
@@ -1499,12 +1519,12 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         use_embeds = (await __get_use_embeds(ctx.guild))
         try:
             char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=use_embeds)
-        except pss_exception.InvalidParameter:
+        except pss_exception.InvalidParameterValueError:
             char_output = None
             char_success = False
         try:
             item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=use_embeds)
-        except pss_exception.InvalidParameter:
+        except pss_exception.InvalidParameterValueError:
             item_output = None
             item_success = False
 
@@ -1517,10 +1537,11 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         await util.post_output(ctx, item_output)
 
     if not char_success and not item_success:
-        await ctx.send(f'Could not find a character or an item named `{full_name}`.')
+        raise Error(f'Could not find a character or an item named `{full_name}`.')
 
 
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
+@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
 async def cmd_time(ctx: commands.Context):
     """
     Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
@@ -1583,18 +1604,18 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
             split_count = count.split(' ')
             try:
                 count = int(split_count[0])
-                command = split_count[1]
             except:
                 try:
                     count = int(split_count[1])
-                    command = split_count[0]
                 except:
-                    raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+                    raise ParameterTypeError('Invalid parameter provided! Parameter `count` must be a natural number from 1 to 100.')
+                command = split_count[0]
+            command = split_count[1]
         else:
             try:
                 count = int(count)
             except:
-                raise ValueError('Invalid parameter provided! Parameter must be an integer or a sub-command.')
+                raise ParameterTypeError('Invalid parameter provided! Parameter `count` must be a natural number from 1 to 100.')
             command = 'fleets'
         cmd = BOT.get_command(f'top {command}')
         await ctx.invoke(cmd, count=count)
@@ -1603,7 +1624,7 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
 
 @cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top_captains(ctx: commands.Context, count: int = 100):
+async def cmd_top_captains(ctx: commands.Context, count: str = '100'):
     """
     Prints top captains. Prints top 100 captains by default.
 
@@ -1619,6 +1640,12 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
       /top captains 30 - prints top 30 captains.
       /top 30 captains - prints top 30 captains."""
     __log_command_use(ctx)
+
+    try:
+        count = int(count)
+    except:
+        raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
+
     async with ctx.typing():
         output, _ = await pss_top.get_top_captains(ctx, count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
@@ -1626,7 +1653,7 @@ async def cmd_top_captains(ctx: commands.Context, count: int = 100):
 
 @cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
 @commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
+async def cmd_top_fleets(ctx: commands.Context, count: str = '100'):
     """
     Prints top fleets. Prints top 100 fleets by default.
 
@@ -1642,6 +1669,12 @@ async def cmd_top_fleets(ctx: commands.Context, count: int = 100):
       /top fleets 30 - prints top 30 fleets.
       /top 30 fleets - prints top 30 fleets."""
     __log_command_use(ctx)
+
+    try:
+        count = int(count)
+    except:
+        raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
+
     async with ctx.typing():
         output, _ = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await __get_use_embeds(ctx.guild)))
     await util.post_output(ctx, output)
@@ -1766,7 +1799,7 @@ async def cmd_raw(ctx: commands.Context):
       /raw [subcommand] <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1790,7 +1823,7 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
       /raw achievement <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the achievement with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the achievement with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1814,7 +1847,7 @@ async def cmd_raw_ai(ctx: commands.Context):
       /raw ai [subcommand] <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1838,7 +1871,7 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
       /raw ai action <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ai action with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the ai action with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1862,7 +1895,7 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
       /raw ai condition <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ai condition with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the ai condition with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1886,7 +1919,7 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
       /raw char <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the character with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the character with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1910,7 +1943,7 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
       /raw collection <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the collection with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the collection with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1934,7 +1967,7 @@ async def cmd_raw_gm(ctx: commands.Context):
       /raw gm [subcommand] <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the entity of the specified type with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1958,7 +1991,7 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
       /raw gm system <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the GM system with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the GM system with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -1982,7 +2015,7 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
       /raw gm path <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the GM path with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the GM path with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2006,7 +2039,7 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
       /raw item <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the item with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the item with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2030,7 +2063,7 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
       /raw mission <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the mission with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the mission with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2054,7 +2087,7 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
       /raw promotion <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the promotion with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the promotion with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2078,7 +2111,7 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
       /raw research <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the research with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the research with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2102,7 +2135,7 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
       /raw room <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the room with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the room with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2126,7 +2159,7 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
       /raw room purchase <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the room purchase with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the room purchase with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2150,7 +2183,7 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
       /raw ship <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the ship hull with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the ship hull with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)
@@ -2174,7 +2207,7 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
       /raw training <id> <format>
 
     Parameters:
-      id:     An integer. If specified, the command will only return the raw data for the training with the specified id.
+      id:     A natural number. If specified, the command will only return the raw data for the training with the specified id.
       format: A string determining the format of the output to be returned. These are valid values:
                 • --json (JSON)
                 • --xml (raw XML as returned by the API)

@@ -18,7 +18,7 @@ import urllib.parse
 import yaml
 
 import pss_entity as entity
-from pss_exception import InvalidParameter
+from pss_exception import InvalidParameterValueError
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_user as user

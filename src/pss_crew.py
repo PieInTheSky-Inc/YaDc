@@ -11,6 +11,7 @@ from cache import PssCache
 import emojis
 import pss_assert
 import pss_entity as entity
+from pss_exception import Error
 import pss_core as core
 import pss_lookups as lookups
 import pss_sprites as sprites
@@ -214,7 +215,7 @@ async def get_char_details_by_name(char_name: str, ctx: commands.Context, level:
     char_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if char_info is None:
-        return [f'Could not find a crew named **{char_name}**.'], False
+        raise Error(f'Could not find a crew named `{char_name}`.')
     else:
         collections_data = await collections_designs_retriever.get_data_dict3()
         characters_details_collection = __create_characters_details_collection_from_infos([char_info], chars_data, collections_data, level)
@@ -248,9 +249,9 @@ async def get_collection_details_by_name(collection_name: str, ctx: commands.Con
 
     if collections_designs_infos is None:
         if print_all:
-            return [f'An error occured upon retrieving collection info. Please try again later.'], False
+            raise Error(f'An error occured upon retrieving collection info. Please try again later.')
         else:
-            return [f'Could not find a collection named **{collection_name}**.'], False
+            raise Error(f'Could not find a collection named `{collection_name}`.')
     else:
         collections_designs_infos = sorted(collections_designs_infos, key=lambda x: x[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME])
         collections_designs_infos = collections_designs_infos if print_all else [collections_designs_infos[0]]
@@ -279,7 +280,7 @@ async def get_prestige_from_info(ctx: commands.Context, char_name: str, as_embed
     char_from_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if not char_from_info:
-        return [f'Could not find a crew named **{char_name}**.'], False
+        raise Error(f'Could not find a crew named `{char_name}`.')
     else:
         prestige_from_ids, recipe_count = await _get_prestige_from_ids_and_recipe_count(char_from_info)
         util.make_dict_value_lists_unique(prestige_from_ids)
@@ -342,7 +343,7 @@ async def get_prestige_to_info(ctx: commands.Context, char_name: str, as_embed: 
     char_to_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if not char_to_info:
-        return [f'Could not find a crew named **{char_name}**.'], False
+        raise Error(f'Could not find a crew named `{char_name}`.')
     else:
         prestige_to_ids, recipe_count = await _get_prestige_to_ids_and_recipe_count(char_to_info)
         util.make_dict_value_lists_unique(prestige_to_ids)
@@ -430,8 +431,6 @@ def _normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str,
 # ---------- Level Info ----------
 
 def get_level_costs(ctx: commands.Context, from_level: int, to_level: int = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
-    # If to_level: assert that to_level > from_level and <= 41
-    # Else: swap both, set from_level = 1
     if to_level:
         pss_assert.parameter_is_valid_integer(from_level, 'from_level', 1, to_level - 1)
         pss_assert.parameter_is_valid_integer(to_level, 'to_level', from_level + 1, 40)
