@@ -885,15 +885,21 @@ async def cmd_level(ctx: commands.Context, from_level: str, to_level: str = None
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
     async with ctx.typing():
-        try:
-            from_level = int(from_level)
-        except:
-            raise ParameterTypeError('Parameter `from_level` must be a natural number from 1 to 39.')
+        if from_level and not to_level:
+            to_level = from_level
+            from_level = None
+
         if to_level:
             try:
                 to_level = int(to_level)
             except:
                 raise ParameterTypeError('Parameter `to_level` must be a natural number from 2 to 40.')
+        if from_level:
+            try:
+                from_level = int(from_level)
+            except:
+                raise ParameterTypeError('Parameter `from_level` must be a natural number from 1 to 39.')
+
         if from_level and to_level and from_level >= to_level:
             raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
         output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await __get_use_embeds(ctx.guild)))

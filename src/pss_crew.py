@@ -431,12 +431,11 @@ def _normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str,
 # ---------- Level Info ----------
 
 def get_level_costs(ctx: commands.Context, from_level: int, to_level: int = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
-    if to_level:
+    if from_level:
         pss_assert.parameter_is_valid_integer(from_level, 'from_level', 1, to_level - 1)
         pss_assert.parameter_is_valid_integer(to_level, 'to_level', from_level + 1, 40)
     else:
-        pss_assert.parameter_is_valid_integer(from_level, 'from_level', 2, 40)
-        to_level = from_level
+        pss_assert.parameter_is_valid_integer(to_level, 'to_level', 2, 40)
         from_level = 1
 
     crew_costs = _get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP)
