@@ -480,15 +480,28 @@ async def cmd_invite(ctx: commands.Context):
       /invite - Produces an invite link for this bot and sends it via DM.
     """
     __log_command_use(ctx)
+
     async with ctx.typing():
+        as_embed = await __get_use_embeds(ctx.guild)
+
         if ctx.guild is None:
             nick = BOT.user.display_name
         else:
             nick = ctx.guild.me.display_name
-        output = [f'Invite {nick} to your server: {settings.BASE_INVITE_URL}{BOT.user.id}']
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link via DM.')
+        title = f'Invite {nick} to your server'
+        invite_url = f'{settings.BASE_INVITE_URL}{BOT.user.id}'
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            description = f'[{title}]({invite_url})'
+            output = util.create_embed(None, description=description, colour=colour)
+        else:
+            output = f'{title}: {invite_url}'
+    await util.dm_author(ctx, [output], output_is_embeds=as_embed)
+    if util.is_guild_channel(ctx.channel):
+        notice = f'{ctx.author.mention} Sent invite link via DM.'
+        if as_embed:
+            notice = util.create_embed(None, description=notice, colour=colour)
+        await util.post_output(ctx, [notice])
 
 
 @BOT.command(name='links', brief='Show links')
@@ -558,12 +571,26 @@ async def cmd_support(ctx: commands.Context):
       /support - Produces an invite link to the support server and sends it via DM.
     """
     __log_command_use(ctx)
+
     async with ctx.typing():
+        as_embed = await __get_use_embeds(ctx.guild)
+
         about = core.read_about_file()
-        output = [about['support']]
-    await util.dm_author(ctx, output)
-    if not isinstance(ctx.channel, (discord.DMChannel, discord.GroupChannel)):
-        await ctx.send(f'{ctx.author.mention} Sent invite link to bot support server via DM.')
+        title = 'Join support server'
+        guild_invite = about['support']
+
+        if as_embed:
+            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            description = f'[{title}]({guild_invite})'
+            output = util.create_embed(None, description=description, colour=colour)
+        else:
+            output = f'{title}: {guild_invite}'
+    await util.dm_author(ctx, [output], output_is_embeds=as_embed)
+    if util.is_guild_channel(ctx.channel):
+        notice = f'{ctx.author.mention} Sent invite link to bot support server via DM.'
+        if as_embed:
+            notice = util.create_embed(None, description=notice, colour=colour)
+        await util.post_output(ctx, [notice])
 
 
 

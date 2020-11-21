@@ -193,27 +193,30 @@ def format_pss_datetime(dt: datetime) -> str:
 
 async def post_output(ctx: commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
-        if isinstance(output[0], discord.Embed):
-            for embed in output:
-                await ctx.send(embed=embed)
-        elif isinstance(output[0], str):
-            await post_output_to_channel(ctx.channel, output, maximum_characters=maximum_characters)
+        output_is_embeds = isinstance(output[0], discord.Embed)
+        await post_output_to_channel(ctx.channel, output, output_is_embeds=output_is_embeds, maximum_characters=maximum_characters)
 
 
-async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and channel:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
         if output[0] == settings.EMPTY_LINE:
             output = output[1:]
 
-        posts = create_posts_from_lines(output, maximum_characters)
+        if output_is_embeds:
+            posts = output
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
-                await channel.send(post)
+                if output_is_embeds:
+                    await channel.send(embed=post)
+                else:
+                    await channel.send(post)
 
 
-async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output or file_paths:
         if output:
             if output[-1] == settings.EMPTY_LINE:
@@ -221,20 +224,29 @@ async def post_output_with_files(ctx: discord.ext.commands.Context, output: list
             if output[0] == settings.EMPTY_LINE:
                 output = output[1:]
 
-        posts = create_posts_from_lines(output, maximum_characters)
+        if output_is_embeds:
+            posts = output
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
         last_post_index = len(posts) - 1
         files = [discord.File(file_path) for file_path in file_paths]
         if last_post_index >= 0:
             for i, post in enumerate(posts):
-                if i == last_post_index and post or files:
-                    await ctx.send(content=post, files=files)
-                elif post:
-                    await ctx.send(content=post)
+                if output_is_embeds:
+                    if i == last_post_index and post or files:
+                        await ctx.send(embed=post, files=files)
+                    elif post:
+                        await ctx.send(embed=post)
+                else:
+                    if i == last_post_index and post or files:
+                        await ctx.send(content=post, files=files)
+                    elif post:
+                        await ctx.send(content=post)
 
 
-async def dm_author(ctx: discord.ext.commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def dm_author(ctx: discord.ext.commands.Context, output: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.author:
-        await post_output_to_channel(ctx.author, output, maximum_characters=maximum_characters)
+        await post_output_to_channel(ctx.author, output, output_is_embeds=output_is_embeds, maximum_characters=maximum_characters)
 
 
 def create_embed(title: str, description: str = None, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, image_url: str = None, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, timestamp: datetime = None) -> discord.Embed:
