@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, Tuple, Union
 import database as db
 import pss_assert
 import pss_core as core
+import pss_entity as entity
 import pss_lookups as lookups
 import settings as app_settings
 import utility as util
@@ -119,13 +120,13 @@ class AutoDailySettings():
         return self.__latest_message_modified_at
 
 
-    def get_pretty_settings(self) -> List[str]:
-        if self.channel_id is not None or self.change_mode is not None:
-            result = []
-            result.extend(self.get_pretty_setting_channel())
-            result.extend(self.get_pretty_setting_changemode())
+    def get_full_settings(self) -> Dict[str, str]:
+        result = {}
+        if self.channel_id is not None:
+            result.update(self.get_channel_setting())
+            result.update(self.get_changemode_setting())
         else:
-            result = ['Auto-posting of the daily announcement is not configured for this server.']
+            result['autodaily_error'] = 'Auto-posting of the daily announcement is not configured for this server.'
         return result
 
 
@@ -150,17 +151,17 @@ class AutoDailySettings():
         return result
 
 
-    def get_pretty_setting_channel(self) -> List[str]:
+    def get_channel_setting(self) -> Dict[str, str]:
         if self.channel:
-            result = [f'Auto-daily channel: {self.channel.mention}']
+            result = self.channel.mention
         else:
-            result = [f'Auto-daily channel: `{self._get_pretty_channel_name()}`']
-        return result
+            result = self._get_pretty_channel_name()
+        return {'autodaily_channel': result}
 
 
-    def get_pretty_setting_changemode(self) -> List[str]:
-        result = [f'Auto-daily mode: `{self._get_pretty_mode()}`']
-        return result
+    def get_changemode_setting(self) -> Dict[str, str]:
+        result = self._get_pretty_mode()
+        return {'autodaily_mode': result}
 
 
     async def reset(self) -> bool:
@@ -411,20 +412,43 @@ class GuildSettings(object):
             return self.__use_pagination
 
 
-    def get_pretty_bot_news_channel(self) -> List[str]:
+    def get_bot_news_channel_setting(self) -> Dict[str, str]:
         if self.bot_news_channel:
-            result = [f'Bot news channel: {self.bot_news_channel.mention}']
+            result = self.bot_news_channel.mention
         else:
-            result = [f'Bot news channel: `<not configured>`']
-        return result
+            result = '<not configured>'
+        return {'bot_news_channel': result}
 
 
-    async def reset(self) -> Tuple[bool, bool, bool, bool]:
-        success_prefix = await self.reset_prefix()
-        success_pagination = await self.reset_use_pagination()
+    def get_full_settings(self) -> Dict[str, str]:
+        settings = {}
+        settings.update(self.autodaily.get_full_settings())
+        settings.update(self.get_bot_news_channel_setting())
+        settings.update(self.get_pagination_setting())
+        settings.update(self.get_prefix_setting())
+        settings.update(self.get_use_embeds_setting())
+        return settings
+
+
+    def get_pagination_setting(self) -> Dict[str, str]:
+        return {'pagination': self.pretty_use_pagination}
+
+
+    def get_prefix_setting(self) -> Dict[str, str]:
+        return {'prefix': self.prefix}
+
+
+    def get_use_embeds_setting(self) -> Dict[str, str]:
+        return {'use_embeds': self.pretty_use_embeds}
+
+
+    async def reset(self) -> Tuple[bool, bool, bool, bool, bool]:
         success_autodaily = await self.autodaily.reset()
         success_bot_channel = await self.reset_bot_news_channel()
-        return success_prefix, success_pagination, success_autodaily, success_bot_channel
+        success_pagination = await self.reset_use_pagination()
+        success_prefix = await self.reset_prefix()
+        success_embed = await self.reset_use_embeds()
+        return success_autodaily, success_bot_channel, success_pagination, success_prefix, success_embed
 
 
     async def reset_bot_news_channel(self) -> bool:
@@ -738,6 +762,12 @@ async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = 
     return result
 
 
+async def get_pagination_mode(guild: discord.Guild) -> str:
+    use_pagination_mode = await db_get_use_pagination(guild)
+    result = convert_to_on_off(use_pagination_mode)
+    return result
+
+
 async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
     if util.is_guild_channel(message.channel):
         guild_settings = await GUILD_SETTINGS.get(bot, message.channel.guild.id)
@@ -754,9 +784,48 @@ async def get_prefix_or_default(guild_id: int) -> str:
     return result
 
 
-async def get_pagination_mode(guild: discord.Guild) -> str:
-    use_pagination_mode = await db_get_use_pagination(guild)
-    result = convert_to_on_off(use_pagination_mode)
+async def get_pretty_guild_settings(ctx: commands.Context, full_guild_settings: Dict[str, str], title: str = None, note: str = None) -> Union[List[discord.Embed], List[str]]:
+    pretty_guild_settings = prettify_guild_settings(full_guild_settings)
+    if (await get_use_embeds(ctx)):
+        fields = [(pretty_setting[0], pretty_setting[1], False) for pretty_setting in pretty_guild_settings]
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        result = [util.create_embed(title, description=note, fields=fields, colour=colour, icon_url=ctx.guild.icon_url)]
+    else:
+        result = []
+        if title:
+            result.append(f'**```{title}```**')
+        if note:
+            result.append(f'_{note}_')
+        result.extend([f'{pretty_setting[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
+    return result
+
+
+async def get_use_embeds(ctx: commands.Context, bot: commands.Bot = None, guild: discord.Guild = None) -> bool:
+    if (not ctx.guild and not guild) or not bot:
+        return app_settings.USE_EMBEDS
+    bot = ctx.bot or bot
+    guild = ctx.guild or guild
+    guild_settings = await GUILD_SETTINGS.get(bot, guild.id)
+    return guild_settings.use_embeds
+
+
+def prettify_guild_settings(guild_settings: Dict[str, str]) -> List[Tuple[str, str]]:
+    result = []
+    if 'autodaily_error' in guild_settings:
+        result.append(('Auto-daily settings', guild_settings['autodaily_error']))
+    else:
+        if 'autodaily_channel' in guild_settings:
+            result.append(('Auto-daily channel', guild_settings['autodaily_channel']))
+        if 'autodaily_mode' in guild_settings:
+            result.append(('Auto-daily mode', guild_settings['autodaily_mode']))
+    if 'bot_news_channel' in guild_settings:
+        result.append(('Bot news channel', guild_settings['bot_news_channel']))
+    if 'pagination' in guild_settings:
+        result.append(('Pagination', guild_settings['pagination']))
+    if 'prefix' in guild_settings:
+        result.append(('Prefix', guild_settings['prefix']))
+    if 'use_embeds' in guild_settings:
+        result.append(('Use Embeds', guild_settings['use_embeds']))
     return result
 
 
