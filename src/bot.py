@@ -2437,8 +2437,11 @@ async def cmd_prefix(ctx: commands.Context):
         else:
             channel_type = 'channel'
             prefix = settings.DEFAULT_PREFIX
-        output = [f'Prefix for this {channel_type} is: `{prefix}`']
-    await util.post_output(ctx, output)
+        output = f'Prefix for this {channel_type} is: `{prefix}`'
+    if (await __get_use_embeds(ctx.guild)):
+        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        output = util.create_embed(None, description=output, colour=colour)
+    await util.post_output(ctx, [output])
 
 
 
