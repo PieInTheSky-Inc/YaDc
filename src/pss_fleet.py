@@ -68,38 +68,6 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 
 
-# ---------- Classes ----------
-
-class FleetDetails(entity.EntityDetails):
-    async def get_details_as_text(self, details_type: entity.EntityDetailsType, for_embed: bool = False) -> List[str]:
-        if details_type == entity.EntityDetailsType.EMBED:
-            raise ValueError(entity.ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
-        return await self.__get_details_long_as_text()
-
-
-    async def __get_details_long_as_text(self) -> List[str]:
-        title, description, details_long = await self.get_full_details(False, entity.EntityDetailsType.LONG)
-
-        result = [f'**```{title}```**']
-        if description:
-            result[-1] += '```'
-            result.append(f'{description} ```')
-        if details_long:
-            result[-1] += '```'
-            for detail in [d for d in details_long if d.value]:
-                result.append(detail.get_text(separator=entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR, prefix=self.prefix))
-            result[-1] += '```'
-        return result
-
-
-
-
-
-
-
-
-
-
 # ---------- Transformation functions ----------
 
 def __get_description_as_text(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
@@ -112,7 +80,7 @@ def __get_description_as_text(fleet_info: entity.EntityInfo, fleet_users_data: e
 
 def __get_division_name_and_ranking(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
-    division_name = get_division_name_as_text(fleet_info)
+    division_name = get_division_name(fleet_info)
     if division_name is not None and division_name != '-':
         result = division_name
         ranking = fleet_info.get('Ranking')
@@ -203,8 +171,8 @@ def __get_type(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesD
 
 # ---------- Create EntityDetails ----------
 
-def __create_fleet_details_from_info(fleet_infos: entity.EntityInfo, fleet_users_data: entity.EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> FleetDetails:
-    return FleetDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
+def __create_fleet_details_from_info(fleet_infos: entity.EntityInfo, fleet_users_data: entity.EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> entity.EscapedEntityDetails:
+    return entity.EscapedEntityDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
 
 
 
@@ -217,7 +185,7 @@ def __create_fleet_details_from_info(fleet_infos: entity.EntityInfo, fleet_users
 
 # ---------- Helper functions ----------
 
-def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
+def get_division_name(fleet_info: entity.EntityInfo) -> str:
     result = None
     if fleet_info:
         division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
@@ -504,6 +472,14 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
         'footer': entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note)
     }
 }
+
+
+
+
+
+
+
+
 
 
 # ---------- Testing ----------

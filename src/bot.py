@@ -1167,7 +1167,7 @@ async def cmd_past_player(ctx: commands.Context, month: str = None, year: str = 
 
         if user_info:
             async with ctx.typing():
-                output = await user.get_user_details_by_info(user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets)
+                output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
     elif error:
         raise Error(str(error))
     else:
@@ -1211,7 +1211,7 @@ async def cmd_player(ctx: commands.Context, *, player_name: str = None):
         if user_info:
             async with ctx.typing():
                 max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
-                output = await user.get_user_details_by_info(user_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
+                output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await util.post_output(ctx, output)
     else:
         raise Error(f'Could not find a player named `{player_name}`.')

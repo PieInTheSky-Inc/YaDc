@@ -631,6 +631,35 @@ class EntityDetails(object):
 
 
 
+class EscapedEntityDetails(EntityDetails):
+    async def get_details_as_text(self, details_type: EntityDetailsType, for_embed: bool = False) -> List[str]:
+        if details_type == EntityDetailsType.EMBED:
+            raise ValueError(ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
+        return await self.__get_details_long_as_text()
+
+
+    async def __get_details_long_as_text(self) -> List[str]:
+        title, description, details_long = await self.get_full_details(False, EntityDetailsType.LONG)
+
+        result = [f'**```{title}```**']
+        if description:
+            result[-1] += '```'
+            result.append(f'{description} ```')
+        if details_long:
+            result[-1] += '```'
+            for detail in [d for d in details_long if d.value]:
+                result.append(detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR, prefix=self.prefix))
+            result[-1] += '```'
+        return result
+
+
+
+
+
+
+
+
+
 
 class EntityDetailsCollection():
     def __init__(self, entities_details: Iterable[EntityDetails], big_set_threshold: int = 0, add_empty_lines: bool = True):
