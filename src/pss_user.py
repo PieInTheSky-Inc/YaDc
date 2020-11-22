@@ -64,7 +64,10 @@ def __get_crew_donated(user_info: entity.EntityInfo, fleet_info: entity.EntityIn
 def __get_crew_donated_borrowed(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
     result = None
     if fleet_info:
-        result = f'{__get_crew_donated(user_info, fleet_info, **kwargs)}/{__get_crew_borrowed(user_info, fleet_info, **kwargs)}'
+        crew_donated = __get_crew_donated(user_info, fleet_info, **kwargs)
+        crew_borrowed = __get_crew_borrowed(user_info, fleet_info, **kwargs)
+        if crew_donated and crew_borrowed:
+            result = f'{crew_donated}/{crew_borrowed}'
     return result
 
 
