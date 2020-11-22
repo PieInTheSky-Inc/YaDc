@@ -460,13 +460,13 @@ class EntityDetails(object):
         return result
 
 
-    async def get_details_as_embed(self, ctx: commands.Context) -> discord.Embed:
+    async def get_details_as_embed(self, ctx: commands.Context, display_inline: bool = True) -> discord.Embed:
         result = await self.__create_base_embed(ctx)
         details_long = await self._get_details_properties(True, EntityDetailsType.LONG)
         detail: CalculatedEntityDetailProperty
         for detail in details_long:
             if detail.value or not detail.omit_if_none:
-                display_inline = detail.display_inline if detail.display_inline is not None else True
+                display_inline = display_inline if display_inline is not None else (detail.display_inline if detail.display_inline is not None else True)
                 result.add_field(name=detail.display_name, value=detail.value, inline=display_inline)
         return result
 
@@ -646,7 +646,7 @@ class EntityDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entity_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[discord.Embed]:
+    async def get_entities_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[discord.Embed]:
         """
         custom_title: only relevant for big sets
         """
@@ -688,7 +688,7 @@ class EntityDetailsCollection():
         return result
 
 
-    async def get_entity_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT) -> List[str]:
+    async def get_entities_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT) -> List[str]:
         result = []
         if custom_title:
             result.append(custom_title)

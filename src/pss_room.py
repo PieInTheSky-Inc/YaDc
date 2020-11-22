@@ -217,9 +217,9 @@ async def get_room_details_by_name(room_name: str, ctx: commands.Context = None,
         rooms_designs_sprites_data = await rooms_designs_sprites_retriever.get_data_dict3()
         rooms_details_collection = __create_rooms_details_collection_from_infos(rooms_designs_infos, rooms_data, items_data, researches_data, rooms_designs_sprites_data)
         if as_embed:
-            return (await rooms_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await rooms_details_collection.get_entities_details_as_embed(ctx)), True
         else:
-            return (await rooms_details_collection.get_entity_details_as_text()), True
+            return (await rooms_details_collection.get_entities_details_as_text()), True
 
 
 def _get_room_infos(room_name: str, rooms_data: entity.EntitiesData) -> List[entity.EntityInfo]:

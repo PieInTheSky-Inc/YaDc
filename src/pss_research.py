@@ -61,9 +61,9 @@ async def get_research_infos_by_name(research_name: str, ctx: commands.Context, 
     else:
         researches_details = __create_researches_details_collection_from_infos(researches_designs_infos, researches_data)
         if as_embed:
-            return (await researches_details.get_entity_details_as_embed(ctx)), True
+            return (await researches_details.get_entities_details_as_embed(ctx)), True
         else:
-            return (await researches_details.get_entity_details_as_text()), True
+            return (await researches_details.get_entities_details_as_text()), True
 
 
 def _get_key_for_research_sort(research_info: dict, researches_data: dict) -> str:

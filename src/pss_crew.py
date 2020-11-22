@@ -220,9 +220,9 @@ async def get_char_details_by_name(char_name: str, ctx: commands.Context, level:
         collections_data = await collections_designs_retriever.get_data_dict3()
         characters_details_collection = __create_characters_details_collection_from_infos([char_info], chars_data, collections_data, level)
         if as_embed:
-            return (await characters_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await characters_details_collection.get_entities_details_as_embed(ctx)), True
         else:
-            return (await characters_details_collection.get_entity_details_as_text()), True
+            return (await characters_details_collection.get_entities_details_as_text()), True
 
 
 
@@ -258,9 +258,9 @@ async def get_collection_details_by_name(collection_name: str, ctx: commands.Con
         collections_details_collection = __create_collections_details_collection_from_infos(collections_designs_infos, collections_data, characters_data)
 
         if as_embed:
-            return (await collections_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await collections_details_collection.get_entities_details_as_embed(ctx)), True
         else:
-            return (await collections_details_collection.get_entity_details_as_text()), True
+            return (await collections_details_collection.get_entities_details_as_text()), True
 
 
 

@@ -801,10 +801,10 @@ async def get_pretty_guild_settings(ctx: commands.Context, full_guild_settings: 
 
 
 async def get_use_embeds(ctx: commands.Context, bot: commands.Bot = None, guild: discord.Guild = None) -> bool:
-    if (not ctx.guild and not guild) or not bot:
+    if (not ctx or not ctx.guild) and (not guild or not bot):
         return app_settings.USE_EMBEDS
-    bot = ctx.bot or bot
-    guild = ctx.guild or guild
+    bot = bot or ctx.bot
+    guild = guild or ctx.guild
     guild_settings = await GUILD_SETTINGS.get(bot, guild.id)
     return guild_settings.use_embeds
 

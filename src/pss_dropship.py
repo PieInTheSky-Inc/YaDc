@@ -316,9 +316,9 @@ async def get_news(ctx: commands.Context, as_embed: bool = settings.USE_EMBEDS, 
         news_details_collection = __create_news_details_collection_from_infos(news_infos)
 
         if as_embed:
-            return (await news_details_collection.get_entity_details_as_embed(ctx)), True
+            return (await news_details_collection.get_entities_details_as_embed(ctx)), True
         else:
-            return (await news_details_collection.get_entity_details_as_text()), True
+            return (await news_details_collection.get_entities_details_as_text()), True
 
 
 async def _get_news_as_embed(ctx: commands.Context, news_infos: dict) -> List[discord.Embed]:

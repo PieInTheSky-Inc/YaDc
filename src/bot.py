@@ -365,7 +365,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
 
             if can_post and post_new:
                 try:
-                    use_embeds = await server_settings.get_use_embeds(bot=BOT, guild=text_channel.guild)
+                    use_embeds = await server_settings.get_use_embeds(None, bot=BOT, guild=text_channel.guild)
                     if use_embeds:
                         colour = util.get_bot_member_colour(BOT, text_channel.guild)
                         embed = current_daily_embed.copy()
@@ -808,9 +808,10 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
 
         if fleet_info:
             async with ctx.typing():
+                as_embed = await server_settings.get_use_embeds(ctx)
                 max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts)
-            await util.post_output_with_files(ctx, output, file_paths)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
+            await util.post_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
     else:
@@ -1043,7 +1044,6 @@ async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = N
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output = []
         error = None
         utc_now = util.get_utcnow()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
@@ -1070,8 +1070,9 @@ async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = N
 
         if fleet_info:
             async with ctx.typing():
-                output, file_paths = await fleet.get_full_fleet_info_as_text(fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at)
-            await util.post_output_with_files(ctx, output, file_paths)
+                as_embed = await server_settings.get_use_embeds(ctx)
+                output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
+            await util.post_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
             return
@@ -1079,7 +1080,6 @@ async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = N
         raise Error(str(error))
     else:
         raise Error(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
-    await util.post_output(ctx, output)
 
 
 @cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)

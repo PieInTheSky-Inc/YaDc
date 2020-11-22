@@ -71,9 +71,9 @@ async def get_training_details_from_name(training_name: str, ctx: commands.Conte
         custom_footer = 'The stats displayed are chances. The actual result may be much lower depending on: max training points, training points used, the training points gained on a particular stat and fatigue.'
 
         if as_embed:
-            return (await trainings_details_collection.get_entity_details_as_embed(ctx, custom_detail_property_separator='\n', custom_footer_text=custom_footer)), True
+            return (await trainings_details_collection.get_entities_details_as_embed(ctx, custom_detail_property_separator='\n', custom_footer_text=custom_footer)), True
         else:
-            return (await trainings_details_collection.get_entity_details_as_text(custom_footer_text=custom_footer)), True
+            return (await trainings_details_collection.get_entities_details_as_text(custom_footer_text=custom_footer)), True
 
 
 

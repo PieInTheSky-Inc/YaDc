@@ -80,9 +80,9 @@ async def get_item_details_by_name(item_name: str, ctx: commands.Context, as_emb
         items_details_collection = __create_base_details_collection_from_infos(item_infos, items_data, trainings_data)
 
         if as_embed:
-            return (await items_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
+            return (await items_details_collection.get_entities_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
         else:
-            return (await items_details_collection.get_entity_details_as_text(custom_footer_text=resources.get_resource('PRICE_NOTE'))), True
+            return (await items_details_collection.get_entities_details_as_text(custom_footer_text=resources.get_resource('PRICE_NOTE'))), True
 
 
 def _get_key_for_base_items_sort(item_info: dict, items_data: entity.EntitiesData) -> str:
@@ -132,7 +132,7 @@ async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_
         if as_embed:
             for title, best_items_collection in groups.items():
                 footer = __get_footer_text_for_group(title, as_embed)
-                embeds = await best_items_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_footer_text=footer)
+                embeds = await best_items_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_footer_text=footer)
                 result.extend(embeds)
             return result, True
         else:
@@ -140,7 +140,7 @@ async def get_best_items(slot: str, stat: str, ctx: commands.Context = None, as_
             for title, best_items_collection in groups.items():
                 if 'module' in title.lower():
                     module_title = title
-                texts = await best_items_collection.get_entity_details_as_text(custom_title=title)
+                texts = await best_items_collection.get_entities_details_as_text(custom_title=title)
                 result.extend(texts)
                 result.append(settings.EMPTY_LINE)
             footer = __get_footer_text_for_group(module_title, as_embed)
@@ -261,10 +261,10 @@ async def get_item_price(item_name: str, ctx: commands.Context = None, as_embed:
 
         if as_embed:
             custom_footer = '\n'.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE_EMBED'), resources.get_resource('PRICE_NOTE_EMBED')])
-            return (await items_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=custom_footer)), True
+            return (await items_details_collection.get_entities_details_as_embed(ctx, custom_footer_text=custom_footer)), True
         else:
             custom_footer = '\n'.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE'), resources.get_resource('PRICE_NOTE')])
-            return (await items_details_collection.get_entity_details_as_text()), True
+            return (await items_details_collection.get_entities_details_as_text()), True
 
 
 
@@ -288,9 +288,9 @@ async def get_ingredients_for_item(item_name: str, ctx: commands.Context = None,
     else:
         ingredients_details_collection = __create_ingredients_details_collection_from_infos([item_infos[0]], items_data)
         if as_embed:
-            return (await ingredients_details_collection.get_entity_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
+            return (await ingredients_details_collection.get_entities_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED'))), True
         else:
-            return (await ingredients_details_collection.get_entity_details_as_text(custom_footer_text=resources.get_resource('PRICE_NOTE'))), True
+            return (await ingredients_details_collection.get_entities_details_as_text(custom_footer_text=resources.get_resource('PRICE_NOTE'))), True
 
         item_info = item_infos[0]
         item_name = item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -443,10 +443,10 @@ async def get_item_upgrades_from_name(item_name: str, ctx: commands.Context, as_
 
         if as_embed:
             custom_title = f'{len(item_infos)} crafting recipes requiring: {item_name}'
-            return (await upgrade_details_collection.get_entity_details_as_embed(ctx, custom_title=custom_title)), True
+            return (await upgrade_details_collection.get_entities_details_as_embed(ctx, custom_title=custom_title)), True
         else:
             custom_title = f'{len(item_infos)} crafting recipes requiring: **{item_name}**'
-            return (await upgrade_details_collection.get_entity_details_as_text(custom_title=custom_title, big_set_details_type=entity.EntityDetailsType.LONG)), True
+            return (await upgrade_details_collection.get_entities_details_as_text(custom_title=custom_title, big_set_details_type=entity.EntityDetailsType.LONG)), True
 
 
 def _get_upgrades_for(item_id: str, item_design_data: dict) -> list:

@@ -3,7 +3,7 @@
 
 from datetime import datetime
 import discord.ext.commands as commands
-from typing import Tuple
+from typing import Dict, List, Tuple, Union
 
 import emojis
 import excel
@@ -66,9 +66,43 @@ FLEET_SHEET_COLUMN_TYPES = [
 
 
 
-# ---------- Helper functions ----------
 
-def __get_description_as_text(fleet_info: entity.EntityInfo) -> str:
+
+# ---------- Classes ----------
+
+class FleetDetails(entity.EntityDetails):
+    async def get_details_as_text(self, details_type: entity.EntityDetailsType, for_embed: bool = False) -> List[str]:
+        if details_type == entity.EntityDetailsType.EMBED:
+            raise ValueError(entity.ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
+        return await self.__get_details_long_as_text()
+
+
+    async def __get_details_long_as_text(self) -> List[str]:
+        title, description, details_long = await self.get_full_details(False, entity.EntityDetailsType.LONG)
+
+        result = [f'**```{title}```**']
+        if description:
+            result[-1] += '```'
+            result.append(f'{description} ```')
+        if details_long:
+            result[-1] += '```'
+            for detail in [d for d in details_long if d.value]:
+                result.append(detail.get_text(separator=entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR, prefix=self.prefix))
+            result[-1] += '```'
+        return result
+
+
+
+
+
+
+
+
+
+
+# ---------- Transformation functions ----------
+
+def __get_description_as_text(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     description = fleet_info.get('AllianceDescription')
     if description is not None:
@@ -76,7 +110,7 @@ def __get_description_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
+def __get_division_name_and_ranking(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     division_name = get_division_name_as_text(fleet_info)
     if division_name is not None and division_name != '-':
@@ -88,31 +122,30 @@ def __get_division_name_and_ranking_as_text(fleet_info: entity.EntityInfo) -> st
     return result
 
 
-def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
-    result = None
-    if fleet_info:
-        division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
-        if division_design_id is not None and division_design_id != '0':
-            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
+def __get_historic_data_note(fleet_info: entity.EntityInfo, fleet_users_infos: dict = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
+    if is_past_data:
+        result = util.get_historic_data_note(retrieved_at)
+    else:
+        result = None
     return result
 
 
-def __get_member_count(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
+def __get_member_count(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     member_count = fleet_info.get('NumberOfMembers')
     if member_count is not None:
         result = member_count
     else:
-        result = len(fleet_users_infos)
+        result = len(fleet_users_data)
     return result
 
 
-def __get_min_trophies(fleet_info: entity.EntityInfo) -> str:
+def __get_min_trophies(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = fleet_info.get('MinTrophyRequired')
     return result
 
 
-def __get_name(fleet_info: entity.EntityInfo) -> str:
+def __get_name(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     fleet_name = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
     if fleet_name is not None:
@@ -123,7 +156,7 @@ def __get_name(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
+def __get_ranking(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     ranking = fleet_info.get('Ranking')
     if ranking is not None and ranking != '0':
@@ -131,7 +164,7 @@ def __get_ranking_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-def __get_stars(fleet_info: entity.EntityInfo, fleet_users_infos: dict = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None) -> str:
+def __get_stars(fleet_info: entity.EntityInfo, fleet_users_infos: dict = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, **kwargs) -> str:
     result = None
     stars = fleet_info.get('Score')
     if stars is not None and stars != '0':
@@ -142,17 +175,17 @@ def __get_stars(fleet_info: entity.EntityInfo, fleet_users_infos: dict = None, m
     return result
 
 
-def __get_trophies(fleet_info: entity.EntityInfo, fleet_users_infos: entity.EntitiesData) -> str:
+def __get_trophies(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
-    member_count = fleet_info.get('Trophy')
-    if member_count is not None:
-        result = member_count
+    trophy = fleet_info.get('Trophy')
+    if trophy is not None:
+        result = trophy
     else:
-        result = sum(int(user_info.get('Trophy', '0')) for user_info in fleet_users_infos.values())
+        result = sum(int(user_info.get('Trophy', '0')) for user_info in fleet_users_data.values())
     return result
 
 
-def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
+def __get_type(fleet_info: entity.EntityInfo, fleet_users_data: entity.EntitiesData, **kwargs) -> str:
     result = None
     requires_approval = fleet_info.get('RequiresApproval')
     if requires_approval is not None:
@@ -160,52 +193,45 @@ def __get_type_as_text(fleet_info: entity.EntityInfo) -> str:
     return result
 
 
-async def _get_fleet_details_by_info(fleet_info: dict, fleet_users_infos: dict, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = False) -> list:
-    fleet_name = __get_name(fleet_info)
-    description = __get_description_as_text(fleet_info)
 
-    details = {
-        'Ranking': __get_ranking_as_text(fleet_info),
-        'Min trophies': __get_min_trophies(fleet_info),
-        'Members': __get_member_count(fleet_info, fleet_users_infos),
-        'Trophies': __get_trophies(fleet_info, fleet_users_infos),
-        'Division': __get_division_name_and_ranking_as_text(fleet_info),
-        'Stars': __get_stars(fleet_info, fleet_users_infos, max_tourney_battle_attempts, retrieved_at),
-        'Type': __get_type_as_text(fleet_info)
-    }
 
-    lines = [f'**```{fleet_name}```**```']
-    if description:
-        lines.append(f'{description} ``````')
-    for detail_name, detail_value in details.items():
-        if detail_value is not None:
-            lines.append(f'{detail_name} - {detail_value}')
 
-    if is_past_data:
-        lines.append(f'``````{util.get_historic_data_note(retrieved_at)}```')
+
+
+
+
+
+# ---------- Create EntityDetails ----------
+
+def __create_fleet_details_from_info(fleet_infos: entity.EntityInfo, fleet_users_data: entity.EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> FleetDetails:
+    return FleetDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
+
+
+
+
+
+
+
+
+
+
+# ---------- Helper functions ----------
+
+def get_division_name_as_text(fleet_info: entity.EntityInfo) -> str:
+    result = None
+    if fleet_info:
+        division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
+        if division_design_id is not None and division_design_id != '0':
+            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
+    return result
+
+
+async def _get_fleet_details_by_info(ctx: commands.Context, fleet_info: dict, fleet_users_data: dict, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = False, as_embed: bool = settings.USE_EMBEDS) -> list:
+    fleet_details = __create_fleet_details_from_info(fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
+    if as_embed:
+        return [(await fleet_details.get_details_as_embed(ctx, display_inline=False))]
     else:
-        lines[-1] += '```'
-
-    return lines
-
-
-async def _get_fleet_info_by_name(fleet_name: str, exact: bool = True):
-    fleet_infos = await _get_fleet_infos_by_name(fleet_name)
-    if exact:
-        for fleet_info in fleet_infos.values():
-            if fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] == fleet_name:
-                return fleet_info
-    if fleet_infos:
-        return fleet_infos[0]
-    else:
-        return None
-
-
-async def _get_fleet_info_from_tournament_data(fleet_info: dict, fleet_users_infos: dict, fleet_data: dict) -> list:
-    fleet_id = fleet_info[FLEET_KEY_NAME]
-    if fleet_id in fleet_data.keys():
-        fleet_info['Score'] = fleet_data[fleet_id]['Score']
-    return await _get_fleet_details_by_info(fleet_info, fleet_users_infos)
+        return (await fleet_details.get_details_as_text(entity.EntityDetailsType.LONG))
 
 
 def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> list:
@@ -255,7 +281,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_
     return result
 
 
-async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attempts: int = None, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None) -> Tuple[list, list]:
+async def get_full_fleet_info_as_text(ctx: commands.Context, fleet_info: dict, max_tourney_battle_attempts: int = None, past_fleets_data: dict = None, past_users_data: dict = None, past_retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Tuple[list, list]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -267,15 +293,15 @@ async def get_full_fleet_info_as_text(fleet_info: dict, max_tourney_battle_attem
             current_fleet_info = await _get_fleet_info_by_id(fleet_id)
             if current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
                 fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-        fleet_users_infos = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
+        fleet_users_data = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
     else:
         retrieved_at = util.get_utcnow()
         fleet_info = await _get_fleet_info_by_id(fleet_id)
-        fleet_users_infos = await _get_fleet_users_by_id(fleet_id)
+        fleet_users_data = await _get_fleet_users_by_id(fleet_id)
 
-    post_content = await _get_fleet_details_by_info(fleet_info, fleet_users_infos, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
+    post_content = await _get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
-    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_infos, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
     file_paths = [fleet_sheet_path_current]
 
     return post_content, file_paths
@@ -453,6 +479,31 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: dict, flee
 
 
 
+# ---------- Initialization ----------
+
+__properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDetailProperty]]] = {
+    'title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_name)
+    ),
+    'description': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, omit_if_none=True, transform_function=__get_description_as_text)
+    ),
+    'properties': entity.EntityDetailPropertyListCollection(
+        [
+        entity.EntityDetailProperty('Ranking', True, transform_function=__get_ranking),
+        entity.EntityDetailProperty('Min trophies', True, transform_function=__get_min_trophies),
+        entity.EntityDetailProperty('Members', True, transform_function=__get_member_count),
+        entity.EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
+        entity.EntityDetailProperty('Division', True, transform_function=__get_division_name_and_ranking),
+        entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
+        entity.EntityDetailProperty('Type', True, transform_function=__get_type),
+        entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
+    ]),
+    'embed_settings': {
+        'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='AllianceSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'footer': entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note)
+    }
+}
 
 
 # ---------- Testing ----------
