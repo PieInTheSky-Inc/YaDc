@@ -61,6 +61,13 @@ def __get_crew_donated(user_info: entity.EntityInfo, fleet_info: entity.EntityIn
     return result
 
 
+def __get_crew_donated_borrowed(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+    result = None
+    if fleet_info:
+        result = f'{__get_crew_donated(user_info, fleet_info, **kwargs)}/{__get_crew_borrowed(user_info, fleet_info, **kwargs)}'
+    return result
+
+
 def __get_division_name(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
     result = fleet.get_division_name(fleet_info)
     return result
@@ -401,8 +408,9 @@ __properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDet
         entity.EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
         entity.EntityDetailProperty('League', True, transform_function=__get_league),
         entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
-        entity.EntityDetailProperty('Crew donated', True, transform_function=__get_crew_donated),
-        entity.EntityDetailProperty('Crew borrowed', True, transform_function=__get_crew_borrowed),
+        entity.EntityDetailProperty('Crew donated', True, transform_function=__get_crew_donated, text_only=True),
+        entity.EntityDetailProperty('Crew borrowed', True, transform_function=__get_crew_borrowed, text_only=True),
+        entity.EntityDetailProperty('Crew donated/borrowed', True, transform_function=__get_crew_donated_borrowed, embed_only=True),
         entity.EntityDetailProperty('PVP win/lose/draw', True, transform_function=__get_pvp_attack_stats),
         entity.EntityDetailProperty('Defense win/lose/draw', True, transform_function=__get_pvp_defense_stats),
         entity.EntityDetailProperty('Level', True, transform_function=__get_level),
