@@ -71,9 +71,9 @@ PRINT_DEBUG_DB = int(os.environ.get('PRINT_DEBUG_DB', '0'))
 PRINT_DEBUG_COMMAND = int(os.environ.get('PRINT_DEBUG_COMMAND', '0'))
 PRINT_DEBUG_WEB_REQUESTS = int(os.environ.get('PRINT_DEBUG_WEB_REQUESTS', '0'))
 
-PSS_ABOUT_FILES = ['src/data/about.json', 'data/about.json']
-PSS_LINKS_FILES = ['src/data/links.json', 'data/links.json']
-PSS_RESOURCES_FILES = ['src/data/resources.json', 'data/resources.json']
+PSS_ABOUT_FILES = ['src/pss_data/about.json', 'pss_data/about.json']
+PSS_LINKS_FILES = ['src/pss_data/links.json', 'pss_data/links.json']
+PSS_RESOURCES_FILES = ['src/pss_data/resources.json', 'pss_data/resources.json']
 
 PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
 PSS_START_DATETIME = datetime.datetime(year=2016, month=1, day=6)

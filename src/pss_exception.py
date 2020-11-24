@@ -1,4 +1,6 @@
-import discord.ext.commands as commands
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
 from typing import Any, List
 
 import settings
@@ -7,13 +9,15 @@ import settings
 
 
 
+# ---------- Classes -----------
+
 class Error(Exception):
     """Base class for exceptions in this module.
 
     Attributes:
         msg -- explanation of the error
     """
-    def __init__(self, msg: str):
+    def __init__(self, msg: str) -> None:
         super().__init__()
         self.__msg: str = msg or ''
 
@@ -32,7 +36,7 @@ class ParameterTypeError(TypeError):
 
 class InvalidParameterValueError(Error):
     """Exception raised for invalid parameter values."""
-    def __init__(self, parameter_name: str = None, invalid_value: Any = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False):
+    def __init__(self, parameter_name: str = None, invalid_value: Any = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False) -> None:
         self.__parameter_name: str = parameter_name or '<unknown>'
         self.__invalid_value: str = invalid_value
         self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH

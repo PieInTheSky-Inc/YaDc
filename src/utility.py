@@ -1,8 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
 import aiohttp
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import calendar
-import discord
-from discord.ext import commands
+from discord import Colour, Embed, File, Guild, Member, Message, Reaction, TextChannel, User
+from discord.abc import Messageable
+from discord.errors import Forbidden
+from discord.ext.commands import Bot, Context
 import jellyfish
 import json
 import math
@@ -10,10 +15,10 @@ import pytz
 import re
 import subprocess
 from threading import get_ident
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Tuple, Union
 import urllib.parse
 
-
+from pss_entity import EntitiesData, EntityInfo
 import pss_lookups as lookups
 import settings
 
@@ -62,14 +67,14 @@ def convert_python_to_camel_case(s: str) -> str:
     return result
 
 
-def shell_cmd(cmd):
+def shell_cmd(cmd: str) -> str:
     result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
     return result.stdout.decode('utf-8')
 
 
-def get_first_of_following_month(utcnow):
-    year = utcnow.year
-    month = utcnow.month + 1
+def get_first_of_following_month(utc_now: datetime) -> datetime:
+    year = utc_now.year
+    month = utc_now.month + 1
     if (month == 13):
         year += 1
         month = 1
@@ -77,13 +82,13 @@ def get_first_of_following_month(utcnow):
     return result
 
 
-def get_first_of_next_month(utc_now: datetime = None):
+def get_first_of_next_month(utc_now: datetime = None) -> datetime:
     if utc_now is None:
-        utc_now = get_utcnow()
+        utc_now = get_utc_now()
     return get_first_of_following_month(utc_now)
 
 
-def get_formatted_datetime(date_time, include_time=True, include_tz=True, include_tz_brackets=True):
+def get_formatted_datetime(date_time: datetime, include_time: bool = True, include_tz: bool = True, include_tz_brackets: bool = True) -> str:
     output_format = '%Y-%m-%d'
     if include_time:
         output_format += ' %H:%M:%S'
@@ -96,7 +101,7 @@ def get_formatted_datetime(date_time, include_time=True, include_tz=True, includ
     return result
 
 
-def parse_formatted_datetime(date_time, include_tz=True, include_tz_brackets=True):
+def parse_formatted_datetime(date_time: datetime, include_tz: bool = True, include_tz_brackets: bool = True) -> datetime:
     format_string = '%Y-%m-%d %H:%M:%S'
     if include_tz:
         if include_tz_brackets:
@@ -109,7 +114,7 @@ def parse_formatted_datetime(date_time, include_tz=True, include_tz_brackets=Tru
     return result
 
 
-def get_formatted_date(date_time, include_tz=True, include_tz_brackets=True):
+def get_formatted_date(date_time: datetime, include_tz: bool = True, include_tz_brackets: bool = True) -> str:
     result = date_time.strftime('%Y-%m-%d')
     if include_tz:
         tz = date_time.strftime('%Z')
@@ -171,7 +176,7 @@ def get_formatted_timedelta(delta: timedelta, include_relative_indicator: bool =
         return ''
 
 
-def get_utcnow():
+def get_utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -191,13 +196,13 @@ def format_pss_datetime(dt: datetime) -> str:
     return result
 
 
-async def post_output(ctx: commands.Context, output: list, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output(ctx: Context, output: Union[List[Embed], List[str]], maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.channel:
-        output_is_embeds = isinstance(output[0], discord.Embed)
+        output_is_embeds = isinstance(output[0], Embed)
         await post_output_to_channel(ctx.channel, output, output_is_embeds=output_is_embeds, maximum_characters=maximum_characters)
 
 
-async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Member, discord.User], output: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output_to_channel(channel: Union[TextChannel, Member, User], output: Union[List[Embed], List[str]], output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and channel:
         if output[-1] == settings.EMPTY_LINE:
             output = output[:-1]
@@ -216,7 +221,7 @@ async def post_output_to_channel(channel: Union[discord.TextChannel, discord.Mem
                     await channel.send(post)
 
 
-async def post_output_with_files(ctx: discord.ext.commands.Context, output: list, file_paths: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def post_output_with_files(ctx: Context, output: Union[List[Embed], List[str]], file_paths: List[str], output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output or file_paths:
         if output:
             if output[-1] == settings.EMPTY_LINE:
@@ -229,7 +234,7 @@ async def post_output_with_files(ctx: discord.ext.commands.Context, output: list
         else:
             posts = create_posts_from_lines(output, maximum_characters)
         last_post_index = len(posts) - 1
-        files = [discord.File(file_path) for file_path in file_paths]
+        files = [File(file_path) for file_path in file_paths]
         if last_post_index >= 0:
             for i, post in enumerate(posts):
                 if output_is_embeds:
@@ -244,15 +249,15 @@ async def post_output_with_files(ctx: discord.ext.commands.Context, output: list
                         await ctx.send(content=post)
 
 
-async def dm_author(ctx: discord.ext.commands.Context, output: list, output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
+async def dm_author(ctx: Context, output: Union[List[Embed], List[str]], output_is_embeds: bool = False, maximum_characters: int = settings.MAXIMUM_CHARACTERS) -> None:
     if output and ctx.author:
         await post_output_to_channel(ctx.author, output, output_is_embeds=output_is_embeds, maximum_characters=maximum_characters)
 
 
-def create_embed(title: str, description: str = None, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, image_url: str = None, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, timestamp: datetime = None) -> discord.Embed:
-    result = discord.Embed(title=discord.Embed.Empty, description=description or discord.Embed.Empty, colour=colour or discord.Embed.Empty, timestamp=timestamp or discord.Embed.Empty)
-    if title and title != discord.Embed.Empty:
-        result.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+def create_embed(title: str, description: str = None, colour: Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, image_url: str = None, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, timestamp: datetime = None) -> Embed:
+    result = Embed(title=Embed.Empty, description=description or Embed.Empty, colour=colour or Embed.Empty, timestamp=timestamp or Embed.Empty)
+    if title and title != Embed.Empty:
+        result.set_author(name=title, url=author_url or Embed.Empty, icon_url=icon_url or Embed.Empty)
     if fields is not None:
         for t in fields:
             result.add_field(name=t[0], value=t[1], inline=t[2])
@@ -261,46 +266,46 @@ def create_embed(title: str, description: str = None, colour: discord.Colour = N
     if image_url:
         result.set_image(url=image_url)
     if footer:
-        result.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+        result.set_footer(text=footer, icon_url=footer_icon_url or Embed.Empty)
     elif timestamp:
-        result.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+        result.set_footer(text=settings.EMPTY_LINE, icon_url=Embed.Empty)
 
     return result
 
 
-def create_basic_embeds_from_description(title: str, repeat_title: bool = True, description: List[str] = None, colour: discord.Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+def create_basic_embeds_from_description(title: str, repeat_title: bool = True, description: List[str] = None, colour: Colour = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[Embed]:
     result = []
     if description:
         embed_bodies = create_posts_from_lines(description, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
         body_count = len(embed_bodies)
         for i, embed_body in enumerate(embed_bodies, start=1):
-            embed = create_embed(discord.Embed.Empty, description=embed_body, colour=colour)
-            if title and title != discord.Embed.Empty and (i == 1 or repeat_title):
-                embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+            embed = create_embed(Embed.Empty, description=embed_body, colour=colour)
+            if title and title != Embed.Empty and (i == 1 or repeat_title):
+                embed.set_author(name=title, url=author_url or Embed.Empty, icon_url=icon_url or Embed.Empty)
             if thumbnail_url and (i == 1 or repeat_thumbnail):
                 embed.set_thumbnail(url=thumbnail_url)
             if image_url and (i == body_count or repeat_image):
                 embed.set_image(url=image_url)
             if timestamp and (i == body_count or repeat_timestamp):
-                embed.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+                embed.set_footer(text=settings.EMPTY_LINE, icon_url=Embed.Empty)
                 embed.timestamp = timestamp
             if footer and (i == body_count or repeat_footer):
-                embed.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+                embed.set_footer(text=footer, icon_url=footer_icon_url or Embed.Empty)
             result.append(embed)
         return result
     else:
         return [create_embed(title, colour=colour, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, footer=footer, timestamp=timestamp)]
 
 
-def create_basic_embeds_from_fields(title: str, repeat_title: bool = True, description: str = None, repeat_description: bool = True, colour: discord.Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[discord.Embed]:
+def create_basic_embeds_from_fields(title: str, repeat_title: bool = True, description: str = None, repeat_description: bool = True, colour: Colour = None, fields: List[Tuple[str, str, bool]] = None, thumbnail_url: str = None, repeat_thumbnail: bool = True, image_url: str = None, repeat_image: bool = True, icon_url: str = None, author_url: str = None, footer: str = None, footer_icon_url: str = None, repeat_footer: bool = True, timestamp: datetime = None, repeat_timestamp: bool = True) -> List[Embed]:
     result = []
     if fields:
         embed_fields = list(chunk_list(fields, 25))
         body_count = len(embed_fields)
         for i, embed_fields in enumerate(embed_fields, start=1):
-            embed = create_embed(discord.Embed.Empty, fields=embed_fields, colour=colour)
-            if title and title != discord.Embed.Empty and (i == 1 or repeat_title):
-                embed.set_author(name=title, url=author_url or discord.Embed.Empty, icon_url=icon_url or discord.Embed.Empty)
+            embed = create_embed(Embed.Empty, fields=embed_fields, colour=colour)
+            if title and title != Embed.Empty and (i == 1 or repeat_title):
+                embed.set_author(name=title, url=author_url or Embed.Empty, icon_url=icon_url or Embed.Empty)
             if description and (i == 1 or repeat_description):
                 embed.description = description
             if thumbnail_url and (i == 1 or repeat_thumbnail):
@@ -308,10 +313,10 @@ def create_basic_embeds_from_fields(title: str, repeat_title: bool = True, descr
             if image_url and (i == body_count or repeat_image):
                 embed.set_image(url=image_url)
             if timestamp and (i == body_count or repeat_timestamp):
-                embed.set_footer(text=settings.EMPTY_LINE, icon_url=discord.Embed.Empty)
+                embed.set_footer(text=settings.EMPTY_LINE, icon_url=Embed.Empty)
                 embed.timestamp = timestamp
             if footer and (i == body_count or repeat_footer):
-                embed.set_footer(text=footer, icon_url=footer_icon_url or discord.Embed.Empty)
+                embed.set_footer(text=footer, icon_url=footer_icon_url or Embed.Empty)
             result.append(embed)
         return result
     else:
@@ -323,25 +328,25 @@ def chunk_list(l: List[Any], chunk_size: int) -> List[List[Any]]:
         yield l[i:i+chunk_size]
 
 
-def get_bot_member_colour(bot, guild):
+def get_bot_member_colour(bot: Bot, guild: Guild) -> Colour:
     try:
         bot_member = guild.get_member(bot.user.id)
         bot_colour = bot_member.colour
         return bot_colour
     except:
-        return discord.Embed.Empty
+        return Embed.Empty
 
 
-def get_embed_field_def(title=None, text=None, inline=True):
+def get_embed_field_def(title: str = None, text: str = None, inline: bool = True) -> Tuple[str, str, bool]:
     return (title, text, inline)
 
 
 def dbg_prnt(text: str) -> None:
     if settings.PRINT_DEBUG:
-        print(f'[{get_utcnow()}][{get_ident()}]: {text}')
+        print(f'[{get_utc_now()}][{get_ident()}]: {text}')
 
 
-def create_posts_from_lines(lines, char_limit) -> list:
+def create_posts_from_lines(lines: List[str], char_limit: int) -> List[str]:
     result = []
     current_post = ''
 
@@ -379,7 +384,7 @@ def escape_escape_sequences(txt: str) -> str:
     return txt
 
 
-def get_reduced_number(num) -> (float, str):
+def get_reduced_number(num: float) -> Tuple[float, str]:
     num = float(num)
     is_negative = num < 0
     if is_negative:
@@ -396,18 +401,18 @@ def get_reduced_number(num) -> (float, str):
     return result, lookups.REDUCE_TOKENS_LOOKUP[counter]
 
 
-def get_reduced_number_compact(num, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
+def get_reduced_number_compact(num: int, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
     reduced_num, multiplier = get_reduced_number(num)
     result = f'{format_up_to_decimals(reduced_num, max_decimal_count)}{multiplier}'
     return result
 
 
-def is_str_in_list(value: str, lst: list, case_sensitive: bool = False) -> bool:
+def is_str_in_list(value: str, lst: List[str], case_sensitive: bool = False) -> bool:
     if value and lst:
         if not case_sensitive:
-            string = value.lower()
+            value = value.lower()
             lst = [item.lower() for item in lst]
-        return string in lst
+        return value in lst
     return False
 
 
@@ -447,7 +452,7 @@ async def check_hyperlink(hyperlink: str) -> bool:
         return False
 
 
-async def try_delete_original_message(ctx: discord.ext.commands.Context) -> bool:
+async def try_delete_original_message(ctx: Context) -> bool:
     return await try_delete_message(ctx.message)
 
 
@@ -458,7 +463,7 @@ def get_similarity(value_to_check: str, against: str) -> float:
     return result
 
 
-def get_similarity_map(values_to_check: Iterable[str], against: str) -> dict:
+def get_similarity_map(values_to_check: Iterable[str], against: str) -> Dict[float, List[str]]:
     result = {}
     for value in values_to_check:
         similarity = get_similarity(value, against)
@@ -477,7 +482,7 @@ def get_or_list(values: Iterable[str]) -> str:
         return result
 
 
-def sort_entities_by(entity_infos: list, order_info: list) -> list:
+def sort_entities_by(entity_infos: List[EntityInfo], order_info: List[Tuple[str, Callable[[Any], Any], bool]]) -> List[EntityInfo]:
     """order_info is a list of tuples (property_name,transform_function,reverse)"""
     result = entity_infos
     if order_info:
@@ -494,20 +499,14 @@ def sort_entities_by(entity_infos: list, order_info: list) -> list:
         return sorted(result)
 
 
-def sort_tuples_by(data: list, order_info: list) -> list:
-    """order_info is a list of tuples (element index,reverse)"""
-    result = data or []
-    if result:
-        if order_info:
-            for i in range(len(order_info), 0, -1):
-                element_index = order_info[i - 1][0]
-                reverse = convert_to_boolean(order_info[i - 1][1])
-                result = sorted(result, key=lambda data_point: data_point[element_index], reverse=reverse)
-            return result
-        else:
-            return sorted(result)
+def convert_color_string_to_embed_color(color_string: str) -> Colour:
+    if color_string:
+        split_color_string = color_string.split(',')
+        r, g, b = [int(c) for c in split_color_string]
+        result = Colour.from_rgb(r, g, b)
     else:
-        return result
+        result = Embed.Empty
+    return result
 
 
 def convert_color_string_to_embed_color(color_string: str) -> discord.Color:
@@ -531,7 +530,7 @@ def convert_input_to_boolean(s: str) -> bool:
     return result
 
 
-def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
+def convert_to_boolean(value: Any, default_if_none: bool = False) -> bool:
     if value is None:
         return default_if_none
     if isinstance(value, str):
@@ -556,7 +555,7 @@ def convert_to_boolean(value: object, default_if_none: bool = False) -> bool:
     raise NotImplementedError
 
 
-def get_level_and_name(level, name) -> (int, str):
+def get_level_and_name(level: str, name: str) -> Tuple[int, str]:
     if level is None and name is None:
         return level, name
 
@@ -621,7 +620,7 @@ def compare_versions(version_1: str, version_2: str) -> int:
     return 0
 
 
-def is_guild_channel(channel: discord.abc.Messageable) -> bool:
+def is_guild_channel(channel: Messageable) -> bool:
     if hasattr(channel, 'guild') and channel.guild:
         return True
     else:
@@ -700,12 +699,12 @@ def get_seconds_to_wait(interval_length: int, utc_now: datetime = None) -> float
     """
     interval_length = float(interval_length)
     if utc_now is None:
-        utc_now = get_utcnow()
+        utc_now = get_utc_now()
     result = (interval_length * 60.0) - ((float(utc_now.minute) % interval_length) * 60.0) - float(utc_now.second) - float(utc_now.microsecond) / 1000000.0
     return result
 
 
-def dicts_equal(d1: dict, d2: dict) -> bool:
+def dicts_equal(d1: Dict[Any, Any], d2: Dict[Any, Any]) -> bool:
     """
     Checks, whether the contents of two dicts are equal
     """
@@ -723,7 +722,7 @@ def dicts_equal(d1: dict, d2: dict) -> bool:
     return True
 
 
-def get_changed_value_keys(d1: dict, d2: dict, keys_to_check: list = None) -> list:
+def get_changed_value_keys(d1: Dict[Any, Any], d2: Dict[Any, Any], keys_to_check: list = None) -> List[Any]:
     if not keys_to_check:
         keys_to_check = list(d1.keys())
     result = []
@@ -735,23 +734,23 @@ def get_changed_value_keys(d1: dict, d2: dict, keys_to_check: list = None) -> li
     return result
 
 
-async def try_delete_message(message: discord.Message) -> bool:
+async def try_delete_message(message: Message) -> bool:
     try:
         await message.delete()
         return True
-    except discord.Forbidden:
+    except Forbidden:
         return False
 
 
-async def try_remove_reaction(reaction: discord.Reaction, user: discord.User) -> bool:
+async def try_remove_reaction(reaction: Reaction, user: User) -> bool:
     try:
         await reaction.remove(user)
         return True
-    except discord.Forbidden:
+    except Forbidden:
         return False
 
 
-def get_exact_args(ctx: discord.ext.commands.Context, additional_parameters: int = 0) -> str:
+def get_exact_args(ctx: Context, additional_parameters: int = 0) -> str:
     try:
         if ctx.command.full_parent_name:
             full_parent_command = f'{ctx.prefix}{ctx.command.full_parent_name} '
@@ -773,7 +772,7 @@ def get_exact_args(ctx: discord.ext.commands.Context, additional_parameters: int
 
 
 def get_next_day(utc_now: datetime = None) -> datetime:
-    utc_now = utc_now or get_utcnow()
+    utc_now = utc_now or get_utc_now()
     result = datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=timezone.utc)
     result = result + ONE_DAY
     return result
@@ -807,7 +806,7 @@ def make_dict_value_lists_unique(d: Dict[str, Iterable[object]]) -> Dict[str, Li
 #---------- DB utilities ----------
 DB_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, default: object = None) -> str:
+def db_get_column_definition(column_name: str, column_type: str, is_primary: bool = False, not_null: bool = False, default: Any = None) -> str:
     modifiers = []
     column_name_txt = column_name.lower()
     column_type_txt = column_type.upper()
@@ -823,21 +822,21 @@ def db_get_column_definition(column_name: str, column_type: str, is_primary: boo
     return result.strip()
 
 
-def db_get_where_and_string(where_strings: list) -> str:
+def db_get_where_and_string(where_strings: List[str]) -> str:
     if where_strings:
         return ' AND '.join(where_strings)
     else:
         return ''
 
 
-def db_get_where_or_string(where_strings: list) -> str:
+def db_get_where_or_string(where_strings: List[str]) -> str:
     if where_strings:
         return ' OR '.join(where_strings)
     else:
         return ''
 
 
-def db_get_where_string(column_name: str, column_value: object, is_text_type: bool = False) -> str:
+def db_get_where_string(column_name: str, column_value: Any, is_text_type: bool = False) -> str:
     column_name = column_name.lower()
     if column_value is None:
         return f'{column_name} IS NULL'
@@ -856,7 +855,7 @@ def db_convert_boolean(value: bool) -> str:
         return 'NULL'
 
 
-def db_convert_text(value: object) -> str:
+def db_convert_text(value: Any) -> str:
     """Convert from python object to postgresql TEXT"""
     if value is None:
         result = 'NULL'

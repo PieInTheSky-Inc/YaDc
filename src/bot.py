@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -6,41 +9,29 @@ from __future__ import unicode_literals
 import asyncio
 import calendar
 import datetime
-import dateutil
-import discord
-from discord.ext import commands
+from discord import Activity, ActivityType, Message, Embed, Guild, TextChannel
+from discord import __version__ as discord_version
+from discord.ext.commands import Bot, BucketType, Context, cooldown, is_owner, when_mentioned_or
+import discord.errors as errors
+import discord.ext.commands.errors as command_errors
 import holidays
 import logging
 import json
-import math
 import os
 import pytz
-import re
 import sys
-import time
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import database as db
-import emojis
-import excel
-import gdrive
 from gdrive import TourneyDataClient
 import pagination
-from pss_exception import Error, MissingParameterError, ParameterTypeError
-import server_settings
-from server_settings import GUILD_SETTINGS
-import settings
-import utility as util
-
 import pss_achievement as achievement
 import pss_ai as ai
-import pss_assert
 import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
-import pss_entity as entity
-import pss_exception
+from pss_exception import Error, InvalidParameterValueError, MissingParameterError, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
 import pss_item as item
@@ -56,6 +47,10 @@ import pss_tournament as tourney
 import pss_top
 import pss_training as training
 import pss_user as user
+import server_settings
+from server_settings import GUILD_SETTINGS
+import settings
+import utility as util
 
 
 
@@ -65,14 +60,14 @@ import pss_user as user
 # ----------                       Bot Setup                        ---------- #
 # ############################################################################ #
 
-async def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
+async def get_prefix(bot: Bot, message: Message) -> str:
     result = await server_settings.get_prefix(bot, message)
-    return commands.when_mentioned_or(result)(bot, message)
+    return when_mentioned_or(result)(bot, message)
 
 
-BOT = commands.Bot(command_prefix=get_prefix,
+BOT = Bot(command_prefix=get_prefix,
                     description='This is a Discord Bot for Pixel Starships',
-                    activity=discord.Activity(type=discord.ActivityType.playing, name='/help'))
+                    activity=Activity(type=ActivityType.playing, name='/help'))
 
 __COMMANDS = []
 COOLDOWN: float = 15.0
@@ -139,7 +134,7 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
-    print(f'discord.py version: {discord.__version__}')
+    print(f'discord.py version: {discord_version}')
     BOT.loop.create_task(post_dailies_loop())
 
 
@@ -164,7 +159,7 @@ async def on_shard_ready():
 
 
 @BOT.event
-async def on_command_error(ctx: commands.Context, err: Exception) -> None:
+async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
     if settings.THROW_COMMAND_ERRORS:
@@ -173,18 +168,18 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
         error_type = type(err).__name__
         error_message = str(err)
         retry_after = None
-        if isinstance(err, commands.CommandOnCooldown):
+        if isinstance(err, command_errors.CommandOnCooldown):
             error_message += f'\nThis message will delete itself, when you may use the command again.'
             retry_after = err.retry_after
-        elif isinstance(err, commands.CommandNotFound):
+        elif isinstance(err, command_errors.CommandNotFound):
             prefix = await server_settings.get_prefix(BOT, ctx.message)
             invoked_with = ctx.invoked_with.split(' ')[0]
             commands_map = util.get_similarity_map(__COMMANDS, invoked_with)
             bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
             error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {util.get_or_list(bot_commands)}?'
-        elif isinstance(err, commands.CheckFailure):
+        elif isinstance(err, command_errors.CheckFailure):
             error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
-        elif isinstance(err, commands.CommandInvokeError):
+        elif isinstance(err, command_errors.CommandInvokeError):
             if err.original:
                 error_type = type(err.original).__name__
                 if isinstance(err.original, Error):
@@ -192,14 +187,14 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
                 else:
                     error_message = f'`{ctx.message.clean_content}`\n{err.original}'
         else:
-            if not isinstance(err, commands.MissingRequiredArgument):
+            if not isinstance(err, command_errors.MissingRequiredArgument):
                 logging.getLogger().error(err, exc_info=True)
             command_args = util.get_exact_args(ctx)
             help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
             command = BOT.get_command(help_args)
             try:
                 await ctx.send_help(command)
-            except discord.errors.Forbidden:
+            except errors.Forbidden:
                 __log_command_use_error(ctx, err, force_printing=True)
 
         as_embed = await server_settings.get_use_embeds(ctx)
@@ -216,12 +211,12 @@ async def on_command_error(ctx: commands.Context, err: Exception) -> None:
                 if retry_after:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
                 await ctx.send(f'**{error_type}**\n{error_message}', delete_after=retry_after)
-        except discord.errors.Forbidden:
+        except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
 
 @BOT.event
-async def on_guild_join(guild: discord.Guild) -> None:
+async def on_guild_join(guild: Guild) -> None:
     print(f'Joined guild with id {guild.id} ({guild.name})')
     success = await GUILD_SETTINGS.create_guild_settings(BOT, guild.id)
     if not success:
@@ -229,7 +224,7 @@ async def on_guild_join(guild: discord.Guild) -> None:
 
 
 @BOT.event
-async def on_guild_remove(guild: discord.Guild) -> None:
+async def on_guild_remove(guild: Guild) -> None:
     print(f'Left guild with id {guild.id} ({guild.name})')
     success = await GUILD_SETTINGS.delete_guild_settings(guild.id)
     if not success:
@@ -250,14 +245,14 @@ async def on_guild_remove(guild: discord.Guild) -> None:
 
 async def post_dailies_loop() -> None:
     print(f'Started post dailies loop')
-    utc_now = util.get_utcnow()
+    utc_now = util.get_utc_now()
     while utc_now < settings.POST_AUTODAILY_FROM:
         wait_for = util.get_seconds_to_wait(60, utc_now=utc_now)
         await asyncio.sleep(wait_for)
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
 
     while True:
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - util.ONE_SECOND
 
         daily_info = await daily.get_daily_info()
@@ -297,7 +292,7 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, current_daily_embed: discord.Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: Embed) -> int:
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
@@ -308,7 +303,7 @@ async def post_dailies(current_daily_message: str, current_daily_embed: discord.
     return posted_count
 
 
-async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: discord.Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: discord.Embed) -> (bool, bool, discord.Message):
+async def post_autodaily(text_channel: TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: Embed) -> Tuple[bool, bool, Message]:
     """
     Returns (posted, can_post, latest_message)
     """
@@ -324,7 +319,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
             post_new = True
 
         can_post = True
-        latest_message: discord.Message = None
+        latest_message: Message = None
 
         if can_post:
             can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message, latest_daily_message_embed, current_daily_embed)
@@ -339,9 +334,9 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                         await latest_message.delete()
                         latest_message = None
                         print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-                    except discord.NotFound:
+                    except errors.NotFound:
                         print(f'[post_autodaily] {error_msg_delete}: the message could not be found')
-                    except discord.Forbidden:
+                    except errors.Forbidden:
                         print(f'[post_autodaily] {error_msg_delete}: the bot doesn\'t have the required permissions.')
                         can_post = False
                     except Exception as err:
@@ -352,9 +347,9 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                         await latest_message.edit(content=current_daily_message)
                         posted = True
                         print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-                    except discord.NotFound:
+                    except errors.NotFound:
                         print(f'[post_autodaily] {error_msg_edit}: the message could not be found')
-                    except discord.Forbidden:
+                    except errors.Forbidden:
                         print(f'[post_autodaily] {error_msg_edit}: the bot doesn\'t have the required permissions.')
                         can_post = False
                     except Exception as err:
@@ -375,7 +370,7 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
                         latest_message = await text_channel.send(current_daily_message)
                     posted = True
                     print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-                except discord.Forbidden:
+                except errors.Forbidden:
                     print(f'[post_autodaily] {error_msg_post}: the bot doesn\'t have the required permissions.')
                     can_post = False
                 except Exception as err:
@@ -392,20 +387,20 @@ async def post_autodaily(text_channel: discord.TextChannel, latest_message_id: i
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: discord.Embed, current_daily_embed: discord.Embed) -> (bool, discord.Message):
+async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: Embed, current_daily_embed: Embed) -> Tuple[bool, Message]:
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
     """
     can_post: bool = True
-    result: discord.Message = None
+    result: Message = None
 
     if text_channel:
         if latest_message_id is not None:
             try:
                 result = await text_channel.fetch_message(latest_message_id)
                 print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-            except discord.NotFound:
+            except errors.NotFound:
                 print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
             except Exception as err:
                 print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
@@ -439,8 +434,8 @@ async def daily_fetch_latest_message(text_channel: discord.TextChannel, latest_m
 # ############################################################################ #
 
 @BOT.command(name='about', aliases=['info'], brief='Display info on this bot')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_about(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_about(ctx: Context):
     """
     Displays information about this bot and its authors.
 
@@ -481,8 +476,8 @@ async def cmd_about(ctx: commands.Context):
 
 
 @BOT.command(name='invite', brief='Get an invite link')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_invite(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_invite(ctx: Context):
     """
     Produces an invite link for this bot and sends it via DM.
 
@@ -503,6 +498,8 @@ async def cmd_invite(ctx: commands.Context):
             nick = ctx.guild.me.display_name
         title = f'Invite {nick} to your server'
         invite_url = f'{settings.BASE_INVITE_URL}{BOT.user.id}'
+        colour = None
+
         if as_embed:
             colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
             description = f'[{title}]({invite_url})'
@@ -518,8 +515,8 @@ async def cmd_invite(ctx: commands.Context):
 
 
 @BOT.command(name='links', brief='Show links')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_links(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_links(ctx: Context):
     """
     Shows the links for useful sites regarding Pixel Starships.
 
@@ -556,7 +553,7 @@ async def cmd_links(ctx: commands.Context):
 
 
 @BOT.command(name='ping', brief='Ping the server')
-async def cmd_ping(ctx: commands.Context):
+async def cmd_ping(ctx: Context):
     """
     Ping the bot to verify that it\'s listening for commands.
 
@@ -573,7 +570,7 @@ async def cmd_ping(ctx: commands.Context):
 
 
 @BOT.command(name='support', brief='Invite to bot\'s support server')
-async def cmd_support(ctx: commands.Context):
+async def cmd_support(ctx: Context):
     """
     Produces an invite link to the support server for this bot and sends it via DM.
 
@@ -594,6 +591,7 @@ async def cmd_support(ctx: commands.Context):
             nick = ctx.guild.me.display_name
         about = core.read_about_file()
         title = f'Join {nick} support server'
+        colour = None
         guild_invite = about['support']
 
         if as_embed:
@@ -623,8 +621,8 @@ async def cmd_support(ctx: commands.Context):
 # ############################################################################ #
 
 @BOT.command(name='best', brief='Get best items for a slot')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
     """
     Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
@@ -670,13 +668,13 @@ async def cmd_best(ctx: commands.Context, slot: str, *, stat: str = None):
                 raise ValueError(f'The item `{item_name}` is not a gear type item!')
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
-        output, _ = await item.get_best_items(slot, stat, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await item.get_best_items(ctx, slot, stat, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='char', aliases=['crew'], brief='Get character stats')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_char(ctx: Context, level: str = None, *, crew_name: str = None):
     """
     Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
 
@@ -697,13 +695,13 @@ async def cmd_char(ctx: commands.Context, level: str = None, *, crew_name: str =
     __log_command_use(ctx)
     async with ctx.typing():
         level, crew_name = util.get_level_and_name(level, crew_name)
-        output, _ = await crew.get_char_details_by_name(crew_name, ctx, level=level, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_craft(ctx: commands.Context, *, item_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_craft(ctx: Context, *, item_name: str):
     """
     Get the items a specified item can be crafted into.
 
@@ -723,13 +721,13 @@ async def cmd_craft(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_upgrades_from_name(item_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='collection', aliases=['coll'], brief='Get collections')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_collection(ctx: Context, *, collection_name: str = None):
     """
     Get the details on a specific collection. If the collection name is omitted, it will display all collections.
 
@@ -748,13 +746,13 @@ async def cmd_collection(ctx: commands.Context, *, collection_name: str = None):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_collection_details_by_name(collection_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='daily', brief='Show the dailies')
-@commands.cooldown(rate=RATE, per=COOLDOWN*2, type=commands.BucketType.user)
-async def cmd_daily(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN*2, type=BucketType.user)
+async def cmd_daily(ctx: Context):
     """
     Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
 
@@ -776,8 +774,8 @@ async def cmd_daily(ctx: commands.Context):
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_fleet(ctx: Context, *, fleet_name: str):
     """
     Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
@@ -819,8 +817,8 @@ async def cmd_fleet(ctx: commands.Context, *, fleet_name: str):
 
 
 @BOT.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_ingredients(ctx: Context, *, item_name: str):
     """
     Get the ingredients for an item to be crafted with their estimated crafting costs.
 
@@ -839,13 +837,13 @@ async def cmd_ingredients(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_ingredients_for_item(item_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await item.get_ingredients_for_item(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='item', brief='Get item stats')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_item(ctx: commands.Context, *, item_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_item(ctx: Context, *, item_name: str):
     """
     Get the stats of any item matching the given item_name.
 
@@ -863,13 +861,13 @@ async def cmd_item(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_details_by_name(item_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await item.get_item_details_by_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_level(ctx: commands.Context, from_level: str, to_level: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
     """
     Shows the cost for a crew to reach a certain level.
 
@@ -903,13 +901,13 @@ async def cmd_level(ctx: commands.Context, from_level: str, to_level: str = None
 
         if from_level and to_level and from_level >= to_level:
             raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
-        output, _ = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='news', brief='Show the news')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_news(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_news(ctx: Context):
     """
     Prints all news in ascending order.
 
@@ -922,13 +920,13 @@ async def cmd_news(ctx: commands.Context):
     __log_command_use(ctx)
     await util.try_delete_original_message(ctx)
     async with ctx.typing():
-        output, _ = await dropship.get_news(ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await dropship.get_news(ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past(ctx: Context, month: str = None, year: str = None):
     """
     Get historic tournament data.
 
@@ -945,8 +943,8 @@ async def cmd_past(ctx: commands.Context, month: str = None, year: str = None):
 
 
 @cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = None, *, division: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, division: str = None):
     """
     Get historic tournament division stars data.
 
@@ -960,7 +958,7 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
     __log_command_use(ctx)
     async with ctx.typing():
         error = None
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         output = []
 
         (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
@@ -975,13 +973,13 @@ async def cmd_past_stars(ctx: commands.Context, month: str = None, year: str = N
             month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
             tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
             if tourney_data:
-                output, _ = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
+                output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_stars_fleet(ctx: commands.Context, month: str = None, year: str = None, *, fleet_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None, *, fleet_name: str = None):
     """
     Get historic tournament fleet stars data.
 
@@ -996,7 +994,7 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str = None, year: s
     async with ctx.typing():
         output = []
         error = None
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
@@ -1030,8 +1028,8 @@ async def cmd_past_stars_fleet(ctx: commands.Context, month: str = None, year: s
 
 
 @cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = None, *, fleet_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, fleet_name: str = None):
     """
     Get historic tournament fleet data.
 
@@ -1045,7 +1043,7 @@ async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = N
     __log_command_use(ctx)
     async with ctx.typing():
         error = None
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
@@ -1083,8 +1081,8 @@ async def cmd_past_fleet(ctx: commands.Context, month: str = None, year: str = N
 
 
 @cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     """
     Get historic tournament fleet data.
 
@@ -1098,7 +1096,7 @@ async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = 
     __log_command_use(ctx)
     async with ctx.typing():
         error = None
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         month, year = TourneyDataClient.retr
         (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
@@ -1122,8 +1120,8 @@ async def cmd_past_fleets(ctx: commands.Context, month: str = None, year: str = 
 
 
 @cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_past_player(ctx: commands.Context, month: str = None, year: str = None, *, player_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, player_name: str = None):
     """
     Get historic tournament player data.
 
@@ -1138,7 +1136,7 @@ async def cmd_past_player(ctx: commands.Context, month: str = None, year: str = 
     async with ctx.typing():
         output = []
         error = None
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
@@ -1176,8 +1174,8 @@ async def cmd_past_player(ctx: commands.Context, month: str = None, year: str = 
 
 
 @BOT.command(name='player', aliases=['user'], brief='Get infos on a player')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_player(ctx: commands.Context, *, player_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_player(ctx: Context, *, player_name: str = None):
     """
     Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
@@ -1198,7 +1196,7 @@ async def cmd_player(ctx: commands.Context, *, player_name: str = None):
             player_name = exact_name
         if not player_name:
             raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_user_details_by_name(player_name)
+        user_infos = await user.get_user_infos_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -1218,8 +1216,8 @@ async def cmd_player(ctx: commands.Context, *, player_name: str = None):
 
 
 @BOT.command(name='prestige', brief='Get prestige combos of crew')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_prestige(ctx: Context, *, crew_name: str):
     """
     Get the prestige combinations of the crew specified.
 
@@ -1237,13 +1235,13 @@ async def cmd_prestige(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_price(ctx: commands.Context, *, item_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_price(ctx: Context, *, item_name: str):
     """
     Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
 
@@ -1264,13 +1262,13 @@ async def cmd_price(ctx: commands.Context, *, item_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await item.get_item_price(item_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await item.get_item_price(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='recipe', brief='Get character recipes')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_recipe(ctx: Context, *, crew_name: str):
     """
     Get the prestige recipes of the crew specified.
 
@@ -1288,13 +1286,13 @@ async def cmd_recipe(ctx: commands.Context, *, crew_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='research', brief='Get research data')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_research(ctx: commands.Context, *, research_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_research(ctx: Context, *, research_name: str):
     """
     Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
 
@@ -1312,13 +1310,13 @@ async def cmd_research(ctx: commands.Context, *, research_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='room', brief='Get room infos')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_room(ctx: commands.Context, *, room_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_room(ctx: Context, *, room_name: str):
     """
     Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
@@ -1338,13 +1336,13 @@ async def cmd_room(ctx: commands.Context, *, room_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.command(name='sales', brief='List expired sales')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_sales(ctx: Context, *, object_name: str = None):
     """
     Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down, so 0 days means only available today). If a parameter is given, the command will output the sales history for that object.
 
@@ -1410,8 +1408,8 @@ async def cmd_sales(ctx: commands.Context, *, object_name: str = None):
 
 
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars(ctx: commands.Context, *, division: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_stars(ctx: Context, *, division: str = None):
     """
     Get stars earned by each fleet during the current final tournament week.
 
@@ -1437,7 +1435,7 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
                 await ctx.invoke(subcommand, fleet_name=division)
                 return
             else:
-                output, _ = await pss_top.get_division_stars(ctx, division=division, as_embed=(await server_settings.get_use_embeds(ctx)))
+                output = await pss_top.get_division_stars(ctx, division=division, as_embed=(await server_settings.get_use_embeds(ctx)))
         await util.post_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')
@@ -1446,8 +1444,8 @@ async def cmd_stars(ctx: commands.Context, *, division: str = None):
 
 
 @cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
     """
     Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
@@ -1486,7 +1484,7 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str = None):
 
             if fleet_info:
                 async with ctx.typing():
-                    fleet_users_infos = await fleet.get_fleet_users_by_info(fleet_info)
+                    fleet_users_infos = await fleet.get_fleet_users_data_by_fleet_info(fleet_info)
                     output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await server_settings.get_use_embeds(ctx)))
                 await util.post_output(ctx, output)
         else:
@@ -1498,8 +1496,8 @@ async def cmd_stars_fleet(ctx: commands.Context, *, fleet_name: str = None):
 
 
 @BOT.command(name='stats', aliases=['stat'], brief='Get item/crew stats')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
     """
     Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
 
@@ -1524,13 +1522,15 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
         level, name = util.get_level_and_name(level, name)
         use_embeds = (await server_settings.get_use_embeds(ctx))
         try:
-            char_output, char_success = await crew.get_char_details_by_name(name, ctx, level, as_embed=use_embeds)
-        except pss_exception.InvalidParameterValueError:
+            char_output = await crew.get_char_details_by_name(ctx, name, level, as_embed=use_embeds)
+            char_success = True
+        except (InvalidParameterValueError, Error):
             char_output = None
             char_success = False
         try:
-            item_output, item_success = await item.get_item_details_by_name(name, ctx, as_embed=use_embeds)
-        except pss_exception.InvalidParameterValueError:
+            item_output = await item.get_item_details_by_name(ctx, name, as_embed=use_embeds)
+            item_success = True
+        except (InvalidParameterValueError, Error):
             item_output = None
             item_success = False
 
@@ -1547,8 +1547,8 @@ async def cmd_stats(ctx: commands.Context, level: str = None, *, name: str = Non
 
 
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_time(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_time(ctx: Context):
     """
     Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
 
@@ -1560,7 +1560,7 @@ async def cmd_time(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         star_date = f'Star date {util.get_star_date(utc_now)}'
 
         mel_tz = pytz.timezone('Australia/Melbourne')
@@ -1590,8 +1590,8 @@ async def cmd_time(ctx: commands.Context):
 
 
 @BOT.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top(ctx: commands.Context, *, count: str = '100'):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_top(ctx: Context, *, count: str = '100'):
     """
     Prints either top fleets or captains. Prints top 100 fleets by default.
 
@@ -1629,8 +1629,8 @@ async def cmd_top(ctx: commands.Context, *, count: str = '100'):
 
 
 @cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top_captains(ctx: commands.Context, count: str = '100'):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_top_captains(ctx: Context, count: str = '100'):
     """
     Prints top captains. Prints top 100 captains by default.
 
@@ -1653,13 +1653,13 @@ async def cmd_top_captains(ctx: commands.Context, count: str = '100'):
         raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
 
     async with ctx.typing():
-        output, _ = await pss_top.get_top_captains(ctx, count, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await pss_top.get_top_captains(ctx, count, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_top_fleets(ctx: commands.Context, count: str = '100'):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_top_fleets(ctx: Context, count: str = '100'):
     """
     Prints top fleets. Prints top 100 fleets by default.
 
@@ -1682,12 +1682,12 @@ async def cmd_top_fleets(ctx: commands.Context, count: str = '100'):
         raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
 
     async with ctx.typing():
-        output, _ = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
 @BOT.group(name='tournament', aliases=['tourney'], brief='Information on tournament time')
-async def cmd_tournament(ctx: commands.Context):
+async def cmd_tournament(ctx: Context):
     """
     Get information about the starting time of the tournament.
 
@@ -1706,7 +1706,7 @@ async def cmd_tournament(ctx: commands.Context):
 
 
 @cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
-async def cmd_tournament_current(ctx: commands.Context):
+async def cmd_tournament_current(ctx: Context):
     """
     Get information about the starting time of the current month's tournament.
 
@@ -1719,7 +1719,7 @@ async def cmd_tournament_current(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         start_of_tourney = tourney.get_current_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
@@ -1732,7 +1732,7 @@ async def cmd_tournament_current(ctx: commands.Context):
 
 
 @cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
-async def cmd_tournament_next(ctx: commands.Context):
+async def cmd_tournament_next(ctx: Context):
     """
     Get information about the starting time of the next month's tournament.
 
@@ -1745,7 +1745,7 @@ async def cmd_tournament_next(ctx: commands.Context):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         start_of_tourney = tourney.get_next_tourney_start()
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
         embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
@@ -1758,8 +1758,8 @@ async def cmd_tournament_next(ctx: commands.Context):
 
 
 @BOT.command(name='training', brief='Get training infos')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_training(ctx: commands.Context, *, training_name: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_training(ctx: Context, *, training_name: str):
     """
     Get detailed information on a training. If more than 2 results are found, some details will be omitted.
 
@@ -1778,7 +1778,7 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output, _ = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await util.post_output(ctx, output)
 
 
@@ -1795,8 +1795,8 @@ async def cmd_training(ctx: commands.Context, *, training_name: str):
 # ############################################################################ #
 
 @BOT.group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw(ctx: commands.Context):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw(ctx: Context):
     """
     Get raw data from the Pixel Starships API.
     Use one of the sub-commands to retrieve data for a certain entity type. The sub-commands may have sub-commands on their own, so make sure to check the related help commands.
@@ -1820,8 +1820,8 @@ async def cmd_raw(ctx: commands.Context):
 
 
 @cmd_raw.command(name='achievement', aliases=['achievements'], brief='Get raw achievement data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_achievement(ctx: Context, *, achievement_id: str = None):
     """
     Get raw achievement design data from the PSS API.
 
@@ -1844,8 +1844,8 @@ async def cmd_raw_achievement(ctx: commands.Context, *, achievement_id: str = No
 
 
 @cmd_raw.group(name='ai', brief='Get raw ai data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai(ctx: commands.Context):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_ai(ctx: Context):
     """
     Get raw ai design data from the PSS API.
 
@@ -1868,8 +1868,8 @@ async def cmd_raw_ai(ctx: commands.Context):
 
 
 @cmd_raw_ai.command(name='action', aliases=['actions'], brief='Get raw ai action data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_ai_action(ctx: Context, ai_action_id: int = None):
     """
     Get raw ai action design data from the PSS API.
 
@@ -1892,8 +1892,8 @@ async def cmd_raw_ai_action(ctx: commands.Context, ai_action_id: int = None):
 
 
 @cmd_raw_ai.command(name='condition', aliases=['conditions'], brief='Get raw ai condition data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_ai_condition(ctx: Context, ai_condition_id: int = None):
     """
     Get raw ai condition design data from the PSS API.
 
@@ -1916,8 +1916,8 @@ async def cmd_raw_ai_condition(ctx: commands.Context, ai_condition_id: int = Non
 
 
 @cmd_raw.command(name='char', aliases=['crew', 'chars', 'crews'], brief='Get raw crew data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_char(ctx: Context, *, char_id: str = None):
     """
     Get raw character design data from the PSS API.
 
@@ -1940,8 +1940,8 @@ async def cmd_raw_char(ctx: commands.Context, *, char_id: str = None):
 
 
 @cmd_raw.command(name='collection', aliases=['coll', 'collections'], brief='Get raw collection data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_collection(ctx: Context, *, collection_id: str = None):
     """
     Get raw collection design data from the PSS API.
 
@@ -1964,8 +1964,8 @@ async def cmd_raw_collection(ctx: commands.Context, *, collection_id: str = None
 
 
 @cmd_raw.group(name='gm', aliases=['galaxymap', 'galaxy'], brief='Get raw gm data', invoke_without_command=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm(ctx: commands.Context):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_gm(ctx: Context):
     """
     Get raw gm design data from the PSS API.
 
@@ -1988,8 +1988,8 @@ async def cmd_raw_gm(ctx: commands.Context):
 
 
 @cmd_raw_gm.command(name='system', aliases=['systems', 'star', 'stars'], brief='Get raw gm system data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_gm_system(ctx: Context, *, star_system_id: str = None):
     """
     Get raw star system design data from the PSS API.
 
@@ -2012,8 +2012,8 @@ async def cmd_raw_gm_system(ctx: commands.Context, *, star_system_id: str = None
 
 
 @cmd_raw_gm.command(name='path', aliases=['paths', 'link', 'links'], brief='Get raw gm path data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_gm_link(ctx: Context, *, star_system_link_id: str = None):
     """
     Get raw star system link design data from the PSS API.
 
@@ -2036,8 +2036,8 @@ async def cmd_raw_gm_link(ctx: commands.Context, *, star_system_link_id: str = N
 
 
 @cmd_raw.command(name='item', aliases=['items'], brief='Get raw item data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_item(ctx: Context, *, item_id: str = None):
     """
     Get raw item design data from the PSS API.
 
@@ -2060,8 +2060,8 @@ async def cmd_raw_item(ctx: commands.Context, *, item_id: str = None):
 
 
 @cmd_raw.command(name='mission', aliases=['missions'], brief='Get raw mission data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_mission(ctx: Context, *, mission_id: str = None):
     """
     Get raw mission design data from the PSS API.
 
@@ -2084,8 +2084,8 @@ async def cmd_raw_mission(ctx: commands.Context, *, mission_id: str = None):
 
 
 @cmd_raw.command(name='promotion', aliases=['promo', 'promotions', 'promos'], brief='Get raw promotion data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_promotion(ctx: Context, *, promo_id: str = None):
     """
     Get raw promotion design data from the PSS API.
 
@@ -2108,8 +2108,8 @@ async def cmd_raw_promotion(ctx: commands.Context, *, promo_id: str = None):
 
 
 @cmd_raw.command(name='research', aliases=['researches'], brief='Get raw research data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_research(ctx: Context, *, research_id: str = None):
     """
     Get raw research design data from the PSS API.
 
@@ -2132,8 +2132,8 @@ async def cmd_raw_research(ctx: commands.Context, *, research_id: str = None):
 
 
 @cmd_raw.group(name='room', aliases=['rooms'], brief='Get raw room data', invoke_without_command=True)
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_room(ctx: Context, *, room_id: str = None):
     """
     Get raw room design data from the PSS API.
 
@@ -2156,8 +2156,8 @@ async def cmd_raw_room(ctx: commands.Context, *, room_id: str = None):
 
 
 @cmd_raw_room.command(name='purchase', aliases=['purchases'], brief='Get raw room purchase data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_room_purchase(ctx: Context, *, room_purchase_id: str = None):
     """
     Get raw room purchase design data from the PSS API.
 
@@ -2180,8 +2180,8 @@ async def cmd_raw_room_purchase(ctx: commands.Context, *, room_purchase_id: str 
 
 
 @cmd_raw.command(name='ship', aliases=['ships', 'hull', 'hulls'], brief='Get raw ship data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_ship(ctx: Context, *, ship_id: str = None):
     """
     Get raw ship design data from the PSS API.
 
@@ -2204,8 +2204,8 @@ async def cmd_raw_ship(ctx: commands.Context, *, ship_id: str = None):
 
 
 @cmd_raw.command(name='training', aliases=['trainings'], brief='Get raw training data')
-@commands.cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=commands.BucketType.user)
-async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_training(ctx: Context, *, training_id: str = None):
     """
     Get raw training design data from the PSS API.
 
@@ -2240,8 +2240,8 @@ async def cmd_raw_training(ctx: commands.Context, *, training_id: str = None):
 # ############################################################################ #
 
 @BOT.group(name='settings', brief='Server settings', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings(ctx: Context, *args):
     """
     Retrieve settings for this Discord server/guild.
     Set settings for this server using the subcommands 'set' and 'reset'.
@@ -2271,8 +2271,8 @@ async def cmd_settings(ctx: commands.Context, *args):
 
 
 @cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_autodaily(ctx: Context, *args):
     """
     Retrieve the auto-daily setting for this server.
 
@@ -2302,8 +2302,8 @@ async def cmd_settings_get_autodaily(ctx: commands.Context, *args):
 
 
 @cmd_settings_get_autodaily.command(name='channel', aliases=['ch'], brief='Retrieve auto-daily channel')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_channel(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_autodaily_channel(ctx: Context, *args):
     """
     Retrieve the auto-daily setting for this server.
 
@@ -2335,8 +2335,8 @@ async def cmd_settings_get_autodaily_channel(ctx: commands.Context, *args):
 
 
 @cmd_settings_get_autodaily.command(name='changemode', aliases=['mode'], brief='Retrieve auto-daily mode', hidden=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_autodaily_mode(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_autodaily_mode(ctx: Context, *args):
     """
     Retrieve the auto-daily setting for this server.
 
@@ -2368,8 +2368,8 @@ async def cmd_settings_get_autodaily_mode(ctx: commands.Context, *args):
 
 
 @cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel', hidden=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_botnews(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_botnews(ctx: Context, *args):
     """
     Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
 
@@ -2401,8 +2401,8 @@ async def cmd_settings_get_botnews(ctx: commands.Context, *args):
 
 
 @cmd_settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_embeds(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_embeds(ctx: Context, *args):
     """
     Retrieve the embed setting for this server. It determines, whether the bot output on this server will be served in embeds or in plain text.
 
@@ -2434,8 +2434,8 @@ async def cmd_settings_get_embeds(ctx: commands.Context, *args):
 
 
 @cmd_settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_pagination(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_pagination(ctx: Context, *args):
     """
     Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
 
@@ -2467,8 +2467,8 @@ async def cmd_settings_get_pagination(ctx: commands.Context, *args):
 
 
 @cmd_settings.command(name='prefix', brief='Retrieve prefix settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_get_prefix(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_get_prefix(ctx: Context, *args):
     """
     Retrieve the prefix setting for this server.
 
@@ -2488,8 +2488,8 @@ async def cmd_settings_get_prefix(ctx: commands.Context, *args):
 
 
 @BOT.command(name='prefix', brief='Retrieve prefix settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_prefix(ctx: commands.Context, *args):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_prefix(ctx: Context, *args):
     """
     Retrieve the prefix setting for this server.
 
@@ -2530,8 +2530,8 @@ async def cmd_prefix(ctx: commands.Context, *args):
 
 
 @cmd_settings.group(name='reset', brief='Reset server settings', invoke_without_command=True)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset(ctx: Context):
     """
     Reset settings for this server.
 
@@ -2557,8 +2557,8 @@ async def cmd_settings_reset(ctx: commands.Context):
 
 
 @cmd_settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_autodaily(ctx: Context):
     """
     Reset the auto-daily settings for this server.
 
@@ -2587,8 +2587,8 @@ async def cmd_settings_reset_autodaily(ctx: commands.Context):
 
 
 @cmd_settings_reset_autodaily.command(name='channel', aliases=['ch'], brief='Reset auto-daily channel')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_autodaily_channel(ctx: Context):
     """
     Reset the auto-daily channel settings for this server.
 
@@ -2617,8 +2617,8 @@ async def cmd_settings_reset_autodaily_channel(ctx: commands.Context):
 
 
 @cmd_settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_autodaily_mode(ctx: Context):
     """
     Reset the auto-daily change mode settings for this server.
 
@@ -2647,8 +2647,8 @@ async def cmd_settings_reset_autodaily_mode(ctx: commands.Context):
 
 
 @cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_bot_news_channel(ctx: Context):
     """
     Reset the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
 
@@ -2677,8 +2677,8 @@ async def cmd_settings_reset_bot_news_channel(ctx: commands.Context):
 
 
 @cmd_settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_embeds(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_embeds(ctx: Context):
     """
     Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
 
@@ -2707,8 +2707,8 @@ async def cmd_settings_reset_embeds(ctx: commands.Context):
 
 
 @cmd_settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_pagination(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_pagination(ctx: Context):
     """
     Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
@@ -2737,8 +2737,8 @@ async def cmd_settings_reset_pagination(ctx: commands.Context):
 
 
 @cmd_settings_reset.command(name='prefix', brief='Reset prefix settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_reset_prefix(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_reset_prefix(ctx: Context):
     """
     Reset the prefix settings for this server to '/'.
 
@@ -2774,8 +2774,8 @@ async def cmd_settings_reset_prefix(ctx: commands.Context):
 
 
 @cmd_settings.group(name='set', brief='Change server settings', invoke_without_command=False)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set(ctx: Context):
     """
     Set settings for this server.
 
@@ -2794,8 +2794,8 @@ async def cmd_settings_set(ctx: commands.Context):
 
 
 @cmd_settings_set.group(name='autodaily', aliases=['daily'], brief='Change auto-daily settings', invoke_without_command=False)
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_autodaily(ctx: Context):
     """
     Set auto-daily settings for this server.
 
@@ -2808,8 +2808,8 @@ async def cmd_settings_set_autodaily(ctx: commands.Context):
 
 
 @cmd_settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel: discord.TextChannel = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_autodaily_channel(ctx: Context, text_channel: TextChannel = None):
     """
     Set the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
 
@@ -2851,8 +2851,8 @@ async def cmd_settings_set_autodaily_channel(ctx: commands.Context, text_channel
 
 
 @cmd_settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily repost mode')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_autodaily_mode(ctx: commands.Context):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_autodaily_mode(ctx: Context):
     """
     Set the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
 
@@ -2879,8 +2879,8 @@ async def cmd_settings_set_autodaily_mode(ctx: commands.Context):
 
 
 @cmd_settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel: discord.TextChannel=None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_bot_news_channel(ctx: Context, text_channel: TextChannel = None):
     """
     Set the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
 
@@ -2918,8 +2918,8 @@ async def cmd_settings_set_bot_news_channel(ctx: commands.Context, text_channel:
 
 
 @cmd_settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_embeds(ctx: Context, switch: str = None):
     """
     Set or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
 
@@ -2953,8 +2953,8 @@ async def cmd_settings_set_embeds(ctx: commands.Context, switch: str = None):
 
 
 @cmd_settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_pagination(ctx: Context, switch: str = None):
     """
     Set or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
 
@@ -2988,8 +2988,8 @@ async def cmd_settings_set_pagination(ctx: commands.Context, switch: str = None)
 
 
 @cmd_settings_set.command(name='prefix', brief='Set prefix')
-@commands.cooldown(rate=RATE, per=COOLDOWN, type=commands.BucketType.user)
-async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_settings_set_prefix(ctx: Context, prefix: str):
     """
     Set the prefix for this server. The default is '/'.
 
@@ -3031,8 +3031,8 @@ async def cmd_settings_set_prefix(ctx: commands.Context, prefix: str):
 # ############################################################################ #
 
 @BOT.group(name='autodaily', brief='Configure auto-daily for the server', hidden=True)
-@commands.is_owner()
-async def cmd_autodaily(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily(ctx: Context):
     """
     This command can be used to get an overview of the autodaily settings for this bot.
 
@@ -3043,15 +3043,15 @@ async def cmd_autodaily(ctx: commands.Context):
 
 
 @cmd_autodaily.group(name='list', brief='List configured auto-daily channels', invoke_without_command=False, hidden=True)
-@commands.is_owner()
-async def cmd_autodaily_list(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily_list(ctx: Context):
     __log_command_use(ctx)
     pass
 
 
 @cmd_autodaily_list.command(name='all', brief='List all configured auto-daily channels', hidden=True)
-@commands.is_owner()
-async def cmd_autodaily_list_all(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily_list_all(ctx: Context):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await daily.get_daily_channels(ctx, None, None)
@@ -3059,8 +3059,8 @@ async def cmd_autodaily_list_all(ctx: commands.Context):
 
 
 @cmd_autodaily_list.command(name='invalid', brief='List all invalid configured auto-daily channels', hidden=True)
-@commands.is_owner()
-async def cmd_autodaily_list_invalid(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily_list_invalid(ctx: Context):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await daily.get_daily_channels(ctx, None, False)
@@ -3068,8 +3068,8 @@ async def cmd_autodaily_list_invalid(ctx: commands.Context):
 
 
 @cmd_autodaily_list.command(name='valid', brief='List all valid configured auto-daily channels', hidden=True)
-@commands.is_owner()
-async def cmd_autodaily_list_valid(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily_list_valid(ctx: Context):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await daily.get_daily_channels(ctx, None, True)
@@ -3077,8 +3077,8 @@ async def cmd_autodaily_list_valid(ctx: commands.Context):
 
 
 @cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
-@commands.is_owner()
-async def cmd_autodaily_post(ctx: commands.Context):
+@is_owner()
+async def cmd_autodaily_post(ctx: Context):
     __log_command_use(ctx)
     guild = ctx.guild
     channel_id = await server_settings.db_get_daily_channel_id(guild.id)
@@ -3093,15 +3093,15 @@ async def cmd_autodaily_post(ctx: commands.Context):
 
 
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
-@commands.is_owner()
-async def cmd_db(ctx: commands.Context):
+@is_owner()
+async def cmd_db(ctx: Context):
     __log_command_use(ctx)
     await ctx.send_help('db')
 
 
 @cmd_db.command(name='query', brief='Try to execute a DB query', hidden=True)
-@commands.is_owner()
-async def cmd_db_query(ctx: commands.Context, *, query: str):
+@is_owner()
+async def cmd_db_query(ctx: Context, *, query: str):
     __log_command_use(ctx)
     async with ctx.typing():
         success = await db.try_execute(query)
@@ -3112,8 +3112,8 @@ async def cmd_db_query(ctx: commands.Context, *, query: str):
 
 
 @cmd_db.command(name='select', brief='Try to select from DB', hidden=True)
-@commands.is_owner()
-async def cmd_db_select(ctx: commands.Context, *, query: str):
+@is_owner()
+async def cmd_db_select(ctx: Context, *, query: str):
     __log_command_use(ctx)
     async with ctx.typing():
         if not query.lower().startswith('select '):
@@ -3123,19 +3123,18 @@ async def cmd_db_select(ctx: commands.Context, *, query: str):
             error = None
         except Exception as error:
             result = []
-    if error:
-        await ctx.send(f'The query \'{query}\' failed.')
-    elif result:
+            raise Error(f'The query \'{query}\' failed.')
+    if result:
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
         result = [str(record) for record in result]
         await util.post_output(ctx, result)
     else:
-        await ctx.send(f'The query \'{query}\' didn\'t return any results.')
+        raise Error(f'The query \'{query}\' didn\'t return any results.')
 
 
 @BOT.group(name='device', brief='list available devices', hidden=True)
-@commands.is_owner()
-async def cmd_device(ctx: commands.Context):
+@is_owner()
+async def cmd_device(ctx: Context):
     """
     Returns all known devices stored in the DB.
     """
@@ -3157,8 +3156,8 @@ async def cmd_device(ctx: commands.Context):
 
 
 @cmd_device.command(name='add', brief='store device', hidden=True)
-@commands.is_owner()
-async def cmd_device_add(ctx: commands.Context, device_key: str):
+@is_owner()
+async def cmd_device_add(ctx: Context, device_key: str):
     """
     Attempts to store a device with the given device_key in the DB.
     """
@@ -3166,18 +3165,14 @@ async def cmd_device_add(ctx: commands.Context, device_key: str):
     async with ctx.typing():
         try:
             device = await login.DEVICES.add_device_by_key(device_key)
-            added = True
+            await ctx.send(f'Added device with device key \'{device.key}\'.')
         except Exception as err:
-            added = False
-    if added:
-        await ctx.send(f'Added device with device key \'{device.key}\'.')
-    else:
-        await ctx.send(f'Could not add device with device key\'{device_key}\':```{err}```')
+            raise Error(f'Could not add device with device key\'{device_key}\':```{err}```')
 
 
 @cmd_device.command(name='create', brief='create & store random device', hidden=True)
-@commands.is_owner()
-async def cmd_device_create(ctx: commands.Context):
+@is_owner()
+async def cmd_device_create(ctx: Context):
     """
     Creates a new random device_key and attempts to store the new device in the DB.
     """
@@ -3186,19 +3181,15 @@ async def cmd_device_create(ctx: commands.Context):
         device = await login.DEVICES.create_device()
         try:
             await device.get_access_token()
-            created = True
+            await ctx.send(f'Created and stored device with key \'{device.key}\'.')
         except Exception as err:
             await login.DEVICES.remove_device(device)
-            created = False
-    if created is True:
-        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
-    else:
-        await ctx.send(f'Failed to create and store device:```{err}```')
+            raise Error(f'Failed to create and store device:```{err}```')
 
 
 @cmd_device.command(name='login', brief='login to a device', hidden=True)
-@commands.is_owner()
-async def cmd_device_login(ctx: commands.Context):
+@is_owner()
+async def cmd_device_login(ctx: Context):
     """
     Attempts to remove a device with the given device_key from the DB.
     """
@@ -3207,17 +3198,15 @@ async def cmd_device_login(ctx: commands.Context):
         try:
             access_token = await login.DEVICES.get_access_token()
             device = login.DEVICES.current
+            await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
         except Exception as err:
-            access_token = None
-    if access_token is not None:
-        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
-    else:
-        await ctx.send(f'Could not log in with device \'{device.key}\':```{err}``')
+            device = login.DEVICES.current
+            raise Error(f'Could not log in with device \'{device.key}\':```{err}``')
 
 
 @cmd_device.command(name='remove', aliases=['delete', 'yeet'], brief='remove device', hidden=True)
-@commands.is_owner()
-async def cmd_device_remove(ctx: commands.Context, device_key: str):
+@is_owner()
+async def cmd_device_remove(ctx: Context, device_key: str):
     """
     Attempts to remove a device with the given device_key from the DB.
     """
@@ -3225,18 +3214,14 @@ async def cmd_device_remove(ctx: commands.Context, device_key: str):
     async with ctx.typing():
         try:
             await login.DEVICES.remove_device_by_key(device_key)
-            yeeted = True
+            await ctx.send(f'Removed device with device key: \'{device_key}\'.')
         except Exception as err:
-            yeeted = False
-    if yeeted:
-        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
-    else:
-        await ctx.send(f'Could not remove device with device key \'{device_key}\':```{err}```')
+            raise Error(f'Could not remove device with device key \'{device_key}\':```{err}```')
 
 
 @cmd_device.command(name='select', brief='select a device', hidden=True)
-@commands.is_owner()
-async def cmd_device_select(ctx: commands.Context, device_key: str):
+@is_owner()
+async def cmd_device_select(ctx: Context, device_key: str):
     """
     Attempts to select a device with the given device_key from the DB.
     """
@@ -3247,8 +3232,8 @@ async def cmd_device_select(ctx: commands.Context, device_key: str):
 
 
 @BOT.command(name='embed', brief='Embeds your message.', hidden=True)
-@commands.is_owner()
-async def cmd_embed(ctx: commands.Context, *, message: str = None):
+@is_owner()
+async def cmd_embed(ctx: Context, *, message: str = None):
     __log_command_use(ctx)
     colour = util.get_bot_member_colour(BOT, ctx.guild)
     embed = util.create_embed('Your message in an embed', description=message, colour=colour)
@@ -3256,15 +3241,15 @@ async def cmd_embed(ctx: commands.Context, *, message: str = None):
 
 
 @BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
-@commands.is_owner()
-async def cmd_repeat(ctx: commands.Context, *, message: str = None):
+@is_owner()
+async def cmd_repeat(ctx: Context, *, message: str = None):
     __log_command_use(ctx)
     await ctx.send(message)
 
 
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
-@commands.is_owner()
-async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
+@is_owner()
+async def cmd_send_bot_news(ctx: Context, *, news: str = None):
     """
     Sends an embed to all guilds which have a bot news channel configured.
 
@@ -3289,7 +3274,7 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
         avatar_url = BOT.user.avatar_url
         for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
             embed_colour = util.get_bot_member_colour(BOT, bot_news_channel.guild)
-            embed: discord.Embed = util.create_embed(title, description=content, colour=embed_colour)
+            embed: Embed = util.create_embed(title, description=content, colour=embed_colour)
             embed.set_thumbnail(url=avatar_url)
             await bot_news_channel.send(embed=embed)
         embed_colour = util.get_bot_member_colour(BOT, ctx.guild)
@@ -3299,13 +3284,13 @@ async def cmd_send_bot_news(ctx: commands.Context, *, news: str = None):
 
 
 @BOT.command(name='test', brief='These are testing commands, usually for debugging purposes', hidden=True)
-@commands.is_owner()
-async def cmd_test(ctx: commands.Context, action, *, params = None):
+@is_owner()
+async def cmd_test(ctx: Context, action, *, params = None):
     __log_command_use(ctx)
-    print(f'+ called command test(ctx: commands.Context, {action}, {params}) by {ctx.author}')
+    print(f'+ called command test(ctx: Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
-        utcnow = util.get_utcnow()
-        txt = util.get_formatted_datetime(utcnow)
+        utc_now = util.get_utc_now()
+        txt = util.get_formatted_datetime(utc_now)
         await ctx.send(txt)
     elif action == 'init':
         await db.init_schema()
@@ -3339,8 +3324,8 @@ async def cmd_test(ctx: commands.Context, action, *, params = None):
 
 
 @BOT.command(name='updatecache', brief='Updates all caches manually', hidden=True)
-@commands.is_owner()
-async def cmd_updatecache(ctx: commands.Context):
+@is_owner()
+async def cmd_updatecache(ctx: Context):
     """This command is to be used to update all caches manually."""
     __log_command_use(ctx)
     async with ctx.typing():
@@ -3372,21 +3357,21 @@ async def cmd_updatecache(ctx: commands.Context):
 # ----------                Command Helper Functions                ---------- #
 # ############################################################################ #
 
-async def __assert_settings_command_valid(ctx: commands.Context) -> None:
+async def __assert_settings_command_valid(ctx: Context) -> None:
     if util.is_guild_channel(ctx.channel):
         permissions = ctx.channel.permissions_for(ctx.author)
         if permissions.manage_guild is not True:
-            raise commands.MissingPermissions(['manage_guild'])
+            raise command_errors.MissingPermissions(['manage_guild'])
     else:
         raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
 
 
-def __log_command_use(ctx: commands.Context):
+def __log_command_use(ctx: Context):
     if settings.PRINT_DEBUG_COMMAND:
         print(f'Invoked command: {ctx.message.content}')
 
 
-def __log_command_use_error(ctx: commands.Context, err: Exception, force_printing: bool = False):
+def __log_command_use_error(ctx: Context, err: Exception, force_printing: bool = False):
     if settings.PRINT_DEBUG_COMMAND or force_printing:
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:

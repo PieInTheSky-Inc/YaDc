@@ -8,9 +8,9 @@ import utility
 
 PWD = os.getcwd()
 if '/src' in PWD:
-    PWD = f'{PWD}/data/'
+    PWD = f'{PWD}/pss_data/'
 else:
-    PWD = f'{PWD}/src/data/'
+    PWD = f'{PWD}/src/pss_data/'
 
 ID_NAMES_FILEPATH = f'{PWD}id_names.json'
 

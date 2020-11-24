@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import settings
 
@@ -10,6 +10,11 @@ import settings
 # ---------- Constants ----------
 
 RESOURCES: Dict[str, Dict[str, str]] = {}
+
+
+
+
+
 
 
 
@@ -29,7 +34,7 @@ def read_resources_file() -> Dict[str, Dict[str, str]]:
     return result
 
 
-def get_resource(resource_key: str, formats: List[object] = None, language_key: str = 'en') -> str:
+def get_resource(resource_key: str, formats: List[Any] = None, language_key: str = 'en') -> str:
     if language_key not in RESOURCES.keys():
         raise ValueError(f'The requested language key is not supported: {language_key}')
     resources = RESOURCES[language_key]
@@ -39,6 +44,11 @@ def get_resource(resource_key: str, formats: List[object] = None, language_key: 
     if formats is not None:
         result = result.format(*formats)
     return result
+
+
+
+
+
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import pss_entity as entity
+from pss_entity import EntityRetriever
 
 
 
@@ -28,14 +28,14 @@ CONDITION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ConditionTypeName'
 
 # ---------- Initialization ----------
 
-action_types_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
+action_types_designs_retriever: EntityRetriever = EntityRetriever(
     ACTION_TYPE_DESIGN_BASE_PATH,
     ACTION_TYPE_DESIGN_KEY_NAME,
     ACTION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME,
     'ActionTypeDesigns'
 )
 
-condition_types_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
+condition_types_designs_retriever: EntityRetriever = EntityRetriever(
     CONDITION_TYPE_DESIGN_BASE_PATH,
     CONDITION_TYPE_DESIGN_KEY_NAME,
     CONDITION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME,

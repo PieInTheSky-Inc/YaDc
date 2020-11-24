@@ -1,15 +1,16 @@
-import datetime
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+from datetime import datetime, timezone
 from enum import IntEnum
-import os
-from typing import Dict
+from typing import Any, Dict, Iterable, List, Union
 import openpyxl
 import openpyxl.utils.dataframe
 import pandas
 
-import pss_entity as entity
 import pss_tournament as tourney
-import settings
 import utility as util
+
 
 
 
@@ -17,7 +18,7 @@ import utility as util
 # ---------- Constants ----------
 
 __BASE_TABLE_STYLE = openpyxl.worksheet.table.TableStyleInfo(name="TableStyleLight1", showFirstColumn=False, showLastColumn=False, showRowStripes=True, showColumnStripes=False)
-__EARLIEST_EXCEL_DATETIME = datetime.datetime(1900, 1, 1, tzinfo=datetime.timezone.utc)
+__EARLIEST_EXCEL_DATETIME = datetime(1900, 1, 1, tzinfo=timezone.utc)
 
 
 class FILE_ENDING(IntEnum):
@@ -42,9 +43,9 @@ __FILE_ENDING_LOOKUP: Dict[FILE_ENDING, str] = {
 
 
 
-def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetime.datetime, column_formats: list, file_name: str = None) -> str:
+def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: str = None) -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utcnow()
+        data_retrieved_at = util.get_utc_now()
     if file_name:
         save_to = file_name
     else:
@@ -68,9 +69,9 @@ def create_xl_from_data(data: list, file_prefix: str, data_retrieved_at: datetim
     return save_to
 
 
-def create_csv_from_data(data: list, file_prefix: str, data_retrieved_at: datetime.datetime, column_formats: list, file_name: str = None, delimiter: str = '\t') -> str:
+def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: str = None, delimiter: str = '\t') -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utcnow()
+        data_retrieved_at = util.get_utc_now()
     if file_name:
         save_to = file_name
     else:
@@ -94,13 +95,11 @@ def create_csv_from_data(data: list, file_prefix: str, data_retrieved_at: dateti
     return save_to
 
 
-def create_xl_from_raw_data_dict(flattened_data: list, entity_key_name: str, file_prefix: str, data_retrieved_at: datetime.datetime = None) -> str:
+def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime = None) -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utcnow()
+        data_retrieved_at = util.get_utc_now()
     save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
 
-    #wb = openpyxl.Workbook()
-    #ws: openpyxl.worksheet.worksheet.Worksheet = wb.active
     wb = openpyxl.Workbook(write_only=True)
     ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()
     df = pandas.DataFrame(flattened_data)
@@ -152,7 +151,7 @@ def _get_ref_for_df(df: pandas.DataFrame, column_start: int = 0, row_start: int 
     return ref
 
 
-def _fix_field(field: str):
+def fix_field(field: str) -> Union[datetime, int, float, str]:
     if field:
         try:
             dt = util.parse_pss_datetime(field)

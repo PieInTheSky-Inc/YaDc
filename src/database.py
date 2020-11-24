@@ -3,11 +3,24 @@
 
 import asyncpg
 from datetime import datetime
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import pss_daily as daily
 import settings
 import utility as util
+
+
+
+
+
+# ---------- Typehint definitions ----------
+
+ColumnDefinition = Tuple[str, str, bool, bool]
+
+
+
+
+
 
 
 
@@ -34,7 +47,7 @@ USING_LOOKUP = {
 }
 
 
-async def init_schema():
+async def init_schema() -> None:
     success_create_schema = await create_schema()
     if not success_create_schema:
         print('[init_schema] DB initialization failed upon creating the DB schema.')
@@ -328,7 +341,7 @@ async def update_schema_v_1_2_4_0() -> bool:
     query = '\n'.join(query_lines)
     success = await try_execute(query)
     if success:
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         daily_info = await daily.get_daily_info()
         success = await daily.db_set_daily_info(daily_info, utc_now)
         if success:
@@ -531,7 +544,7 @@ async def fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
     return result
 
 
-def get_column_list(column_definitions: list) -> str:
+def get_column_list(column_definitions: List[ColumnDefinition]) -> str:
     __log_db_function_enter('get_column_list', column_definitions=column_definitions)
 
     result = []
@@ -570,7 +583,7 @@ async def try_set_schema_version(version: str) -> bool:
     __log_db_function_enter('try_set_schema_version', version=f'\'{version}\'')
 
     prior_version = await get_schema_version()
-    utc_now = util.get_utcnow()
+    utc_now = util.get_utc_now()
     if not prior_version:
         query = f'INSERT INTO settings (modifydate, settingtext, settingname) VALUES ($1, $2, $3)'
     else:
@@ -579,7 +592,7 @@ async def try_set_schema_version(version: str) -> bool:
     return success
 
 
-async def try_create_table(table_name: str, column_definitions: list) -> bool:
+async def try_create_table(table_name: str, column_definitions: List[ColumnDefinition]) -> bool:
     __log_db_function_enter('try_create_table', table_name=f'\'{table_name}\'', column_definitions=column_definitions)
 
     column_list = get_column_list(column_definitions)
@@ -619,7 +632,7 @@ async def try_execute(query: str, args: list = None, raise_db_error: bool = Fals
     return success
 
 
-async def get_setting(setting_name: str) -> (object, datetime):
+async def get_setting(setting_name: str) -> Tuple[object, datetime]:
     __log_db_function_enter('get_setting', setting_name=f'\'{setting_name}\'')
 
     if __settings_cache is None or setting_name not in __settings_cache.keys():
@@ -698,7 +711,7 @@ async def get_sales_infos(expiry_date: datetime = None) -> List[Dict[str, Union[
     return result
 
 
-async def set_setting(setting_name: str, value: object, utc_now: datetime = None) -> bool:
+async def set_setting(setting_name: str, value: Any, utc_now: datetime = None) -> bool:
     __log_db_function_enter('set_setting', setting_name=f'\'{setting_name}\'', value=value, utc_now=utc_now)
 
     column_name = None
@@ -716,7 +729,7 @@ async def set_setting(setting_name: str, value: object, utc_now: datetime = None
     success = True
     setting, modify_date = await get_setting(setting_name)
     if utc_now is None:
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
     query = ''
     if setting is None and modify_date is None:
         query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ($1, $2, $3)'
@@ -731,7 +744,7 @@ async def set_setting(setting_name: str, value: object, utc_now: datetime = None
 async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
     __log_db_function_enter('set_settings', settings=settings)
 
-    utc_now = util.get_utcnow()
+    utc_now = util.get_utc_now()
     if settings:
         query_lines = []
         args = []
@@ -773,7 +786,7 @@ async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
         return True
 
 
-async def update_sales_info(sales_info: dict) -> bool:
+async def update_sales_info(sales_info: Dict[str, Any]) -> bool:
     __log_db_function_enter('update_sales_info', sales_info=sales_info)
 
     db_sales_infos = await get_sales_infos(expiry_date=sales_info['LimitedCatalogExpiryDate'])
@@ -798,7 +811,7 @@ async def update_sales_info(sales_info: dict) -> bool:
     return success
 
 
-def print_db_query_error(function_name: str, query: str, args: list, error: asyncpg.exceptions.PostgresError) -> None:
+def print_db_query_error(function_name: str, query: str, args: List[Any], error: asyncpg.exceptions.PostgresError) -> None:
     if args:
         args = f'\n{args}'
     else:
@@ -806,7 +819,7 @@ def print_db_query_error(function_name: str, query: str, args: list, error: asyn
     print(f'[{function_name}] {error.__class__.__name__} while performing the query: {query}{args}\nMSG: {error}')
 
 
-def __log_db_function_enter(function_name: str, **kwargs):
+def __log_db_function_enter(function_name: str, **kwargs) -> None:
     if settings.PRINT_DEBUG_DB:
         params = ', '.join([f'{k}={v}' for k, v in kwargs.items()])
         print(f'+ {function_name}({params})')
@@ -825,12 +838,12 @@ def __log_db_function_enter(function_name: str, **kwargs):
 __settings_cache: Dict[str, Tuple[object, datetime]] = None
 
 
-async def __init_caches():
+async def __init_caches() -> None:
     global __settings_cache
     __settings_cache = await get_settings()
 
 
-async def init():
+async def init() -> None:
     await __init_caches()
     await connect()
     await init_schema()

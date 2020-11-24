@@ -2,20 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 import aiohttp
-import asyncio
-import asyncpg
-import contextlib
-from datetime import datetime
-import discord
 import json
-import psycopg2
-from psycopg2 import errors as db_error
 import re
-from typing import Callable, Dict, List, Tuple, Union
-import xml.etree.ElementTree
+from typing import Any, Callable, Dict, List, Union
+from xml.etree import ElementTree
 
-import data
-import pss_daily as daily
+import pss_data
+from pss_entity import EntitiesData, EntityInfo
 import pss_lookups as lookups
 import settings
 import utility as util
@@ -24,7 +17,34 @@ import utility as util
 
 
 
-# ---------- Utilities ----------
+# ---------- Typing definitions ----------
+
+EntityDict = Union[List['EntityDict'], Dict[str, 'EntityDict']]
+
+
+
+
+
+
+
+
+
+
+# ---------- Constants ----------
+
+__RX_PROPERTY_FIX_REPLACE = re.compile(r'[^a-z0-9]', re.IGNORECASE)
+__RX_ALLOWED_CANDIDATE_FIX_REPLACE = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
+
+
+
+
+
+
+
+
+
+
+# ---------- Public ----------
 
 async def get_data_from_url(url: str) -> str:
     async with aiohttp.ClientSession() as session:
@@ -41,55 +61,49 @@ async def get_data_from_path(path: str) -> str:
     return await get_data_from_url(url)
 
 
-def xmltree_to_dict3(raw_text: str) -> dict:
-    root = convert_raw_xml_to_dict(raw_text)
-    for c in root.values():
-        if isinstance(c, dict):
-            for cc in c.values():
-                if isinstance(cc, dict):
-                    for ccc in cc.values():
-                        if isinstance(ccc, dict):
-                            return ccc
-    return {}
+def xmltree_to_dict2(raw_text: str) -> EntitiesData:
+    return __xmltree_to_dict(raw_text, 2)
 
 
-def xmltree_to_dict2(raw_text: str) -> dict:
-    root = convert_raw_xml_to_dict(raw_text)
-    for c in root.values():
-        if isinstance(c, dict):
-            for cc in c.values():
-                if isinstance(cc, dict):
-                    return cc
-    return {}
+def xmltree_to_dict3(raw_text: str) -> EntitiesData:
+    return __xmltree_to_dict(raw_text, 3)
 
 
-def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True) -> dict:
-    root = xml.etree.ElementTree.fromstring(raw_xml)
-    # Create an empty dictionary
-    result = _convert_xml_to_dict(root, include_root)
+def __xmltree_to_dict(raw_text: str, depth: int) -> EntitiesData:
+    result = convert_raw_xml_to_dict(raw_text)
+    while depth > 0:
+        found_new_root = False
+        for value in result.values():
+            if isinstance(value, dict):
+                result = value
+                depth -= 1
+                found_new_root = True
+                break
+        if not found_new_root:
+            return {}
     return result
 
 
-def xmltree_to_raw_dict(raw_xml: str, fix_attributes: bool = True) -> dict:
-    root = xml.etree.ElementTree.fromstring(raw_xml)
-    result = _convert_xml_to_dict(root, include_root=True, fix_attrib=fix_attributes, preserve_lists=True)
+def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> EntityDict:
+    root = ElementTree.fromstring(raw_xml)
+    result = _convert_xml_to_dict(root, include_root=include_root, fix_attributes=fix_attributes, preserve_lists=preserve_lists)
     return result
 
 
-def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool = True, fix_attrib: bool = True, preserve_lists: bool = False) -> Union[dict, list]:
+def _convert_xml_to_dict(root: ElementTree.Element, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> EntityDict:
     if root is None:
         return None
 
     result = {}
     if root.attrib:
         if include_root:
-            if fix_attrib:
-                result[root.tag] = _fix_attrib(root.attrib)
+            if fix_attributes:
+                result[root.tag] = _fix_attribute(root.attrib)
             else:
                 result[root.tag] = root.attrib
         else:
-            if fix_attrib:
-                result = _fix_attrib(root.attrib)
+            if fix_attributes:
+                result = _fix_attribute(root.attrib)
             else:
                 result = root.attrib
     elif include_root:
@@ -103,14 +117,14 @@ def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool
         tag = child.tag
         key = None
         if tag_count_map[tag] > 1:
-            id_attr_names = data.ID_NAMES_INFO.get(tag)
+            id_attr_names = pss_data.ID_NAMES_INFO.get(tag)
             if id_attr_names:
                 id_attr_values = [child.attrib[id_attr_name] for id_attr_name in id_attr_names]
                 key = '.'.join(sorted(id_attr_values))
         if not key:
             key = tag
 
-        child_dict = _convert_xml_to_dict(child, include_root=False, fix_attrib=fix_attrib, preserve_lists=preserve_lists)
+        child_dict = _convert_xml_to_dict(child, include_root=False, fix_attributes=fix_attributes, preserve_lists=preserve_lists)
         if key not in children_dict.keys():
             children_dict[key] = child_dict
 
@@ -137,7 +151,7 @@ def _convert_xml_to_dict(root: xml.etree.ElementTree.Element, include_root: bool
     return result
 
 
-def _get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
+def _get_child_tag_count(root: ElementTree.Element) -> Dict[str, int]:
     if root is None:
         return None
 
@@ -149,16 +163,15 @@ def _get_child_tag_count(root: xml.etree.ElementTree.Element) -> dict:
     return result
 
 
-def _fix_attrib(attrib: dict) -> dict:
-    if not attrib:
+def _fix_attribute(attribute: Dict[str, str]) -> Dict[str, str]:
+    if not attribute:
         return None
 
     result = {}
 
-    for (key, value) in attrib.items():
+    for key, value in attribute.items():
         if key.endswith('Xml') and value:
             raw_xml = value
-            #raw_xml = html.unescape(value)
             fixed_value = convert_raw_xml_to_dict(raw_xml)
             result[key[:-3]] = fixed_value
 
@@ -167,23 +180,20 @@ def _fix_attrib(attrib: dict) -> dict:
     return result
 
 
-__rx_property_fix_replace = re.compile(r'[^a-z0-9]', re.IGNORECASE)
-__rx_allowed_candidate_fix_replace = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
-
 def _fix_property_value(property_value: str) -> str:
     result = property_value.lower()
     result = result.strip()
-    result = __rx_property_fix_replace.sub('', result)
+    result = __RX_PROPERTY_FIX_REPLACE.sub('', result)
     return result
 
 
 def fix_allowed_value_candidate(candidate: str) -> str:
     result = candidate.strip()
-    result = __rx_allowed_candidate_fix_replace.sub('', result)
+    result = __RX_ALLOWED_CANDIDATE_FIX_REPLACE.sub('', result)
     return result
 
 
-def get_ids_from_property_value(data: dict, property_name: str, property_value: str, fix_data_delegate: Callable = None, match_exact: bool = False) -> list:
+def get_ids_from_property_value(data: EntitiesData, property_name: str, property_value: str, fix_data_delegate: Callable[[str], str] = None, match_exact: bool = False) -> List[str]:
     # data structure: {id: content}
     # fixed_data structure: {description: id}
     if not data or not property_name or not property_value:
@@ -219,7 +229,7 @@ def get_ids_from_property_value(data: dict, property_name: str, property_value: 
     return results
 
 
-def filter_data_list(data: list, by: dict, ignore_case: bool = False) -> list:
+def filter_data_list(data: List[EntityInfo], by: Dict[str, str], ignore_case: bool = False) -> List[EntityInfo]:
     """Parameter 'data':
        - A list of entity dicts
        Parameter 'by':
@@ -232,7 +242,7 @@ def filter_data_list(data: list, by: dict, ignore_case: bool = False) -> list:
     return result
 
 
-def _filter_data_list(data: list, by_key: object, by_value: object, ignore_case: bool) -> list:
+def _filter_data_list(data: List[EntityInfo], by_key: Any, by_value: Any, ignore_case: bool) -> List[EntityInfo]:
     """Parameter 'data':
        - A list of entity dicts """
     if data:
@@ -253,7 +263,7 @@ def _filter_data_list(data: list, by_key: object, by_value: object, ignore_case:
         return data
 
 
-def filter_data_dict(data: dict, by: dict, ignore_case: bool = False) -> dict:
+def filter_entities_data(data: EntitiesData, by: Dict[str, str], ignore_case: bool = False) -> EntitiesData:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values.
        Parameter 'by':
@@ -266,7 +276,7 @@ def filter_data_dict(data: dict, by: dict, ignore_case: bool = False) -> dict:
     return result
 
 
-def _filter_data_dict(data: dict, by_key: object, by_value: object, ignore_case: bool) -> dict:
+def _filter_data_dict(data: EntitiesData, by_key: Any, by_value: Any, ignore_case: bool) -> EntitiesData:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -287,7 +297,7 @@ def _filter_data_dict(data: dict, by_key: object, by_value: object, ignore_case:
         return data
 
 
-def group_data_list(data: list, by_key: object, ignore_case: bool = False) -> dict:
+def group_data_list(data: List[EntityInfo], by_key: Any, ignore_case: bool = False) -> Dict[str, List[EntityInfo]]:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -305,7 +315,7 @@ def group_data_list(data: list, by_key: object, ignore_case: bool = False) -> di
         return data
 
 
-def group_data_dict(data: dict, by_key: object, ignore_case: bool = False) -> dict:
+def group_data_dict(data: EntitiesData, by_key: Any, ignore_case: bool = False) -> Dict[str, EntitiesData]:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:
@@ -349,7 +359,7 @@ def convert_iap_options_mask(iap_options_mask: int) -> str:
 
 # ---------- Get Production Server ----------
 
-async def get_latest_settings(language_key: str = 'en', use_default: bool = False) -> dict:
+async def get_latest_settings(language_key: str = 'en', use_default: bool = False) -> EntityInfo:
     if not language_key:
         language_key = 'en'
     base_url = await get_base_url(use_default=use_default)
@@ -382,8 +392,7 @@ async def get_base_url(use_default: bool = False) -> str:
 
 
 # ---------- Links ----------
-def read_links_file() -> Dict[str, List[List[str]]]:
-    result = []
+def read_links_file(language_key: str = 'en') -> Dict[str, List[List[str]]]:
     links = {}
     for pss_links_file in settings.PSS_LINKS_FILES:
         try:
@@ -392,10 +401,10 @@ def read_links_file() -> Dict[str, List[List[str]]]:
             break
         except:
             pass
-    return links
+    return links.get(language_key)
 
 
-def read_about_file() -> dict:
+def read_about_file(language_key: str = 'en') -> Dict[str, Any]:
     result = {}
     for pss_about_file in settings.PSS_ABOUT_FILES:
         try:
@@ -404,16 +413,4 @@ def read_about_file() -> dict:
             break
         except:
             pass
-    return result
-
-
-def create_embed(title: str = None, description: str = None, fields: Union[List[Tuple[str, str]], Dict[str, str]] = None) -> discord.Embed:
-    result = discord.Embed(title=title, description=description)
-    if title is not None:
-        result.title = title
-    if description is not None:
-        result.description = description
-    if fields is not None:
-        for name, value in fields:
-            result.add_field(name=name, value=value)
-    return result
+    return result.get(language_key)

@@ -1,18 +1,18 @@
 import asyncpg
-from collections import UserDict
-import datetime
-import discord
-from discord.ext import commands
+from datetime import datetime
+from discord import Embed, Guild, Message, TextChannel
+from discord.ext.commands import Bot, Context
 from enum import IntEnum
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import database as db
 import pss_assert
-import pss_core as core
-import pss_entity as entity
-import pss_lookups as lookups
+from pss_entity import DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR
 import settings as app_settings
 import utility as util
+
+
+
 
 
 # ---------- Constants ----------
@@ -67,14 +67,14 @@ class AutoDailyChangeMode(IntEnum):
 
 
 class AutoDailySettings():
-    def __init__(self, guild: discord.Guild, channel: discord.TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime.datetime, latest_message_modified_at: datetime.datetime):
+    def __init__(self, guild: Guild, channel: TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime, latest_message_modified_at: datetime) -> None:
         self.__can_post: bool = can_post
-        self.__channel: discord.TextChannel = channel
+        self.__channel: TextChannel = channel
         self.__change_mode: AutoDailyChangeMode = change_mode or AutoDailyChangeMode.POST_NEW
-        self.__guild: discord.Guild = guild
+        self.__guild: Guild = guild
         self.__latest_message_id: int = latest_message_id or None
-        self.__latest_message_created_at: datetime.datetime = latest_message_created_at or None
-        self.__latest_message_modified_at: datetime.datetime = latest_message_modified_at or None
+        self.__latest_message_created_at: datetime = latest_message_created_at or None
+        self.__latest_message_modified_at: datetime = latest_message_modified_at or None
 
 
     @property
@@ -86,7 +86,7 @@ class AutoDailySettings():
         return self.__change_mode
 
     @property
-    def channel(self) -> discord.TextChannel:
+    def channel(self) -> TextChannel:
         return self.__channel
 
     @property
@@ -97,7 +97,7 @@ class AutoDailySettings():
             return None
 
     @property
-    def guild(self) -> discord.Guild:
+    def guild(self) -> Guild:
         return self.__guild
 
     @property
@@ -222,7 +222,7 @@ class AutoDailySettings():
         return success
 
 
-    async def set_channel(self, channel: discord.TextChannel) -> bool:
+    async def set_channel(self, channel: TextChannel) -> bool:
         if not self.channel_id or channel.id != self.channel_id:
             settings = {
                 _COLUMN_NAME_DAILY_CHANNEL_ID: channel.id,
@@ -235,7 +235,7 @@ class AutoDailySettings():
         return True
 
 
-    async def set_latest_message(self, message: discord.Message) -> bool:
+    async def set_latest_message(self, message: Message) -> bool:
         settings = {}
         if message:
             new_day = self.latest_message_created_at is None or message.created_at.day != self.latest_message_created_at.day
@@ -278,7 +278,7 @@ class AutoDailySettings():
         return success
 
 
-    async def update(self, channel: discord.TextChannel = None, can_post: bool = None, latest_message: discord.Message = None, change_mode: AutoDailyChangeMode = None, store_now_as_created_at: bool = False) -> bool:
+    async def update(self, channel: TextChannel = None, can_post: bool = None, latest_message: Message = None, change_mode: AutoDailyChangeMode = None, store_now_as_created_at: bool = False) -> bool:
         settings: Dict[str, object] = {}
         update_channel = channel is not None and channel != self.channel
         update_can_post = can_post is not None and can_post != self.can_post
@@ -290,7 +290,7 @@ class AutoDailySettings():
             settings[_COLUMN_NAME_DAILY_CAN_POST] = can_post
         if update_latest_message:
             if store_now_as_created_at:
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = util.get_utcnow()
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = util.get_utc_now()
             else:
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
@@ -321,15 +321,15 @@ class AutoDailySettings():
 
 
 class GuildSettings(object):
-    def __init__(self, bot: commands.Bot, row: asyncpg.Record):
+    def __init__(self, bot: Bot, row: asyncpg.Record) -> None:
         self.__guild_id: int = row.get(_COLUMN_NAME_GUILD_ID)
         self.__prefix: str = row.get(_COLUMN_NAME_PREFIX)
         self.__use_pagination: bool = row.get(_COLUMN_NAME_USE_PAGINATION)
         self.__bot_news_channel_id: int = row.get(_COLUMN_NAME_BOT_NEWS_CHANNEL_ID)
         self.__use_embeds: bool = row.get(_COLUMN_NAME_USE_EMBEDS)
 
-        self.__guild: discord.Guild = None
-        self.__bot_news_channel: discord.TextChannel = None
+        self.__guild: Guild = None
+        self.__bot_news_channel: TextChannel = None
 
         daily_channel_id = row.get(_COLUMN_NAME_DAILY_CHANNEL_ID)
         can_post_daily = row.get(_COLUMN_NAME_DAILY_CAN_POST)
@@ -370,7 +370,7 @@ class GuildSettings(object):
         return self.__autodaily_settings
 
     @property
-    def bot_news_channel(self) -> discord.TextChannel:
+    def bot_news_channel(self) -> TextChannel:
         return self.__bot_news_channel
 
     @property
@@ -378,7 +378,7 @@ class GuildSettings(object):
         return self.__bot_news_channel_id
 
     @property
-    def guild(self) -> discord.Guild:
+    def guild(self) -> Guild:
         return self.__guild
 
     @property
@@ -502,7 +502,7 @@ class GuildSettings(object):
         return True
 
 
-    async def set_bot_news_channel(self, channel: discord.TextChannel) -> bool:
+    async def set_bot_news_channel(self, channel: TextChannel) -> bool:
         if channel is None:
             raise ValueError('You need to provide a text channel mention to this command!')
         if not self.__bot_news_channel_id or self.__bot_news_channel_id != channel.id:
@@ -582,7 +582,7 @@ class GuildSettings(object):
 
 
 class GuildSettingsCollection():
-    def __init__(self):
+    def __init__(self) -> None:
         self.__data: Dict[int, GuildSettings] = {}
 
 
@@ -591,11 +591,11 @@ class GuildSettingsCollection():
         return [guild_settings.autodaily for guild_settings in self.__data.values()]
 
     @property
-    def bot_news_channels(self) -> List[discord.TextChannel]:
+    def bot_news_channels(self) -> List[TextChannel]:
         return [guild_settings.bot_news_channel for guild_settings in self.__data.values() if guild_settings.bot_news_channel is not None]
 
 
-    async def create_guild_settings(self, bot: commands.Bot, guild_id: int) -> bool:
+    async def create_guild_settings(self, bot: Bot, guild_id: int) -> bool:
         success = await db_create_server_settings(guild_id)
         if success:
             new_server_settings = await _db_get_server_settings(guild_id)
@@ -614,13 +614,13 @@ class GuildSettingsCollection():
         return success
 
 
-    async def get(self, bot: commands.Bot, guild_id: int) -> GuildSettings:
+    async def get(self, bot: Bot, guild_id: int) -> GuildSettings:
         if guild_id not in self.__data:
             await self.create_guild_settings(bot, guild_id)
         return self.__data[guild_id]
 
 
-    async def init(self, bot: commands.Bot):
+    async def init(self, bot: Bot) -> None:
         for server_settings in (await _db_get_server_settings()):
             self.__data[server_settings[_COLUMN_NAME_GUILD_ID]] = GuildSettings(bot, server_settings)
 
@@ -647,7 +647,7 @@ class GuildSettingsCollection():
 
 
 
-async def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int) -> AutoDailySettings:
+async def create_autodaily_settings(bot: Bot, guild_id: int) -> AutoDailySettings:
     if guild_id is None or bot is None:
         raise Exception('No parameters given. You need to specify both parameters \'bot\' and \'guild_id\'.')
 
@@ -665,7 +665,7 @@ async def create_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int
     return AutoDailySettings(guild, channel, can_post, latest_message_id, delete_on_change, latest_message_create_date, latest_message_modify_date)
 
 
-async def _prepare_create_autodaily_settings(guild_id: int) -> list:
+async def _prepare_create_autodaily_settings(guild_id: int) -> List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any]]:
     autodaily_settings = await db_get_autodaily_settings(guild_id=guild_id)
     if not autodaily_settings:
         await db_create_server_settings(guild_id)
@@ -686,7 +686,7 @@ async def _prepare_create_autodaily_settings(guild_id: int) -> list:
 
 # ---------- Functions ----------
 
-async def clean_up_invalid_server_settings(bot: commands.Bot) -> None:
+async def clean_up_invalid_server_settings(bot: Bot) -> None:
     """
     Removes server settings for all guilds the bot is not part of anymore.
     """
@@ -749,8 +749,8 @@ async def fix_prefixes() -> bool:
     return all_success
 
 
-async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
-    utc_now = util.get_utcnow()
+async def get_autodaily_settings(bot: Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+    utc_now = util.get_utc_now()
     if guild_id:
         autodaily_settings_collection = [(await GUILD_SETTINGS.get(bot, guild_id))]
     else:
@@ -762,13 +762,13 @@ async def get_autodaily_settings(bot: discord.ext.commands.Bot, guild_id: int = 
     return result
 
 
-async def get_pagination_mode(guild: discord.Guild) -> str:
+async def get_pagination_mode(guild: Guild) -> str:
     use_pagination_mode = await db_get_use_pagination(guild)
     result = convert_to_on_off(use_pagination_mode)
     return result
 
 
-async def get_prefix(bot: discord.ext.commands.Bot, message: discord.Message) -> str:
+async def get_prefix(bot: Bot, message: Message) -> str:
     if util.is_guild_channel(message.channel):
         guild_settings = await GUILD_SETTINGS.get(bot, message.channel.guild.id)
         result = guild_settings.prefix
@@ -784,7 +784,7 @@ async def get_prefix_or_default(guild_id: int) -> str:
     return result
 
 
-async def get_pretty_guild_settings(ctx: commands.Context, full_guild_settings: Dict[str, str], title: str = None, note: str = None) -> Union[List[discord.Embed], List[str]]:
+async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str, str], title: str = None, note: str = None) -> Union[List[Embed], List[str]]:
     pretty_guild_settings = prettify_guild_settings(full_guild_settings)
     if (await get_use_embeds(ctx)):
         fields = [(pretty_setting[0], pretty_setting[1], False) for pretty_setting in pretty_guild_settings]
@@ -796,11 +796,11 @@ async def get_pretty_guild_settings(ctx: commands.Context, full_guild_settings: 
             result.append(f'**```{title}```**')
         if note:
             result.append(f'_{note}_')
-        result.extend([f'{pretty_setting[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
+        result.extend([f'{pretty_setting[0]}{DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
     return result
 
 
-async def get_use_embeds(ctx: commands.Context, bot: commands.Bot = None, guild: discord.Guild = None) -> bool:
+async def get_use_embeds(ctx: Context, bot: Bot = None, guild: Guild = None) -> bool:
     if (not ctx or not ctx.guild) and (not guild or not bot):
         return app_settings.USE_EMBEDS
     bot = bot or ctx.bot
@@ -834,7 +834,7 @@ async def reset_prefix(guild_id: int) -> bool:
     return success
 
 
-async def set_pagination(guild: discord.Guild, switch: str) -> bool:
+async def set_pagination(guild: Guild, switch: str) -> bool:
     await db_create_server_settings(guild.id)
 
     if switch is None:
@@ -871,7 +871,7 @@ async def toggle_daily_delete_on_change(guild_id: int) -> bool:
         return delete_on_change
 
 
-async def toggle_use_pagination(guild: discord.Guild) -> bool:
+async def toggle_use_pagination(guild: Guild) -> bool:
     await db_create_server_settings(guild.id)
     use_pagination = await db_get_use_pagination(guild.id)
     success = await db_update_use_pagination(guild.id, not use_pagination)
@@ -909,7 +909,7 @@ async def db_delete_server_settings(guild_id: int) -> bool:
     return success
 
 
-async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> list:
+async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any]]:
     wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL)']
     if guild_id is not None:
         wheres.append(util.db_get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
@@ -960,7 +960,7 @@ async def db_get_daily_delete_on_change(guild_id: int) -> bool:
     return result[0] or None if result else None
 
 
-async def db_get_daily_latest_message_create_date(guild_id: int) -> datetime.datetime:
+async def db_get_daily_latest_message_create_date(guild_id: int) -> datetime:
     setting_names = [_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT]
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None if result else None
@@ -987,7 +987,7 @@ async def db_get_prefix(guild_id: int) -> str:
     return result[0] or None
 
 
-async def db_get_use_pagination(guild: discord.Guild) -> bool:
+async def db_get_use_pagination(guild: Guild) -> bool:
     if guild:
         setting_names = [_COLUMN_NAME_USE_PAGINATION]
         settings = await _db_get_server_settings(guild.id, setting_names=setting_names)
@@ -1068,7 +1068,7 @@ async def db_reset_prefix(guild_id: int) -> bool:
     return True
 
 
-async def db_reset_use_pagination(guild: discord.Guild) -> bool:
+async def db_reset_use_pagination(guild: Guild) -> bool:
     current_use_pagination = await db_get_use_pagination(guild)
     if current_use_pagination is not None:
         settings = {
@@ -1079,10 +1079,12 @@ async def db_reset_use_pagination(guild: discord.Guild) -> bool:
     return True
 
 
-async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, latest_message_modify_date: datetime.datetime = None) -> bool:
+async def db_update_autodaily_settings(guild_id: int, channel_id: int = None, can_post: bool = None, latest_message_id: int = None, delete_on_change: bool = None, latest_message_modify_date: datetime = None) -> bool:
     autodaily_settings = await db_get_autodaily_settings(guild_id)
     current_can_post = None
     current_channel_id = None
+    current_latest_message_create_date = None
+    current_latest_message_modify_date = None
     current_latest_message_id = None
     current_delete_on_change = None
     if autodaily_settings:
@@ -1133,7 +1135,7 @@ async def db_update_daily_change_mode(guild_id: int, change_mode: AutoDailyChang
     return True
 
 
-async def db_update_daily_latest_message(guild_id: int, message: discord.Message) -> bool:
+async def db_update_daily_latest_message(guild_id: int, message: Message) -> bool:
     if message:
         current_daily_latest_message_id = await db_get_daily_latest_message_id(guild_id)
         current_daily_latest_message_create_date = await db_get_daily_latest_message_create_date(guild_id)
@@ -1170,7 +1172,7 @@ async def db_update_prefix(guild_id: int, prefix: str) -> bool:
     return True
 
 
-async def db_update_use_pagination(guild: discord.Guild, use_pagination: bool) -> bool:
+async def db_update_use_pagination(guild: Guild, use_pagination: bool) -> bool:
     current_use_pagination = await db_get_use_pagination(guild.id)
     if not current_use_pagination or use_pagination != current_use_pagination:
         settings = {
@@ -1191,7 +1193,7 @@ async def db_update_use_pagination(guild: discord.Guild, use_pagination: bool) -
 
 # ---------- Utilities ----------
 
-async def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> list:
+async def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> List[asyncpg.Record]:
     additional_wheres = additional_wheres or []
     wheres = []
     if guild_id is not None:
@@ -1215,10 +1217,8 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
     else:
         query = f'SELECT {setting_string} FROM serversettings'
         records = await db.fetchall(query)
-    if records:
-        return records
-    else:
-        return []
+
+    return records or []
 
 
 async def _db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
@@ -1238,7 +1238,7 @@ async def _db_get_server_setting(guild_id: int = None, setting_names: list = Non
         return None
 
 
-async def _db_update_server_settings(guild_id: int, settings: dict) -> bool:
+async def _db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -> bool:
     if settings:
         set_names = []
         set_values = [guild_id]
@@ -1277,7 +1277,7 @@ DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.POST_NE
 
 # ---------- Main ----------
 
-async def init(bot: commands.Bot):
+async def init(bot: Bot) -> None:
     await fix_prefixes()
     await GUILD_SETTINGS.init(bot)
     i = 0

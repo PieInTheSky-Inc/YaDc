@@ -2,16 +2,22 @@
 # -*- coding: UTF-8 -*-
 
 import datetime
-from threading import Thread, Lock
+from threading import Lock
 import time
 import random
 
 import pss_core as core
+from pss_entity import EntitiesData, EntityInfo
 import utility as util
 
 
+
+
+
+# ---------- Classes ----------
+
 class PssCache:
-    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 15):
+    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 15) -> None:
         self.__update_path: str = update_path
         self.__name: str = name
         self.__obj_key_name: str = key_name
@@ -31,7 +37,7 @@ class PssCache:
         return self.__name
 
 
-    async def update_data(self, old_data=None) -> bool:
+    async def update_data(self, old_data: str = None) -> bool:
         util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
         util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
         data = await core.get_data_from_path(self.__update_path)
@@ -74,7 +80,7 @@ class PssCache:
         return result
 
 
-    async def get_data_dict3(self) -> dict:
+    async def get_data_dict3(self) -> EntitiesData:
         data = await self.get_raw_data()
         return core.xmltree_to_dict3(data)
 
@@ -83,7 +89,7 @@ class PssCache:
         if self.__UPDATE_INTERVAL_ORIG == 0:
             return True
 
-        utc_now = util.get_utcnow()
+        utc_now = util.get_utc_now()
         self.__WRITE_LOCK.acquire()
         modify_date = self.__modify_date
         self.__WRITE_LOCK.release()
@@ -117,10 +123,10 @@ class PssCache:
         self.__WRITE_LOCK.release()
 
 
-    def __write_data(self, data) -> None:
+    def __write_data(self, data: str) -> None:
         self.__WRITE_LOCK.acquire()
         self.__data = data
-        self.__modify_date = util.get_utcnow()
+        self.__modify_date = util.get_utc_now()
         util.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} bytes on {self.__modify_date}')
         self.__WRITE_LOCK.release()
 

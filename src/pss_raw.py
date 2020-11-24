@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import datetime
-import discord
-from discord.ext import commands
+from datetime import datetime
+from discord.ext.commands import Context
 import json
 import os
 import time
@@ -11,14 +10,17 @@ from typing import Callable, Dict, List, Tuple, Union
 
 import excel
 import pss_core as core
-import pss_entity as entity
+from pss_entity import EntitiesData, EntityInfo, EntityRetriever
 import settings
 import utility as util
 
 
-def __flatten_raw_dict_for_excel(raw_dict: dict) -> list:
+
+
+
+def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
     # create one row per entity_info
-    # if entity_info got a prop with children (a list):
+    # if entity_info got a prop with children (a List):
     #   multiply entity_info times children count
     #   add respective child info
     entity = {}
@@ -31,7 +33,7 @@ def __flatten_raw_dict_for_excel(raw_dict: dict) -> list:
             for child in value:
                 children.extend(__flatten_raw_dict_for_excel(child))
         else:
-            entity[key] = excel._fix_field(value)
+            entity[key] = excel.fix_field(value)
     if children:
         for child in children:
             result_entity = dict(entity)
@@ -42,7 +44,7 @@ def __flatten_raw_dict_for_excel(raw_dict: dict) -> list:
     return result
 
 
-def __flatten_raw_data(data: entity.EntitiesData) -> list:
+def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
     flat_data = []
     for row in data.values():
         result_row = __flatten_raw_entity(row)
@@ -50,7 +52,7 @@ def __flatten_raw_data(data: entity.EntitiesData) -> list:
     return flat_data
 
 
-def __flatten_raw_entity(entity_info: entity.EntityInfo) -> dict:
+def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
     result = {}
     for field_name, field in entity_info.items():
         if __should_include_raw_field(field):
@@ -62,13 +64,13 @@ def __flatten_raw_entity(entity_info: entity.EntityInfo) -> dict:
     return result
 
 
-async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime.datetime):
+async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
     async with ctx.typing():
-        retrieved_at = retrieved_at or util.get_utcnow()
+        retrieved_at = retrieved_at or util.get_utc_now()
         entity_name = entity_name.replace(' ', '_')
         file_name_prefix = f'{entity_name}_designs'
         raw_data = await retriever.get_raw_data()
-        raw_data_dict = core.xmltree_to_raw_dict(raw_data, fix_attributes=True)
+        raw_data_dict = core.convert_raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
         if mode == 'xml':
             file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
         elif mode == 'json':
@@ -79,7 +81,7 @@ async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityRetriev
             start = time.perf_counter()
             flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
             time1 = time.perf_counter() - start
-            file_path = excel.create_xl_from_raw_data_dict(flattened_data, retriever.key_name, file_name_prefix, retrieved_at)
+            file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
             time2 = time.perf_counter() - start
             print(f'Flattening the data took {time1:.2f} seconds.')
             print(f'Creating the excel sheet took {time2:.2f} seconds.')
@@ -87,7 +89,7 @@ async def __post_raw_file(ctx: commands.Context, retriever: entity.EntityRetriev
     os.remove(file_path)
 
 
-async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime.datetime):
+async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime) -> None:
     async with ctx.typing():
         output = []
         data = await retriever.get_data_dict3()
@@ -101,6 +103,7 @@ async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityRetri
                 for key, value in flat_entity.items():
                     output.append(f'{key} = {value}')
             else:
+                result = ''
                 if mode == 'xml':
                     result = await retriever.get_raw_entity_info_by_id_as_xml(entity_id)
                 elif mode == 'json':
@@ -118,7 +121,7 @@ async def __post_raw_entity(ctx: commands.Context, retriever: entity.EntityRetri
         await util.post_output(ctx, output)
 
 
-def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime.datetime) -> str:
+def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
     if not file_type:
         file_type = 'txt'
     timestamp = retrieved_at.strftime('%Y%m%d-%H%M%S')
@@ -128,9 +131,9 @@ def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retri
     return file_name
 
 
-async def post_raw_data(ctx: commands.Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str):
+async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
     if ctx.author.id in settings.RAW_COMMAND_USERS:
-        retrieved_at = util.get_utcnow()
+        retrieved_at = util.get_utc_now()
         mode = None
         if entity_id:
             if '--json' in entity_id:

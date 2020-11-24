@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import pss_entity as entity
+from pss_entity import EntityRetriever
 
 
 
@@ -24,7 +24,7 @@ MISSION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'MissionTitle'
 
 # ---------- Initialization ----------
 
-missions_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
+missions_designs_retriever: EntityRetriever = EntityRetriever(
     MISSION_DESIGN_BASE_PATH,
     MISSION_DESIGN_KEY_NAME,
     MISSION_DESIGN_DESCRIPTION_PROPERTY_NAME,

@@ -2,15 +2,14 @@
 # -*- coding: UTF-8 -*-
 
 from datetime import datetime
-import discord.ext.commands as commands
-import os
+from discord import Embed
+from discord.ext.commands import Context
 from typing import Dict, List, Union
-import urllib.parse
 
 import emojis
 import pss_assert
 import pss_core as core
-import pss_entity as entity
+from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetailsType, EntityInfo, EscapedEntityDetails
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
@@ -21,6 +20,9 @@ import pss_tournament as tourney
 import pss_user as user
 import settings
 import utility as util
+
+
+
 
 
 # ---------- Constants ----------
@@ -45,23 +47,23 @@ LEAGUE_INFOS_CACHE = []
 
 
 
-# ---------- Transformation functions ----------
+# ---------- Helper functions ----------
 
-def __get_crew_borrowed(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+def __get_crew_borrowed(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = None
     if fleet_info:
         result = user_info.get('CrewReceived')
     return result
 
 
-def __get_crew_donated(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+def __get_crew_donated(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = None
     if fleet_info:
         result = user_info.get('CrewDonated')
     return result
 
 
-def __get_crew_donated_borrowed(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+def __get_crew_donated_borrowed(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = None
     if fleet_info:
         crew_donated = __get_crew_donated(user_info, fleet_info, **kwargs)
@@ -71,19 +73,19 @@ def __get_crew_donated_borrowed(user_info: entity.EntityInfo, fleet_info: entity
     return result
 
 
-def __get_division_name(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+def __get_division_name(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = fleet.get_division_name(fleet_info)
     return result
 
 
-def __get_fleet_joined_at(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, retrieved_at: datetime = None, **kwargs) -> str:
+def __get_fleet_joined_at(user_info: EntityInfo, fleet_info: EntityInfo = None, retrieved_at: datetime = None, **kwargs) -> str:
     result = None
     if fleet_info:
         result = __get_timestamp(user_info, 'AllianceJoinDate', retrieved_at)
     return result
 
 
-def __get_fleet_name_and_rank(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, **kwargs) -> str:
+def __get_fleet_name_and_rank(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = None
     if fleet_info:
         fleet_name = fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '')
@@ -102,7 +104,7 @@ def __get_fleet_name_and_rank(user_info: entity.EntityInfo, fleet_info: entity.E
     return result
 
 
-def __get_historic_data_note(user_info: entity.EntityInfo, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
+def __get_historic_data_note(user_info: EntityInfo, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
     if is_past_data:
         result = util.get_historic_data_note(retrieved_at)
     else:
@@ -110,7 +112,7 @@ def __get_historic_data_note(user_info: entity.EntityInfo, retrieved_at: datetim
     return result
 
 
-def __get_league(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_league(user_info: EntityInfo, **kwargs) -> str:
     result = None
     trophies = user_info.get('Trophy')
     if trophies is not None:
@@ -121,12 +123,12 @@ def __get_league(user_info: entity.EntityInfo, **kwargs) -> str:
     return result
 
 
-async def __get_level(user_info: entity.EntityInfo, ship_info: entity.EntityInfo = None, **kwargs):
+async def __get_level(user_info: EntityInfo, ship_info: EntityInfo = None, **kwargs) -> str:
     result = await ship.get_ship_level(ship_info)
     return result
 
 
-def __get_pvp_attack_stats(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_pvp_attack_stats(user_info: EntityInfo, **kwargs) -> str:
     result = None
     if all([field in user_info for field in ['PVPAttackDraws', 'PVPAttackLosses', 'PVPAttackWins']]):
         pvp_draws = int(user_info['PVPAttackDraws'])
@@ -136,7 +138,7 @@ def __get_pvp_attack_stats(user_info: entity.EntityInfo, **kwargs) -> str:
     return result
 
 
-def __get_pvp_defense_stats(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_pvp_defense_stats(user_info: EntityInfo, **kwargs) -> str:
     result = None
     if all([field in user_info for field in ['PVPDefenceDraws', 'PVPDefenceLosses', 'PVPDefenceWins']]):
         defense_draws = int(user_info['PVPDefenceDraws'])
@@ -146,7 +148,7 @@ def __get_pvp_defense_stats(user_info: entity.EntityInfo, **kwargs) -> str:
     return result
 
 
-def __get_stars(user_info: entity.EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> str:
+def __get_stars(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> str:
     attempts = __get_tourney_battle_attempts(user_info, retrieved_at)
     if attempts and max_tourney_battle_attempts:
         attempts_left = max_tourney_battle_attempts - int(attempts)
@@ -162,8 +164,10 @@ def __get_stars(user_info: entity.EntityInfo, max_tourney_battle_attempts: int =
     return result
 
 
-def __get_timestamp(user_info: entity.EntityInfo, retrieved_at: datetime = None, **kwargs) -> str:
+def __get_timestamp(user_info: EntityInfo, retrieved_at: datetime = None, **kwargs) -> str:
     field_name = kwargs.get('entity_property')
+    timestamp = __parse_timestamp(user_info, field_name)
+    result = None
     timestamp = __parse_timestamp(user_info, field_name)
     result = None
     if timestamp is not None:
@@ -171,7 +175,7 @@ def __get_timestamp(user_info: entity.EntityInfo, retrieved_at: datetime = None,
     return result
 
 
-def __get_trophies(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_trophies(user_info: EntityInfo, **kwargs) -> str:
     result = None
     trophies = user_info.get('Trophy')
     if trophies is not None:
@@ -182,7 +186,7 @@ def __get_trophies(user_info: entity.EntityInfo, **kwargs) -> str:
     return result
 
 
-def __get_user_type(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_user_type(user_info: EntityInfo, **kwargs) -> str:
     result = None
     user_type = user_info.get('UserType')
     if user_type is not None:
@@ -190,7 +194,7 @@ def __get_user_type(user_info: entity.EntityInfo, **kwargs) -> str:
     return result
 
 
-def __get_user_name(user_info: entity.EntityInfo, **kwargs) -> str:
+def __get_user_name(user_info: EntityInfo, **kwargs) -> str:
     result = None
     user_name = user_info.get('Name')
     if user_name is not None:
@@ -211,8 +215,8 @@ def __get_user_name(user_info: entity.EntityInfo, **kwargs) -> str:
 
 # ---------- Create EntityDetails ----------
 
-def __create_user_details_from_info(user_info: entity.EntityInfo, fleet_info: entity.EntityInfo = None, ship_info: entity.EntityInfo = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, is_in_tourney_fleet: bool = None) -> entity.EscapedEntityDetails:
-    return entity.EscapedEntityDetails(user_info, __properties['title'], None, __properties['properties'], __properties['embed_settings'], fleet_info=fleet_info, ship_info=ship_info, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, is_in_tourney_fleet=is_in_tourney_fleet)
+def __create_user_details_from_info(user_info: EntityInfo, fleet_info: EntityInfo = None, ship_info: EntityInfo = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, is_in_tourney_fleet: bool = None) -> EscapedEntityDetails:
+    return EscapedEntityDetails(user_info, __properties['title'], None, __properties['properties'], __properties['embed_settings'], fleet_info=fleet_info, ship_info=ship_info, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, is_in_tourney_fleet=is_in_tourney_fleet)
 
 
 
@@ -247,11 +251,11 @@ def _get_league_from_trophies(trophies: int) -> str:
     return result
 
 
-async def get_user_details_by_info(ctx: commands.Context, user_info: dict, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: entity.EntitiesData = None, as_embed: bool = settings.USE_EMBEDS) -> list:
+async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: EntitiesData = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     is_past_data = past_fleet_infos is not None and past_fleet_infos
 
     user_id = user_info[USER_KEY_NAME]
-    retrieved_at = retrieved_at or util.get_utcnow()
+    retrieved_at = retrieved_at or util.get_utc_now()
     tourney_running = tourney.is_tourney_running(utc_now=retrieved_at)
     if past_fleet_infos:
         ship_info = {}
@@ -266,20 +270,20 @@ async def get_user_details_by_info(ctx: commands.Context, user_info: dict, max_t
     if as_embed:
         return [(await user_details.get_details_as_embed(ctx, display_inline=False))]
     else:
-        return (await user_details.get_details_as_text(entity.EntityDetailsType.LONG))
+        return (await user_details.get_details_as_text(EntityDetailsType.LONG))
 
 
-async def get_user_infos_from_tournament_data_by_name(user_name: str, user_data: dict) -> list:
+async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data: EntitiesData) -> List[EntityInfo]:
     user_name_lower = user_name.lower()
-    result = {user_id: user_info for (user_id, user_info) in user_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
-    user_infos_current = await _get_user_infos(user_name)
+    result = {user_id: user_info for (user_id, user_info) in users_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
+    user_infos_current = await _get_users_data(user_name)
     if user_infos_current:
         for user_info in user_infos_current.values():
             user_id = user_info[user.USER_KEY_NAME]
-            if user_id in user_data:
+            if user_id in users_data:
                 user_info = await __get_user_info_by_id(user_id)
                 if user_id not in result:
-                    result[user_id] = user_data[user_id]
+                    result[user_id] = users_data[user_id]
                 if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
                     result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     else:
@@ -302,11 +306,11 @@ def __format_timestamp(timestamp: datetime, retrieved_at: datetime) -> str:
     return result
 
 
-async def __get_fleet_info_by_user_info(user_info: entity.EntityInfo) -> entity.EntityInfo:
+async def __get_fleet_info_by_user_info(user_info: EntityInfo) -> EntityInfo:
     result = {}
     fleet_id = user_info.get('AllianceId', '0')
     if fleet_id != '0':
-        result = await fleet._get_fleet_info_by_id(fleet_id)
+        result = await fleet._get_fleets_data_by_id(fleet_id)
     return result
 
 
@@ -316,7 +320,7 @@ async def __get_inspect_ship_path(user_id: int) -> str:
     return result
 
 
-def __get_tourney_battle_attempts(user_info: entity.EntityInfo, utc_now: datetime) -> int:
+def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> int:
     attempts = user_info.get('TournamentBonusScore')
     if attempts:
         attempts = int(attempts)
@@ -327,7 +331,7 @@ def __get_tourney_battle_attempts(user_info: entity.EntityInfo, utc_now: datetim
     return attempts
 
 
-async def __get_user_info_by_id(user_id: int) -> entity.EntityInfo:
+async def __get_user_info_by_id(user_id: int) -> EntityInfo:
     path = await __get_inspect_ship_path(user_id)
     inspect_ship_info_raw = await core.get_data_from_path(path)
     inspect_ship_info = core.convert_raw_xml_to_dict(inspect_ship_info_raw)
@@ -335,7 +339,7 @@ async def __get_user_info_by_id(user_id: int) -> entity.EntityInfo:
     return result
 
 
-def __parse_timestamp(user_info: entity.EntityInfo, field_name: str) -> str:
+def __parse_timestamp(user_info: EntityInfo, field_name: str) -> str:
     result = None
     timestamp = user_info.get(field_name)
     if timestamp is not None:
@@ -355,14 +359,14 @@ def __parse_timestamp(user_info: entity.EntityInfo, field_name: str) -> str:
 
 # ---------- User info ----------
 
-async def get_user_details_by_name(user_name: str, as_embed: bool = settings.USE_EMBEDS) -> list:
+async def get_user_infos_by_name(user_name: str) -> List[EntityInfo]:
     pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
 
-    user_infos = list((await _get_user_infos(user_name)).values())
+    user_infos = list((await _get_users_data(user_name)).values())
     return user_infos
 
 
-def get_user_search_details(user_info: dict) -> str:
+def get_user_search_details(user_info: EntityInfo) -> str:
     user_name = __get_user_name(user_info)
     user_trophies = user_info.get('Trophy', '?')
     user_stars = int(user_info.get('AllianceScore', '0'))
@@ -380,7 +384,7 @@ def get_user_search_details(user_info: dict) -> str:
     return result
 
 
-async def _get_user_infos(user_name: str) -> dict:
+async def _get_users_data(user_name: str) -> EntitiesData:
     path = f'{SEARCH_USERS_BASE_PATH}{util.url_escape(user_name)}'
     user_data_raw = await core.get_data_from_path(path)
     user_infos = core.xmltree_to_dict3(user_data_raw)
@@ -397,37 +401,37 @@ async def _get_user_infos(user_name: str) -> dict:
 
 # ---------- Initialization ----------
 
-__properties: Dict[str, Union[entity.EntityDetailProperty, List[entity.EntityDetailProperty]]] = {
-    'title': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_user_name)
+__properties: Dict[str, Union[EntityDetailProperty, List[EntityDetailProperty]]] = {
+    'title': EntityDetailPropertyCollection(
+        EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_user_name)
     ),
-    'properties': entity.EntityDetailPropertyListCollection(
+    'properties': EntityDetailPropertyListCollection(
         [
-        entity.EntityDetailProperty('Account created', True, entity_property_name='CreationDate', transform_function=__get_timestamp),
-        entity.EntityDetailProperty('Last Login', True, entity_property_name='LastLoginDate', transform_function=__get_timestamp),
-        entity.EntityDetailProperty('Fleet', True, transform_function=__get_fleet_name_and_rank),
-        entity.EntityDetailProperty('Division', True, transform_function=__get_division_name),
-        entity.EntityDetailProperty('Joined fleet', True, entity_property_name='AllianceJoinDate', transform_function=__get_timestamp),
-        entity.EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
-        entity.EntityDetailProperty('League', True, transform_function=__get_league),
-        entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
-        entity.EntityDetailProperty('Crew donated', True, transform_function=__get_crew_donated, text_only=True),
-        entity.EntityDetailProperty('Crew borrowed', True, transform_function=__get_crew_borrowed, text_only=True),
-        entity.EntityDetailProperty('Crew donated/borrowed', True, transform_function=__get_crew_donated_borrowed, embed_only=True),
-        entity.EntityDetailProperty('PVP win/lose/draw', True, transform_function=__get_pvp_attack_stats),
-        entity.EntityDetailProperty('Defense win/lose/draw', True, transform_function=__get_pvp_defense_stats),
-        entity.EntityDetailProperty('Level', True, transform_function=__get_level),
-        entity.EntityDetailProperty('User type', True, transform_function=__get_user_type),
-        entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
+        EntityDetailProperty('Account created', True, entity_property_name='CreationDate', transform_function=__get_timestamp),
+        EntityDetailProperty('Last Login', True, entity_property_name='LastLoginDate', transform_function=__get_timestamp),
+        EntityDetailProperty('Fleet', True, transform_function=__get_fleet_name_and_rank),
+        EntityDetailProperty('Division', True, transform_function=__get_division_name),
+        EntityDetailProperty('Joined fleet', True, entity_property_name='AllianceJoinDate', transform_function=__get_timestamp),
+        EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
+        EntityDetailProperty('League', True, transform_function=__get_league),
+        EntityDetailProperty('Stars', True, transform_function=__get_stars),
+        EntityDetailProperty('Crew donated', True, transform_function=__get_crew_donated, text_only=True),
+        EntityDetailProperty('Crew borrowed', True, transform_function=__get_crew_borrowed, text_only=True),
+        EntityDetailProperty('Crew donated/borrowed', True, transform_function=__get_crew_donated_borrowed, embed_only=True),
+        EntityDetailProperty('PVP win/lose/draw', True, transform_function=__get_pvp_attack_stats),
+        EntityDetailProperty('Defense win/lose/draw', True, transform_function=__get_pvp_defense_stats),
+        EntityDetailProperty('Level', True, transform_function=__get_level),
+        EntityDetailProperty('User type', True, transform_function=__get_user_type),
+        EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
     ]),
     'embed_settings': {
-        'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='IconSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
-        'footer': entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note)
+        'icon_url': EntityDetailProperty('icon_url', False, entity_property_name='IconSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'footer': EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note)
     }
 }
 
 
-async def init():
+async def init() -> None:
     league_data = await core.get_data_from_path(LEAGUE_BASE_PATH)
     league_infos = core.xmltree_to_dict3(league_data)
     for league_info in sorted(list(league_infos.values()), key=lambda league_info: int(league_info['MinTrophy'])):

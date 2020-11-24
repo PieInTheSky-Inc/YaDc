@@ -2,25 +2,20 @@
 # -*- coding: UTF-8 -*-
 
 import datetime
-import discord
-import os
-import re
-from typing import Callable, Dict, List, Set, Tuple
+from discord import Embed
+from typing import Callable, Dict, List, Tuple, Union
 
-from cache import PssCache
-import emojis
 import pss_assert
 import pss_core as core
 import pss_crew as crew
-import pss_dropship as dropship
-import pss_entity as entity
+from pss_entity import EntitiesData, EntityDetailsCollection, EntityInfo, EntityRetriever, LegacyEntityDetails
+from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
 import pss_room as room
 import pss_sprites as sprites
 import settings
-import utility as util
 
 
 
@@ -33,8 +28,8 @@ import utility as util
 
 # ---------- Classes ----------
 
-class LegacyPromotionDesignDetails(entity.LegacyEntityDetails):
-    def __init__(self, promotion_info: dict):
+class LegacyPromotionDesignDetails(LegacyEntityDetails):
+    def __init__(self, promotion_info: EntityInfo) -> None:
         """
         RewardString
         """
@@ -161,7 +156,7 @@ class LegacyPromotionDesignDetails(entity.LegacyEntityDetails):
 
 
 class PromoRequirement():
-    def __init__(self, requirement: str):
+    def __init__(self, requirement: str) -> None:
         self.__lower_than: bool = False
         self.__greater_than: bool = False
         self.__equal: bool = False
@@ -241,19 +236,19 @@ async def get_promotion_details_by_id(promotion_design_id: str, promotions_data:
     return None
 
 
-def get_promotions_details_by_name(promotion_name: str) -> entity.EntityDetailsCollection:
+def get_promotions_details_by_name(promotion_name: str) -> EntityDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
 
 
-async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS):
+async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
     promotion_infos = await promotion_designs_retriever.get_entities_infos_by_name(promotion_name)
     promotions_details = [LegacyPromotionDesignDetails(promotion_info) for promotion_info in promotion_infos if promotion_info['PromotionType'] == 'FirstPurchase']
 
     if not promotions_details:
-        return [f'Could not find a promotion named **{promotion_name}**.'], False
+        raise Error(f'Could not find a promotion named `{promotion_name}`.')
     else:
         if as_embed:
             return _get_promotions_details_as_embed(promotions_details), True
@@ -261,7 +256,7 @@ async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: boo
             return _get_promotions_details_as_text(promotion_name, promotions_details), True
 
 
-def _get_promotions_details_as_embed(promotion_details: Dict[str, dict]) -> discord.Embed:
+def _get_promotions_details_as_embed(promotion_details: Dict[str, dict]) -> Embed:
     pass
 
 
@@ -364,7 +359,7 @@ def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
         if get_entity_details_function:
             intermediate = []
             for entity_id in rewards[entity_type]:
-                entity_details: entity.LegacyEntityDetails = get_entity_details_function(entity_id)
+                entity_details: LegacyEntityDetails = get_entity_details_function(entity_id)
                 intermediate.append(entity_details.get_details_as_text_short())
             result.append(', '.join(intermediate))
         else:
@@ -373,7 +368,7 @@ def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
     return ', '.join(result)
 
 
-def _get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> (str, int):
+def _get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> Tuple[str, int]:
     requirement_type, requirement_value = requirement_string.split(separator)
     requirement_value = int(requirement_value) + add_to_value
     return requirement_type, requirement_value
@@ -390,7 +385,7 @@ def _get_requirement_type_and_value(requirement_string: str, separator: str, add
 
 # ---------- Initilization ----------
 
-promotion_designs_retriever = entity.EntityRetriever(
+promotion_designs_retriever = EntityRetriever(
     PROMOTION_DESIGN_BASE_PATH,
     PROMOTION_DESIGN_KEY_NAME,
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,

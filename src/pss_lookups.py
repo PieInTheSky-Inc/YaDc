@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import calendar
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import emojis
 
@@ -376,7 +376,7 @@ XP_COSTS_LOOKUP: List[int] = [
 
 # ----------
 
-def get_lookup_value_or_default(lookup: object, key: object, default: object = None) -> object:
+def get_lookup_value_or_default(lookup: Any, key: Any, default: Any = None) -> Any:
     if key in lookup.keys():
         result = lookup[key]
     else:
@@ -384,7 +384,7 @@ def get_lookup_value_or_default(lookup: object, key: object, default: object = N
     return result
 
 
-def select_next_element(lookup: list, current_element: object) -> object:
+def select_next_element(lookup: List[Any], current_element: Any) -> Any:
     if lookup is None:
         return None
     elif lookup:
