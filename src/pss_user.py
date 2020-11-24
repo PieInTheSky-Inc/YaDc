@@ -148,7 +148,7 @@ def __get_pvp_defense_stats(user_info: entity.EntityInfo, **kwargs) -> str:
 
 def __get_stars(user_info: entity.EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> str:
     attempts = __get_tourney_battle_attempts(user_info, retrieved_at)
-    if attempts and max_tourney_battle_attempts:
+    if attempts is not None and max_tourney_battle_attempts:
         attempts_left = max_tourney_battle_attempts - int(attempts)
     else:
         attempts_left = None

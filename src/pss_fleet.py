@@ -224,7 +224,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_
         attempts_left = None
         if tourney_running:
             attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
-            if attempts and max_tourney_battle_attempts:
+            if attempts is not None and max_tourney_battle_attempts:
                 attempts_left = max_tourney_battle_attempts - attempts
         line = [
             util.format_excel_datetime(retrieved_at),
@@ -239,7 +239,7 @@ def _get_fleet_sheet_lines(fleet_users_infos: dict, retrieved_at: datetime, max_
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
             util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
-            attempts_left or '',
+            attempts_left if attempts_left is not None else '',
         ]
         if include_player_id:
             line.append(user_info.get(user.USER_KEY_NAME, ''))
