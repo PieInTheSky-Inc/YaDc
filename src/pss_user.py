@@ -81,7 +81,7 @@ async def get_user_details_by_info(user_info: dict, max_tourney_battle_attempts:
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
     attempts = __get_tourney_battle_attempts(user_info, retrieved_at)
-    if attempts and max_tourney_battle_attempts:
+    if attempts is not None and max_tourney_battle_attempts:
         attempts_left = max_tourney_battle_attempts - int(attempts)
     else:
         attempts_left = None
