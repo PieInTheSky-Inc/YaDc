@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import calendar
 from typing import Any, Dict, List, Tuple
 
@@ -175,9 +172,6 @@ ITEM_SUB_TYPES_TO_GET_PARENTS_FOR = [
 ]
 
 
-MONTH_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_name) if k > 0}
-MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_abbr) if k > 0}
-
 
 PROGRESSION_TYPES: Dict[str, float] = {
     'Linear': 1.0,
@@ -204,14 +198,6 @@ RARITY_EMOJIS_LOOKUP: Dict[str, str] = {
     'Hero': emojis.pss_rarity * 5,
     'Special': emojis.pss_rarity_special,
     'Legendary': emojis.pss_rarity_legendary
-}
-
-
-REDUCE_TOKENS_LOOKUP: Dict[int, str] = {
-    0: '',
-    1: 'k',
-    2: 'm',
-    3: 'g'
 }
 
 

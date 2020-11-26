@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime
 from discord import Colour, Embed
 from discord.ext.commands import Context
@@ -19,7 +16,7 @@ import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_user as user
 import settings
-import utility as util
+import utils
 
 
 
@@ -56,10 +53,10 @@ def is_valid_division_letter(div_letter: str) -> bool:
 
 
 def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
-    bodies = util.create_posts_from_lines(body_lines, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+    bodies = utils.discord.create_posts_from_lines(body_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
     result = []
     for body in bodies:
-        result.append(util.create_embed(title, description=body, colour=colour))
+        result.append(utils.discord.create_embed(title, description=body, colour=colour))
     return result
 
 
@@ -83,7 +80,7 @@ async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = setting
         body_lines = __create_body_lines_top_fleets(prepared_data, tourney_running)
 
         if as_embed:
-            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             return __create_top_embeds(title, body_lines, colour)
         else:
             result = [f'**{title}**']
@@ -93,37 +90,11 @@ async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = setting
         raise Error(f'An unknown error occured while retrieving the top fleets. Please contact the bot\'s author!')
 
 
-def _get_top_fleets_as_embed(alliance_data: dict, take: int = 100):
-    return ''
-
-
 def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
     result = [
         (
             position,
             escape_markdown(fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
-            fleet_info['Trophy'],
-            fleet_info['Score']
-        ) for position, fleet_info in enumerate(fleets_data.values(), start=1)
-    ]
-    return result
-
-    headline = f'**Top {take} fleets**'
-    lines = [headline]
-
-    position = 0
-    for entry in alliance_data.values():
-        position += 1
-        name = util.escape_markdown(entry['AllianceName'])
-        trophies = entry['Trophy']
-        stars = entry['Score']
-
-
-def __prepare_top_fleets(fleets_data: entity.EntitiesData) -> List[Tuple]:
-    result = [
-        (
-            position,
-            discord.utils.escape_markdown(fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
             fleet_info['Trophy'],
             fleet_info['Score']
         ) for position, fleet_info in enumerate(fleets_data.values(), start=1)
@@ -142,8 +113,12 @@ async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = setti
     data = await __get_top_captains_data(skip, take)
 
 
+    if data:
+        title = f'Top {take} captains'
+        prepared_data = __prepare_top_captains(data, skip, take)
+        body_lines = __create_body_lines_top_captains(prepared_data)
         if as_embed:
-            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             result = __create_top_embeds(title, body_lines, colour)
         else:
             result = [f'**{title}**']
@@ -152,13 +127,14 @@ async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = setti
     else:
         raise Error(f'An unknown error occured while retrieving the top captains. Please contact the bot\'s author!')
 
-    if data:
-        title = f'Top {take} captains'
-        prepared_data = __prepare_top_captains(data, skip, take)
-        body_lines = __create_body_lines_top_captains(prepared_data)
 
-def _get_top_captains_as_embed(captain_data: dict, take: int = 100):
-    return ''
+def __create_body_lines_top_captains(prepared_data: List[Tuple[int, str, str, str]]) -> List[str]:
+    result = [
+        f'**{position}.** {user_name} ({fleet_name}) - {trophies} {emojis.trophy}'
+        for position, user_name, fleet_name, trophies
+        in prepared_data
+    ]
+    return result
 
 
 async def __get_top_captains_data(skip: int, take: int) -> EntitiesData:
@@ -234,22 +210,22 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
             divisions_texts.append((division_design_id, _get_division_stars_as_text(fleet_infos)))
 
         result = []
-        footer = util.get_historic_data_note(retrieved_date)
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        footer = utils.datetime.get_historic_data_note(retrieved_date)
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         for division_design_id, division_text in divisions_texts:
             if as_embed:
                 division_title = _get_division_title(division_design_id, divisions_designs_infos, False)
                 thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
-                embed_bodies = util.create_posts_from_lines(division_text, settings.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
                 for i, embed_body in enumerate(embed_bodies):
                     thumbnail_url = thumbnail_url if i == 0 else None
-                    embed = util.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                    embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     result.append(embed)
             else:
                 division_title = _get_division_title(division_design_id, divisions_designs_infos, True)
                 result.append(division_title)
                 result.extend(division_text)
-                result.append(settings.EMPTY_LINE)
+                result.append(utils.discord.ZERO_WIDTH_SPACE)
 
         if not as_embed:
             result = result[:-1]
@@ -263,10 +239,10 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
 
 def _get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     lines = []
-    fleet_infos = util.sort_entities_by(fleet_infos, [('Score', int, True)])
+    fleet_infos = utils.sort_entities_by(fleet_infos, [('Score', int, True)])
     fleet_infos_count = len(fleet_infos)
     for i, fleet_info in enumerate(fleet_infos, start=1):
-        fleet_name = util.escape_markdown(fleet_info['AllianceName'])
+        fleet_name = escape_markdown(fleet_info['AllianceName'])
         if 'Trophy' in fleet_info.keys():
             trophies = fleet_info['Trophy']
             trophy_str = f' ({trophies} {emojis.trophy})'

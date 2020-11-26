@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import aiohttp
 from asyncio import Lock
 from datetime import datetime, timedelta
@@ -10,7 +7,7 @@ from typing import List
 
 import database as db
 import pss_core as core
-import utility as util
+import utils
 
 
 
@@ -68,14 +65,14 @@ class Device():
     @property
     def access_token_expired(self) -> bool:
         if self.__access_token:
-            return self.__access_token_expires_at < util.get_utc_now()
+            return self.__access_token_expires_at < utils.get_utc_now()
         return True
 
     @property
     def can_login(self) -> bool:
         if self.__can_login_until is None:
             return True
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
         if self.__can_login_until <= utc_now and self.__can_login_until.day == utc_now.day:
             return False
         return True
@@ -116,7 +113,7 @@ class Device():
 
 
     async def __login(self) -> None:
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
         if not self.__key:
             self.__key = create_device_key()
         if not self.__checksum:
@@ -124,7 +121,7 @@ class Device():
 
         base_url = await core.get_base_url()
         url = f'{base_url}{self.__login_path}'
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
         async with aiohttp.ClientSession() as session:
             async with session.post(url) as response:
                 data = await response.text(encoding='utf-8')
@@ -155,8 +152,8 @@ class Device():
 
     def __set_can_login_until(self, last_login: datetime) -> None:
         if not self.__can_login_until or last_login > self.__can_login_until:
-            next_day = util.get_next_day(self.__can_login_until) - util.ONE_SECOND
-            login_until = last_login + util.FIFTEEN_HOURS
+            next_day = utils.datetime.get_next_day(self.__can_login_until) - utils.datetime.ONE_SECOND
+            login_until = last_login + utils.datetime.FIFTEEN_HOURS
             self.__can_login_until = min(login_until, next_day)
             self.__can_login_until_changed = True
 

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from discord import Embed
 from discord.ext.commands import Context
 import re
@@ -15,7 +12,7 @@ import pss_sprites as sprites
 import pss_training as training
 import resources
 import settings
-import utility as util
+import utils
 
 
 # TODO: Create allowed values dictionary upon start.
@@ -146,7 +143,7 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
                     module_title = title
                 texts = await best_items_collection.get_entities_details_as_text(custom_title=title)
                 result.extend(texts)
-                result.append(settings.EMPTY_LINE)
+                result.append(utils.discord.ZERO_WIDTH_SPACE)
             footer = __get_footer_text_for_group(module_title, as_embed)
             result.append(footer)
             return result, True
@@ -256,11 +253,11 @@ async def get_item_price(ctx: Context, item_name: str, as_embed: bool = settings
     if not item_infos:
         raise Error(f'Could not find an item named `{item_name}`.')
     else:
-        get_best_match = util.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
+        get_best_match = utils.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
             item_infos = [item_infos[0]]
 
-        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
         items_details_collection = __create_price_details_collection_from_infos(item_infos, items_data)
 
         if as_embed:
@@ -376,7 +373,7 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
         for item_id in item_ids:
             item_infos.extend(_get_upgrades_for(item_id, items_data))
         item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
-        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
         upgrade_details_collection = __create_upgrade_details_collection_from_infos(item_infos, items_data)
 
         if as_embed:
@@ -399,8 +396,8 @@ def _get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[EntityInfo
 
 
     title = f'Crafting recipes requiring: {item_name}'
-    colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-    result = util.create_embed(title, description=description, colour=colour, fields=fields)
+    colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+    result = utils.discord.create_embed(title, description=description, colour=colour, fields=fields)
     return [result]
 
 
@@ -509,7 +506,7 @@ def __get_all_ingredients(item_info: EntityInfo, items_data: EntitiesData, train
                 current_level_lines.append(f'> {ingredient_amount} x {ingredient_name} ({ingredient_price} bux ea): {price_sum} bux')
             lines.extend(current_level_lines)
             lines.append(f'Crafting costs: {current_level_costs} bux')
-            lines.append(settings.EMPTY_LINE)
+            lines.append(utils.discord.ZERO_WIDTH_SPACE)
         if lines:
             lines = lines[:-1]
     else:
@@ -701,7 +698,7 @@ async def get_items_details_by_name(item_name: str, sorted: bool = True) -> List
     trainings_data = await training.trainings_designs_retriever.get_data_dict3()
     item_infos = _get_item_infos_by_name(item_name, items_data)
     if sorted:
-        item_infos = util.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
     result = __create_base_details_list_from_infos(item_infos, items_data, trainings_data)
     return result
 
@@ -757,7 +754,7 @@ def _get_item_infos_by_name(item_name: str, items_data: EntitiesData, return_bes
     result = [items_data[item_design_id] for item_design_id in item_design_ids if item_design_id in items_data.keys()]
 
     if result:
-        get_best_match = return_best_match or util.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
+        get_best_match = return_best_match or utils.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
             result = [result[0]]
 

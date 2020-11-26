@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime, timezone
 from enum import IntEnum
 from typing import Any, Dict, Iterable, List, Union
@@ -9,7 +6,7 @@ import openpyxl.utils.dataframe
 import pandas
 
 import pss_tournament as tourney
-import utility as util
+import utils
 
 
 
@@ -45,7 +42,7 @@ __FILE_ENDING_LOOKUP: Dict[FILE_ENDING, str] = {
 
 def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: str = None) -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utc_now()
+        data_retrieved_at = utils.get_utc_now()
     if file_name:
         save_to = file_name
     else:
@@ -71,7 +68,7 @@ def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrie
 
 def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: str = None, delimiter: str = '\t') -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utc_now()
+        data_retrieved_at = utils.get_utc_now()
     if file_name:
         save_to = file_name
     else:
@@ -97,7 +94,7 @@ def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retri
 
 def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime = None) -> str:
     if data_retrieved_at is None:
-        data_retrieved_at = util.get_utc_now()
+        data_retrieved_at = utils.get_utc_now()
     save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
 
     wb = openpyxl.Workbook(write_only=True)
@@ -126,7 +123,7 @@ def get_file_name(file_prefix: str, data_retrieved_at: datetime, file_ending: FI
         file_ending = FILE_ENDING.XL
     file_prefix = file_prefix.replace(' ', '_')
     if consider_tourney and tourney.is_tourney_running(utc_now=data_retrieved_at):
-        file_timestamp = f'tournament-{data_retrieved_at.year}-{util.get_month_short_name(data_retrieved_at).lower()}'
+        file_timestamp = f'tournament-{data_retrieved_at.year}-{utils.datetime.get_month_short_name(data_retrieved_at).lower()}'
     else:
         file_timestamp = data_retrieved_at.strftime('%Y%m%d-%H%M%S')
     suffix = __FILE_ENDING_LOOKUP[file_ending]
@@ -154,7 +151,7 @@ def _get_ref_for_df(df: pandas.DataFrame, column_start: int = 0, row_start: int 
 def fix_field(field: str) -> Union[datetime, int, float, str]:
     if field:
         try:
-            dt = util.parse_pss_datetime(field)
+            dt = utils.parse.pss_datetime(field)
             if dt < __EARLIEST_EXCEL_DATETIME:
                 dt = __EARLIEST_EXCEL_DATETIME
             dt.replace(tzinfo=None)

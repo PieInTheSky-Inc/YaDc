@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from collections import Counter
 from discord import Colour, Embed
 from discord.ext.commands import Context
@@ -14,7 +11,7 @@ from pss_exception import Error
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
-import utility as util
+import utils
 
 
 
@@ -127,7 +124,7 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
         prestige_from_ids, recipe_count = await _get_prestige_from_ids_and_recipe_count(char_from_info)
-        util.make_dict_value_lists_unique(prestige_from_ids)
+        utils.make_dict_value_lists_unique(prestige_from_ids)
         prestige_from_infos = sorted(__prepare_prestige_infos(chars_data, prestige_from_ids), key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
         prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos)
 
@@ -190,7 +187,7 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
         prestige_to_ids, recipe_count = await _get_prestige_to_ids_and_recipe_count(char_to_info)
-        util.make_dict_value_lists_unique(prestige_to_ids)
+        utils.make_dict_value_lists_unique(prestige_to_ids)
         prestige_to_infos = sorted(__prepare_prestige_infos(chars_data, prestige_to_ids), key=lambda prestige_to_info: prestige_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
         prestige_to_details_collection = __create_prestige_to_details_collection_from_infos(prestige_to_infos)
 
@@ -281,19 +278,19 @@ def get_level_costs(ctx: Context, from_level: int, to_level: int = None, as_embe
     legendary_crew_cost_txt = _get_crew_cost_txt(from_level, to_level, legendary_crew_costs)
 
     if as_embed:
-        embed_color = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        embed_color = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         fields = [
             ('Non-legendary crew', '\n'.join(crew_cost_txt), False),
             ('Legendary crew', '\n'.join(legendary_crew_cost_txt), False)
         ]
-        result = [util.create_embed(title='Level costs', fields=fields, colour=embed_color, footer='Note: Gas costs are higher, if "Advanced Training 7" hasn\'t been reseached, yet.')]
+        result = [utils.discord.create_embed(title='Level costs', fields=fields, colour=embed_color, footer='Note: Gas costs are higher, if "Advanced Training 7" hasn\'t been reseached, yet.')]
     else:
         result = ['**Level costs** (non-legendary crew, max research)']
         result.extend(crew_cost_txt)
-        result.append(settings.EMPTY_LINE)
+        result.append(utils.discord.ZERO_WIDTH_SPACE)
         result.append('**Level costs** (legendary crew, max research)')
         result.extend(legendary_crew_cost_txt)
-        result.append(settings.EMPTY_LINE)
+        result.append(utils.discord.ZERO_WIDTH_SPACE)
         result.append('**Note:** Gas costs are higher, if **Advanced Training 7** hasn\'t been reseached, yet.')
     return result, True
 
@@ -448,7 +445,7 @@ def __get_collection_perk(collection_info: EntityInfo, collections_data: Entitie
 def __get_crew_card_hyperlink(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
     crew_name: str = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if crew_name:
-        crew_name_escaped = util.url_escape(crew_name)
+        crew_name_escaped = utils.convert.url_escape(crew_name)
         url = f'https://pixelperfectguide.com/crew/cards/?CrewName={crew_name_escaped}'
         result = f'<{url}>'
         return result
@@ -468,7 +465,7 @@ def __get_pixel_prestige_hyperlink(character_info: EntityInfo, characters_data: 
 def __get_embed_color(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Colour:
     color_string = collection_info.get('ColorString')
     if entity_property_has_value(color_string):
-        result = util.convert_color_string_to_embed_color(color_string)
+        result = utils.discord.convert_color_string_to_embed_color(color_string)
     else:
         result = Embed.Empty
     return result

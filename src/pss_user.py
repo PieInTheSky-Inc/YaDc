@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime
 from discord import Embed
 from discord.ext.commands import Context
@@ -19,7 +16,7 @@ import pss_top as top
 import pss_tournament as tourney
 import pss_user as user
 import settings
-import utility as util
+import utils
 
 
 
@@ -106,7 +103,7 @@ def __get_fleet_name_and_rank(user_info: EntityInfo, fleet_info: EntityInfo = No
 
 def __get_historic_data_note(user_info: EntityInfo, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
     if is_past_data:
-        result = util.get_historic_data_note(retrieved_at)
+        result = utils.datetime.get_historic_data_note(retrieved_at)
     else:
         result = None
     return result
@@ -255,7 +252,7 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
     is_past_data = past_fleet_infos is not None and past_fleet_infos
 
     user_id = user_info[USER_KEY_NAME]
-    retrieved_at = retrieved_at or util.get_utc_now()
+    retrieved_at = retrieved_at or utils.get_utc_now()
     tourney_running = tourney.is_tourney_running(utc_now=retrieved_at)
     if past_fleet_infos:
         ship_info = {}
@@ -301,8 +298,8 @@ def __format_pvp_stats(wins: int, losses: int, draws: int) -> str:
 
 
 def __format_timestamp(timestamp: datetime, retrieved_at: datetime) -> str:
-    retrieved_ago = util.get_formatted_timedelta(timestamp - retrieved_at, include_seconds=False)
-    result = f'{util.format_excel_datetime(timestamp, include_seconds=False)} ({retrieved_ago})'
+    retrieved_ago = utils.format.timedelta(timestamp - retrieved_at, include_seconds=False)
+    result = f'{utils.format.datetime_for_excel(timestamp, include_seconds=False)} ({retrieved_ago})'
     return result
 
 
@@ -324,7 +321,7 @@ def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> i
     attempts = user_info.get('TournamentBonusScore')
     if attempts:
         attempts = int(attempts)
-        last_login_date = util.parse_pss_datetime(user_info.get('LastLoginDate'))
+        last_login_date = utils.parse.pss_datetime(user_info.get('LastLoginDate'))
         if last_login_date:
             if last_login_date.day != utc_now.day:
                 attempts = 0
@@ -343,7 +340,7 @@ def __parse_timestamp(user_info: EntityInfo, field_name: str) -> str:
     result = None
     timestamp = user_info.get(field_name)
     if timestamp is not None:
-        result = util.parse_pss_datetime(timestamp)
+        result = utils.parse.pss_datetime(timestamp)
     return result
 
 
@@ -385,7 +382,7 @@ def get_user_search_details(user_info: EntityInfo) -> str:
 
 
 async def _get_users_data(user_name: str) -> EntitiesData:
-    path = f'{SEARCH_USERS_BASE_PATH}{util.url_escape(user_name)}'
+    path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name)}'
     user_data_raw = await core.get_data_from_path(path)
     user_infos = core.xmltree_to_dict3(user_data_raw)
     return user_infos

@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from typing import Dict, Tuple
 
 from cache import PssCache

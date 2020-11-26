@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, entity_property_has_value
 

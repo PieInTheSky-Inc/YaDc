@@ -6,9 +6,6 @@ import os
 
 
 
-API_DATETIME_FORMAT_ISO = '%Y-%m-%dT%H:%M:%S'
-API_DATETIME_FORMAT_ISO_DETAILED = '%Y-%m-%dT%H:%M:%S.%f'
-API_DATETIME_FORMAT_CUSTOM = '%d.%m.%y %H:%M'
 
 
 BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
@@ -16,15 +13,11 @@ BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions
 
 DATABASE_URL = str(os.environ.get('DATABASE_URL'))
 
-DEFAULT_EMBED_INLINE: bool = True
-DEFAULT_FLOAT_PRECISION: int = 1
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
 DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
-
-EMPTY_LINE = '\u200b'
 
 
 EXCEL_COLUMN_FORMAT_DATETIME = 'YYYY-MM-DD hh:MM:ss'
@@ -46,7 +39,6 @@ GDRIVE_SETTINGS_FILE = 'settings.yaml'
 GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
-HISTORIC_DATA_NOTE = 'This is historic data from'
 
 
 IGNORE_SERVER_IDS_FOR_COUNTING = [
@@ -60,8 +52,6 @@ IGNORE_SERVER_IDS_FOR_COUNTING = [
 LATEST_SETTINGS_BASE_PATH = 'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
 
 
-MAXIMUM_CHARACTERS = 1900
-MAXIMUM_CHARACTERS_EMBED_DESCRIPTION = 2048
 MIN_ENTITY_NAME_LENGTH = 3
 
 
@@ -74,9 +64,6 @@ PRINT_DEBUG_WEB_REQUESTS = int(os.environ.get('PRINT_DEBUG_WEB_REQUESTS', '0'))
 PSS_ABOUT_FILES = ['src/pss_data/about.json', 'pss_data/about.json']
 PSS_LINKS_FILES = ['src/pss_data/links.json', 'pss_data/links.json']
 PSS_RESOURCES_FILES = ['src/pss_data/resources.json', 'pss_data/resources.json']
-
-PSS_START_DATE = datetime.date(year=2016, month=1, day=6)
-PSS_START_DATETIME = datetime.datetime(year=2016, month=1, day=6)
 
 
 RAW_COMMAND_USERS_RAW = os.environ.get('RAW_COMMAND_USERS', '[]')
@@ -97,7 +84,6 @@ USE_EMBEDS = True
 VERSION = '1.3.1.2'
 
 
-WIKIA_BASE_ADDRESS = 'https://pixelstarships.fandom.com/wiki/'
 
 
 

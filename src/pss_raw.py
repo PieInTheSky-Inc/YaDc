@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime
 from discord.ext.commands import Context
 import json
@@ -12,7 +9,7 @@ import excel
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, EntityRetriever
 import settings
-import utility as util
+import utils
 
 
 
@@ -66,7 +63,7 @@ def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
 
 async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
     async with ctx.typing():
-        retrieved_at = retrieved_at or util.get_utc_now()
+        retrieved_at = retrieved_at or utils.get_utc_now()
         entity_name = entity_name.replace(' ', '_')
         file_name_prefix = f'{entity_name}_designs'
         raw_data = await retriever.get_raw_data()
@@ -85,7 +82,7 @@ async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name:
             time2 = time.perf_counter() - start
             print(f'Flattening the data took {time1:.2f} seconds.')
             print(f'Creating the excel sheet took {time2:.2f} seconds.')
-    await util.post_output_with_files(ctx, [], [file_path])
+    await utils.discord.post_output_with_files(ctx, [], [file_path])
     os.remove(file_path)
 
 
@@ -110,15 +107,15 @@ async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_nam
                     result = await retriever.get_raw_entity_info_by_id_as_json(entity_id, fix_xml_attributes=True)
                 output = result.split('\n')
         output_len = len(output) + sum([len(row) for row in output])
-    if output_len > settings.MAXIMUM_CHARACTERS:
+    if output_len > utils.discord.MAXIMUM_CHARACTERS:
         file_path = __create_raw_file('\n'.join(output), mode, f'{entity_name}_design_{entity_id}', retrieved_at)
-        await util.post_output_with_files(ctx, title, [file_path])
+        await utils.discord.post_output_with_files(ctx, title, [file_path])
         os.remove(file_path)
     else:
         output[0] = f'```{output[0]}'
         output[-1] += '```'
-        await util.post_output(ctx, title)
-        await util.post_output(ctx, output)
+        await utils.discord.post_output(ctx, title)
+        await utils.discord.post_output(ctx, output)
 
 
 def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
@@ -133,7 +130,7 @@ def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retri
 
 async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
     if ctx.author.id in settings.RAW_COMMAND_USERS:
-        retrieved_at = util.get_utc_now()
+        retrieved_at = utils.get_utc_now()
         mode = None
         if entity_id:
             if '--json' in entity_id:

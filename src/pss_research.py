@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import timedelta
 from discord import Embed
 from discord.ext.commands import Context
@@ -12,7 +9,7 @@ from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyC
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
-import utility as util
+import utils
 
 
 
@@ -123,7 +120,7 @@ def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwar
         cost = 0
         currency = ''
 
-    cost_reduced, cost_multiplier = util.get_reduced_number(cost)
+    cost_reduced, cost_multiplier = utils.format.get_reduced_number(cost)
     currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP.get(currency, '')
     result = f'{cost_reduced}{cost_multiplier} {currency_emoji}'
     return result
@@ -131,7 +128,7 @@ def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwar
 
 def __get_duration(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> str:
     seconds = int(research_info['ResearchTime'])
-    result = util.get_formatted_timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
+    result = utils.format.timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
     return result
 
 

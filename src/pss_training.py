@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from discord import Embed
 from discord.ext.commands import Context
 from typing import Dict, List, Tuple, Union
@@ -14,7 +11,7 @@ import pss_lookups as lookups
 import pss_research as research
 import pss_sprites as sprites
 import settings
-import utility as util
+import utils
 
 
 
@@ -106,7 +103,7 @@ def __create_trainings_details_collection_from_infos(trainings_designs_infos: Li
 def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
     cost = int(training_info['MineralCost'])
     if cost:
-        cost_compact = util.get_reduced_number_compact(cost)
+        cost_compact = utils.format.get_reduced_number_compact(cost)
         result = f'{cost_compact} {emojis.pss_min_big}'
     else:
         result = None
@@ -116,7 +113,7 @@ def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_d
 def __get_duration(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
     seconds = int(training_info['Duration'])
     if seconds:
-        result = util.get_formatted_duration(seconds, include_relative_indicator=False)
+        result = utils.format.duration(seconds, include_relative_indicator=False)
     else:
         result = 'Instant'
     return result

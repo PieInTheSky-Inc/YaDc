@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import asyncio
 from discord import ChannelType, Message, Reaction, User
 from discord.ext.commands import Context
@@ -10,7 +7,7 @@ from typing import Awaitable, Callable, Dict, List, Tuple, Union
 
 import emojis
 from pss_entity import EntityDetails, EntityInfo
-import utility as util
+import utils
 
 
 
@@ -106,15 +103,15 @@ class Paginator():
             else:
                 if reaction and user:
                     if user != self.__context.author:
-                        await util.try_remove_reaction(reaction, user)
+                        await utils.discord.try_remove_reaction(reaction, user)
                         repost_page = False
                     else:
                         emoji = str(reaction.emoji)
                         if emoji == emojis.page_next:
-                            await util.try_remove_reaction(reaction, user)
+                            await utils.discord.try_remove_reaction(reaction, user)
                             self.__set_next_page()
                         elif emoji == emojis.page_previous:
-                            await util.try_remove_reaction(reaction, user)
+                            await utils.discord.try_remove_reaction(reaction, user)
                             self.__set_previous_page()
                         else:
                             await self.__try_delete_message()
@@ -127,7 +124,7 @@ class Paginator():
                         pass
                     else:
                         if selection in self.__current_options.keys():
-                            await util.try_delete_message(reply)
+                            await utils.discord.post_output_with_files(reply)
                             await self.__try_delete_message()
                             return True, self.__current_options[selection]
 
@@ -175,7 +172,7 @@ class Paginator():
 
 
     async def __try_delete_message(self) -> bool:
-        result = await util.try_delete_message(self.__message)
+        result = await utils.discord.post_output_with_files(self.__message)
         if result:
             self.__message = None
         return result

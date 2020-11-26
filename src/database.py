@@ -1,13 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import asyncpg
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import pss_daily as daily
 import settings
-import utility as util
+import utils
 
 
 
@@ -106,8 +103,8 @@ async def update_schema(version: str, update_function: Callable) -> bool:
 async def update_schema_v_1_3_1_0() -> bool:
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1300 = util.compare_versions(schema_version, '1.3.1.0')
-        compare_1290 = util.compare_versions(schema_version, '1.3.0.0')
+        compare_1300 = utils.compare_versions(schema_version, '1.3.1.0')
+        compare_1290 = utils.compare_versions(schema_version, '1.3.0.0')
         if compare_1300 <= 0:
             return True
         elif compare_1290 > 0:
@@ -129,8 +126,8 @@ async def update_schema_v_1_3_1_0() -> bool:
 async def update_schema_v_1_3_0_0() -> bool:
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1300 = util.compare_versions(schema_version, '1.3.0.0')
-        compare_1290 = util.compare_versions(schema_version, '1.2.9.0')
+        compare_1300 = utils.compare_versions(schema_version, '1.3.0.0')
+        compare_1290 = utils.compare_versions(schema_version, '1.2.9.0')
         if compare_1300 <= 0:
             return True
         elif compare_1290 > 0:
@@ -165,8 +162,8 @@ async def update_schema_v_1_3_0_0() -> bool:
 async def update_schema_v_1_2_9_0() -> bool:
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1290 = util.compare_versions(schema_version, '1.2.9.0')
-        compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
+        compare_1290 = utils.compare_versions(schema_version, '1.2.9.0')
+        compare_1280 = utils.compare_versions(schema_version, '1.2.8.0')
         if compare_1290 <= 0:
             return True
         elif compare_1280 > 0:
@@ -181,8 +178,8 @@ async def update_schema_v_1_2_9_0() -> bool:
         return False
 
     query_lines_move_data = [f'UPDATE serversettings SET dailychangemode = 1 WHERE dailydeleteonchange IS NULL;']
-    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 2 WHERE dailydeleteonchange = {util.db_convert_boolean(True)};')
-    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 3 WHERE dailydeleteonchange = {util.db_convert_boolean(False)};')
+    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 2 WHERE dailydeleteonchange = {utils.database.convert_boolean(True)};')
+    query_lines_move_data.append(f'UPDATE serversettings SET dailychangemode = 3 WHERE dailydeleteonchange = {utils.database.convert_boolean(False)};')
     query_move_data = '\n'.join(query_lines_move_data)
     success_move_data = await try_execute(query_move_data)
     if not success_move_data:
@@ -210,8 +207,8 @@ async def update_schema_v_1_2_8_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1280 = util.compare_versions(schema_version, '1.2.8.0')
-        compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
+        compare_1280 = utils.compare_versions(schema_version, '1.2.8.0')
+        compare_1270 = utils.compare_versions(schema_version, '1.2.7.0')
         if compare_1280 <= 0:
             return True
         elif compare_1270 > 0:
@@ -244,8 +241,8 @@ async def db_update_schema_v_1_2_7_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1270 = util.compare_versions(schema_version, '1.2.7.0')
-        compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
+        compare_1270 = utils.compare_versions(schema_version, '1.2.7.0')
+        compare_1260 = utils.compare_versions(schema_version, '1.2.6.0')
         if compare_1270 <= 0:
             return True
         elif compare_1260 > 0:
@@ -267,8 +264,8 @@ async def update_schema_v_1_2_6_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1260 = util.compare_versions(schema_version, '1.2.6.0')
-        compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
+        compare_1260 = utils.compare_versions(schema_version, '1.2.6.0')
+        compare_1250 = utils.compare_versions(schema_version, '1.2.5.0')
         if compare_1260 <= 0:
             return True
         elif compare_1250 > 0:
@@ -278,7 +275,7 @@ async def update_schema_v_1_2_6_0() -> bool:
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions_serversettings:
-        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
+        column_definition = utils.database.get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
@@ -296,8 +293,8 @@ async def update_schema_v_1_2_5_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1250 = util.compare_versions(schema_version, '1.2.5.0')
-        compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
+        compare_1250 = utils.compare_versions(schema_version, '1.2.5.0')
+        compare_1240 = utils.compare_versions(schema_version, '1.2.4.0')
         if compare_1250 <= 0:
             return True
         elif compare_1240 > 0:
@@ -307,7 +304,7 @@ async def update_schema_v_1_2_5_0() -> bool:
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
-        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
+        column_definition = utils.database.get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null)
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition};')
 
     query = '\n'.join(query_lines)
@@ -324,8 +321,8 @@ async def update_schema_v_1_2_4_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1240 = util.compare_versions(schema_version, '1.2.4.0')
-        compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
+        compare_1240 = utils.compare_versions(schema_version, '1.2.4.0')
+        compare_1220 = utils.compare_versions(schema_version, '1.2.2.0')
         if compare_1240 <= 0:
             return True
         elif compare_1220 > 0:
@@ -335,13 +332,13 @@ async def update_schema_v_1_2_4_0() -> bool:
 
     query_lines = []
     for (column_name, column_type, column_is_primary, column_not_null, column_default) in column_definitions:
-        column_definition = util.db_get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null, default=column_default)
+        column_definition = utils.database.get_column_definition(column_name, column_type, is_primary=column_is_primary, not_null=column_not_null, default=column_default)
         query_lines.append(f'ALTER TABLE serversettings ADD COLUMN IF NOT EXISTS {column_definition}')
 
     query = '\n'.join(query_lines)
     success = await try_execute(query)
     if success:
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
         daily_info = await daily.get_daily_info()
         success = await daily.db_set_daily_info(daily_info, utc_now)
         if success:
@@ -366,8 +363,8 @@ async def update_schema_v_1_2_2_0() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1220 = util.compare_versions(schema_version, '1.2.2.0')
-        compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
+        compare_1220 = utils.compare_versions(schema_version, '1.2.2.0')
+        compare_1000 = utils.compare_versions(schema_version, '1.0.0.0')
         if compare_1220 <= 0:
             return True
         elif compare_1000 > 0:
@@ -408,7 +405,7 @@ async def update_schema_v_1_2_2_0() -> bool:
             column_names = [column_name.lower() for column_name in column_names]
             for (column_name, column_type, column_is_primary, column_not_null) in column_definitions:
                 if column_name not in column_names:
-                    query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {util.db_get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
+                    query_lines.append(f'ALTER TABLE IF EXISTS serversettings ADD COLUMN IF NOT EXISTS {utils.database.get_column_definition(column_name, column_type, column_is_primary, column_not_null)};')
             query = '\n'.join(query_lines)
             if query:
                 success = await try_execute(query)
@@ -438,7 +435,7 @@ async def create_schema() -> bool:
 
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1000 = util.compare_versions(schema_version, '1.0.0.0')
+        compare_1000 = utils.compare_versions(schema_version, '1.0.0.0')
         if compare_1000 <= 0:
             return True
 
@@ -549,7 +546,7 @@ def get_column_list(column_definitions: List[ColumnDefinition]) -> str:
 
     result = []
     for column_definition in column_definitions:
-        result.append(util.db_get_column_definition(*column_definition))
+        result.append(utils.database.get_column_definition(*column_definition))
     return ', '.join(result)
 
 
@@ -583,7 +580,7 @@ async def try_set_schema_version(version: str) -> bool:
     __log_db_function_enter('try_set_schema_version', version=f'\'{version}\'')
 
     prior_version = await get_schema_version()
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
     if not prior_version:
         query = f'INSERT INTO settings (modifydate, settingtext, settingname) VALUES ($1, $2, $3)'
     else:
@@ -729,7 +726,7 @@ async def set_setting(setting_name: str, value: Any, utc_now: datetime = None) -
     success = True
     setting, modify_date = await get_setting(setting_name)
     if utc_now is None:
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
     query = ''
     if setting is None and modify_date is None:
         query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ($1, $2, $3)'
@@ -744,7 +741,7 @@ async def set_setting(setting_name: str, value: Any, utc_now: datetime = None) -
 async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
     __log_db_function_enter('set_settings', settings=settings)
 
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
     if settings:
         query_lines = []
         args = []
@@ -755,21 +752,21 @@ async def set_settings(settings: Dict[str, Tuple[object, datetime]]) -> bool:
             column_name = None
             if isinstance(value, bool):
                 column_name = 'settingboolean'
-                value = util.db_convert_boolean(value)
+                value = utils.database.convert_boolean(value)
             elif isinstance(value, int):
                 column_name = 'settingint'
             elif isinstance(value, float):
                 column_name = 'settingfloat'
             elif isinstance(value, datetime):
                 column_name = 'settingtimestamptz'
-                value = util.db_convert_timestamp(value)
+                value = utils.database.convert_timestamp(value)
             else:
                 column_name = 'settingtext'
-                value = util.db_convert_text(value)
+                value = utils.database.convert_text(value)
             current_value, db_modify_date = current_settings[setting_name]
             modify_date = db_modify_date or utc_now
 
-            setting_name = util.db_convert_text(setting_name)
+            setting_name = utils.database.convert_text(setting_name)
             if current_value is None and db_modify_date is None:
                 query = f'INSERT INTO settings ({column_name}, modifydate, settingname) VALUES ({value}, \'{modified_at}\', {setting_name});'
             elif current_value != value:

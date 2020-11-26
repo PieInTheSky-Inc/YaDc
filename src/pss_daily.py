@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime
 from discord import Embed
 from discord.ext.commands import Context
@@ -21,7 +18,7 @@ import pss_training as training
 import server_settings
 from server_settings import AutoDailySettings
 import settings
-import utility as util
+import utils
 
 
 
@@ -67,7 +64,7 @@ SALES_DAILY_INFO_FIELDS = {
     'LimitedCatalogArgument': int,
     'LimitedCatalogCurrencyAmount': int,
     'LimitedCatalogCurrencyType': str,
-    'LimitedCatalogExpiryDate': util.parse_pss_datetime,
+    'LimitedCatalogExpiryDate': utils.parse.pss_datetime,
     'LimitedCatalogMaxTotal': int,
     'LimitedCatalogType': str
 }
@@ -95,7 +92,7 @@ LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 # ---------- Sales ----------
 
 async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[Embed]]:
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
     db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
     processed_db_sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = [sales_info for sales_info in processed_db_sales_infos if sales_info['expires_in'] >= 0]
@@ -112,11 +109,11 @@ async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool 
         details = f'**{expires_in}** {day}: **{sales_info["name"]}** ({sales_info["type"]}) {sales_info["currency"]} {sales_info["price"]}'
         sales_details.append(details)
     if as_embed:
-        body_lines = [description, settings.EMPTY_LINE]
+        body_lines = [description, utils.discord.ZERO_WIDTH_SPACE]
         body_lines.extend(sales_details)
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         footer = 'Click on the title to get redirected to the Late Sales portal, where you can purchase these offers.'
-        result = util.create_basic_embeds_from_description(title, description=body_lines, colour=colour, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
+        result = utils.discord.create_basic_embeds_from_description(title, description=body_lines, colour=colour, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
     else:
         result = [
             f'**{title}**',
@@ -188,7 +185,7 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
 
 
 async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
 
     entity_id = entity_info.get('entity_id')
     entity_id = int(entity_id) if entity_id else None
@@ -204,9 +201,9 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
         title = f'{entity_name} has been sold on'
         sales_details = []
         for sales_info in sales_infos:
-            sold_on_date = sales_info['expiry_date'] - util.ONE_DAY
-            sold_on = util.get_formatted_datetime(sold_on_date, include_time=False, include_tz=False)
-            star_date = util.get_star_date(sold_on_date)
+            sold_on_date = sales_info['expiry_date'] - utils.datetime.ONE_DAY
+            sold_on = utils.format.datetime(sold_on_date, include_time=False, include_tz=False)
+            star_date = utils.datetime.get_star_date(sold_on_date)
             sold_ago = (utc_now - sold_on_date).days
             price = sales_info['original_price']
             currency = sales_info['currency']
@@ -214,8 +211,8 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
             sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago) for {price} {currency}')
 
         if as_embed:
-            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-            result = util.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = utils.discord.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
         else:
             result = [f'**{title}**']
             result.extend(sales_details)
@@ -281,7 +278,7 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
         daily_info.pop('News', None)
         db_daily_info = db_daily_info.copy()
         db_daily_info.pop('News', None)
-        return not util.dicts_equal(daily_info, db_daily_info)
+        return not utils.dicts_equal(daily_info, db_daily_info)
 
 
 def convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
@@ -400,7 +397,7 @@ async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
 # ---------- Mocks ----------
 
 def mock_get_daily_info() -> EntityInfo:
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
     if utc_now.hour < 1:
         if utc_now.minute < 20:
             return __mock_get_daily_info_1()
@@ -482,7 +479,7 @@ async def __update_db_sales_info_cache() -> None:
     global __sales_info_cache
     global __sales_info_cache_retrieved_at
     __sales_info_cache = await db_get_sales_infos(skip_cache=True)
-    __sales_info_cache_retrieved_at = util.get_utc_now()
+    __sales_info_cache_retrieved_at = utils.get_utc_now()
 
 
 async def init() -> None:

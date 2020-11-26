@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import calendar
 from datetime import datetime
 from discord import Embed, Guild, Message
@@ -20,7 +17,7 @@ import pss_room as room
 import pss_training as training
 import pss_sprites as sprites
 import settings
-import utility as util
+import utils
 
 
 
@@ -42,7 +39,7 @@ DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAnd
 # ---------- Dropship info ----------
 
 async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: dict = None, utc_now: datetime = None, language_key: str = 'en') -> Tuple[List[str], List[Embed], bool]:
-    utc_now = utc_now or util.get_utc_now()
+    utc_now = utc_now or utils.get_utc_now()
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
 
@@ -70,22 +67,22 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
 
     lines = list(daily_msg)
     for part in parts:
-        lines.append(settings.EMPTY_LINE)
+        lines.append(utils.discord.ZERO_WIDTH_SPACE)
         lines.extend(part)
-    lines.append(settings.EMPTY_LINE)
+    lines.append(utils.discord.ZERO_WIDTH_SPACE)
     lines.append('**Sale expiring today**')
     lines.extend(expiring_sale_details_text)
     lines.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
 
     title = 'Pixel Starships Dropships'
-    footer = f'Star date {util.get_star_date(utc_now)}'
+    footer = f'Star date {utils.datetime.get_star_date(utc_now)}'
     description = ''.join(daily_msg)
     fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
     expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
     fields.append(('Sale expiring today', '\n'.join(expiring_sale_details_embed), False))
     sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
-    colour = util.get_bot_member_colour(bot, guild)
-    embed = util.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)
+    colour = utils.discord.get_bot_member_colour(bot, guild)
+    embed = utils.discord.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)
 
     return lines, [embed], True
 
@@ -104,7 +101,7 @@ def compare_dropship_messages(message: Message, dropship_text: str, dropship_emb
         break
     if len(dropship_embed_fields) == len(message_embed_fields):
         for i, dropship_embed_field in enumerate(dropship_embed_fields):
-            if not util.dicts_equal(dropship_embed_field, message_embed_fields[i]):
+            if not utils.dicts_equal(dropship_embed_field, message_embed_fields[i]):
                 return False
         return True
 
@@ -240,7 +237,7 @@ async def _get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data:
     reward_currency = daily_info['DailyRewardType'].lower()
     reward_currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[reward_currency]
     reward_amount = int(daily_info['DailyRewardArgument'])
-    reward_amount, reward_multiplier = util.get_reduced_number(reward_amount)
+    reward_amount, reward_multiplier = utils.format.get_reduced_number(reward_amount)
     result.append(f'{reward_amount:.0f}{reward_multiplier} {reward_currency_emoji}')
 
     item_rewards = daily_info['DailyItemRewards'].split('|')
@@ -336,7 +333,7 @@ def __get_news_footer(news_info: EntityInfo, **kwargs) -> str:
 
 def __get_pss_datetime(*args, **kwargs) -> datetime:
     entity_property = kwargs.get('entity_property')
-    result = util.parse_pss_datetime(entity_property)
+    result = utils.parse.pss_datetime(entity_property)
     return result
 
 
@@ -351,7 +348,7 @@ def __get_value(*args, **kwargs) -> str:
 def __sanitize_text(*args, **kwargs) -> str:
     entity_property = kwargs.get('entity_property')
     if entity_property:
-        result = util.escape_escape_sequences(entity_property)
+        result = utils.escape_escape_sequences(entity_property)
         while '\n\n' in result:
             result = result.replace('\n\n', '\n')
         return result
@@ -429,7 +426,7 @@ def __get_news_footer(news_info: entity.EntityInfo, **kwargs) -> str:
 
 def __get_pss_datetime(*args, **kwargs) -> datetime:
     entity_property = kwargs.get('entity_property')
-    result = util.parse_pss_datetime(entity_property)
+    result = utils.parse.pss_datetime(entity_property)
     return result
 
 
@@ -444,7 +441,7 @@ def __get_value(*args, **kwargs) -> str:
 def __sanitize_text(*args, **kwargs) -> str:
     entity_property = kwargs.get('entity_property')
     if entity_property:
-        result = util.escape_escape_sequences(entity_property)
+        result = utils.escape_escape_sequences(entity_property)
         while '\n\n' in result:
             result = result.replace('\n\n', '\n')
         return result

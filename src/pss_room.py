@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import re
 from discord import Embed
 from discord.ext.commands import Context
@@ -15,7 +12,7 @@ import pss_lookups as lookups
 import pss_research as research
 import pss_sprites as sprites
 import settings
-import utility as util
+import utils
 
 
 
@@ -322,7 +319,7 @@ def __get_build_cost(room_info: EntityInfo, rooms_data: EntitiesData, items_data
         price_string = room_info.get('PriceString')
         if price_string:
             resource_type, amount = price_string.split(':')
-            cost = util.get_reduced_number_compact(amount)
+            cost = utils.format.get_reduced_number_compact(amount)
             currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[resource_type.lower()]
             result = f'{cost} {currency_emoji}'
             return result
@@ -370,8 +367,8 @@ def __get_capacity_per_tick(room_info: EntityInfo, rooms_data: EntitiesData, ite
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
         capacity = room_info.get('Capacity')
         if entity_property_has_value(capacity) and room_type:
-            cap_per_tick = util.convert_ticks_to_seconds(int(capacity))
-            result = f'{util.format_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
+            cap_per_tick = utils.convert.ticks_to_seconds(int(capacity))
+            result = f'{utils.format.number_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
             return result
         else:
             return None
@@ -398,7 +395,7 @@ def __get_innate_armor(room_info: EntityInfo, rooms_data: EntitiesData, items_da
         default_defense_bonus = room_info.get('DefaultDefenceBonus')
         if entity_property_has_value(default_defense_bonus):
             reduction = (1.0 - 1.0 / (1.0 + (float(default_defense_bonus) / 100.0))) * 100
-            result = f'{default_defense_bonus} ({util.format_up_to_decimals(reduction, 2)}% dmg reduction)'
+            result = f'{default_defense_bonus} ({utils.format.number_up_to_decimals(reduction, 2)}% dmg reduction)'
             return result
         else:
             return None
@@ -441,7 +438,7 @@ def __get_manufacture_rate(room_info: EntityInfo, rooms_data: EntitiesData, item
             manufacture_rate = float(manufacture_rate)
             manufacture_speed = 1.0 / manufacture_rate
             manufacture_rate_per_hour = manufacture_rate * 3600
-            result = f'{util.format_up_to_decimals(manufacture_speed)}s ({util.format_up_to_decimals(manufacture_rate_per_hour)}/hour)'
+            result = f'{utils.format.number_up_to_decimals(manufacture_speed)}s ({utils.format.number_up_to_decimals(manufacture_rate_per_hour)}/hour)'
             return result
         else:
             return None
@@ -533,7 +530,7 @@ def __get_reload_time(room_info: EntityInfo, rooms_data: EntitiesData, items_dat
             reload_ticks = float(reload_time)
             reload_seconds = reload_ticks / 40.0
             reload_speed = 60.0 / reload_seconds
-            result = f'{util.format_up_to_decimals(reload_seconds, 3)}s (~ {util.format_up_to_decimals(reload_speed)}/min)'
+            result = f'{utils.format.number_up_to_decimals(reload_seconds, 3)}s (~ {utils.format.number_up_to_decimals(reload_speed)}/min)'
             return result
         else:
             return None
@@ -615,7 +612,7 @@ def __get_shots_fired(room_info: EntityInfo, rooms_data: EntitiesData, items_dat
         if entity_property_has_value(volley) and volley != '1':
             volley = int(volley)
             volley_delay = int(volley_delay)
-            volley_delay_seconds = util.format_up_to_decimals(util.convert_ticks_to_seconds(volley_delay), 3)
+            volley_delay_seconds = utils.format.number_up_to_decimals(utils.convert.ticks_to_seconds(volley_delay), 3)
             result = f'{volley:d} (Delay: {volley_delay_seconds}s)'
             return result
         else:
@@ -641,7 +638,7 @@ def __get_value(room_info: EntityInfo, rooms_data: EntitiesData, items_data: Ent
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('property')
         if value:
-            max_decimal_count = kwargs.get('max_decimal_count', settings.DEFAULT_FLOAT_PRECISION)
+            max_decimal_count = kwargs.get('max_decimal_count', utils.DEFAULT_FLOAT_PRECISION)
             result = __parse_value(value, max_decimal_count)
             return result
         else:
@@ -654,7 +651,7 @@ def __get_value_as_duration(room_info: EntityInfo, rooms_data: EntitiesData, ite
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('property')
         if value:
-            result = util.get_formatted_duration(int(value), include_relative_indicator=False, exclude_zeros=True)
+            result = utils.format.duration(int(value), include_relative_indicator=False, exclude_zeros=True)
             return result
         else:
             return None
@@ -666,8 +663,8 @@ def __get_value_as_seconds(room_info: EntityInfo, rooms_data: EntitiesData, item
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         value = kwargs.get('property')
         if value:
-            value_seconds = util.convert_ticks_to_seconds(int(value))
-            result = f'{util.format_up_to_decimals(value_seconds, 3)}s'
+            value_seconds = utils.convert.ticks_to_seconds(int(value))
+            result = f'{utils.format.number_up_to_decimals(value_seconds, 3)}s'
             return result
         else:
             return None
@@ -682,8 +679,8 @@ async def __get_wikia_link(room_info: EntityInfo, rooms_data: EntitiesData, item
         if room_name:
             room_name = room_name.split(' Lv')[0]
             room_name = '_'.join([part.lower().capitalize() for part in room_name.split(' ')])
-            result = await util.get_wikia_link(room_name)
-            if await util.check_hyperlink(result):
+            result = await utils.get_wikia_link(room_name)
+            if result:
                 if return_plain:
                     return result
                 else:
@@ -718,14 +715,14 @@ def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: s
     if dmg:
         dmg = float(dmg)
         reload_time = int(reload_time)
-        reload_seconds = util.convert_ticks_to_seconds(reload_time)
+        reload_seconds = utils.convert.ticks_to_seconds(reload_time)
         max_power = int(max_power)
         volley = int(volley)
         if volley_delay:
             volley_delay = int(volley_delay)
         else:
             volley_delay = 0
-        volley_duration_seconds = util.convert_ticks_to_seconds((volley - 1) * volley_delay)
+        volley_duration_seconds = utils.convert.ticks_to_seconds((volley - 1) * volley_delay)
         reload_seconds += volley_duration_seconds
         full_volley_dmg = dmg * float(volley)
         dps = full_volley_dmg / reload_seconds
@@ -735,12 +732,12 @@ def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: s
         else:
             percent = ''
         if volley > 1:
-            single_volley_dmg = f'per shot: {util.format_up_to_decimals(dmg, 2)}, '
+            single_volley_dmg = f'per shot: {utils.format.number_up_to_decimals(dmg, 2)}, '
         else:
             single_volley_dmg = ''
-        full_volley_dmg = util.format_up_to_decimals(full_volley_dmg, 2)
-        dps = util.format_up_to_decimals(dps, 3)
-        dps_per_power = util.format_up_to_decimals(dps_per_power, 3)
+        full_volley_dmg = utils.format.number_up_to_decimals(full_volley_dmg, 2)
+        dps = utils.format.number_up_to_decimals(dps, 3)
+        dps_per_power = utils.format.number_up_to_decimals(dps_per_power, 3)
         result = f'{full_volley_dmg}{percent} ({single_volley_dmg}dps: {dps}{percent}, per power: {dps_per_power}{percent})'
         return result
     else:
@@ -806,12 +803,12 @@ def __get_short_name(room_info: EntityInfo) -> str:
         return ''
 
 
-def __parse_value(value: str, max_decimal_count: int = settings.DEFAULT_FLOAT_PRECISION) -> str:
+def __parse_value(value: str, max_decimal_count: int = utils.DEFAULT_FLOAT_PRECISION) -> str:
     if value and value.lower() != 'none':
         try:
             i = float(value)
             if i:
-                return util.get_reduced_number_compact(i, max_decimal_count=max_decimal_count)
+                return utils.format.get_reduced_number_compact(i, max_decimal_count=max_decimal_count)
             else:
                 return None
         except:

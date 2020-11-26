@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import aiohttp
 import json
 import re
@@ -11,7 +8,7 @@ import pss_data
 from pss_entity import EntitiesData, EntityInfo
 import pss_lookups as lookups
 import settings
-import utility as util
+import utils
 
 
 
@@ -212,7 +209,7 @@ def get_ids_from_property_value(data: EntitiesData, property_name: str, property
         similarity_map = {}
         for entry_id, entry_property in fixed_data.items():
             if entry_property.startswith(fixed_value) or fixed_value in entry_property:
-                similarity_value = util.get_similarity(entry_property, fixed_value)
+                similarity_value = utils.get_similarity(entry_property, fixed_value)
                 if similarity_value in similarity_map.keys():
                     similarity_map[similarity_value].append((entry_id, entry_property))
                 else:

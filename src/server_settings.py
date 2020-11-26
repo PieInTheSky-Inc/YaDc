@@ -9,7 +9,7 @@ import database as db
 import pss_assert
 from pss_entity import DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR
 import settings as app_settings
-import utility as util
+import utils
 
 
 
@@ -290,7 +290,7 @@ class AutoDailySettings():
             settings[_COLUMN_NAME_DAILY_CAN_POST] = can_post
         if update_latest_message:
             if store_now_as_created_at:
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = util.get_utc_now()
+                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = utils.get_utc_now()
             else:
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
@@ -750,7 +750,7 @@ async def fix_prefixes() -> bool:
 
 
 async def get_autodaily_settings(bot: Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
-    utc_now = util.get_utc_now()
+    utc_now = utils.get_utc_now()
     if guild_id:
         autodaily_settings_collection = [(await GUILD_SETTINGS.get(bot, guild_id))]
     else:
@@ -769,7 +769,7 @@ async def get_pagination_mode(guild: Guild) -> str:
 
 
 async def get_prefix(bot: Bot, message: Message) -> str:
-    if util.is_guild_channel(message.channel):
+    if utils.discord.is_guild_channel(message.channel):
         guild_settings = await GUILD_SETTINGS.get(bot, message.channel.guild.id)
         result = guild_settings.prefix
     else:
@@ -788,8 +788,8 @@ async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str,
     pretty_guild_settings = prettify_guild_settings(full_guild_settings)
     if (await get_use_embeds(ctx)):
         fields = [(pretty_setting[0], pretty_setting[1], False) for pretty_setting in pretty_guild_settings]
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-        result = [util.create_embed(title, description=note, fields=fields, colour=colour, icon_url=ctx.guild.icon_url)]
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        result = [utils.discord.create_embed(title, description=note, fields=fields, colour=colour, icon_url=ctx.guild.icon_url)]
     else:
         result = []
         if title:
@@ -912,11 +912,11 @@ async def db_delete_server_settings(guild_id: int) -> bool:
 async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any]]:
     wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL)']
     if guild_id is not None:
-        wheres.append(util.db_get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
+        wheres.append(utils.database.get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
     if can_post is not None:
-        wheres.append(util.db_get_where_string(_COLUMN_NAME_DAILY_CAN_POST, column_value=can_post))
+        wheres.append(utils.database.get_where_string(_COLUMN_NAME_DAILY_CAN_POST, column_value=can_post))
     if no_post_yet is True:
-        wheres.append(util.db_get_where_string(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, column_value=None))
+        wheres.append(utils.database.get_where_string(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, column_value=None))
     if only_guild_ids:
         setting_names = [_COLUMN_NAME_GUILD_ID]
     else:
@@ -1207,7 +1207,7 @@ async def _db_get_server_settings(guild_id: int = None, setting_names: list = No
     if additional_wheres:
         wheres.extend(additional_wheres)
 
-    where = util.db_get_where_and_string(wheres)
+    where = utils.database.get_where_and_string(wheres)
     if where:
         query = f'SELECT {setting_string} FROM serversettings WHERE {where}'
         if guild_id is not None:

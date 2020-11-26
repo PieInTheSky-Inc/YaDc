@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 from datetime import datetime
 from discord import Embed
+from discord.utils import escape_markdown
 from discord.ext.commands import Context
 from typing import Any, List, Tuple, Union
 
@@ -20,7 +18,7 @@ import pss_top as top
 import pss_user as user
 from pss_user import USER_KEY_NAME
 import settings
-import utility as util
+import utils
 
 
 # ---------- Constants ----------
@@ -86,13 +84,13 @@ def __get_division_name_and_ranking(fleet_info: EntityInfo, fleet_users_data: En
         ranking = fleet_info.get('Ranking')
         if ranking is not None and ranking != '0':
             division_ranking = int(ranking) - lookups.DIVISION_CUTOFF_LOOKUP[division_name][0] + 1
-            result += f' ({util.get_ranking(division_ranking)})'
+            result += f' ({utils.format.ranking(division_ranking)})'
     return result
 
 
 def __get_historic_data_note(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
     if is_past_data:
-        result = util.get_historic_data_note(retrieved_at)
+        result = utils.datetime.get_historic_data_note(retrieved_at)
     else:
         result = None
     return result
@@ -128,7 +126,7 @@ def __get_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwar
     result = None
     ranking = fleet_info.get('Ranking')
     if ranking is not None and ranking != '0':
-        result = util.get_ranking(ranking)
+        result = utils.format.ranking(ranking)
     return result
 
 
@@ -225,9 +223,9 @@ def _get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetim
         logged_in_ago = None
         joined_ago = None
         if last_login_date:
-            logged_in_ago = retrieved_at - util.parse_pss_datetime(last_login_date)
+            logged_in_ago = retrieved_at - utils.parse.pss_datetime(last_login_date)
         if alliance_join_date:
-            joined_ago = retrieved_at - util.parse_pss_datetime(alliance_join_date)
+            joined_ago = retrieved_at - utils.parse.pss_datetime(alliance_join_date)
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         attempts_left = None
@@ -236,18 +234,18 @@ def _get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetim
             if attempts and max_tourney_battle_attempts:
                 attempts_left = max_tourney_battle_attempts - attempts
         line = [
-            util.format_excel_datetime(retrieved_at),
+            utils.format.datetime_for_excel(retrieved_at),
             fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, '')),
             user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''),
             user_info.get('AllianceMembership', ''),
-            util.convert_pss_timestamp_to_excel(last_login_date),
+            utils.convert.pss_timestamp_to_excel(last_login_date),
             int(user_info['Trophy']) if 'Trophy' in user_info else '',
             int(user_info['AllianceScore'] if 'AllianceScore' in user_info else ''),
-            util.convert_pss_timestamp_to_excel(alliance_join_date),
+            utils.convert.pss_timestamp_to_excel(alliance_join_date),
             int(user_info['CrewDonated']) if 'CrewDonated' in user_info else '',
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
-            util.get_formatted_timedelta(logged_in_ago, include_relative_indicator=False),
-            util.get_formatted_timedelta(joined_ago, include_relative_indicator=False),
+            utils.format.timedelta(logged_in_ago, include_relative_indicator=False),
+            utils.format.timedelta(joined_ago, include_relative_indicator=False),
             attempts_left or '',
         ]
         if include_player_id:
@@ -272,7 +270,7 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
                 fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         fleet_users_data = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
     else:
-        retrieved_at = util.get_utc_now()
+        retrieved_at = utils.get_utc_now()
         fleet_info = await _get_fleets_data_by_id(fleet_id)
         fleet_users_data = await _get_fleet_users_data_by_fleet_id(fleet_id)
 
@@ -298,7 +296,7 @@ def create_fleet_sheet_xl(fleet_users_infos: EntitiesData, retrieved_at: datetim
 
 async def _get_search_fleets_base_path(fleet_name: str) -> str:
     access_token = await login.DEVICES.get_access_token()
-    result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={util.url_escape(fleet_name)}'
+    result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={utils.convert.url_escape(fleet_name)}'
     return result
 
 
@@ -411,14 +409,14 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
-    fleet_users_infos = util.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
+    fleet_users_infos = utils.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
 
     title = f'{fleet_name} member stars (division {division})'
     lines = []
     for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
-        user_name = util.escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
+        user_name = escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
         fleet_membership = user_info.get('AllianceMembership')
         if i < fleet_users_infos_count:
             difference = int(user_info['AllianceScore']) - int(fleet_users_infos[i]['AllianceScore'])
@@ -427,12 +425,12 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
         lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({user_rank})')
 
-    footer_text = util.get_historic_data_note(retrieved_date)
+    footer_text = utils.datetime.get_historic_data_note(retrieved_date)
 
     if as_embed:
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
-        result = util.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
+        result = utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
         return result
     else:
         if retrieved_date is not None:

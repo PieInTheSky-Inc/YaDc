@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import calendar
 from datetime import datetime, timedelta, timezone
 from discord.ext.commands import Context
@@ -21,7 +18,7 @@ import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_user as user
 import settings
-import utility as util
+import utils
 
 
 
@@ -47,7 +44,7 @@ class TourneyData(object):
         elif self.__meta['schema_version'] == 5:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'])
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
-        self.__data_date: datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
+        self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
 
     @property
@@ -296,7 +293,7 @@ class TourneyData(object):
         days, hours = divmod(hours, 24)
         td = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
         dt = settings.PSS_START_DATETIME + td
-        result = util.format_pss_datetime(dt)
+        result = utils.format.pss_datetime(dt)
         return result
 
 
@@ -356,7 +353,7 @@ class TourneyDataClient():
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
             if year > self.to_year or (year == self.to_year and month > self.to_month):
-                utc_now = util.get_utc_now()
+                utc_now = utils.get_utc_now()
                 if utc_now.year <= self.to_year and utc_now.month - 1 <= self.to_month:
                     raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
@@ -370,7 +367,7 @@ class TourneyDataClient():
 
 
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
-        utc_now = util.get_utc_now()
+        utc_now = utils.get_utc_now()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
         result = None
         while year > self.from_year or month >= self.from_month:
@@ -558,7 +555,7 @@ class TourneyDataClient():
                     int(year)
                 except (TypeError, ValueError):
                     year = None
-            if util.is_valid_month(month) is False:
+            if utils.datetime.is_valid_month(month) is False:
                 try:
                     year = int(month)
                 except (TypeError, ValueError):
@@ -568,7 +565,7 @@ class TourneyDataClient():
                 month = None
 
         args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-        param = util.get_exact_args(ctx, args_provided_count)
+        param = utils.discord.get_exact_args(ctx, args_provided_count)
         if not param:
             param = None
 
@@ -578,13 +575,13 @@ class TourneyDataClient():
     @staticmethod
     def retrieve_past_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
         if not utc_now:
-            utc_now = util.get_utc_now()
+            utc_now = utils.get_utc_now()
 
         if month is None:
             temp_month = (utc_now.month - 2) % 12 + 1
         else:
-            temp_month = lookups.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
-            temp_month = temp_month or lookups.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = utils.datetime.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = temp_month or utils.datetime.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
             if temp_month is None:
                 try:
                     temp_month = int(month)

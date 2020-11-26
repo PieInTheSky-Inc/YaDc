@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import datetime
 from discord import Embed
 from typing import Callable, Dict, List, Tuple, Union
@@ -270,7 +267,7 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_details: Dict
         else:
             lines.extend(promotion_details.get_details_as_text_long())
             if i < promotion_details_count - 1:
-                lines.append(settings.EMPTY_LINE)
+                lines.append(utils.discord.EMPTY_LINE)
 
     return lines
 
