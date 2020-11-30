@@ -7,17 +7,9 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Typehint definitions ----------
 
 ColumnDefinition = Tuple[str, str, bool, bool]
-
-
-
-
-
 
 
 
@@ -31,11 +23,6 @@ CONNECTION_POOL: asyncpg.pool.Pool = None
 
 
 
-
-
-
-
-
 # ---------- DataBase ----------
 
 USING_LOOKUP = {
@@ -43,6 +30,11 @@ USING_LOOKUP = {
     'INT': 'integer'
 }
 
+
+
+
+
+# ---------- DB Schema ----------
 
 async def init_schema() -> None:
     success_create_schema = await create_schema()
@@ -468,11 +460,7 @@ async def create_schema() -> bool:
 
 
 
-
-
-
-
-
+# ---------- Helper ----------
 
 async def connect() -> bool:
     __log_db_function_enter('connect')
@@ -482,15 +470,6 @@ async def connect() -> bool:
         try:
             CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
             return True
-        #except ValueError:
-        #    try:
-        #        with DB_CONN_LOCK:
-        #            DB_CONN = await asyncpg.connect(host='127.0.0.1', database='pss-statistics')
-        #            return True
-        #    except Exception as error:
-        #        error_name = error.__class__.__name__
-        #        print(f'[db_connect] {error_name} occurred while establishing connection: {error}')
-        #        return False
         except Exception as error:
             error_name = error.__class__.__name__
             print(f'[connect] {error_name} occurred while establishing connection: {error}')
@@ -820,11 +799,6 @@ def __log_db_function_enter(function_name: str, **kwargs) -> None:
     if settings.PRINT_DEBUG_DB:
         params = ', '.join([f'{k}={v}' for k, v in kwargs.items()])
         print(f'+ {function_name}({params})')
-
-
-
-
-
 
 
 

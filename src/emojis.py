@@ -1,7 +1,3 @@
-
-
-
-
 star = '\u2b50'
 
 trophy = '\U0001f3c6'

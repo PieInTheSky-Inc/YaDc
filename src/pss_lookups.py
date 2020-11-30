@@ -1,4 +1,3 @@
-import calendar
 from typing import Any, Dict, List, Tuple
 
 import emojis
@@ -355,12 +354,7 @@ XP_COSTS_LOOKUP: List[int] = [
 
 
 
-
-
-
-
-
-# ----------
+# ---------- Helper functions ----------
 
 def get_lookup_value_or_default(lookup: Any, key: Any, default: Any = None) -> Any:
     if key in lookup.keys():

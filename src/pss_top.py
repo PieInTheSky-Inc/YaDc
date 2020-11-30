@@ -19,24 +19,17 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
+
+ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
 
 DIVISION_DESIGN_BASE_PATH = 'DivisionService/ListAllDivisionDesigns2'
 DIVISION_DESIGN_KEY_NAME = 'DivisionDesignId'
 DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'DivisionName'
 
-TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
 
-ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
-
-
-
-
-
+TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
 
 
 
@@ -58,11 +51,6 @@ def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> Li
     for body in bodies:
         result.append(utils.discord.create_embed(title, description=body, colour=colour))
     return result
-
-
-
-
-
 
 
 
@@ -105,13 +93,11 @@ def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
 
 
 
-
-
+# ---------- Top captains ----------
 
 async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     skip = 0
     data = await __get_top_captains_data(skip, take)
-
 
     if data:
         title = f'Top {take} captains'
@@ -166,11 +152,6 @@ def __prepare_top_captains(users_data: EntitiesData, skip: int, take: int) -> Li
         if position >= start and position <= end
     ]
     return result
-
-
-
-
-
 
 
 
@@ -268,14 +249,9 @@ def _get_division_title(division_design_id: str, divisions_designs_infos: Entiti
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
-divisions_designs_retriever = EntityRetriever(
+divisions_designs_retriever: EntityRetriever = EntityRetriever(
     DIVISION_DESIGN_BASE_PATH,
     DIVISION_DESIGN_KEY_NAME,
     DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME,

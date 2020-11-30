@@ -16,10 +16,6 @@ SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
 
 
 
-
-
-
-
 # ---------- Helper functions ----------
 
 async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
@@ -33,7 +29,7 @@ async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData =
     if not ship_info:
         return None
     if not ship_design_data:
-        ship_design_data = await __ship_designs_cache.get_data_dict3()
+        ship_design_data = await ships_designs_retriever.get_data_dict3()
     ship_design_id = ship_info['ShipDesignId']
     result = ship_design_data[ship_design_id]['ShipLevel']
     return result
@@ -60,22 +56,12 @@ async def _get_inspect_ship_base_path(user_id: str) -> str:
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
 ships_designs_retriever = EntityRetriever(
     SHIP_DESIGN_BASE_PATH,
     SHIP_DESIGN_KEY_NAME,
     SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME,
-    cache_name='ShipDesigns'
+    cache_name='ShipDesigns',
+    cache_update_interval=60
 )
-
-__ship_designs_cache = PssCache(
-    SHIP_DESIGN_BASE_PATH,
-    'ShipDesigns',
-    SHIP_DESIGN_KEY_NAME,
-    update_interval=60)

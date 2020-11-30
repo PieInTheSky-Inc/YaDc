@@ -3,7 +3,7 @@ from datetime import datetime
 from discord import Embed, Guild, Message, TextChannel
 from discord.ext.commands import Bot, Context
 from enum import IntEnum
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, ItemsView, KeysView, List, Tuple, Union, ValuesView
 
 import database as db
 import pss_assert
@@ -12,27 +12,9 @@ import settings as app_settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
 
 __AUTODAILY_SETTING_COUNT = 9
-
-
-_VALID_BOOL_SWITCH_VALUES = {
-    'on': True,
-    'true': True,
-    '1': True,
-    'yes': True,
-    '👍': True,
-    'off': False,
-    'false': False,
-    '0': False,
-    'no': False,
-    '👎': False
-}
-
 
 _COLUMN_NAME_GUILD_ID: str = 'guildid'
 _COLUMN_NAME_DAILY_CAN_POST: str = 'dailycanpost'
@@ -46,10 +28,18 @@ _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: str = 'dailylatestmessagemodifyda
 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
 _COLUMN_NAME_USE_EMBEDS: str = 'useembeds'
 
-
-
-
-
+_VALID_BOOL_SWITCH_VALUES = {
+    'on': True,
+    'true': True,
+    '1': True,
+    'yes': True,
+    '👍': True,
+    'off': False,
+    'false': False,
+    '0': False,
+    'no': False,
+    '👎': False
+}
 
 
 
@@ -315,11 +305,6 @@ class AutoDailySettings():
 
 
 
-
-
-
-
-
 class GuildSettings(object):
     def __init__(self, bot: Bot, row: asyncpg.Record) -> None:
         self.__guild_id: int = row.get(_COLUMN_NAME_GUILD_ID)
@@ -575,12 +560,6 @@ class GuildSettings(object):
 
 
 
-
-
-
-
-
-
 class GuildSettingsCollection():
     def __init__(self) -> None:
         self.__data: Dict[int, GuildSettings] = {}
@@ -625,27 +604,22 @@ class GuildSettingsCollection():
             self.__data[server_settings[_COLUMN_NAME_GUILD_ID]] = GuildSettings(bot, server_settings)
 
 
-    def items(self) -> 'dict_items':
+    def items(self) -> ItemsView[int, GuildSettings]:
         return self.__data.items()
 
 
-    def keys(self) -> 'dict_keys':
+    def keys(self) -> KeysView[int]:
         return self.__data.keys()
 
 
-    def values(self) -> 'dict_values':
+    def values(self) -> ValuesView[GuildSettings]:
         return self.__data.values()
 
 
 
 
 
-
-
-
-
-
-
+# ---------- Helper functions ----------
 
 async def create_autodaily_settings(bot: Bot, guild_id: int) -> AutoDailySettings:
     if guild_id is None or bot is None:
@@ -674,11 +648,6 @@ async def _prepare_create_autodaily_settings(guild_id: int) -> List[Tuple[Any, A
         raise Exception(f'No auto-daily settings found for guild_id [{guild_id}]')
 
     return autodaily_settings
-
-
-
-
-
 
 
 
@@ -879,14 +848,6 @@ async def toggle_use_pagination(guild: Guild) -> bool:
         return not use_pagination
     else:
         return use_pagination
-
-
-
-
-
-
-
-
 
 
 
@@ -1186,12 +1147,7 @@ async def db_update_use_pagination(guild: Guild, use_pagination: bool) -> bool:
 
 
 
-
-
-
-
-
-# ---------- Utilities ----------
+# ---------- Helper functions ----------
 
 async def _db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> List[asyncpg.Record]:
     additional_wheres = additional_wheres or []
@@ -1256,28 +1212,16 @@ async def _db_update_server_settings(guild_id: int, settings: Dict[str, Any]) ->
 
 
 
-
-
-
-
 # ---------- Initialization & DEFAULT ----------
-
-GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 
 DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.POST_NEW
 
+GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 
 
 
 
-
-
-
-
-
-# ---------- Main ----------
 
 async def init(bot: Bot) -> None:
     await fix_prefixes()
     await GUILD_SETTINGS.init(bot)
-    i = 0

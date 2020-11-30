@@ -6,20 +6,11 @@ import json
 from typing import Any, Awaitable, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from xml.etree import ElementTree
 
-
 from cache import PssCache
 import pss_core as core
 from pss_exception import Error
 import settings
 import utils
-
-
-
-
-
-
-
-
 
 
 # ---------- Constants ----------
@@ -40,21 +31,11 @@ NO_PROPERTY: 'EntityDetailProperty'
 
 
 
-
-
-
-
-
-# ---------- Typing definitions ----------
+# ---------- Typehint definitions ----------
 
 EntityInfo = Dict[str, 'EntityInfo']
 EntitiesData = Dict[str, EntityInfo]
 EntityDetailsCreationPropertiesCollection = Dict[str, Union['EntityDetailPropertyCollection', 'EntityDetailPropertyListCollection', Dict[str, 'EntityDetailProperty']]]
-
-
-
-
-
 
 
 
@@ -67,11 +48,6 @@ class EntityDetailsType(IntEnum):
     SHORT = 2
     MINI = 3
     EMBED = 4
-
-
-
-
-
 
 
 
@@ -127,11 +103,6 @@ class CalculatedEntityDetailProperty(object):
 
     def __iter__(self) -> Iterator[Union[str, bool]]:
         return iter(self.__tuple)
-
-
-
-
-
 
 
 
@@ -237,11 +208,6 @@ class EntityDetailProperty(object):
 
 
 
-
-
-
-
-
 class EntityDetailEmbedOnlyProperty(EntityDetailProperty):
     def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, display_inline: bool = utils.discord.DEFAULT_EMBED_INLINE, **transform_kwargs) -> None:
         self.__display_inline: bool = display_inline
@@ -261,11 +227,6 @@ class EntityDetailEmbedOnlyProperty(EntityDetailProperty):
 
 
 
-
-
-
-
-
 class EntityDetailTextOnlyProperty(EntityDetailProperty):
     def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, **transform_kwargs) -> None:
         super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, text_only=True, **transform_kwargs)
@@ -274,11 +235,6 @@ class EntityDetailTextOnlyProperty(EntityDetailProperty):
 
 
 
-
-
-
-
-
 class EntityDetailPropertyCollection(object):
     def __init__(self, property_long: EntityDetailProperty,
                        property_short: EntityDetailProperty = None,
@@ -327,97 +283,6 @@ class EntityDetailPropertyCollection(object):
             return self.property_embed
         else:
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_NONE_NOT_ALLOWED)
-
-
-
-
-
-
-
-    @property
-    def display_inline(self) -> bool:
-        return self.__display_inline
-
-
-    async def get_full_property(self, entity_info: EntityInfo, *entities_data: EntitiesData, **additional_kwargs) -> CalculatedEntityDetailProperty:
-        result = await super().get_full_property(entity_info, *entities_data, **additional_kwargs)
-        return CalculatedEntityDetailProperty(result.display_name, result.value, result.force_display_name, result.omit_if_none, display_inline_for_embeds=self.display_inline)
-
-
-
-
-
-
-
-
-
-
-class EntityDetailTextOnlyProperty(EntityDetailProperty):
-    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, **transform_kwargs):
-        super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, text_only=True, **transform_kwargs)
-
-
-
-
-
-
-
-
-
-
-class EntityDetailPropertyCollection(object):
-    def __init__(self, property_long: EntityDetailProperty,
-                       property_short: EntityDetailProperty = None,
-                       property_mini: EntityDetailProperty = None,
-                       property_embed: EntityDetailProperty = None):
-        self.__property_long: EntityDetailProperty = property_long
-        self.__property_short: EntityDetailProperty = property_short or None
-        self.__property_mini: EntityDetailProperty = property_mini or None
-        self.__property_embed: EntityDetailProperty = property_embed or None
-
-
-    @property
-    def property_long(self) -> EntityDetailProperty:
-        return self.__property_long
-
-    @property
-    def property_short(self) -> EntityDetailProperty:
-        if self.__property_short:
-            return self.__property_short
-        else:
-            return self.property_long
-
-    @property
-    def property_mini(self) -> EntityDetailProperty:
-        if self.__property_mini:
-            return self.__property_mini
-        else:
-            return self.property_short
-
-    @property
-    def property_embed(self) -> EntityDetailProperty:
-        if self.__property_embed:
-            return self.__property_embed
-        else:
-            return self.property_long
-
-
-    def get_property(self, entity_details_type: EntityDetailsType) -> List[EntityDetailProperty]:
-        if entity_details_type == EntityDetailsType.LONG:
-            return self.property_long
-        elif entity_details_type == EntityDetailsType.SHORT:
-            return self.property_short
-        elif entity_details_type == EntityDetailsType.MINI:
-            return self.property_mini
-        elif entity_details_type == EntityDetailsType.EMBED:
-            return self.property_embed
-        else:
-            raise ValueError(ERROR_ENTITY_DETAILS_TYPE_NONE_NOT_ALLOWED)
-
-
-
-
-
 
 
 
@@ -462,11 +327,6 @@ class EntityDetailPropertyListCollection(object):
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
         else:
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_NONE_NOT_ALLOWED)
-
-
-
-
-
 
 
 
@@ -708,11 +568,6 @@ class EntityDetails(object):
 
 
 
-
-
-
-
-
 class EscapedEntityDetails(EntityDetails):
     async def get_details_as_text(self, details_type: EntityDetailsType, for_embed: bool = False) -> List[str]:
         if details_type == EntityDetailsType.EMBED:
@@ -733,11 +588,6 @@ class EscapedEntityDetails(EntityDetails):
                 result.append(detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR, prefix=self.prefix))
             result[-1] += '```'
         return result
-
-
-
-
-
 
 
 
@@ -818,11 +668,6 @@ class EntityDetailsCollection():
             result.append(utils.discord.ZERO_WIDTH_SPACE)
             result.append(custom_footer_text)
         return result
-
-
-
-
-
 
 
 
@@ -930,11 +775,6 @@ class EntityRetriever:
 
 
 
-
-
-
-
-
 # ---------- Helper ----------
 
 def entity_property_has_value(entity_property: str) -> bool:
@@ -985,11 +825,6 @@ def sort_entities_by(entity_infos: List[EntityInfo], order_info: List[Tuple[str,
         return result
     else:
         return sorted(result)
-
-
-
-
-
 
 
 
@@ -1086,11 +921,6 @@ class LegacyEntityDetails(object):
             result.append(f'({", ".join(result_details)})')
         result = [' '.join(result)]
         return result
-
-
-
-
-
 
 
 

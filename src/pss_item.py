@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Union
 
 import pss_assert
 import pss_core as core
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, group_entities_details, entity_property_has_value
+from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsCreationPropertiesCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, group_entities_details, entity_property_has_value
 from pss_exception import Error
 import pss_lookups as lookups
 import pss_sprites as sprites
@@ -19,9 +19,6 @@ import utils
 # Get all item designs, split each ones name on ' ' and add each combination of 2 characters found to ALLOWED_ITEM_NAMES
 
 
-
-
-
 # ---------- Typehint definitions -----------
 
 IngredientsTree = Tuple[str, int, 'IngredientsTree']
@@ -30,12 +27,9 @@ IngredientsTree = Tuple[str, int, 'IngredientsTree']
 
 
 
-
-
-
-
-
 # ---------- Constants ----------
+
+ALLOWED_ITEM_NAMES: List[str]
 
 ITEM_DESIGN_BASE_PATH = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_KEY_NAME = 'ItemDesignId'
@@ -55,11 +49,6 @@ RX_ARTIFACTS_INDICATORS = re.compile(r'\(\w{1,2}\)|fragment', re.IGNORECASE)
 
 _SLOTS_AVAILABLE = 'These are valid values for the _slot_ parameter: all/any (for all slots), {}'.format(', '.join(lookups.EQUIPMENT_SLOTS_LOOKUP.keys()))
 _STATS_AVAILABLE = 'These are valid values for the _stat_ parameter: {}'.format(', '.join(lookups.STAT_TYPES_LOOKUP.keys()))
-
-
-
-
-
 
 
 
@@ -98,11 +87,6 @@ def _get_key_for_base_items_sort(item_info: EntityInfo, items_data: EntitiesData
             result = parents[0].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
             result += ''.join([item_info.get(ITEM_DESIGN_KEY_NAME).zfill(4) for item_info in parents])
     return result
-
-
-
-
-
 
 
 
@@ -237,11 +221,6 @@ def _get_pretty_slot(slot: str) -> Tuple[str, bool]:
 
 
 
-
-
-
-
-
 # ---------- Price info ----------
 
 async def get_item_price(ctx: Context, item_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
@@ -266,11 +245,6 @@ async def get_item_price(ctx: Context, item_name: str, as_embed: bool = settings
         else:
             custom_footer = '\n'.join([resources.get_resource('MARKET_FAIR_PRICE_NOTE'), resources.get_resource('PRICE_NOTE')])
             return (await items_details_collection.get_entities_details_as_text())
-
-
-
-
-
 
 
 
@@ -353,11 +327,6 @@ def _flatten_ingredients_tree(ingredients_tree: IngredientsTree) -> List[Dict[st
 
 
 
-
-
-
-
-
 # ---------- Upgrade info ----------
 
 async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
@@ -392,15 +361,6 @@ def _get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[EntityInfo
         if item_id in ingredient_item_ids:
             result.append(item_info)
     return result
-
-
-
-    title = f'Crafting recipes requiring: {item_name}'
-    colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-    result = utils.discord.create_embed(title, description=description, colour=colour, fields=fields)
-    return [result]
-
-
 
 
 
@@ -475,11 +435,6 @@ def __create_upgrade_details_collection_from_infos(items_designs_infos: List[Ent
     price_details = __create_upgrade_details_list_from_infos(items_designs_infos, items_data)
     result = EntityDetailsCollection(price_details, big_set_threshold=1)
     return result
-
-
-
-
-
 
 
 
@@ -637,13 +592,7 @@ def __get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: 
 
 
 
-
-
-
-
-
 # ---------- Helper functions ----------
-
 
 def filter_items_details_for_equipment(items_details: List[EntityDetails]) -> List[EntityDetails]:
     result = [item_details for item_details in items_details if __get_item_slot(item_details.entity_info, None, None) is not None]
@@ -805,14 +754,7 @@ def __get_allowed_item_names(items_data: EntitiesData, not_allowed_item_names: L
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
-
-ALLOWED_ITEM_NAMES: List[str] = []
 
 items_designs_retriever: EntityRetriever = EntityRetriever(
     ITEM_DESIGN_BASE_PATH,
@@ -822,7 +764,7 @@ items_designs_retriever: EntityRetriever = EntityRetriever(
     fix_data_delegate=_fix_item_name
 )
 
-__properties: Dict[str, Union[EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection]] = {
+__properties: EntityDetailsCreationPropertiesCollection = {
     'title': EntityDetailPropertyCollection(
         EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),

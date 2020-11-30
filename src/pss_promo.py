@@ -13,11 +13,23 @@ import pss_research as research
 import pss_room as room
 import pss_sprites as sprites
 import settings
+import utils
 
 
 
+# ---------- Constants ----------
 
+PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
+PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
+PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
 
+REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
+    'item': item.get_item_details_by_id,
+    'character': crew.get_char_details_by_id,
+    'research': research.get_research_details_by_id,
+    'room': room.get_room_details_by_id,
+    'starbux': None
+}
 
 
 
@@ -147,11 +159,6 @@ class LegacyPromotionDesignDetails(LegacyEntityDetails):
 
 
 
-
-
-
-
-
 class PromoRequirement():
     def __init__(self, requirement: str) -> None:
         self.__lower_than: bool = False
@@ -190,34 +197,6 @@ class PromoRequirement():
 
 
 
-
-
-
-
-
-# ---------- Constants ----------
-
-PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
-PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
-PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
-
-REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
-    'item': item.get_item_details_by_id,
-    'character': crew.get_char_details_by_id,
-    'research': research.get_research_details_by_id,
-    'room': room.get_room_details_by_id,
-    'starbux': None
-}
-
-
-
-
-
-
-
-
-
-
 # ---------- Promo info ----------
 
 async def get_promotion_details_by_id(promotion_design_id: str, promotions_data: dict = None) -> LegacyPromotionDesignDetails:
@@ -235,7 +214,6 @@ async def get_promotion_details_by_id(promotion_design_id: str, promotions_data:
 
 def get_promotions_details_by_name(promotion_name: str) -> EntityDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
-
 
 
 async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
@@ -275,28 +253,13 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_details: Dict
 
 
 
-
-
-
-
-
 # ---------- Create EntityDetails ----------
 
 
 
 
 
-
-
-
-
-
 # ---------- Transformation functions ----------
-
-
-
-
-
 
 
 
@@ -369,12 +332,6 @@ def _get_requirement_type_and_value(requirement_string: str, separator: str, add
     requirement_type, requirement_value = requirement_string.split(separator)
     requirement_value = int(requirement_value) + add_to_value
     return requirement_type, requirement_value
-
-
-
-
-
-
 
 
 

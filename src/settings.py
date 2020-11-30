@@ -3,10 +3,7 @@ import json
 import os
 
 
-
-
-
-
+# ---------- Settings ----------
 
 BASE_INVITE_URL = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
 
@@ -17,7 +14,6 @@ DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
 DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
-
 
 
 EXCEL_COLUMN_FORMAT_DATETIME = 'YYYY-MM-DD hh:MM:ss'
@@ -37,8 +33,6 @@ GDRIVE_PROJECT_ID = str(os.environ.get('GDRIVE_SERVICE_PROJECT_ID'))
 GDRIVE_SERVICE_ACCOUNT_FILE = 'client_secrets.json'
 GDRIVE_SETTINGS_FILE = 'settings.yaml'
 GDRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
-
-
 
 
 IGNORE_SERVER_IDS_FOR_COUNTING = [
@@ -81,15 +75,5 @@ TOURNAMENT_DATA_START_DATE = datetime.datetime(year=2019, month=10, day=9, hour=
 
 USE_EMBEDS = True
 
+
 VERSION = '1.3.1.2'
-
-
-
-
-
-
-
-
-
-
-

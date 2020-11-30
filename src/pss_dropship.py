@@ -1,4 +1,3 @@
-import calendar
 from datetime import datetime
 from discord import Embed, Guild, Message
 from discord.ext.commands import Bot, Context
@@ -20,17 +19,9 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
 
 DROPSHIP_BASE_PATH = f'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
-
-
-
-
-
 
 
 
@@ -64,6 +55,8 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
 
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
     expiring_sale_details_embed = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=True)
+
+    parts = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
     lines = list(daily_msg)
     for part in parts:
@@ -106,7 +99,6 @@ def compare_dropship_messages(message: Message, dropship_text: str, dropship_emb
         return True
 
     return message.content == dropship_text
-
 
 
 def _get_daily_news_from_info_as_text(daily_info: EntityInfo) -> List[str]:
@@ -253,11 +245,6 @@ async def _get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data:
 
 
 
-
-
-
-
-
 # ---------- News info ----------
 
 async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en') -> Union[List[Embed], List[str]]:
@@ -277,25 +264,10 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
             news_infos = news_infos[news_count-5:]
         news_details_collection = __create_news_details_collection_from_infos(news_infos)
 
-    if not raw_data:
-        return [f'Could not get news: {err}'], False
-
-    if raw_data:
-        news_infos = sorted(list(raw_data.values()), key=lambda news_info: news_info['UpdateDate'])
-        news_count = len(news_infos)
-        if news_count > 5:
-            news_infos = news_infos[news_count-5:]
-        news_details_collection = __create_news_details_collection_from_infos(news_infos)
-
         if as_embed:
             return (await news_details_collection.get_entities_details_as_embed(ctx))
         else:
             return (await news_details_collection.get_entities_details_as_text())
-
-
-
-
-
 
 
 
@@ -315,11 +287,6 @@ def __create_news_details_collection_from_infos(news_infos: List[EntityInfo]) ->
     base_details = __create_news_details_list_from_infos(news_infos)
     result = EntityDetailsCollection(base_details, big_set_threshold=0)
     return result
-
-
-
-
-
 
 
 
@@ -359,11 +326,6 @@ def __sanitize_text(*args, **kwargs) -> str:
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
 __properties: EntityDetailsCreationPropertiesCollection = {
@@ -384,121 +346,3 @@ __properties: EntityDetailsCreationPropertiesCollection = {
         'timestamp': EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
     }
 }
-
-
-
-
-
-
-
-
-
-
-# ---------- Create EntityDetails ----------
-
-def __create_news_design_data_from_info(news_info: entity.EntityInfo) -> entity.EntityDetails:
-    return entity.EntityDetails(news_info, __properties['title_news'], __properties['description_news'], __properties['properties_news'], __properties['embed_settings'])
-
-
-def __create_news_details_list_from_infos(news_infos: List[entity.EntityInfo]) -> List[entity.EntityDetails]:
-    return [__create_news_design_data_from_info(news_info) for news_info in news_infos]
-
-
-def __create_news_details_collection_from_infos(news_infos: List[entity.EntityInfo]) -> entity.EntityDetailsCollection:
-    base_details = __create_news_details_list_from_infos(news_infos)
-    result = entity.EntityDetailsCollection(base_details, big_set_threshold=0)
-    return result
-
-
-
-
-
-
-
-
-
-
-# ---------- Transformation functions ----------
-
-def __get_news_footer(news_info: entity.EntityInfo, **kwargs) -> str:
-    return 'PSS News'
-
-
-def __get_pss_datetime(*args, **kwargs) -> datetime:
-    entity_property = kwargs.get('entity_property')
-    result = utils.parse.pss_datetime(entity_property)
-    return result
-
-
-def __get_value(*args, **kwargs) -> str:
-    entity_property = kwargs.get('entity_property')
-    if entity.has_value(entity_property):
-        return entity_property
-    else:
-        return None
-
-
-def __sanitize_text(*args, **kwargs) -> str:
-    entity_property = kwargs.get('entity_property')
-    if entity_property:
-        result = utils.escape_escape_sequences(entity_property)
-        while '\n\n' in result:
-            result = result.replace('\n\n', '\n')
-        return result
-    else:
-        return None
-
-
-
-
-
-
-
-
-
-
-# ---------- Helper functions ----------
-
-
-
-
-
-
-
-
-
-
-# ---------- Initilization ----------
-
-__properties: Dict[str, Union[entity.EntityDetailProperty, entity.EntityDetailPropertyCollection, entity.EntityDetailPropertyListCollection]] = {
-    'title_news': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='Title')
-    ),
-    'description_news': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Description', False, entity_property_name='Description', transform_function=__sanitize_text)
-    ),
-    'properties_news': entity.EntityDetailPropertyListCollection(
-        [
-            entity.EntityDetailProperty('Link', True, entity_property_name='Link', transform_function=__get_value)
-        ]
-    ),
-    'embed_settings': {
-        'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
-        'footer': entity.EntityDetailProperty('footer', False, transform_function=__get_news_footer),
-        'timestamp': entity.EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
-    }
-}
-
-
-
-
-
-
-
-
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    result, success = await get_dropship_text(as_embed=False, language_key='en')
-#    print('\n'.join(result))

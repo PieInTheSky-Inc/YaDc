@@ -6,7 +6,14 @@ import pss_core as core
 import utils
 
 
-# ---------- tournament command methods ----------
+# ---------- Tournament ----------
+
+def convert_tourney_embed_to_plain_text(embed: Embed) -> List[str]:
+    result = [f'**{embed.author.name}**']
+    for field in embed.fields:
+        result.append(f'{field.name} {field.value}')
+    return result
+
 
 def format_tourney_start(start_date: datetime, utc_now: datetime) -> str:
     currently_running = is_tourney_running(start_date, utc_now)
@@ -27,7 +34,35 @@ def format_tourney_start(start_date: datetime, utc_now: datetime) -> str:
     return result
 
 
-def embed_tourney_start(start_date: datetime, utc_now: datetime, colour: Colour = None) -> Embed:
+def get_current_tourney_start(utc_now: datetime = None) -> datetime:
+    first_of_next_month = utils.datetime.get_first_of_next_month(utc_now)
+    result = first_of_next_month - utils.datetime.ONE_WEEK
+    return result
+
+
+async def get_max_tourney_battle_attempts() -> int:
+    latest_settings = await core.get_latest_settings()
+    max_tourney_battle_attempts = latest_settings.get('TournamentBonusScore')
+    if max_tourney_battle_attempts:
+        return int(max_tourney_battle_attempts)
+    else:
+        return None
+
+
+def get_next_tourney_start(utc_now: datetime = None) -> datetime:
+    next_first_of_next_month = utils.datetime.get_first_of_following_month(utils.datetime.get_first_of_next_month(utc_now))
+    result = next_first_of_next_month - utils.datetime.ONE_WEEK
+    return result
+
+
+def get_start_string(currently_running: bool ) -> str:
+    if currently_running:
+        return 'started'
+    else:
+        return 'starts'
+
+
+def get_tourney_start_as_embed(start_date: datetime, utc_now: datetime, colour: Colour = None) -> Embed:
     if colour is None:
         colour = 0
     fields = []
@@ -51,32 +86,6 @@ def embed_tourney_start(start_date: datetime, utc_now: datetime, colour: Colour 
     return result
 
 
-def convert_tourney_embed_to_plain_text(embed: Embed) -> List[str]:
-    result = [f'**{embed.author.name}**']
-    for field in embed.fields:
-        result.append(f'{field.name} {field.value}')
-    return result
-
-
-def get_current_tourney_start(utc_now: datetime = None) -> datetime:
-    first_of_next_month = utils.datetime.get_first_of_next_month(utc_now)
-    result = first_of_next_month - utils.datetime.ONE_WEEK
-    return result
-
-
-def get_next_tourney_start(utc_now: datetime = None) -> datetime:
-    next_first_of_next_month = utils.datetime.get_first_of_following_month(utils.datetime.get_first_of_next_month(utc_now))
-    result = next_first_of_next_month - utils.datetime.ONE_WEEK
-    return result
-
-
-def get_start_string(currently_running: bool ) -> str:
-    if currently_running:
-        return 'started'
-    else:
-        return 'starts'
-
-
 def is_tourney_running(start_date: datetime = None, utc_now: datetime = None) -> bool:
     if not utc_now:
         utc_now = utils.get_utc_now()
@@ -84,12 +93,3 @@ def is_tourney_running(start_date: datetime = None, utc_now: datetime = None) ->
         start_date = get_current_tourney_start(utc_now)
 
     return start_date < utc_now
-
-
-async def get_max_tourney_battle_attempts() -> int:
-    latest_settings = await core.get_latest_settings()
-    max_tourney_battle_attempts = latest_settings.get('TournamentBonusScore')
-    if max_tourney_battle_attempts:
-        return int(max_tourney_battle_attempts)
-    else:
-        return None

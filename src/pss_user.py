@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 import emojis
 import pss_assert
 import pss_core as core
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetailsType, EntityInfo, EscapedEntityDetails
+from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetailsCreationPropertiesCollection, EntityDetailsType, EntityInfo, EscapedEntityDetails
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
@@ -19,32 +19,25 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
-
-SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
-USER_KEY_NAME = 'Id'
-USER_DESCRIPTION_PROPERTY_NAME = 'Name'
 
 INSPECT_SHIP_BASE_PATH = f'ShipService/InspectShip2'
 
 LEAGUE_BASE_PATH = f'LeagueService/ListLeagues2?accessToken='
-LEAGUE_INFO_KEY_NAME = 'LeagueId'
 LEAGUE_INFO_DESCRIPTION_PROPERTY_NAME = 'LeagueName'
+LEAGUE_INFO_KEY_NAME = 'LeagueId'
 LEAGUE_INFOS_CACHE = []
 
+SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
+
+USER_DESCRIPTION_PROPERTY_NAME = 'Name'
+USER_KEY_NAME = 'Id'
 
 
 
 
 
-
-
-
-
-# ---------- Helper functions ----------
+# ---------- Transformation functions ----------
 
 def __get_crew_borrowed(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> str:
     result = None
@@ -205,22 +198,10 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> str:
 
 
 
-
-
-
-
-
 # ---------- Create EntityDetails ----------
 
 def __create_user_details_from_info(user_info: EntityInfo, fleet_info: EntityInfo = None, ship_info: EntityInfo = None, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, is_in_tourney_fleet: bool = None) -> EscapedEntityDetails:
     return EscapedEntityDetails(user_info, __properties['title'], None, __properties['properties'], __properties['embed_settings'], fleet_info=fleet_info, ship_info=ship_info, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, is_in_tourney_fleet=is_in_tourney_fleet)
-
-
-
-
-
-
-
 
 
 
@@ -347,13 +328,6 @@ def __parse_timestamp(user_info: EntityInfo, field_name: str) -> str:
 
 
 
-
-
-
-
-
-
-
 # ---------- User info ----------
 
 async def get_user_infos_by_name(user_name: str) -> List[EntityInfo]:
@@ -391,14 +365,9 @@ async def _get_users_data(user_name: str) -> EntitiesData:
 
 
 
-
-
-
-
-
 # ---------- Initialization ----------
 
-__properties: Dict[str, Union[EntityDetailProperty, List[EntityDetailProperty]]] = {
+__properties: EntityDetailsCreationPropertiesCollection = {
     'title': EntityDetailPropertyCollection(
         EntityDetailProperty('Title', False, omit_if_none=False, transform_function=__get_user_name)
     ),

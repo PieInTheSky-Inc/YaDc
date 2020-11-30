@@ -10,20 +10,12 @@ import pss_core as core
 import utils
 
 
-
-
-
 # ---------- Constants & Internals ----------
 
 ACCESS_TOKEN_TIMEOUT: timedelta = timedelta(hours=11, minutes=30)
 
 DEFAULT_DEVICE_TYPE = 'DeviceTypeMac'
 DEVICES: 'DeviceCollection' = None
-
-
-
-
-
 
 
 
@@ -162,11 +154,6 @@ class Device():
 
 
 
-
-
-
-
-
 class DeviceCollection():
     def __init__(self, devices: List[Device] = None) -> None:
         self.__devices: List[Device] = devices or []
@@ -298,11 +285,6 @@ class DeviceCollection():
 
 
 
-
-
-
-
-
 # ---------- Static functions ----------
 
 def create_device_key() -> str:
@@ -327,11 +309,6 @@ def create_device_key() -> str:
 def create_device_checksum(device_key: str, device_type: str) -> str:
     result = hashlib.md5((f'{device_key}{device_type}savysoda').encode('utf-8')).hexdigest()
     return result
-
-
-
-
-
 
 
 
@@ -385,11 +362,6 @@ async def _db_try_update_device(device: Device) -> bool:
     query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
     success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
-
-
-
-
-
 
 
 

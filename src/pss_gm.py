@@ -1,9 +1,6 @@
 from pss_entity import EntityRetriever
 
 
-
-
-
 # ---------- Constants ----------
 
 STARSYSTEM_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
@@ -13,14 +10,6 @@ STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
 STARSYSTEMLINK_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
 STARSYSTEMLINK_DESIGN_KEY_NAME = 'StarSystemId'
 STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
-
-
-
-
-
-
-
-
 
 
 # ---------- Initialization ----------

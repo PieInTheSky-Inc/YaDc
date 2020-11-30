@@ -14,9 +14,6 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
 
 CHARACTER_DESIGN_BASE_PATH = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
@@ -29,11 +26,6 @@ COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CollectionName'
 
 __PRESTIGE_FROM_BASE_PATH = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
 __PRESTIGE_TO_BASE_PATH = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
-
-
-
-
-
 
 
 
@@ -69,11 +61,6 @@ async def get_char_details_by_name(ctx: Context, char_name: str, level: int, as_
 
 
 
-
-
-
-
-
 # ---------- Collection Info ----------
 
 async def get_collection_details_by_name(ctx: Context, collection_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
@@ -102,11 +89,6 @@ async def get_collection_details_by_name(ctx: Context, collection_name: str, as_
             return (await collections_details_collection.get_entities_details_as_embed(ctx))
         else:
             return (await collections_details_collection.get_entities_details_as_text())
-
-
-
-
-
 
 
 
@@ -165,11 +147,6 @@ def _create_prestige_from_cache(char_design_id: str) -> PssCache:
     name = f'PrestigeFrom{char_design_id}'
     result = PssCache(url, name, None)
     return result
-
-
-
-
-
 
 
 
@@ -256,11 +233,6 @@ def _normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str,
 
 
 
-
-
-
-
-
 # ---------- Level Info ----------
 
 def get_level_costs(ctx: Context, from_level: int, to_level: int = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
@@ -314,11 +286,6 @@ def _get_crew_cost_txt(from_level: int, to_level: int, costs: Tuple[int, int, in
     result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas_big}.')
 
     return result
-
-
-
-
-
 
 
 
@@ -384,11 +351,6 @@ def __create_prestige_to_details_collection_from_infos(characters_infos: List[En
     characters_details = __create_prestige_to_details_list_from_infos(characters_infos)
     result = EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
     return result
-
-
-
-
-
 
 
 
@@ -609,11 +571,6 @@ def __prepare_prestige_infos(characters_data: EntitiesData, prestige_ids: Dict[s
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
 __prestige_from_cache_dict = {}
@@ -714,6 +671,9 @@ __properties: EntityDetailsCreationPropertiesCollection = {
         ]
     )
 }
+
+
+
 
 
 async def init() -> None:

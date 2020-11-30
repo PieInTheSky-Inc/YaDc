@@ -4,17 +4,9 @@ from typing import Any, Dict, List
 import settings
 
 
-
-
-
 # ---------- Constants ----------
 
 RESOURCES: Dict[str, Dict[str, str]] = {}
-
-
-
-
-
 
 
 
@@ -44,11 +36,6 @@ def get_resource(resource_key: str, formats: List[Any] = None, language_key: str
     if formats is not None:
         result = result.format(*formats)
     return result
-
-
-
-
-
 
 
 

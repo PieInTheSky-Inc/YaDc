@@ -10,17 +10,9 @@ from pss_entity import EntityDetails, EntityInfo
 import utils
 
 
-
-
-
-# ---------- Custom typing hints ----------
+# ---------- Typehint definitions ----------
 
 PaginatorOption = Union[EntityDetails, EntityInfo]
-
-
-
-
-
 
 
 

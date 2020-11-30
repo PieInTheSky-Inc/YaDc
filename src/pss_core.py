@@ -11,17 +11,9 @@ import settings
 import utils
 
 
+# ---------- Typehint definitions ----------
 
-
-
-# ---------- Typing definitions ----------
-
-EntityDict = Union[List['EntityDict'], Dict[str, 'EntityDict']]
-
-
-
-
-
+__EntityDict = Union[List['__EntityDict'], Dict[str, '__EntityDict']]
 
 
 
@@ -31,11 +23,6 @@ EntityDict = Union[List['EntityDict'], Dict[str, 'EntityDict']]
 
 __RX_PROPERTY_FIX_REPLACE = re.compile(r'[^a-z0-9]', re.IGNORECASE)
 __RX_ALLOWED_CANDIDATE_FIX_REPLACE = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
-
-
-
-
-
 
 
 
@@ -81,13 +68,13 @@ def __xmltree_to_dict(raw_text: str, depth: int) -> EntitiesData:
     return result
 
 
-def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> EntityDict:
+def convert_raw_xml_to_dict(raw_xml: str, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> __EntityDict:
     root = ElementTree.fromstring(raw_xml)
     result = _convert_xml_to_dict(root, include_root=include_root, fix_attributes=fix_attributes, preserve_lists=preserve_lists)
     return result
 
 
-def _convert_xml_to_dict(root: ElementTree.Element, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> EntityDict:
+def _convert_xml_to_dict(root: ElementTree.Element, include_root: bool = True, fix_attributes: bool = True, preserve_lists: bool = False) -> __EntityDict:
     if root is None:
         return None
 

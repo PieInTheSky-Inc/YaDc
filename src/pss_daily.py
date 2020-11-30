@@ -21,9 +21,6 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
 
 DAILY_INFO_FIELDS = [
@@ -79,11 +76,6 @@ LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
     'research': research.get_research_details_by_id,
     'room': room.get_room_details_by_id
 }
-
-
-
-
-
 
 
 
@@ -238,12 +230,7 @@ def get_sales_search_details(entity_info: EntityInfo) -> str:
 
 
 
-
-
-
-
-
-# ---------- Utilities ----------
+# ---------- Helper ----------
 
 async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
     success = False
@@ -389,11 +376,6 @@ async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
 
 
 
-
-
-
-
-
 # ---------- Mocks ----------
 
 def mock_get_daily_info() -> EntityInfo:
@@ -451,11 +433,6 @@ def __mock_get_daily_info_2() -> EntityInfo:
         'SaleType': random.choice(['Item', 'Character'])
     }
     return result
-
-
-
-
-
 
 
 

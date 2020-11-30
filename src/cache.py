@@ -8,9 +8,6 @@ from pss_entity import EntitiesData, EntityInfo
 import utils
 
 
-
-
-
 # ---------- Classes ----------
 
 class PssCache:

@@ -9,9 +9,6 @@ import pss_tournament as tourney
 import utils
 
 
-
-
-
 # ---------- Constants ----------
 
 __BASE_TABLE_STYLE = openpyxl.worksheet.table.TableStyleInfo(name="TableStyleLight1", showFirstColumn=False, showLastColumn=False, showRowStripes=True, showColumnStripes=False)
@@ -36,9 +33,7 @@ __FILE_ENDING_LOOKUP: Dict[FILE_ENDING, str] = {
 
 
 
-
-
-
+# ---------- Functions ----------
 
 def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: str = None) -> str:
     if data_retrieved_at is None:

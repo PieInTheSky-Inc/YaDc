@@ -21,9 +21,6 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Classes ----------
 
 class TourneyData(object):
@@ -295,10 +292,6 @@ class TourneyData(object):
         dt = settings.PSS_START_DATETIME + td
         result = utils.format.pss_datetime(dt)
         return result
-
-
-
-
 
 
 

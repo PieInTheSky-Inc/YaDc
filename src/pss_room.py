@@ -15,19 +15,11 @@ import settings
 import utils
 
 
-
-
-
-
-
-
-
-
 # ---------- Constants ----------
 
-RX_FIX_ROOM_NAME = re.compile(r' [lL][vV][lL]?')
-RX_NUMBER = re.compile(r'\d+')
-
+MISSILE_DESIGN_BASE_PATH = 'RoomService/ListMissileDesigns'
+MISSILE_DESIGN_KEY_NAME = 'MissileDesignId'
+MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'MissileDesignName'
 
 ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
 ROOM_DESIGN_KEY_NAME = 'RoomDesignId'
@@ -35,19 +27,15 @@ ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2 = 'RoomShortName'
 ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
 
-
 ROOM_DESIGN_PURCHASE_BASE_PATH = 'RoomService/ListRoomDesignPurchase?languageKey=en'
 ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
 ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
 
-
 ROOM_DESIGN_SPRITES_BASE_PATH = 'RoomDesignSpriteService/ListRoomDesignSprites'
 ROOM_DESIGN_SPRITES_KEY_NAME = 'RoomDesignSpriteId'
 
-
-MISSILE_DESIGN_BASE_PATH = 'RoomService/ListMissileDesigns'
-MISSILE_DESIGN_KEY_NAME = 'MissileDesignId'
-MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'MissileDesignName'
+RX_FIX_ROOM_NAME = re.compile(r' [lL][vV][lL]?')
+RX_NUMBER = re.compile(r'\d+')
 
 
 # RoomType: 'unit'
@@ -173,15 +161,9 @@ __DISPLAY_NAMES = {
     },
 }
 
-
 __AMMO_TYPE_OVERWRITES = {
     'ION': 'Ion Cores'
 }
-
-
-
-
-
 
 
 
@@ -267,11 +249,6 @@ def _get_key_for_room_sort(room_info: EntityInfo, rooms_data: EntitiesData) -> s
 
 
 
-
-
-
-
-
 # ---------- Create EntityDetails ----------
 
 def __create_room_details_from_info(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData) -> EntityDetails:
@@ -286,11 +263,6 @@ def __create_rooms_details_collection_from_infos(rooms_designs_infos: List[Entit
     rooms_details = __create_room_details_list_from_infos(rooms_designs_infos, rooms_data, items_data, researches_data, rooms_designs_sprites_data)
     result = EntityDetailsCollection(rooms_details, big_set_threshold=3)
     return result
-
-
-
-
-
 
 
 
@@ -703,12 +675,28 @@ def __is_allowed_room_type(room_info: EntityInfo, allowed_room_types: Iterable, 
 
 
 
-
-
-
-
-
 # ---------- Helper functions ----------
+
+
+def __create_display_name_properties(display_names: List[str]) -> Dict[str, EntityDetailProperty]:
+    result = {key: __create_display_name_property(key, display_names) for key in display_names.keys()}
+    return result
+
+
+def __create_display_name_property(display_name_key: str, display_names: Dict[str, Dict[str, str]]) -> EntityDetailProperty:
+    result = EntityDetailProperty(display_name_key, False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
+    return result
+
+
+def __get_allowed_room_short_names(rooms_data: EntitiesData) -> List:
+    result = []
+    for room_design_data in rooms_data.values():
+        if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
+            room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
+            if room_short_name not in result:
+                result.append(room_short_name)
+    return result
+
 
 def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: str, volley_delay: str, print_percent: bool) -> str:
     """Returns base dps and dps per power"""
@@ -822,123 +810,85 @@ def __parse_value(value: str, max_decimal_count: int = utils.DEFAULT_FLOAT_PRECI
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
-rooms_designs_retriever: EntityRetriever
-rooms_designs_purchases_retriever: EntityRetriever
-rooms_designs_sprites_retriever: EntityRetriever
+rooms_designs_retriever: EntityRetriever = EntityRetriever(
+    ROOM_DESIGN_BASE_PATH,
+    ROOM_DESIGN_KEY_NAME,
+    ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='RoomDesigns',
+    sorted_key_function=_get_key_for_room_sort
+)
+rooms_designs_purchases_retriever: EntityRetriever = EntityRetriever(
+    ROOM_DESIGN_PURCHASE_BASE_PATH,
+    ROOM_DESIGN_PURCHASE_KEY_NAME,
+    ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,
+    cache_name='RoomDesignPurchases'
+)
+rooms_designs_sprites_retriever: EntityRetriever = EntityRetriever(
+    ROOM_DESIGN_SPRITES_BASE_PATH,
+    ROOM_DESIGN_SPRITES_KEY_NAME,
+    None,
+    cache_name='RoomDesignSprites'
+)
 __allowed_room_names: List[str]
-__display_name_properties: Dict[str, EntityDetailProperty]
-__properties: Dict[str, EntityDetailProperty]
+__display_name_properties: Dict[str, EntityDetailProperty]  = __create_display_name_properties(__DISPLAY_NAMES)
+__properties: EntityDetailsCreationPropertiesCollection = {
+    'title': EntityDetailPropertyCollection(
+        EntityDetailProperty('Room name', False, omit_if_none=False, transform_function=__get_room_name)
+    ),
+    'description': EntityDetailPropertyCollection(
+        EntityDetailProperty('Description', False, omit_if_none=False, property_name='RoomDescription'),
+        property_short=NO_PROPERTY
+    ),
+    'properties': EntityDetailPropertyListCollection(
+        [
+            EntityDetailProperty(__display_name_properties['category'], True, property_name='CategoryType', transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['type'], True, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['size'], True, transform_function=__get_size),
+            EntityDetailProperty(__display_name_properties['max_power_used'], True, property_name='MaxSystemPower', transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['power_generated'], True, property_name='MaxPowerGenerated', transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['innate_armor'], True, transform_function=__get_innate_armor, forbidden_room_types=['Corridor']),
+            EntityDetailProperty(__display_name_properties['enhanced_by'], True, property_name='EnhancementType', transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, property_name='MinShipLevel', transform_function=__get_value),
+            EntityDetailProperty(__display_name_properties['reload_speed'], True, transform_function=__get_reload_time),
+            EntityDetailProperty(__display_name_properties['shots_fired'], True, transform_function=__get_shots_fired),
+            EntityDetailProperty(__display_name_properties['system_dmg'], True, property_name='MissileDesign.SystemDamage', transform_function=__get_damage, print_percent=False),
+            EntityDetailProperty(__display_name_properties['shield_dmg'], True, property_name='MissileDesign.ShieldDamage', transform_function=__get_damage, print_percent=False),
+            EntityDetailProperty(__display_name_properties['crew_dmg'], True, property_name='MissileDesign.CharacterDamage', transform_function=__get_damage, print_percent=False),
+            EntityDetailProperty(__display_name_properties['hull_dmg'], True, property_name='MissileDesign.HullDamage', transform_function=__get_damage, print_percent=False),
+            EntityDetailProperty(__display_name_properties['ap_dmg'], True, property_name='MissileDesign.DirectSystemDamage', transform_function=__get_damage, print_percent=False),
+            EntityDetailProperty(__display_name_properties['emp_duration'], True, property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
+            EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
+            EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
+            EntityDetailProperty(__display_name_properties['cooldown'], True, property_name='CooldownTime', transform_function=__get_value_as_seconds),
+            EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
+            EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
+            EntityDetailProperty(__display_name_properties['gas_per_crew'], True, property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
+            EntityDetailProperty(__display_name_properties['max_crew_blend'], True, property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
+            EntityDetailProperty(__display_name_properties['build_time'], True, property_name='ConstructionTime', transform_function=__get_value_as_duration),
+            EntityDetailProperty(__display_name_properties['build_cost'], True, transform_function=__get_build_cost),
+            EntityDetailProperty(__display_name_properties['required_research'], True, transform_function=__get_required_research),
+            EntityDetailProperty(__display_name_properties['required_item'], True, transform_function=__get_required_item),
+            EntityDetailProperty(__display_name_properties['grid_types'], True, transform_function=__get_is_allowed_in_extension_grids),
+            EntityDetailProperty(__display_name_properties['more_info'], True, transform_function=__convert_room_flags),
+            EntityDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
+        ],
+        properties_short=[
+            EntityDetailProperty('Room Type', False, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
+            EntityDetailProperty('Enhanced by', True, property_name='EnhancementType', transform_function=__get_value),
+            EntityDetailProperty('Ship lvl', True, property_name='MinShipLevel', transform_function=__get_value),
+        ]
+    ),
+    'embed_settings': {
+        'icon_url': EntityDetailProperty('icon_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'image_url': EntityDetailProperty('image_url', False, transform_function=__get_interior_sprite_url),
+        'thumbnail_url': EntityDetailProperty('thumbnail_url', False, transform_function=__get_random_exterior_sprite_url)
+    }
+}
 
 
 async def init() -> None:
-    global rooms_designs_retriever
-    global rooms_designs_purchases_retriever
-    global rooms_designs_sprites_retriever
-    rooms_designs_retriever = EntityRetriever(
-        ROOM_DESIGN_BASE_PATH,
-        ROOM_DESIGN_KEY_NAME,
-        ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME,
-        cache_name='RoomDesigns',
-        sorted_key_function=_get_key_for_room_sort
-    )
-    rooms_designs_purchases_retriever = EntityRetriever(
-        ROOM_DESIGN_PURCHASE_BASE_PATH,
-        ROOM_DESIGN_PURCHASE_KEY_NAME,
-        ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME,
-        cache_name='RoomDesignPurchases'
-    )
-    rooms_designs_sprites_retriever = EntityRetriever(
-        ROOM_DESIGN_SPRITES_BASE_PATH,
-        ROOM_DESIGN_SPRITES_KEY_NAME,
-        None,
-        cache_name='RoomDesignSprites'
-    )
-
     global __allowed_room_names
     rooms_data = await rooms_designs_retriever.get_data_dict3()
     __allowed_room_names = sorted(__get_allowed_room_short_names(rooms_data))
-
-    global __display_name_properties
-    __display_name_properties = __create_display_name_properties(__DISPLAY_NAMES)
-
-    global __properties
-    __properties: EntityDetailsCreationPropertiesCollection = {
-        'title': EntityDetailPropertyCollection(
-            EntityDetailProperty('Room name', False, omit_if_none=False, transform_function=__get_room_name)
-        ),
-        'description': EntityDetailPropertyCollection(
-            EntityDetailProperty('Description', False, omit_if_none=False, property_name='RoomDescription'),
-            property_short=NO_PROPERTY
-        ),
-        'properties': EntityDetailPropertyListCollection(
-            [
-                EntityDetailProperty(__display_name_properties['category'], True, property_name='CategoryType', transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['type'], True, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['size'], True, transform_function=__get_size),
-                EntityDetailProperty(__display_name_properties['max_power_used'], True, property_name='MaxSystemPower', transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['power_generated'], True, property_name='MaxPowerGenerated', transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['innate_armor'], True, transform_function=__get_innate_armor, forbidden_room_types=['Corridor']),
-                EntityDetailProperty(__display_name_properties['enhanced_by'], True, property_name='EnhancementType', transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, property_name='MinShipLevel', transform_function=__get_value),
-                EntityDetailProperty(__display_name_properties['reload_speed'], True, transform_function=__get_reload_time),
-                EntityDetailProperty(__display_name_properties['shots_fired'], True, transform_function=__get_shots_fired),
-                EntityDetailProperty(__display_name_properties['system_dmg'], True, property_name='MissileDesign.SystemDamage', transform_function=__get_damage, print_percent=False),
-                EntityDetailProperty(__display_name_properties['shield_dmg'], True, property_name='MissileDesign.ShieldDamage', transform_function=__get_damage, print_percent=False),
-                EntityDetailProperty(__display_name_properties['crew_dmg'], True, property_name='MissileDesign.CharacterDamage', transform_function=__get_damage, print_percent=False),
-                EntityDetailProperty(__display_name_properties['hull_dmg'], True, property_name='MissileDesign.HullDamage', transform_function=__get_damage, print_percent=False),
-                EntityDetailProperty(__display_name_properties['ap_dmg'], True, property_name='MissileDesign.DirectSystemDamage', transform_function=__get_damage, print_percent=False),
-                EntityDetailProperty(__display_name_properties['emp_duration'], True, property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
-                EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
-                EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-                EntityDetailProperty(__display_name_properties['cooldown'], True, property_name='CooldownTime', transform_function=__get_value_as_seconds),
-                EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
-                EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
-                EntityDetailProperty(__display_name_properties['gas_per_crew'], True, property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
-                EntityDetailProperty(__display_name_properties['max_crew_blend'], True, property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
-                EntityDetailProperty(__display_name_properties['build_time'], True, property_name='ConstructionTime', transform_function=__get_value_as_duration),
-                EntityDetailProperty(__display_name_properties['build_cost'], True, transform_function=__get_build_cost),
-                EntityDetailProperty(__display_name_properties['required_research'], True, transform_function=__get_required_research),
-                EntityDetailProperty(__display_name_properties['required_item'], True, transform_function=__get_required_item),
-                EntityDetailProperty(__display_name_properties['grid_types'], True, transform_function=__get_is_allowed_in_extension_grids),
-                EntityDetailProperty(__display_name_properties['more_info'], True, transform_function=__convert_room_flags),
-                EntityDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
-            ],
-            properties_short=[
-                EntityDetailProperty('Room Type', False, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
-                EntityDetailProperty('Enhanced by', True, property_name='EnhancementType', transform_function=__get_value),
-                EntityDetailProperty('Ship lvl', True, property_name='MinShipLevel', transform_function=__get_value),
-            ]
-        ),
-        'embed_settings': {
-            'icon_url': EntityDetailProperty('icon_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
-            'image_url': EntityDetailProperty('image_url', False, transform_function=__get_interior_sprite_url),
-            'thumbnail_url': EntityDetailProperty('thumbnail_url', False, transform_function=__get_random_exterior_sprite_url)
-        }
-    }
-
-
-def __create_display_name_properties(display_names: List[str]) -> Dict[str, EntityDetailProperty]:
-    result = {key: __create_display_name_property(key, display_names) for key in display_names.keys()}
-    return result
-
-
-def __create_display_name_property(display_name_key: str, display_names: Dict[str, Dict[str, str]]) -> EntityDetailProperty:
-    result = EntityDetailProperty(display_name_key, False, transform_function=__get_property_display_name, display_name_key=display_name_key, display_names=display_names)
-    return result
-
-
-def __get_allowed_room_short_names(rooms_data: EntitiesData) -> List:
-    result = []
-    for room_design_data in rooms_data.values():
-        if room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2]:
-            room_short_name = room_design_data[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2].split(':')[0]
-            if room_short_name not in result:
-                result.append(room_short_name)
-    return result

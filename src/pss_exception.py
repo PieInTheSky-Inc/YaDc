@@ -3,9 +3,6 @@ from typing import Any, List
 import settings
 
 
-
-
-
 # ---------- Classes -----------
 
 class Error(Exception):
@@ -21,14 +18,6 @@ class Error(Exception):
     @property
     def msg(self) -> str:
         return self.__msg
-
-
-class MissingParameterError(Error):
-    pass
-
-
-class ParameterTypeError(TypeError):
-    pass
 
 
 class InvalidParameterValueError(Error):
@@ -69,3 +58,11 @@ class InvalidParameterValueError(Error):
 
     def __unicode__(self) -> str:
         return self.msg
+
+
+class MissingParameterError(Error):
+    pass
+
+
+class ParameterTypeError(TypeError):
+    pass

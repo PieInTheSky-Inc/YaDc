@@ -1712,7 +1712,7 @@ async def cmd_tournament_current(ctx: Context):
         utc_now = utils.get_utc_now()
         start_of_tourney = tourney.get_current_tourney_start()
         embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+        embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await server_settings.get_use_embeds(ctx)):
             output = [embed]
         else:
@@ -1738,7 +1738,7 @@ async def cmd_tournament_next(ctx: Context):
         utc_now = utils.get_utc_now()
         start_of_tourney = tourney.get_next_tourney_start()
         embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        embed = tourney.embed_tourney_start(start_of_tourney, utc_now, embed_colour)
+        embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await server_settings.get_use_embeds(ctx)):
             output = [embed]
         else:

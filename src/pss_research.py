@@ -5,19 +5,11 @@ from typing import List, Union
 
 import pss_assert
 from pss_exception import Error
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityInfo, EntityRetriever, NO_PROPERTY
+from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsCreationPropertiesCollection, EntityInfo, EntityRetriever, NO_PROPERTY
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
 import utils
-
-
-
-
-
-
-
-
 
 
 # ---------- Constants ----------
@@ -25,11 +17,6 @@ import utils
 RESEARCH_DESIGN_BASE_PATH = 'ResearchService/ListAllResearchDesigns2?languageKey=en'
 RESEARCH_DESIGN_KEY_NAME = 'ResearchDesignId'
 RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ResearchName'
-
-
-
-
-
 
 
 
@@ -62,21 +49,6 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
             return (await researches_details.get_entities_details_as_text())
 
 
-def _get_key_for_research_sort(research_info: EntityInfo, researches_data: EntitiesData) -> str:
-    result = ''
-    parent_infos = _get_parents(research_info, researches_data)
-    if parent_infos:
-        for parent_info in parent_infos:
-            result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
-    result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
-    return result
-
-
-
-
-
-
-
 
 
 
@@ -94,11 +66,6 @@ def __create_researches_details_collection_from_infos(researches_designs_infos: 
     researches_details = __create_researches_data_list_from_infos(researches_designs_infos, researches_data)
     result = EntityDetailsCollection(researches_details, big_set_threshold=3)
     return result
-
-
-
-
-
 
 
 
@@ -144,19 +111,16 @@ def __get_required_research_name(research_info: EntityInfo, researches_data: Ent
 
 
 
-
-
-
-
-
 # ---------- Helper functions ----------
 
-def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -> str:
-    if research_id != '0':
-        research_info = researches_data[research_id]
-        return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    else:
-        return None
+def _get_key_for_research_sort(research_info: EntityInfo, researches_data: EntitiesData) -> str:
+    result = ''
+    parent_infos = _get_parents(research_info, researches_data)
+    if parent_infos:
+        for parent_info in parent_infos:
+            result += parent_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
+    result += research_info[RESEARCH_DESIGN_KEY_NAME].zfill(4)
+    return result
 
 
 def _get_parents(research_info: EntityInfo, researches_data: EntitiesData) -> List[EntityInfo]:
@@ -173,9 +137,12 @@ def _get_parents(research_info: EntityInfo, researches_data: EntitiesData) -> Li
         return []
 
 
-
-
-
+def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -> str:
+    if research_id != '0':
+        research_info = researches_data[research_id]
+        return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        return None
 
 
 
@@ -190,7 +157,7 @@ researches_designs_retriever = EntityRetriever(
     cache_name='ResearchDesigns'
 )
 
-__properties = {
+__properties: EntityDetailsCreationPropertiesCollection = {
     'title': EntityDetailPropertyCollection(
         EntityDetailProperty('Title', False, omit_if_none=False, property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),

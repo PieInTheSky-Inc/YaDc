@@ -1,10 +1,10 @@
 from discord import Embed
 from discord.ext.commands import Context
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import emojis
 import pss_assert
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, entity_property_has_value
+from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsCreationPropertiesCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, entity_property_has_value
 from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
@@ -14,21 +14,13 @@ import settings
 import utils
 
 
-
-
-
 # ---------- Constants ----------
+
+BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
 TRAINING_DESIGN_BASE_PATH = 'TrainingService/ListAllTrainingDesigns2?languageKey=en'
 TRAINING_DESIGN_KEY_NAME = 'TrainingDesignId'
 TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
-
-BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
-
-
-
-
-
 
 
 
@@ -69,11 +61,6 @@ async def get_training_details_from_name(training_name: str, ctx: Context, as_em
 
 
 
-
-
-
-
-
 # ---------- Create EntityDetails ----------
 
 def __create_training_details_from_info(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> EntityDetails:
@@ -88,11 +75,6 @@ def __create_trainings_details_collection_from_infos(trainings_designs_infos: Li
     trainings_details = __create_training_details_list_from_infos(trainings_designs_infos, trainings_data, items_data, researches_data)
     result = EntityDetailsCollection(trainings_details, big_set_threshold=3)
     return result
-
-
-
-
-
 
 
 
@@ -197,11 +179,6 @@ def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData,
 
 
 
-
-
-
-
-
 # ---------- Helper functions ----------
 
 def _get_key_for_training_sort(training_info: EntityInfo, trainings_data: EntitiesData) -> str:
@@ -252,11 +229,6 @@ def _get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, s
 
 
 
-
-
-
-
-
 # ---------- Initilization ----------
 
 trainings_designs_retriever = EntityRetriever(
@@ -267,8 +239,7 @@ trainings_designs_retriever = EntityRetriever(
     sorted_key_function=_get_key_for_training_sort
 )
 
-
-__properties: Dict[str, Union[EntityDetailProperty, List[EntityDetailProperty]]] = {
+__properties: EntityDetailsCreationPropertiesCollection = {
     'title': EntityDetailPropertyCollection(
         EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME),
         property_mini=NO_PROPERTY

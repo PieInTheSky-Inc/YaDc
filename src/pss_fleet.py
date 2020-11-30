@@ -25,7 +25,6 @@ import utils
 
 FLEET_KEY_NAME = 'AllianceId'
 FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
-
 FLEET_SHEET_COLUMN_NAMES = [
     'Timestamp',
     'Fleet',
@@ -56,11 +55,6 @@ FLEET_SHEET_COLUMN_TYPES = [
     None,
     settings.EXCEL_COLUMN_FORMAT_NUMBER
 ]
-
-
-
-
-
 
 
 
@@ -162,29 +156,10 @@ def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs)
 
 
 
-
-
-
-
-
 # ---------- Create EntityDetails ----------
 
 def __create_fleet_details_from_info(fleet_infos: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> EscapedEntityDetails:
     return EscapedEntityDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
-
-
-
-# ---------- Helper functions ----------
-
-def get_division_name(fleet_info: entity.EntityInfo) -> str:
-    result = None
-    if fleet_info:
-        division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
-        if division_design_id is not None and division_design_id != '0':
-            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
-    return result
-
-
 
 
 
@@ -323,11 +298,6 @@ def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
 
 
 
-
-
-
-
-
 # ---------- Alliance info ----------
 
 async def get_fleet_infos_by_name(fleet_name: str) -> List[EntityInfo]:
@@ -379,11 +349,6 @@ async def get_fleet_users_data_by_fleet_info(fleet_info: EntityInfo) -> Entities
     fleet_id = fleet_info[FLEET_KEY_NAME]
     result = await _get_fleet_users_data_by_fleet_id(fleet_id)
     return result
-
-
-
-
-
 
 
 
@@ -450,11 +415,6 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo
 
 
 
-
-
-
-
-
 # ---------- Initialization ----------
 
 __properties: EntityDetailsCreationPropertiesCollection = {
@@ -480,24 +440,3 @@ __properties: EntityDetailsCreationPropertiesCollection = {
         'footer': EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note)
     }
 }
-
-
-
-
-
-
-
-
-
-
-# ---------- Testing ----------
-
-#if __name__ == '__main__':
-#    test_fleets = ['Fallen An']
-#    for fleet_name in test_fleets:
-#        os.system('clear')
-#        is_tourney_running = tourney.is_tourney_running()
-#        fleet_infos = await get_fleet_details_by_name(fleet_name)
-#        lines = [get_fleet_search_details(fleet_info) for fleet_info in fleet_infos]
-#        for line in lines:
-#            print(line)

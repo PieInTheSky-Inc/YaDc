@@ -3,7 +3,7 @@ from discord.ext.commands import Context
 import json
 import os
 import time
-from typing import Callable, Dict, List, Tuple, Union
+from typing import List
 
 import excel
 import pss_core as core
@@ -12,14 +12,56 @@ import settings
 import utils
 
 
+# ---------- Functions ----------
 
+async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
+    if ctx.author.id in settings.RAW_COMMAND_USERS:
+        retrieved_at = utils.get_utc_now()
+        mode = None
+        if entity_id:
+            if '--json' in entity_id:
+                entity_id = entity_id.replace('--json', '').strip()
+                mode = 'json'
+            elif '--xml' in entity_id:
+                entity_id = entity_id.replace('--xml', '').strip()
+                mode = 'xml'
+        if entity_id:
+            try:
+                entity_id = int(entity_id)
+            except:
+                raise ValueError(f'Invalid parameter specified: `{entity_id}` is not a valid entity id!')
+        if entity_id:
+            await __post_raw_entity(ctx, retriever, entity_name, str(entity_id), mode, retrieved_at)
+        else:
+            await __post_raw_file(ctx, retriever, entity_name, mode, retrieved_at)
+    else:
+        await ctx.send('You are not allowed to use this command. If you think this is an error, join the support server and contact the bot\'s author.')
+
+
+
+
+
+# ---------- Helper functions ----------
+
+def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
+    if not file_type:
+        file_type = 'txt'
+    timestamp = retrieved_at.strftime('%Y%m%d-%H%M%S')
+    file_name = f'{file_name_prefix}_{timestamp}.{file_type}'
+    with open(file_name, 'w') as fp:
+        fp.write(content)
+    return file_name
+
+
+def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
+    flat_data = []
+    for row in data.values():
+        result_row = __flatten_raw_entity(row)
+        flat_data.append(result_row)
+    return flat_data
 
 
 def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
-    # create one row per entity_info
-    # if entity_info got a prop with children (a List):
-    #   multiply entity_info times children count
-    #   add respective child info
     entity = {}
     result = []
     children = []
@@ -41,14 +83,6 @@ def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
     return result
 
 
-def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
-    flat_data = []
-    for row in data.values():
-        result_row = __flatten_raw_entity(row)
-        flat_data.append(result_row)
-    return flat_data
-
-
 def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
     result = {}
     for field_name, field in entity_info.items():
@@ -59,31 +93,6 @@ def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
             else:
                 result[field_name] = field
     return result
-
-
-async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
-    async with ctx.typing():
-        retrieved_at = retrieved_at or utils.get_utc_now()
-        entity_name = entity_name.replace(' ', '_')
-        file_name_prefix = f'{entity_name}_designs'
-        raw_data = await retriever.get_raw_data()
-        raw_data_dict = core.convert_raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
-        if mode == 'xml':
-            file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
-        elif mode == 'json':
-            data = json.dumps(raw_data_dict)
-            file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
-        else:
-            #flattened_data = __flatten_raw_data(raw_data)
-            start = time.perf_counter()
-            flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
-            time1 = time.perf_counter() - start
-            file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
-            time2 = time.perf_counter() - start
-            print(f'Flattening the data took {time1:.2f} seconds.')
-            print(f'Creating the excel sheet took {time2:.2f} seconds.')
-    await utils.discord.post_output_with_files(ctx, [], [file_path])
-    os.remove(file_path)
 
 
 async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime) -> None:
@@ -118,38 +127,29 @@ async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_nam
         await utils.discord.post_output(ctx, output)
 
 
-def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
-    if not file_type:
-        file_type = 'txt'
-    timestamp = retrieved_at.strftime('%Y%m%d-%H%M%S')
-    file_name = f'{file_name_prefix}_{timestamp}.{file_type}'
-    with open(file_name, 'w') as fp:
-        fp.write(content)
-    return file_name
-
-
-async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
-    if ctx.author.id in settings.RAW_COMMAND_USERS:
-        retrieved_at = utils.get_utc_now()
-        mode = None
-        if entity_id:
-            if '--json' in entity_id:
-                entity_id = entity_id.replace('--json', '').strip()
-                mode = 'json'
-            elif '--xml' in entity_id:
-                entity_id = entity_id.replace('--xml', '').strip()
-                mode = 'xml'
-        if entity_id:
-            try:
-                entity_id = int(entity_id)
-            except:
-                raise ValueError(f'Invalid parameter specified: `{entity_id}` is not a valid entity id!')
-        if entity_id:
-            await __post_raw_entity(ctx, retriever, entity_name, str(entity_id), mode, retrieved_at)
+async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
+    async with ctx.typing():
+        retrieved_at = retrieved_at or utils.get_utc_now()
+        entity_name = entity_name.replace(' ', '_')
+        file_name_prefix = f'{entity_name}_designs'
+        raw_data = await retriever.get_raw_data()
+        raw_data_dict = core.convert_raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
+        if mode == 'xml':
+            file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
+        elif mode == 'json':
+            data = json.dumps(raw_data_dict)
+            file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
         else:
-            await __post_raw_file(ctx, retriever, entity_name, mode, retrieved_at)
-    else:
-        await ctx.send('You are not allowed to use this command. If you think this is an error, join the support server and contact the bot\'s author.')
+            #flattened_data = __flatten_raw_data(raw_data)
+            start = time.perf_counter()
+            flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
+            time1 = time.perf_counter() - start
+            file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
+            time2 = time.perf_counter() - start
+            print(f'Flattening the data took {time1:.2f} seconds.')
+            print(f'Creating the excel sheet took {time2:.2f} seconds.')
+    await utils.discord.post_output_with_files(ctx, [], [file_path])
+    os.remove(file_path)
 
 
 def __should_include_raw_field(field) -> bool:
