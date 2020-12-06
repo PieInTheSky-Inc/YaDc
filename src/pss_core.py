@@ -1,8 +1,9 @@
-import aiohttp
 import json
 import re
 from typing import Any, Callable, Dict, List, Union
 from xml.etree import ElementTree
+
+import aiohttp
 
 import pss_data
 from pss_entity import EntitiesData, EntityInfo
@@ -21,8 +22,8 @@ __EntityDict = Union[List['__EntityDict'], Dict[str, '__EntityDict']]
 
 # ---------- Constants ----------
 
-__RX_PROPERTY_FIX_REPLACE = re.compile(r'[^a-z0-9]', re.IGNORECASE)
-__RX_ALLOWED_CANDIDATE_FIX_REPLACE = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
+__RX_PROPERTY_FIX_REPLACE: re.Pattern = re.compile(r'[^a-z0-9]', re.IGNORECASE)
+__RX_ALLOWED_CANDIDATE_FIX_REPLACE: re.Pattern = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
 
 
 

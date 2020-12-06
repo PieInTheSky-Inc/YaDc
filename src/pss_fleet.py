@@ -1,8 +1,9 @@
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from discord import Embed
 from discord.utils import escape_markdown
 from discord.ext.commands import Context
-from typing import Any, List, Tuple, Union
 
 import emojis
 import excel
@@ -23,24 +24,24 @@ import utils
 
 # ---------- Constants ----------
 
-FLEET_KEY_NAME = 'AllianceId'
-FLEET_DESCRIPTION_PROPERTY_NAME = 'AllianceName'
-FLEET_SHEET_COLUMN_NAMES = [
-    'Timestamp',
-    'Fleet',
-    'Player name',
-    'Rank',
-    'Last Login Date',
-    'Trophies',
-    'Stars',
-    'Join Date',
-    'Crew Donated',
-    'Crew Borrowed',
-    'Logged in ago',
-    'Joined ago',
-    'Tournament attempts left'
-]
-FLEET_SHEET_COLUMN_TYPES = [
+FLEET_DESCRIPTION_PROPERTY_NAME: str = 'AllianceName'
+FLEET_KEY_NAME: str = 'AllianceId'
+FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
+    'Timestamp': settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    'Fleet': None,
+    'Player name': None,
+    'Rank': None,
+    'Last Login Date': settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    'Trophies': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    'Stars': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    'Join Date': settings.EXCEL_COLUMN_FORMAT_DATETIME,
+    'Crew Donated': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    'Crew Borrowed': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    'Logged in ago': None,
+    'Joined ago': None,
+    'Tournament attempts left': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+}
+FLEET_SHEET_COLUMN_TYPES: List[Optional[str]] = [
     settings.EXCEL_COLUMN_FORMAT_DATETIME,
     None,
     None,
@@ -55,6 +56,155 @@ FLEET_SHEET_COLUMN_TYPES = [
     None,
     settings.EXCEL_COLUMN_FORMAT_NUMBER
 ]
+
+
+
+
+
+# ---------- Fleet info ----------
+
+def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True)
+    fleet_sheet_path = excel.create_csv_from_data(fleet_sheet_contents, None, None, file_name=file_name)
+    return fleet_sheet_path
+
+
+async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data: EntitiesData) -> List[EntityInfo]:
+    fleet_name_lower = fleet_name.lower()
+    result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
+    fleet_infos_current = await __get_fleets_data_by_name(fleet_name)
+    for fleet_info in fleet_infos_current.values():
+        fleet_id = fleet_info[fleet.FLEET_KEY_NAME]
+        if fleet_id in fleet_data:
+            if fleet_id not in result:
+                result[fleet_id] = fleet_data[fleet_id]
+            if result[fleet_id][fleet.FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]:
+                result[fleet_id]['CurrentAllianceName'] = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
+    return list(result.values())
+
+
+async def get_fleet_infos_by_name(fleet_name: str) -> List[EntityInfo]:
+    pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
+
+    fleet_infos = list((await __get_fleets_data_by_name(fleet_name)).values())
+    return fleet_infos
+
+
+def get_fleet_search_details(fleet_info: EntityInfo) -> str:
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    fleet_name_current = fleet_info.get('CurrentAllianceName', None)
+    if fleet_name_current is not None:
+        fleet_name += f' (now: {fleet_name_current})'
+
+    details = []
+    fleet_trophies = fleet_info.get('Trophy', None)
+    fleet_stars = int(fleet_info.get('Score', '0'))
+    if fleet_trophies is not None:
+        details.append(f'{emojis.trophy} {fleet_trophies}')
+    if fleet_stars > 0:
+        details.append(f'{emojis.star} {fleet_stars}')
+    result = (f'{fleet_name} ' + ' '.join(details)).strip()
+    return result
+
+
+async def get_fleet_users_data_by_fleet_info(fleet_info: EntityInfo) -> EntitiesData:
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    result = await __get_fleet_users_data_by_fleet_id(fleet_id)
+    return result
+
+
+async def get_fleets_data_by_id(fleet_id: str) -> EntitiesData:
+    path = await __get_get_alliance_base_path(fleet_id)
+    fleet_data_raw = await core.get_data_from_path(path)
+    result = core.xmltree_to_dict3(fleet_data_raw)
+    return result
+
+
+async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_tourney_battle_attempts: int = None, past_fleets_data: EntitiesData = None, past_users_data: EntitiesData = None, past_retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Tuple[Union[List[Embed], List[str]], List[str]]:
+    """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    is_past_data = past_fleets_data and past_users_data and past_retrieved_at
+
+    if is_past_data:
+        retrieved_at = past_retrieved_at
+        if fleet_info.get('CurrentAllianceName') is None:
+            current_fleet_info = await get_fleets_data_by_id(fleet_id)
+            if current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
+                fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+        fleet_users_data = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
+    else:
+        retrieved_at = utils.get_utc_now()
+        fleet_info = await get_fleets_data_by_id(fleet_id)
+        fleet_users_data = await __get_fleet_users_data_by_fleet_id(fleet_id)
+
+    post_content = await __get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
+    fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
+    fleet_sheet_path_current = __create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    file_paths = [fleet_sheet_path_current]
+
+    return post_content, file_paths
+
+
+async def __get_fleets_data_by_name(fleet_name: str) -> EntitiesData:
+    path = await __get_search_fleets_base_path(fleet_name)
+    fleet_data_raw = await core.get_data_from_path(path)
+    result = core.xmltree_to_dict3(fleet_data_raw)
+    return result
+
+
+async def __get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
+    path = await __get_search_fleet_users_base_path(alliance_id)
+    fleet_users_data_raw = await core.get_data_from_path(path)
+    result = core.xmltree_to_dict3(fleet_users_data_raw)
+    return result
+
+
+
+
+
+# ---------- Stars info ----------
+
+async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, fleet_users_infos: EntitiesData, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
+    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
+
+    fleet_users_infos = utils.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (USER_KEY_NAME, int, False)])
+    fleet_users_infos_count = len(fleet_users_infos)
+
+    title = f'{fleet_name} member stars (division {division})'
+    lines = []
+    for i, user_info in enumerate(fleet_users_infos, 1):
+        stars = user_info['AllianceScore']
+        user_name = escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
+        fleet_membership = user_info.get('AllianceMembership')
+        if i < fleet_users_infos_count:
+            difference = int(user_info['AllianceScore']) - int(fleet_users_infos[i]['AllianceScore'])
+        else:
+            difference = 0
+        user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
+        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({user_rank})')
+
+    footer_text = utils.datetime.get_historic_data_note(retrieved_date)
+
+    if as_embed:
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
+        result = utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
+        return result
+    else:
+        if retrieved_date is not None:
+            lines.append(f'```{footer_text}```')
+        return lines
+
+
+async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    fleet_id = fleet_info[FLEET_KEY_NAME]
+    fleet_users_infos = {}
+    if fleet_id in fleet_data.keys():
+        fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
+        fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_date=retrieved_date, as_embed=as_embed)
 
 
 
@@ -156,15 +306,6 @@ def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs)
 
 
 
-# ---------- Create EntityDetails ----------
-
-def __create_fleet_details_from_info(fleet_infos: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> EscapedEntityDetails:
-    return EscapedEntityDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
-
-
-
-
-
 # ---------- Helper functions ----------
 
 def get_division_name(fleet_info: EntityInfo) -> str:
@@ -176,7 +317,21 @@ def get_division_name(fleet_info: EntityInfo) -> str:
     return result
 
 
-async def _get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
+    try:
+        division_design_id = int(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME, '0'))
+        return division_design_id > 0
+    except:
+        return False
+
+
+def __create_fleet_sheet_xl(fleet_users_infos: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_infos, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, list(FLEET_SHEET_COLUMN_TYPES.values()), file_name=file_name)
+    return fleet_sheet_path
+
+
+async def __get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     fleet_details = __create_fleet_details_from_info(fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
     if as_embed:
         return [(await fleet_details.get_details_as_embed(ctx, display_inline=False))]
@@ -184,8 +339,8 @@ async def _get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, fleet
         return (await fleet_details.get_details_as_text(EntityDetailsType.LONG))
 
 
-def _get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
-    result = [FLEET_SHEET_COLUMN_NAMES]
+def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
+    result = list(FLEET_SHEET_COLUMN_NAMES.keys())
     if include_player_id:
         result[0].append('Player ID')
     if include_fleet_id:
@@ -224,192 +379,38 @@ def _get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetim
             attempts_left or '',
         ]
         if include_player_id:
-            line.append(user_info.get(user.USER_KEY_NAME, ''))
+            line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
         result.append(line)
     return result
 
 
-async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_tourney_battle_attempts: int = None, past_fleets_data: EntitiesData = None, past_users_data: EntitiesData = None, past_retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Tuple[Union[List[Embed], List[str]], List[str]]:
-    """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
-    fleet_id = fleet_info[FLEET_KEY_NAME]
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    is_past_data = past_fleets_data and past_users_data and past_retrieved_at
-
-    if is_past_data:
-        retrieved_at = past_retrieved_at
-        if fleet_info.get('CurrentAllianceName') is None:
-            current_fleet_info = await _get_fleets_data_by_id(fleet_id)
-            if current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]:
-                fleet_info['CurrentAllianceName'] = current_fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-        fleet_users_data = {user_id: user_info for user_id, user_info in past_users_data.items() if user_info.get(FLEET_KEY_NAME) == fleet_id}
-    else:
-        retrieved_at = utils.get_utc_now()
-        fleet_info = await _get_fleets_data_by_id(fleet_id)
-        fleet_users_data = await _get_fleet_users_data_by_fleet_id(fleet_id)
-
-    post_content = await _get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
-    fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
-    fleet_sheet_path_current = create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
-    file_paths = [fleet_sheet_path_current]
-
-    return post_content, file_paths
-
-
-def create_fleet_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True)
-    fleet_sheet_path = excel.create_csv_from_data(fleet_sheet_contents, None, None, file_name=file_name)
-    return fleet_sheet_path
-
-
-def create_fleet_sheet_xl(fleet_users_infos: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
-    fleet_sheet_contents = _get_fleet_sheet_lines(fleet_users_infos, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
-    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, FLEET_SHEET_COLUMN_TYPES, file_name=file_name)
-    return fleet_sheet_path
-
-
-async def _get_search_fleets_base_path(fleet_name: str) -> str:
-    access_token = await login.DEVICES.get_access_token()
-    result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={utils.convert.url_escape(fleet_name)}'
-    return result
-
-
-async def _get_get_alliance_base_path(fleet_id: str) -> str:
+async def __get_get_alliance_base_path(fleet_id: str) -> str:
     access_token = await login.DEVICES.get_access_token()
     result = f'AllianceService/GetAlliance?accessToken={access_token}&allianceId={fleet_id}'
     return result
 
 
-async def _get_search_fleet_users_base_path(fleet_id: str) -> str:
+async def __get_search_fleet_users_base_path(fleet_id: str) -> str:
     access_token = await login.DEVICES.get_access_token()
     result = f'AllianceService/ListUsers?accessToken={access_token}&skip=0&take=100&allianceId={fleet_id}'
     return result
 
 
-def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
-    try:
-        division_design_id = int(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME, '0'))
-        return division_design_id > 0
-    except:
-        return False
-
-
-
-
-
-# ---------- Alliance info ----------
-
-async def get_fleet_infos_by_name(fleet_name: str) -> List[EntityInfo]:
-    pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
-
-    fleet_infos = list((await _get_fleets_data_by_name(fleet_name)).values())
-    return fleet_infos
-
-
-def get_fleet_search_details(fleet_info: EntityInfo) -> str:
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    fleet_name_current = fleet_info.get('CurrentAllianceName', None)
-    if fleet_name_current is not None:
-        fleet_name += f' (now: {fleet_name_current})'
-
-    details = []
-    fleet_trophies = fleet_info.get('Trophy', None)
-    fleet_stars = int(fleet_info.get('Score', '0'))
-    if fleet_trophies is not None:
-        details.append(f'{emojis.trophy} {fleet_trophies}')
-    if fleet_stars > 0:
-        details.append(f'{emojis.star} {fleet_stars}')
-    result = (f'{fleet_name} ' + ' '.join(details)).strip()
-    return result
-
-
-async def _get_fleets_data_by_id(fleet_id: str) -> EntitiesData:
-    path = await _get_get_alliance_base_path(fleet_id)
-    fleet_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_data_raw)
-    return result
-
-
-async def _get_fleets_data_by_name(fleet_name: str) -> EntitiesData:
-    path = await _get_search_fleets_base_path(fleet_name)
-    fleet_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_data_raw)
-    return result
-
-
-async def _get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
-    path = await _get_search_fleet_users_base_path(alliance_id)
-    fleet_users_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_users_data_raw)
-    return result
-
-
-async def get_fleet_users_data_by_fleet_info(fleet_info: EntityInfo) -> EntitiesData:
-    fleet_id = fleet_info[FLEET_KEY_NAME]
-    result = await _get_fleet_users_data_by_fleet_id(fleet_id)
+async def __get_search_fleets_base_path(fleet_name: str) -> str:
+    access_token = await login.DEVICES.get_access_token()
+    result = f'AllianceService/SearchAlliances?accessToken={access_token}&skip=0&take=100&name={utils.convert.url_escape(fleet_name)}'
     return result
 
 
 
 
 
-# ---------- Stars ----------
+# ---------- Create EntityDetails ----------
 
-async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data: EntitiesData) -> List[EntityInfo]:
-    fleet_name_lower = fleet_name.lower()
-    result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
-    fleet_infos_current = await _get_fleets_data_by_name(fleet_name)
-    for fleet_info in fleet_infos_current.values():
-        fleet_id = fleet_info[fleet.FLEET_KEY_NAME]
-        if fleet_id in fleet_data:
-            if fleet_id not in result:
-                result[fleet_id] = fleet_data[fleet_id]
-            if result[fleet_id][fleet.FLEET_DESCRIPTION_PROPERTY_NAME] != fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]:
-                result[fleet_id]['CurrentAllianceName'] = fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]
-    return list(result.values())
-
-
-async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, fleet_users_infos: EntitiesData, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-    division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
-
-    fleet_users_infos = utils.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
-    fleet_users_infos_count = len(fleet_users_infos)
-
-    title = f'{fleet_name} member stars (division {division})'
-    lines = []
-    for i, user_info in enumerate(fleet_users_infos, 1):
-        stars = user_info['AllianceScore']
-        user_name = escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])
-        fleet_membership = user_info.get('AllianceMembership')
-        if i < fleet_users_infos_count:
-            difference = int(user_info['AllianceScore']) - int(fleet_users_infos[i]['AllianceScore'])
-        else:
-            difference = 0
-        user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
-        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({user_rank})')
-
-    footer_text = utils.datetime.get_historic_data_note(retrieved_date)
-
-    if as_embed:
-        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-        icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
-        result = utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
-        return result
-    else:
-        if retrieved_date is not None:
-            lines.append(f'```{footer_text}```')
-        return lines
-
-
-async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    fleet_id = fleet_info[FLEET_KEY_NAME]
-    fleet_users_infos = {}
-    if fleet_id in fleet_data.keys():
-        fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
-        fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_date=retrieved_date, as_embed=as_embed)
+def __create_fleet_details_from_info(fleet_infos: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None) -> EscapedEntityDetails:
+    return EscapedEntityDetails(fleet_infos, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data)
 
 
 

@@ -3,13 +3,16 @@ from pss_entity import EntityRetriever
 
 # ---------- Constants ----------
 
-ACTION_TYPE_DESIGN_BASE_PATH = 'RoomService/ListActionTypes2?languageKey=en'
-ACTION_TYPE_DESIGN_KEY_NAME = 'ActionTypeId'
-ACTION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ActionTypeName'
+ACTION_TYPE_DESIGN_BASE_PATH: str = 'RoomService/ListActionTypes2?languageKey=en'
+ACTION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ActionTypeName'
+ACTION_TYPE_DESIGN_KEY_NAME: str = 'ActionTypeId'
 
-CONDITION_TYPE_DESIGN_BASE_PATH = 'RoomService/ListConditionTypes2?languageKey=en'
-CONDITION_TYPE_DESIGN_KEY_NAME = 'ConditionTypeId'
-CONDITION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ConditionTypeName'
+CONDITION_TYPE_DESIGN_BASE_PATH: str = 'RoomService/ListConditionTypes2?languageKey=en'
+CONDITION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ConditionTypeName'
+CONDITION_TYPE_DESIGN_KEY_NAME: str = 'ConditionTypeId'
+
+
+
 
 
 # ---------- Initialization ----------

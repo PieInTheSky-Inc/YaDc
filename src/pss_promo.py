@@ -1,11 +1,12 @@
 import datetime
-from discord import Embed
 from typing import Callable, Dict, List, Tuple, Union
+
+from discord import Embed
 
 import pss_assert
 import pss_core as core
 import pss_crew as crew
-from pss_entity import EntitiesData, EntityDetailsCollection, EntityInfo, EntityRetriever, LegacyEntityDetails
+from pss_entity import EntityDetailsCollection, EntityInfo, EntityRetriever, LegacyEntityDetails
 from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
@@ -16,12 +17,11 @@ import settings
 import utils
 
 
-
 # ---------- Constants ----------
 
-PROMOTION_DESIGN_BASE_PATH = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
-PROMOTION_DESIGN_KEY_NAME = 'PromotionDesignId'
-PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'Name'
+PROMOTION_DESIGN_BASE_PATH: str = 'PromotionService/ListAllPromotionDesigns2?languageKey=en'
+PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'Name'
+PROMOTION_DESIGN_KEY_NAME: str = 'PromotionDesignId'
 
 REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
     'item': item.get_item_details_by_id,
@@ -46,7 +46,7 @@ class LegacyPromotionDesignDetails(LegacyEntityDetails):
         self.__name: str = promotion_info.get('Name', None)
         self.__description: str = promotion_info.get('Description', None)
         self.__flags: int = int(promotion_info.get('Flags', '0'))
-        self.__requirements: List[PromoRequirement] = _convert_requirement_string(promotion_info.get('RequirementString', ''))
+        self.__requirements: List[PromoRequirement] = __convert_requirement_string(promotion_info.get('RequirementString', ''))
         self.__sprite_id_background: int = int(promotion_info.get('BackgroundSpriteId', '0'))
         self.__sprite_id_button: int = int(promotion_info.get('ButtonSpriteId', '0'))
         self.__sprite_id_close_button: int = int(promotion_info.get('CloseButtonSpriteId', '0'))
@@ -60,8 +60,8 @@ class LegacyPromotionDesignDetails(LegacyEntityDetails):
         self.__vip_starbux_bonus: int = int(promotion_info.get('StarbuxBonusPercentage', '0'))
         self.__vip_xp_bonus: int = int(promotion_info.get('XPBonusPercentage', '0'))
 
-        self.__from_datetime: datetime.datetime = _get_datetime(promotion_info.get('FromDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
-        self.__to_datetime: datetime.datetime = _get_datetime(promotion_info.get('ToDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
+        self.__from_datetime: datetime.datetime = __get_datetime(promotion_info.get('FromDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
+        self.__to_datetime: datetime.datetime = __get_datetime(promotion_info.get('ToDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
         self.__iap_options: str = core.convert_iap_options_mask(promotion_info.get('PurchaseMask', '0'))
 
         details_long: List[Tuple[str, str]] = [
@@ -171,25 +171,25 @@ class PromoRequirement():
         if '>' in requirement:
             self.__greater_than = True
             if '>=' in requirement:
-                self.__requirement_type, self.__requirement_value = _get_requirement_type_and_value(requirement, '>=')
+                self.__requirement_type, self.__requirement_value = __get_requirement_type_and_value(requirement, '>=')
             else:
-                self.__requirement_type, self.__requirement_value = _get_requirement_type_and_value(requirement, '>', 1)
+                self.__requirement_type, self.__requirement_value = __get_requirement_type_and_value(requirement, '>', 1)
         elif '<' in requirement:
             self.__lower_than = True
             if '<=' in requirement:
-                self.__requirement_type, self.__requirement_value = _get_requirement_type_and_value(requirement, '<=')
+                self.__requirement_type, self.__requirement_value = __get_requirement_type_and_value(requirement, '<=')
             else:
-                self.__requirement_type, self.__requirement_value = _get_requirement_type_and_value(requirement, '<', -1)
+                self.__requirement_type, self.__requirement_value = __get_requirement_type_and_value(requirement, '<', -1)
         elif '==' in requirement:
             self.__equal = True
-            self.__requirement_type, self.__requirement_value = _get_requirement_type_and_value(requirement, '==')
+            self.__requirement_type, self.__requirement_value = __get_requirement_type_and_value(requirement, '==')
 
 
     def get_pretty_requirement_string(self) -> str:
         modifier = 'Min' if self.__greater_than else 'Max' if self.__lower_than else ''
         if modifier:
             modifier = f'{modifier} '
-        pretty_requirement_type = _get_pretty_requirement_type(self.__requirement_type)
+        pretty_requirement_type = __get_pretty_requirement_type(self.__requirement_type)
         result = f'{modifier}{pretty_requirement_type}: {self.__requirement_value}'
         return result
 
@@ -214,9 +214,10 @@ async def get_promotion_details_by_id(promotion_design_id: str, promotions_data:
 
 def get_promotions_details_by_name(promotion_name: str) -> EntityDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
+    raise NotImplemented()
 
 
-async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_promotions_infos_by_name(promotion_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
 
     promotion_infos = await promotion_designs_retriever.get_entities_infos_by_name(promotion_name)
@@ -226,9 +227,9 @@ async def get_promotions_designs_info_by_name(promotion_name: str, as_embed: boo
         raise Error(f'Could not find a promotion named `{promotion_name}`.')
     else:
         if as_embed:
-            return _get_promotions_details_as_embed(promotions_details), True
+            return _get_promotions_details_as_embed(promotions_details)
         else:
-            return _get_promotions_details_as_text(promotion_name, promotions_details), True
+            return _get_promotions_details_as_text(promotion_name, promotions_details)
 
 
 def _get_promotions_details_as_embed(promotion_details: Dict[str, dict]) -> Embed:
@@ -253,12 +254,6 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_details: Dict
 
 
 
-# ---------- Create EntityDetails ----------
-
-
-
-
-
 # ---------- Transformation functions ----------
 
 
@@ -267,7 +262,7 @@ def _get_promotions_details_as_text(promotion_name: str, promotion_details: Dict
 
 # ---------- Helper functions ----------
 
-def _convert_reward_string(reward_string: str) -> Dict[str, str]:
+def __convert_reward_string(reward_string: str) -> Dict[str, str]:
     result = {}
 
     if not reward_string:
@@ -280,7 +275,7 @@ def _convert_reward_string(reward_string: str) -> Dict[str, str]:
     return result
 
 
-def _convert_requirement_string(requirement_string: str) -> List[PromoRequirement]:
+def __convert_requirement_string(requirement_string: str) -> List[PromoRequirement]:
     result: List[PromoRequirement] = []
 
     if not requirement_string:
@@ -293,7 +288,7 @@ def _convert_requirement_string(requirement_string: str) -> List[PromoRequiremen
     return result
 
 
-def _get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime:
+def __get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime:
     if not api_datetime:
         return None
     result = datetime.datetime.strptime(api_datetime, datetime_format)
@@ -303,7 +298,7 @@ def _get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime:
         return result
 
 
-def _get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> str:
+def __get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> str:
     if language_key and requirement_type:
         result = lookups.PROMO_REQUIREMENT_TYPE_LOOKUP.get(language_key, {}).get(requirement_type, None)
         return result
@@ -311,7 +306,7 @@ def _get_pretty_requirement_type(requirement_type: str, language_key: str = 'en'
         return None
 
 
-def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
+def __get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
     result = []
 
     for entity_type in [key for key in rewards.keys() if rewards[key]]:
@@ -328,10 +323,16 @@ def _get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
     return ', '.join(result)
 
 
-def _get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> Tuple[str, int]:
+def __get_requirement_type_and_value(requirement_string: str, separator: str, add_to_value: int = 0) -> Tuple[str, int]:
     requirement_type, requirement_value = requirement_string.split(separator)
     requirement_value = int(requirement_value) + add_to_value
     return requirement_type, requirement_value
+
+
+
+
+
+# ---------- Create EntityDetails ----------
 
 
 

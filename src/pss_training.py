@@ -1,6 +1,7 @@
+from typing import List, Optional, Tuple, Union
+
 from discord import Embed
 from discord.ext.commands import Context
-from typing import List, Tuple, Union
 
 import emojis
 import pss_assert
@@ -16,11 +17,11 @@ import utils
 
 # ---------- Constants ----------
 
-BASE_STATS = lookups.STATS_LEFT + lookups.STATS_RIGHT
+BASE_STATS: List[str] = lookups.STATS_LEFT + lookups.STATS_RIGHT
 
-TRAINING_DESIGN_BASE_PATH = 'TrainingService/ListAllTrainingDesigns2?languageKey=en'
-TRAINING_DESIGN_KEY_NAME = 'TrainingDesignId'
-TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME = 'TrainingName'
+TRAINING_DESIGN_BASE_PATH: str = 'TrainingService/ListAllTrainingDesigns2?languageKey=en'
+TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'TrainingName'
+TRAINING_DESIGN_KEY_NAME: str = 'TrainingDesignId'
 
 
 
@@ -56,25 +57,6 @@ async def get_training_details_from_name(training_name: str, ctx: Context, as_em
             return (await trainings_details_collection.get_entities_details_as_embed(ctx, custom_detail_property_separator='\n', custom_footer_text=custom_footer))
         else:
             return (await trainings_details_collection.get_entities_details_as_text(custom_footer_text=custom_footer))
-
-
-
-
-
-# ---------- Create EntityDetails ----------
-
-def __create_training_details_from_info(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> EntityDetails:
-    return EntityDetails(training_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], trainings_data, items_data, researches_data)
-
-
-def __create_training_details_list_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> List[EntitiesData]:
-    return [__create_training_details_from_info(training_info, trainings_data, items_data, researches_data) for training_info in trainings_designs_infos]
-
-
-def __create_trainings_details_collection_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> EntityDetailsCollection:
-    trainings_details = __create_training_details_list_from_infos(trainings_designs_infos, trainings_data, items_data, researches_data)
-    result = EntityDetailsCollection(trainings_details, big_set_threshold=3)
-    return result
 
 
 
@@ -122,18 +104,18 @@ def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, 
     max_chance_value = 0
     result = []
     for stat_name in BASE_STATS:
-        stat_chance = _get_stat_chance(stat_name, training_info)
+        stat_chance = __get_stat_chance(stat_name, training_info)
         if stat_chance is not None:
             chances.append(stat_chance)
 
     if chances:
         chance_values = [stat_chance[2] for stat_chance in chances]
         max_chance_value = max(chance_values)
-        result = [_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance_value]
-        result.extend([_get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance_value])
+        result = [__get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance_value]
+        result.extend([__get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance_value])
 
-    xp_stat_chance = _get_stat_chance('Xp', training_info, guaranteed=True)
-    result.append(_get_stat_chance_as_text(*xp_stat_chance))
+    xp_stat_chance = __get_stat_chance('Xp', training_info, guaranteed=True)
+    result.append(__get_stat_chance_as_text(*xp_stat_chance))
 
     separator = '\n' if add_line_breaks else ' '
     return separator.join(result)
@@ -168,7 +150,7 @@ async def __get_training_item_name(training_info: EntityInfo, trainings_data: En
 def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
     required_room_level = training_info['RequiredRoomLevel']
     training_room_type = int(training_info['Rank'])
-    room_name, _ = _get_room_names(training_room_type)
+    room_name, _ = __get_room_names(training_room_type)
     if room_name:
         result = f'{room_name} lvl {required_room_level}'
     else:
@@ -179,11 +161,30 @@ def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData,
 
 
 
+# ---------- Create EntityDetails ----------
+
+def __create_training_details_from_info(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> EntityDetails:
+    return EntityDetails(training_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], trainings_data, items_data, researches_data)
+
+
+def __create_training_details_list_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> List[EntitiesData]:
+    return [__create_training_details_from_info(training_info, trainings_data, items_data, researches_data) for training_info in trainings_designs_infos]
+
+
+def __create_trainings_details_collection_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> EntityDetailsCollection:
+    trainings_details = __create_training_details_list_from_infos(trainings_designs_infos, trainings_data, items_data, researches_data)
+    result = EntityDetailsCollection(trainings_details, big_set_threshold=3)
+    return result
+
+
+
+
+
 # ---------- Helper functions ----------
 
-def _get_key_for_training_sort(training_info: EntityInfo, trainings_data: EntitiesData) -> str:
+def __get_key_for_training_sort(training_info: EntityInfo, trainings_data: EntitiesData) -> str:
     result = ''
-    parent_infos = _get_parents(training_info, trainings_data)
+    parent_infos = __get_parents(training_info, trainings_data)
     if parent_infos:
         for parent_info in parent_infos:
             result += parent_info[TRAINING_DESIGN_KEY_NAME].zfill(4)
@@ -191,25 +192,25 @@ def _get_key_for_training_sort(training_info: EntityInfo, trainings_data: Entiti
     return result
 
 
-def _get_parents(training_info: EntityInfo, trainings_data: EntitiesData) -> List[EntityInfo]:
+def __get_parents(training_info: EntityInfo, trainings_data: EntitiesData) -> List[EntityInfo]:
     parent_training_design_id = training_info['RequiredTrainingDesignId']
     if parent_training_design_id == '0':
         parent_training_design_id = None
 
     if parent_training_design_id is not None:
         parent_info = trainings_data[parent_training_design_id]
-        result = _get_parents(parent_info, trainings_data)
+        result = __get_parents(parent_info, trainings_data)
         result.append(parent_info)
         return result
     else:
         return []
 
 
-def _get_room_names(training_room_type: int) -> Tuple[str, str]:
+def __get_room_names(training_room_type: int) -> Tuple[Optional[str], Optional[str]]:
     return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
 
 
-def _get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool = False) -> Tuple[str, str, str, str]:
+def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool = False) -> Optional[Tuple[str, str, str, str]]:
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
         if chance_name in training_info.keys():
@@ -222,7 +223,7 @@ def _get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool
     return None
 
 
-def _get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str) -> str:
+def __get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str) -> str:
     return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
 
 
@@ -236,7 +237,7 @@ trainings_designs_retriever = EntityRetriever(
     TRAINING_DESIGN_KEY_NAME,
     TRAINING_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='TrainingDesigns',
-    sorted_key_function=_get_key_for_training_sort
+    sorted_key_function=__get_key_for_training_sort
 )
 
 __properties: EntityDetailsCreationPropertiesCollection = {

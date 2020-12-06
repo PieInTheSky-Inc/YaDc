@@ -1,8 +1,9 @@
 from datetime import datetime
+from typing import List, Tuple, Union
+
 from discord import Colour, Embed
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
-from typing import List, Tuple, Union
 
 import emojis
 import pss_assert
@@ -21,42 +22,21 @@ import utils
 
 # ---------- Constants ----------
 
-ALLOWED_DIVISION_LETTERS = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
+ALLOWED_DIVISION_LETTERS: List[str] = sorted([letter for letter in lookups.DIVISION_CHAR_TO_DESIGN_ID.keys() if letter != '-'])
 
-DIVISION_DESIGN_BASE_PATH = 'DivisionService/ListAllDivisionDesigns2'
-DIVISION_DESIGN_KEY_NAME = 'DivisionDesignId'
-DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'DivisionName'
+DIVISION_DESIGN_BASE_PATH: str = 'DivisionService/ListAllDivisionDesigns2'
+DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'DivisionName'
+DIVISION_DESIGN_KEY_NAME: str = 'DivisionDesignId'
 
-STARS_BASE_PATH = f'AllianceService/ListAlliancesWithDivision'
+STARS_BASE_PATH: str = 'AllianceService/ListAlliancesWithDivision'
 
-TOP_FLEETS_BASE_PATH = f'AllianceService/ListAlliancesByRanking?skip=0&take='
-
-
-
-
-
-# ---------- Helper functions ----------
-
-def is_valid_division_letter(div_letter: str) -> bool:
-    if div_letter is None:
-        result = True
-    else:
-        result = div_letter.lower() in [letter.lower() for letter in ALLOWED_DIVISION_LETTERS]
-    return result
-
-
-def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
-    bodies = utils.discord.create_posts_from_lines(body_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
-    result = []
-    for body in bodies:
-        result.append(utils.discord.create_embed(title, description=body, colour=colour))
-    return result
+TOP_FLEETS_BASE_PATH: str = 'AllianceService/ListAlliancesByRanking?skip=0&take='
 
 
 
 
 
-# ---------- Top 100 Alliances ----------
+# ---------- Top fleets info ----------
 
 async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     tourney_running = tourney.is_tourney_running()
@@ -78,6 +58,22 @@ async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = setting
         raise Error(f'An unknown error occured while retrieving the top fleets. Please contact the bot\'s author!')
 
 
+def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]], tourney_running: bool) -> List[str]:
+    if tourney_running:
+        result = [
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})'
+            for position, fleet_name, trophies, stars
+            in prepared_data
+        ]
+    else:
+        result = [
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})'
+            for position, fleet_name, trophies, _
+            in prepared_data
+        ]
+    return result
+
+
 def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
     result = [
         (
@@ -93,7 +89,7 @@ def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
 
 
 
-# ---------- Top captains ----------
+# ---------- Top captains info ----------
 
 async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     skip = 0
@@ -188,14 +184,14 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
     if divisions:
         divisions_texts = []
         for division_design_id, fleet_infos in divisions.items():
-            divisions_texts.append((division_design_id, _get_division_stars_as_text(fleet_infos)))
+            divisions_texts.append((division_design_id, __get_division_stars_as_text(fleet_infos)))
 
         result = []
         footer = utils.datetime.get_historic_data_note(retrieved_date)
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         for division_design_id, division_text in divisions_texts:
             if as_embed:
-                division_title = _get_division_title(division_design_id, divisions_designs_infos, False)
+                division_title = __get_division_title(division_design_id, divisions_designs_infos, False)
                 thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
                 embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
                 for i, embed_body in enumerate(embed_bodies):
@@ -203,7 +199,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
                     embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     result.append(embed)
             else:
-                division_title = _get_division_title(division_design_id, divisions_designs_infos, True)
+                division_title = __get_division_title(division_design_id, divisions_designs_infos, True)
                 result.append(division_title)
                 result.extend(division_text)
                 result.append(utils.discord.ZERO_WIDTH_SPACE)
@@ -218,7 +214,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
         raise Error(f'An unknown error occured while retrieving division info. Please contact the bot\'s author!')
 
 
-def _get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
+def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     lines = []
     fleet_infos = utils.sort_entities_by(fleet_infos, [('Score', int, True)])
     fleet_infos_count = len(fleet_infos)
@@ -238,12 +234,33 @@ def _get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     return lines
 
 
-def _get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool) -> str:
+def __get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool) -> str:
     title = divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     if include_markdown:
         return f'__**{title}**__'
     else:
         return title
+
+
+
+
+
+# ---------- Helper functions ----------
+
+def is_valid_division_letter(div_letter: str) -> bool:
+    if div_letter is None:
+        result = True
+    else:
+        result = div_letter.lower() in [letter.lower() for letter in ALLOWED_DIVISION_LETTERS]
+    return result
+
+
+def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
+    bodies = utils.discord.create_posts_from_lines(body_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+    result = []
+    for body in bodies:
+        result.append(utils.discord.create_embed(title, description=body, colour=colour))
+    return result
 
 
 

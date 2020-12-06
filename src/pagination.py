@@ -1,9 +1,10 @@
-import asyncio
-from discord import ChannelType, Message, Reaction, User
-from discord.ext.commands import Context
 import inspect
 import math
 from typing import Awaitable, Callable, Dict, List, Tuple, Union
+
+import asyncio
+from discord import ChannelType, Message, Reaction, User
+from discord.ext.commands import Context
 
 import emojis
 from pss_entity import EntityDetails, EntityInfo

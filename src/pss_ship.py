@@ -1,6 +1,5 @@
 from typing import Dict, Tuple
 
-from cache import PssCache
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, EntityRetriever
 import pss_login as login
@@ -8,9 +7,9 @@ import pss_login as login
 
 # ---------- Constants ----------
 
-SHIP_DESIGN_BASE_PATH = 'ShipService/ListAllShipDesigns2?languageKey=en'
-SHIP_DESIGN_KEY_NAME = 'ShipDesignId'
-SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
+SHIP_DESIGN_BASE_PATH: str = 'ShipService/ListAllShipDesigns2?languageKey=en'
+SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ShipDesignName'
+SHIP_DESIGN_KEY_NAME: str = 'ShipDesignId'
 
 
 
@@ -19,7 +18,7 @@ SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME = 'ShipDesignName'
 # ---------- Helper functions ----------
 
 async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
-    inspect_ship_path = await _get_inspect_ship_base_path(user_id)
+    inspect_ship_path = await __get_inspect_ship_base_path(user_id)
     inspect_ship_data = await core.get_data_from_path(inspect_ship_path)
     result = core.xmltree_to_dict2(inspect_ship_data)
     return result.get('User', None), result.get('Ship', None)
@@ -47,7 +46,7 @@ async def get_ship_status_for_user(user_id: str) -> str:
     return result
 
 
-async def _get_inspect_ship_base_path(user_id: str) -> str:
+async def __get_inspect_ship_base_path(user_id: str) -> str:
     access_token = await login.DEVICES.get_access_token()
     result = f'ShipService/InspectShip2?accessToken={access_token}&userId={user_id}'
     return result

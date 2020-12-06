@@ -1,8 +1,9 @@
+import random
 import re
+from typing import Dict, Iterable, List, Tuple, Union
+
 from discord import Embed
 from discord.ext.commands import Context
-import random
-from typing import Dict, Iterable, List, Tuple, Union
 
 import pss_assert
 import pss_core as core
@@ -17,37 +18,39 @@ import utils
 
 # ---------- Constants ----------
 
-MISSILE_DESIGN_BASE_PATH = 'RoomService/ListMissileDesigns'
-MISSILE_DESIGN_KEY_NAME = 'MissileDesignId'
-MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME = 'MissileDesignName'
-
-ROOM_DESIGN_BASE_PATH = 'RoomService/ListRoomDesigns2?languageKey=en'
-ROOM_DESIGN_KEY_NAME = 'RoomDesignId'
-ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'RoomName'
-ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2 = 'RoomShortName'
-ROOM_DESIGN_TYPE_PROPERTY_NAME = 'RoomType'
-
-ROOM_DESIGN_PURCHASE_BASE_PATH = 'RoomService/ListRoomDesignPurchase?languageKey=en'
-ROOM_DESIGN_PURCHASE_KEY_NAME = 'RoomDesignPurchaseId'
-ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME = 'RoomName'
-
-ROOM_DESIGN_SPRITES_BASE_PATH = 'RoomDesignSpriteService/ListRoomDesignSprites'
-ROOM_DESIGN_SPRITES_KEY_NAME = 'RoomDesignSpriteId'
-
-RX_FIX_ROOM_NAME = re.compile(r' [lL][vV][lL]?')
-RX_NUMBER = re.compile(r'\d+')
-
-
 # RoomType: 'unit'
-CAPACITY_PER_TICK_UNITS = {
+CAPACITY_PER_TICK_UNITS: Dict[str, str] = {
     'Lift': ' pixel/s',
     'Radar': 's',
     'Stealth': 's'
 }
 
+MISSILE_DESIGN_BASE_PATH: str = 'RoomService/ListMissileDesigns'
+MISSILE_DESIGN_KEY_NAME: str = 'MissileDesignId'
+MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'MissileDesignName'
 
-# str: {str, str}
-__DISPLAY_NAMES = {
+ROOM_DESIGN_BASE_PATH: str = 'RoomService/ListRoomDesigns2?languageKey=en'
+ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'RoomName'
+ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2: str = 'RoomShortName'
+ROOM_DESIGN_KEY_NAME: str = 'RoomDesignId'
+ROOM_DESIGN_TYPE_PROPERTY_NAME: str = 'RoomType'
+
+ROOM_DESIGN_PURCHASE_BASE_PATH: str = 'RoomService/ListRoomDesignPurchase?languageKey=en'
+ROOM_DESIGN_PURCHASE_DESCRIPTION_PROPERTY_NAME: str = 'RoomName'
+ROOM_DESIGN_PURCHASE_KEY_NAME: str = 'RoomDesignPurchaseId'
+
+ROOM_DESIGN_SPRITES_BASE_PATH: str = 'RoomDesignSpriteService/ListRoomDesignSprites'
+ROOM_DESIGN_SPRITES_KEY_NAME: str = 'RoomDesignSpriteId'
+
+RX_FIX_ROOM_NAME: re.Pattern[str] = re.compile(r' [lL][vV][lL]?')
+RX_NUMBER: re.Pattern[str] = re.compile(r'\d+')
+
+
+__AMMO_TYPE_OVERWRITES: Dict[str, str] = {
+    'ION': 'Ion Cores'
+}
+
+__DISPLAY_NAMES: Dict[str, Dict[str, str]] = {
     'ap_dmg': {
         'default': 'AP dmg'
     },
@@ -159,10 +162,6 @@ __DISPLAY_NAMES = {
     'wikia': {
         'default': 'Wiki'
     },
-}
-
-__AMMO_TYPE_OVERWRITES = {
-    'ION': 'Ion Cores'
 }
 
 

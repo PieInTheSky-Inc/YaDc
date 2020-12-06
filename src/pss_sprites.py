@@ -1,10 +1,11 @@
+from typing import Optional
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, entity_property_has_value
 
 
 # ---------- Constants ----------
 
-SPRITES_BASE_PATH = 'FileService/DownloadSprite?spriteId='
+SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
 
 
 
@@ -12,7 +13,7 @@ SPRITES_BASE_PATH = 'FileService/DownloadSprite?spriteId='
 
 # ---------- Sprites ----------
 
-async def get_download_sprite_link(sprite_id: str) -> str:
+async def get_download_sprite_link(sprite_id: str) -> Optional[str]:
     if entity_property_has_value(sprite_id):
         base_url = await core.get_base_url()
         result = f'{base_url}FileService/DownloadSprite?spriteId={sprite_id}'

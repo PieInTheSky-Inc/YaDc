@@ -1,12 +1,13 @@
 from collections import Counter
+from typing import Dict, List, Tuple, Union
+
 from discord import Colour, Embed
 from discord.ext.commands import Context
-from typing import Dict, List, Tuple, Union
-from pss_entity import EntitiesData, EntityDetailEmbedOnlyProperty, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetailsCreationPropertiesCollection, EntityDetailTextOnlyProperty, EntityDetails, EntityDetailsCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, entity_property_has_value
+
+import pss_assert
 from cache import PssCache
 import emojis
-import pss_assert
-
+from pss_entity import EntitiesData, EntityDetailEmbedOnlyProperty, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetailsCreationPropertiesCollection, EntityDetailTextOnlyProperty, EntityDetails, EntityDetailsCollection, EntityDetailsType, EntityInfo, EntityRetriever, NO_PROPERTY, entity_property_has_value
 from pss_exception import Error
 import pss_lookups as lookups
 import pss_sprites as sprites
@@ -16,16 +17,16 @@ import utils
 
 # ---------- Constants ----------
 
-CHARACTER_DESIGN_BASE_PATH = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
-CHARACTER_DESIGN_KEY_NAME = 'CharacterDesignId'
-CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CharacterDesignName'
+CHARACTER_DESIGN_BASE_PATH: str = 'CharacterService/ListAllCharacterDesigns2?languageKey=en'
+CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'CharacterDesignName'
+CHARACTER_DESIGN_KEY_NAME: str = 'CharacterDesignId'
 
-COLLECTION_DESIGN_BASE_PATH = 'CollectionService/ListAllCollectionDesigns?languageKey=en'
-COLLECTION_DESIGN_KEY_NAME = 'CollectionDesignId'
-COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME = 'CollectionName'
+COLLECTION_DESIGN_BASE_PATH: str = 'CollectionService/ListAllCollectionDesigns?languageKey=en'
+COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'CollectionName'
+COLLECTION_DESIGN_KEY_NAME: str = 'CollectionDesignId'
 
-__PRESTIGE_FROM_BASE_PATH = f'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
-__PRESTIGE_TO_BASE_PATH = f'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
+__PRESTIGE_FROM_BASE_PATH: str = 'CharacterService/PrestigeCharacterFrom?languagekey=en&characterDesignId='
+__PRESTIGE_TO_BASE_PATH: str = 'CharacterService/PrestigeCharacterTo?languagekey=en&characterDesignId='
 
 
 
@@ -91,6 +92,14 @@ async def get_collection_details_by_name(ctx: Context, collection_name: str, as_
             return (await collections_details_collection.get_entities_details_as_text())
 
 
+def __get_collection_name(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
+    result = None
+    collection_id = character_info[COLLECTION_DESIGN_KEY_NAME]
+    if collection_id and int(collection_id):
+        result = collections_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
+
+
 
 
 
@@ -105,7 +114,7 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
     if not char_from_info:
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
-        prestige_from_ids, recipe_count = await _get_prestige_from_ids_and_recipe_count(char_from_info)
+        prestige_from_ids, recipe_count = await __get_prestige_from_ids_and_recipe_count(char_from_info)
         utils.make_dict_value_lists_unique(prestige_from_ids)
         prestige_from_infos = sorted(__prepare_prestige_infos(chars_data, prestige_from_ids), key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
         prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos)
@@ -119,12 +128,25 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
             return (await prestige_from_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=EntityDetailsType.LONG))
 
 
-async def _get_prestige_from_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
+def __create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
+    cache = __create_prestige_from_cache(char_design_id)
+    __prestige_from_cache_dict[char_design_id] = cache
+    return cache
+
+
+def __create_prestige_from_cache(char_design_id: str) -> PssCache:
+    url = f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}'
+    name = f'PrestigeFrom{char_design_id}'
+    result = PssCache(url, name, None)
+    return result
+
+
+async def __get_prestige_from_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in __prestige_from_cache_dict.keys():
         prestige_from_cache = __prestige_from_cache_dict[char_design_id]
     else:
-        prestige_from_cache = _create_and_add_prestige_from_cache(char_design_id)
+        prestige_from_cache = __create_and_add_prestige_from_cache(char_design_id)
     raw_data_dict = await prestige_from_cache.get_raw_data_dict()
     prestige_from_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterFrom']['Prestiges'].values())
     result = {}
@@ -134,19 +156,6 @@ async def _get_prestige_from_ids_and_recipe_count(char_info: EntityInfo) -> Tupl
         recipe_count += 1
     result = {char_to_id: list(set(chars_2_ids)) for char_to_id, chars_2_ids in result.items()}
     return result, recipe_count
-
-
-def _create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
-    cache = _create_prestige_from_cache(char_design_id)
-    __prestige_from_cache_dict[char_design_id] = cache
-    return cache
-
-
-def _create_prestige_from_cache(char_design_id: str) -> PssCache:
-    url = f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}'
-    name = f'PrestigeFrom{char_design_id}'
-    result = PssCache(url, name, None)
-    return result
 
 
 
@@ -163,7 +172,7 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
     if not char_to_info:
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
-        prestige_to_ids, recipe_count = await _get_prestige_to_ids_and_recipe_count(char_to_info)
+        prestige_to_ids, recipe_count = await __get_prestige_to_ids_and_recipe_count(char_to_info)
         utils.make_dict_value_lists_unique(prestige_to_ids)
         prestige_to_infos = sorted(__prepare_prestige_infos(chars_data, prestige_to_ids), key=lambda prestige_to_info: prestige_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
         prestige_to_details_collection = __create_prestige_to_details_collection_from_infos(prestige_to_infos)
@@ -177,12 +186,25 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
             return (await prestige_to_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=EntityDetailsType.LONG))
 
 
-async def _get_prestige_to_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
+def __create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
+    cache = __create_prestige_to_cache(char_design_id)
+    __prestige_to_cache_dict[char_design_id] = cache
+    return cache
+
+
+def __create_prestige_to_cache(char_design_id: str) -> PssCache:
+    url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
+    name = f'PrestigeTo{char_design_id}'
+    result = PssCache(url, name, None)
+    return result
+
+
+async def __get_prestige_to_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
     if char_design_id in __prestige_to_cache_dict.keys():
         prestige_to_cache = __prestige_to_cache_dict[char_design_id]
     else:
-        prestige_to_cache = _create_and_add_prestige_to_cache(char_design_id)
+        prestige_to_cache = __create_and_add_prestige_to_cache(char_design_id)
     raw_data_dict = await prestige_to_cache.get_raw_data_dict()
     prestige_to_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterTo']['Prestiges'].values())
     recipe_count = len(prestige_to_infos)
@@ -191,7 +213,7 @@ async def _get_prestige_to_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[
         all_recipes.append((value['CharacterDesignId1'], value['CharacterDesignId2']))
         all_recipes.append((value['CharacterDesignId2'], value['CharacterDesignId1']))
     all_recipes = list(set(all_recipes))
-    result = _normalize_prestige_to_data(all_recipes)
+    result = __normalize_prestige_to_data(all_recipes)
     for char_1_id in result.keys():
         for char_2_id, char_1_ids in result.items():
             if char_1_id != char_2_id and char_1_id in char_1_ids:
@@ -199,20 +221,7 @@ async def _get_prestige_to_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[
     return result, recipe_count
 
 
-def _create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
-    cache = _create_prestige_to_cache(char_design_id)
-    __prestige_to_cache_dict[char_design_id] = cache
-    return cache
-
-
-def _create_prestige_to_cache(char_design_id: str) -> PssCache:
-    url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
-    name = f'PrestigeTo{char_design_id}'
-    result = PssCache(url, name, None)
-    return result
-
-
-def _normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str, List[str]]:
+def __normalize_prestige_to_data(all_recipes: List[Tuple[str, str]]) -> Dict[str, List[str]]:
     all_recipes = list(all_recipes)
     all_char_ids = [recipe[0] for recipe in all_recipes]
     char_id_counts = sorted([(char_id, count) for char_id, count in dict(Counter(all_char_ids)).items()], key=lambda x: x[1], reverse=True)
@@ -243,11 +252,11 @@ def get_level_costs(ctx: Context, from_level: int, to_level: int = None, as_embe
         pss_assert.parameter_is_valid_integer(to_level, 'to_level', 2, 40)
         from_level = 1
 
-    crew_costs = _get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP)
-    legendary_crew_costs = _get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP)
+    crew_costs = __get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LOOKUP, lookups.XP_COSTS_LOOKUP)
+    legendary_crew_costs = __get_crew_costs(from_level, to_level, lookups.GAS_COSTS_LEGENDARY_LOOKUP, lookups.XP_COSTS_LEGENDARY_LOOKUP)
 
-    crew_cost_txt = _get_crew_cost_txt(from_level, to_level, crew_costs)
-    legendary_crew_cost_txt = _get_crew_cost_txt(from_level, to_level, legendary_crew_costs)
+    crew_cost_txt = __get_crew_costs_as_text(from_level, to_level, crew_costs)
+    legendary_crew_cost_txt = __get_crew_costs_as_text(from_level, to_level, legendary_crew_costs)
 
     if as_embed:
         embed_color = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -267,7 +276,7 @@ def get_level_costs(ctx: Context, from_level: int, to_level: int = None, as_embe
     return result, True
 
 
-def _get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: List[int], xp_cost_lookup: List[int]) -> Tuple[int, int, int, int]:
+def __get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: List[int], xp_cost_lookup: List[int]) -> Tuple[int, int, int, int]:
     gas_cost = gas_costs_lookup[to_level - 1]
     xp_cost = xp_cost_lookup[to_level - 1]
     gas_cost_from = sum(gas_costs_lookup[from_level:to_level])
@@ -279,77 +288,12 @@ def _get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: List[int],
         return (gas_cost, xp_cost, gas_cost_from, xp_cost_from)
 
 
-def _get_crew_cost_txt(from_level: int, to_level: int, costs: Tuple[int, int, int, int]) -> List[str]:
+def __get_crew_costs_as_text(from_level: int, to_level: int, costs: Tuple[int, int, int, int]) -> List[str]:
     result = []
     if from_level == 1:
         result.append(f'Getting from level {to_level - 1:d} to {to_level:d} requires {costs[1]:,} {emojis.pss_stat_xp} and {costs[0]:,}{emojis.pss_gas_big}.')
     result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas_big}.')
 
-    return result
-
-
-
-
-
-# ---------- Create EntityDetails ----------
-
-def __create_character_details_from_info(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> EntityDetails:
-    return EntityDetails(character_info, __properties['character_title'], __properties['character_description'], __properties['character_properties'], __properties['character_embed_settings'], characters_data, collections_data, level=level)
-
-
-def __create_characters_details_list_from_infos(characters_designs_infos: List[EntityInfo], characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> List[EntitiesData]:
-    return [__create_character_details_from_info(character_info, characters_data, collections_data, level) for character_info in characters_designs_infos]
-
-
-def __create_characters_details_collection_from_infos(characters_designs_infos: List[EntityInfo], characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> EntityDetailsCollection:
-    characters_details = __create_characters_details_list_from_infos(characters_designs_infos, characters_data, collections_data, level)
-    result = EntityDetailsCollection(characters_details, big_set_threshold=1)
-    return result
-
-
-def __create_collection_details_from_info(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData) -> EntityDetails:
-    return EntityDetails(collection_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_properties'], __properties['collection_embed_settings'], collections_data, characters_data)
-
-
-def __create_collections_details_list_from_infos(collections_designs_infos: List[EntityInfo], collections_data: EntitiesData, characters_data: EntitiesData) -> List[EntitiesData]:
-    return [__create_collection_details_from_info(collection_info, collections_data, characters_data) for collection_info in collections_designs_infos]
-
-
-def __create_collections_details_collection_from_infos(collection_info: List[EntityInfo], collections_data: EntitiesData, characters_data: EntitiesData) -> EntityDetailsCollection:
-    collections_details = __create_collections_details_list_from_infos(collection_info, collections_data, characters_data)
-    result = EntityDetailsCollection(collections_details, big_set_threshold=1)
-    return result
-
-
-def __create_prestige_from_details_from_info(character_info: EntityInfo) -> EntityDetails:
-    result = EntityDetails(character_info, __properties['prestige_from_title'], NO_PROPERTY, __properties['prestige_from_properties'], __properties['character_embed_settings'], prefix='> ')
-    return result
-
-
-def __create_prestige_from_details_list_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
-    result = [__create_prestige_from_details_from_info(character_info) for character_info in characters_infos]
-    return result
-
-
-def __create_prestige_from_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
-    characters_details = __create_prestige_from_details_list_from_infos(characters_infos)
-    result = EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
-    return result
-
-
-def __create_prestige_to_details_from_info(character_info: EntityInfo) -> EntityDetails:
-    result = EntityDetails(character_info, __properties['prestige_to_title'], NO_PROPERTY, __properties['prestige_to_properties'], __properties['character_embed_settings'], prefix='> ')
-    return result
-
-
-def __create_prestige_to_details_list_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
-    result = [__create_prestige_to_details_from_info(character_info) for character_info in characters_infos]
-    return result
-
-
-def __create_prestige_to_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
-    characters_details = __create_prestige_to_details_list_from_infos(characters_infos)
-    result = EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
     return result
 
 
@@ -531,6 +475,51 @@ def __get_stat(character_info: EntityInfo, characters_data: EntitiesData, collec
 
 
 
+# ---------- Create EntityDetails ----------
+
+def __create_character_details_from_info(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> EntityDetails:
+    return EntityDetails(character_info, __properties['character_title'], __properties['character_description'], __properties['character_properties'], __properties['character_embed_settings'], characters_data, collections_data, level=level)
+
+
+def __create_characters_details_collection_from_infos(characters_designs_infos: List[EntityInfo], characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> EntityDetailsCollection:
+    characters_details = [__create_character_details_from_info(character_info, characters_data, collections_data, level) for character_info in characters_designs_infos]
+    result = EntityDetailsCollection(characters_details, big_set_threshold=1)
+    return result
+
+
+
+def __create_collection_details_from_info(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData) -> EntityDetails:
+    return EntityDetails(collection_info, __properties['collection_title'], __properties['collection_description'], __properties['collection_properties'], __properties['collection_embed_settings'], collections_data, characters_data)
+
+
+def __create_collections_details_collection_from_infos(collection_info: List[EntityInfo], collections_data: EntitiesData, characters_data: EntitiesData) -> EntityDetailsCollection:
+    collections_details = [__create_collection_details_from_info(collection_info, collections_data, characters_data) for collection_info in collections_designs_infos]
+    result = EntityDetailsCollection(collections_details, big_set_threshold=1)
+    return result
+
+
+
+def __create_prestige_from_details_from_info(character_info: EntityInfo) -> EntityDetails:
+    result = EntityDetails(character_info, __properties['prestige_from_title'], NO_PROPERTY, __properties['prestige_from_properties'], __properties['character_embed_settings'], prefix='> ')
+    return result
+
+
+def __create_prestige_from_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
+    characters_details = [__create_prestige_from_details_from_info(character_info) for character_info in characters_infos]
+    result = EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    return result
+
+
+
+def __create_prestige_to_details_from_info(character_info: EntityInfo) -> EntityDetails:
+    result = EntityDetails(character_info, __properties['prestige_to_title'], NO_PROPERTY, __properties['prestige_to_properties'], __properties['character_embed_settings'], prefix='> ')
+    return result
+
+
+def __create_prestige_to_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[EntityDetails]:
+    characters_details = [__create_prestige_to_details_from_info(character_info) for character_info in characters_infos]
+    result = EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    return result
 
 
 
@@ -541,14 +530,6 @@ def __get_stat(character_info: EntityInfo, characters_data: EntitiesData, collec
 def __calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
     exponent = lookups.PROGRESSION_TYPES[progression_type]
     result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent
-    return result
-
-
-def __get_collection_name(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
-    result = None
-    collection_id = character_info[COLLECTION_DESIGN_KEY_NAME]
-    if collection_id and int(collection_id):
-        result = collections_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     return result
 
 

@@ -1,10 +1,10 @@
 import datetime
+import random
 from threading import Lock
 import time
-import random
 
 import pss_core as core
-from pss_entity import EntitiesData, EntityInfo
+from pss_entity import EntitiesData
 import utils
 
 

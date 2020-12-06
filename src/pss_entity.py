@@ -1,10 +1,11 @@
-from discord import Embed
-from discord.ext.commands import Context
 from enum import IntEnum
 import inspect
 import json
 from typing import Any, Awaitable, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from xml.etree import ElementTree
+
+from discord import Embed
+from discord.ext.commands import Context
 
 from cache import PssCache
 import pss_core as core

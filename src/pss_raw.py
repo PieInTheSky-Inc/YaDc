@@ -1,9 +1,10 @@
 from datetime import datetime
-from discord.ext.commands import Context
 import json
 import os
 import time
-from typing import List
+from typing import Any, List
+
+from discord.ext.commands import Context
 
 import excel
 import pss_core as core
@@ -12,7 +13,7 @@ import settings
 import utils
 
 
-# ---------- Functions ----------
+# ---------- Raw info ----------
 
 async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
     if ctx.author.id in settings.RAW_COMMAND_USERS:
@@ -152,7 +153,7 @@ async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name:
     os.remove(file_path)
 
 
-def __should_include_raw_field(field) -> bool:
+def __should_include_raw_field(field: Any) -> bool:
     # include properties which are:
     #  - strings
     #  - non-nested dicts

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import emojis
 
@@ -47,7 +47,7 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
 }
 
 
-DELETE_ON_CHANGE_ORDER = [True, None, False]
+DELETE_ON_CHANGE_ORDER: List[Optional[bool]] = [True, None, False]
 
 
 DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
@@ -166,7 +166,7 @@ IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
 }
 
 
-ITEM_SUB_TYPES_TO_GET_PARENTS_FOR = [
+ITEM_SUB_TYPES_TO_GET_PARENTS_FOR: List[str] = [
     'Module'
 ]
 

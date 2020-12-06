@@ -3,21 +3,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import asyncio
 import calendar
 import datetime
-from discord import Activity, ActivityType, Message, Embed, Guild, TextChannel
-from discord import __version__ as discord_version
-from discord.ext.commands import Bot, BucketType, Context, cooldown, is_owner, when_mentioned_or
-import discord.errors as errors
-import discord.ext.commands.errors as command_errors
-import holidays
 import logging
 import json
 import os
 import pytz
 import sys
 from typing import List, Tuple, Union
+
+import asyncio
+from discord import Activity, ActivityType, Message, Embed, Guild, TextChannel
+from discord import __version__ as discord_version
+from discord.ext.commands import Bot, BucketType, Context, cooldown, is_owner, when_mentioned_or
+import discord.errors as errors
+import discord.ext.commands.errors as command_errors
+import holidays
 
 import database as db
 from gdrive import TourneyDataClient
@@ -1103,7 +1104,7 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     if tourney_data and tourney_data.fleets and tourney_data.users:
         async with ctx.typing():
             file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
-            file_paths = [fleet.create_fleet_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+            file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
         await utils.discord.post_output_with_files(ctx, [], file_paths)
         for file_path in file_paths:
             os.remove(file_path)
@@ -3217,7 +3218,7 @@ async def cmd_device_select(ctx: Context, device_key: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        device = login.DEVICES.select_device(device_key)
+        device = login.DEVICES.select_device_by_key(device_key)
     await ctx.send(f'Selected device \'{device.key}\'.')
 
 

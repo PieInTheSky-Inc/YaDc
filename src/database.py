@@ -1,6 +1,7 @@
-import asyncpg
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Tuple, Union
+
+import asyncpg
 
 import pss_daily as daily
 import settings
