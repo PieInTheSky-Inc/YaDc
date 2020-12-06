@@ -108,7 +108,7 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
     if not best_items:
         raise Error(f'Could not find an item for slot `{slot}` providing bonus `{stat}`.')
     else:
-        groups = await __get_collection_groups(best_items, ctx, stat_filter, as_embed)
+        groups = await __get_collection_groups(best_items, stat_filter, as_embed)
 
         result = []
         if as_embed:

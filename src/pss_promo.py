@@ -62,7 +62,7 @@ class LegacyPromotionDesignDetails(LegacyEntityDetails):
 
         self.__from_datetime: datetime.datetime = __get_datetime(promotion_info.get('FromDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
         self.__to_datetime: datetime.datetime = __get_datetime(promotion_info.get('ToDate', None), settings.API_DATETIME_FORMAT_CUSTOM)
-        self.__iap_options: str = core.convert_iap_options_mask(promotion_info.get('PurchaseMask', '0'))
+        self.__iap_options: str = utils.convert.iap_options_mask(promotion_info.get('PurchaseMask', '0'))
 
         details_long: List[Tuple[str, str]] = [
         ]

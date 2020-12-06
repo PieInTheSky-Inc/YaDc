@@ -67,7 +67,7 @@ def get_user_search_details(user_info: EntityInfo) -> str:
 async def __get_users_data(user_name: str) -> EntitiesData:
     path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name)}'
     user_data_raw = await core.get_data_from_path(path)
-    user_infos = core.xmltree_to_dict3(user_data_raw)
+    user_infos = utils.convert.xmltree_to_dict3(user_data_raw)
     return user_infos
 
 
@@ -340,7 +340,7 @@ def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> i
 async def __get_user_info_by_id(user_id: int) -> EntityInfo:
     path = await __get_inspect_ship_path(user_id)
     inspect_ship_info_raw = await core.get_data_from_path(path)
-    inspect_ship_info = core.convert_raw_xml_to_dict(inspect_ship_info_raw)
+    inspect_ship_info = utils.convert.raw_xml_to_dict(inspect_ship_info_raw)
     result = inspect_ship_info['ShipService']['InspectShip']['User']
     return result
 
@@ -399,7 +399,7 @@ __properties: EntityDetailsCreationPropertiesCollection = {
 
 async def init() -> None:
     league_data = await core.get_data_from_path(LEAGUE_BASE_PATH)
-    league_infos = core.xmltree_to_dict3(league_data)
+    league_infos = utils.convert.xmltree_to_dict3(league_data)
     for league_info in sorted(list(league_infos.values()), key=lambda league_info: int(league_info['MinTrophy'])):
         league_info['MinTrophy'] = int(league_info['MinTrophy'])
         league_info['MaxTrophy'] = int(league_info['MaxTrophy'])

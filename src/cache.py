@@ -5,7 +5,7 @@ import time
 from typing import Dict, Optional
 
 import pss_core as core
-from pss_entity import EntitiesData
+import pss_entity as entity
 import utils
 
 
@@ -71,13 +71,13 @@ class PssCache:
 
     async def get_raw_data_dict(self) -> Dict:
         raw_data = await self.get_raw_data()
-        result = core.convert_raw_xml_to_dict(raw_data)
+        result = utils.convert.raw_xml_to_dict(raw_data)
         return result
 
 
-    async def get_data_dict3(self) -> EntitiesData:
+    async def get_data_dict3(self) -> entity.EntitiesData:
         data = await self.get_raw_data()
-        return core.xmltree_to_dict3(data)
+        return utils.convert.xmltree_to_dict3(data)
 
 
     def __get_is_data_outdated(self) -> bool:

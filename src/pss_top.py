@@ -41,7 +41,7 @@ TOP_FLEETS_BASE_PATH: str = 'AllianceService/ListAlliancesByRanking?skip=0&take=
 async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     tourney_running = tourney.is_tourney_running()
     raw_data = await core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
-    data = core.xmltree_to_dict3(raw_data)
+    data = utils.convert.xmltree_to_dict3(raw_data)
     if data:
         title = f'Top {take} fleets'
         prepared_data = __prepare_top_fleets(data)
@@ -122,7 +122,7 @@ def __create_body_lines_top_captains(prepared_data: List[Tuple[int, str, str, st
 async def __get_top_captains_data(skip: int, take: int) -> EntitiesData:
     path = await __get_top_captains_path(skip, take)
     raw_data = await core.get_data_from_path(path)
-    data = core.xmltree_to_dict3(raw_data)
+    data = utils.convert.xmltree_to_dict3(raw_data)
     return data
 
 
@@ -165,7 +165,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
 
     if fleet_data is None or retrieved_date is None:
         data = await core.get_data_from_path(STARS_BASE_PATH)
-        fleet_infos = core.xmltree_to_dict3(data)
+        fleet_infos = utils.convert.xmltree_to_dict3(data)
     else:
         fleet_infos = fleet_data
 

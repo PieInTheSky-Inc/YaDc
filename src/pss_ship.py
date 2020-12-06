@@ -3,6 +3,7 @@ from typing import Dict, Optional, Tuple
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, EntityRetriever
 import pss_login as login
+import utils
 
 
 # ---------- Constants ----------
@@ -20,7 +21,7 @@ SHIP_DESIGN_KEY_NAME: str = 'ShipDesignId'
 async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
     inspect_ship_path = await __get_inspect_ship_base_path(user_id)
     inspect_ship_data = await core.get_data_from_path(inspect_ship_path)
-    result = core.xmltree_to_dict2(inspect_ship_data)
+    result = utils.convert.xmltree_to_dict2(inspect_ship_data)
     return result.get('User', None), result.get('Ship', None)
 
 

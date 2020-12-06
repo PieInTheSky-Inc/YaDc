@@ -763,7 +763,7 @@ class EntityRetriever:
         result = None
         raw_xml = await self.get_raw_entity_info_by_id_as_xml(entity_id)
         if raw_xml is not None:
-            result = core.convert_raw_xml_to_dict(raw_xml, fix_attributes=fix_xml_attributes, preserve_lists=True)
+            result = utils.convert.raw_xml_to_dict(raw_xml, fix_attributes=fix_xml_attributes, preserve_lists=True)
         if result is not None:
             result = json.dumps(result)
         return result

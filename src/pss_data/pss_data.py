@@ -12,7 +12,4 @@ else:
 
 ID_NAMES_FILEPATH = f'{PWD}id_names.json'
 
-ID_NAMES_INFO = Dict[str, str]
-
-# Load id_names information
-ID_NAMES_INFO = utils.io.load_json_from_file(ID_NAMES_FILEPATH)
+ID_NAMES_INFO: Dict[str, str] = utils.io.load_json_from_file(ID_NAMES_FILEPATH)

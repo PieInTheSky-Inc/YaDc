@@ -116,7 +116,7 @@ async def get_fleet_users_data_by_fleet_info(fleet_info: EntityInfo) -> Entities
 async def get_fleets_data_by_id(fleet_id: str) -> EntitiesData:
     path = await __get_get_alliance_base_path(fleet_id)
     fleet_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_data_raw)
+    result = utils.convert.xmltree_to_dict3(fleet_data_raw)
     return result
 
 
@@ -149,14 +149,14 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
 async def __get_fleets_data_by_name(fleet_name: str) -> EntitiesData:
     path = await __get_search_fleets_base_path(fleet_name)
     fleet_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_data_raw)
+    result = utils.convert.xmltree_to_dict3(fleet_data_raw)
     return result
 
 
 async def __get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
     path = await __get_search_fleet_users_base_path(alliance_id)
     fleet_users_data_raw = await core.get_data_from_path(path)
-    result = core.xmltree_to_dict3(fleet_users_data_raw)
+    result = utils.convert.xmltree_to_dict3(fleet_users_data_raw)
     return result
 
 

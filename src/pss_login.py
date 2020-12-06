@@ -124,7 +124,7 @@ class Device():
             async with session.post(url) as response:
                 data = await response.text(encoding='utf-8')
 
-        result = core.convert_raw_xml_to_dict(data)
+        result = utils.convert.raw_xml_to_dict(data)
         self.__last_login = utc_now
         if 'UserService' in result.keys():
             user = result['UserService']['UserLogin']['User']

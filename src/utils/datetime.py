@@ -6,7 +6,7 @@ from datetime import timedelta as _timedelta
 from datetime import timezone as _timezone
 
 from . import constants as _constants
-from . import formatting as _formatting
+from . import format as _format
 
 
 # ---------- Constants ----------
@@ -43,7 +43,7 @@ def get_first_of_next_month(utc_now: _datetime = None) -> _datetime:
 
 def get_historic_data_note(dt: _datetime) -> str:
     if dt is not None:
-        timestamp = _formatting.datetime(dt)
+        timestamp = _format.datetime(dt)
         result = f'{HISTORIC_DATA_NOTE}: {timestamp}'
         return result
     else:

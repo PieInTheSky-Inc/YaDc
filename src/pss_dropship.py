@@ -194,7 +194,7 @@ async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
-    sale_items = core.convert_iap_options_mask(int(daily_info['SaleItemMask']))
+    sale_items = utils.convert.iap_options_mask(int(daily_info['SaleItemMask']))
     sale_quantity = daily_info['SaleQuantity']
     result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 
@@ -253,7 +253,7 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
 
     try:
         raw_text = await core.get_data_from_path(path)
-        raw_data = core.xmltree_to_dict3(raw_text)
+        raw_data = utils.convert.xmltree_to_dict3(raw_text)
     except Exception as err:
         raw_data = None
         raise Error(f'Could not get news: {err}')

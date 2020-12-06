@@ -1,6 +1,6 @@
 from datetime import datetime as _datetime, timedelta as _timedelta
 import math as _math
-from typing import Iterable as _Iterable
+from typing import Iterable as _Iterable, Optional
 from typing import Tuple as _Tuple
 
 from . import constants as _constants

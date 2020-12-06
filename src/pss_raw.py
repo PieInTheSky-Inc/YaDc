@@ -134,7 +134,7 @@ async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name:
         entity_name = entity_name.replace(' ', '_')
         file_name_prefix = f'{entity_name}_designs'
         raw_data = await retriever.get_raw_data()
-        raw_data_dict = core.convert_raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
+        raw_data_dict = utils.convert.raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
         if mode == 'xml':
             file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
         elif mode == 'json':
