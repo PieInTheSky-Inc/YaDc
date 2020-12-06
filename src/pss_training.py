@@ -64,7 +64,7 @@ async def get_training_details_from_name(training_name: str, ctx: Context, as_em
 
 # ---------- Transformation functions ----------
 
-def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     cost = int(training_info['MineralCost'])
     if cost:
         cost_compact = utils.format.get_reduced_number_compact(cost)
@@ -74,7 +74,7 @@ def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_d
     return result
 
 
-def __get_duration(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_duration(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     seconds = int(training_info['Duration'])
     if seconds:
         result = utils.format.duration(seconds, include_relative_indicator=False)
@@ -83,7 +83,7 @@ def __get_duration(training_info: EntityInfo, trainings_data: EntitiesData, item
     return result
 
 
-def __get_fatigue(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_fatigue(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     fatigue = int(training_info['Fatigue'])
     if fatigue:
         result = f'{fatigue}h'
@@ -92,13 +92,13 @@ def __get_fatigue(training_info: EntityInfo, trainings_data: EntitiesData, items
     return result
 
 
-def __get_required_research(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_required_research(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     required_research_id = training_info['RequiredResearchDesignId']
     result = research.get_research_name_from_id(required_research_id, researches_data)
     return result
 
 
-def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     add_line_breaks = kwargs.get('add_line_breaks', False)
     chances = []
     max_chance_value = 0
@@ -121,7 +121,7 @@ def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, 
     return separator.join(result)
 
 
-async def __get_thumbnail_url(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+async def __get_thumbnail_url(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     training_sprite_id = training_info.get('TrainingSpriteId')
     sprite_id = None
     if entity_property_has_value(training_sprite_id) and training_sprite_id != '454':
@@ -140,14 +140,14 @@ async def __get_thumbnail_url(training_info: EntityInfo, trainings_data: Entitie
     return result
 
 
-async def __get_training_item_name(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+async def __get_training_item_name(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     training_id = training_info[TRAINING_DESIGN_KEY_NAME]
     items_details = item.get_item_details_by_training_id(training_id, items_data, trainings_data)
     result = [''.join(await item_details.get_details_as_text(EntityDetailsType.MINI)) for item_details in items_details]
     return ', '.join(result)
 
 
-def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> str:
+def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     required_room_level = training_info['RequiredRoomLevel']
     training_room_type = int(training_info['Rank'])
     room_name, _ = __get_room_names(training_room_type)

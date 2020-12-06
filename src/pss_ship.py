@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import pss_core as core
 from pss_entity import EntitiesData, EntityInfo, EntityRetriever
@@ -24,7 +24,7 @@ async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
     return result.get('User', None), result.get('Ship', None)
 
 
-async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData = None) -> str:
+async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData = None) -> Optional[str]:
     if not ship_info:
         return None
     if not ship_design_data:

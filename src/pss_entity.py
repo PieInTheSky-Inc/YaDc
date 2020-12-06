@@ -190,7 +190,7 @@ class EntityDetailProperty(object):
             return ''
 
 
-    async def __get_value(self, entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> str:
+    async def __get_value(self, entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> Optional[str]:
         if self.__transform_function:
             if self.__use_entity_property_name:
                 entity_property = get_property_from_entity_info(entity_info, self.__entity_property_name)

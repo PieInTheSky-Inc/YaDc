@@ -33,7 +33,7 @@ def datetime(date_time: _datetime, include_time: bool = True, include_tz: bool =
     return result
 
 
-def datetime_for_excel(dt: _datetime, include_seconds: bool = True) -> str:
+def datetime_for_excel(dt: _datetime, include_seconds: bool = True) -> Optional[str]:
     if dt:
         format_str = '%Y-%m-%d %H:%M'
         if include_seconds:

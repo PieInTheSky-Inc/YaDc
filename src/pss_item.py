@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from discord import Embed
 from discord.ext.commands import Context
@@ -149,7 +149,7 @@ def __get_best_items_designs(slot_filter: List[str], stat_filter: str, items_dat
     return result
 
 
-def __get_best_items_error(slot: str, stat: str) -> str:
+def __get_best_items_error(slot: str, stat: str) -> Optional[str]:
     if not stat:
         return f'You must specify a stat! {__STATS_AVAILABLE}'
     if slot:
@@ -358,7 +358,7 @@ def __get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[EntityInf
 
 # ---------- Transformation functions ----------
 
-def __get_all_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_all_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     include_partial_artifacts = get_include_partial_artifacts(item_info)
     ingredients_tree = __parse_ingredients_tree(item_info['Ingredients'], items_data, include_partial_artifacts)
     ingredients_dicts = __flatten_ingredients_tree(ingredients_tree)
@@ -385,7 +385,7 @@ def __get_all_ingredients(item_info: EntityInfo, items_data: EntitiesData, train
     return '\n'.join(lines)
 
 
-def __get_can_sell(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_can_sell(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = resources.get_resource('CANNOT_BE_SOLD')
@@ -394,13 +394,13 @@ def __get_can_sell(item_info: EntityInfo, items_data: EntitiesData, trainings_da
     return result
 
 
-def __get_enhancement_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_enhancement_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     enhancement_value = float(item_info['EnhancementValue'])
     result = f'{enhancement_value:.1f}'
     return result
 
 
-async def __get_image_url(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+async def __get_image_url(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     logo_sprite_id = item_info.get('LogoSpriteId')
     image_sprite_id = item_info.get('ImageSpriteId')
     if entity_property_has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
@@ -409,7 +409,7 @@ async def __get_image_url(item_info: EntityInfo, items_data: EntitiesData, train
         return None
 
 
-def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     ingredients = __get_ingredients_dict(item_info.get('Ingredients'))
     result = []
     for item_id, amount in ingredients.items():
@@ -421,7 +421,7 @@ def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings
         return None
 
 
-def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     bonus_type = item_info['EnhancementType']
     bonus_value = item_info['EnhancementValue']
     if bonus_type.lower() == 'none':
@@ -431,7 +431,7 @@ def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesD
     return result
 
 
-def __get_item_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_item_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = resources.get_resource('CANNOT_BE_SOLD')
@@ -442,7 +442,7 @@ def __get_item_price(item_info: EntityInfo, items_data: EntitiesData, trainings_
     return result
 
 
-def __get_item_slot(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_item_slot(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     item_type = item_info['ItemType']
     item_sub_type = item_info['ItemSubType']
     if item_type == 'Equipment' and 'Equipment' in item_sub_type:
@@ -452,7 +452,7 @@ def __get_item_slot(item_info: EntityInfo, items_data: EntitiesData, trainings_d
     return result
 
 
-def __get_pretty_market_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_pretty_market_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = resources.get_resource('CANNOT_BE_SOLD')
@@ -462,7 +462,7 @@ def __get_pretty_market_price(item_info: EntityInfo, items_data: EntitiesData, t
     return result
 
 
-def __get_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     flags = int(item_info['Flags'])
     if flags & 1 == 0:
         result = None
@@ -472,7 +472,7 @@ def __get_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data:
     return result
 
 
-def __get_title_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_title_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     value = kwargs.get('entity_property')
     if value:
         result = f'Ingredients for: {value}'
@@ -481,7 +481,7 @@ def __get_title_ingredients(item_info: EntityInfo, items_data: EntitiesData, tra
     return result
 
 
-async def __get_training_mini_details(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData, **kwargs) -> str:
+async def __get_training_mini_details(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData, **kwargs) -> Optional[str]:
     for_embed = kwargs.get('for_embed', False)
     training_design_id = item_info.get(training.TRAINING_DESIGN_KEY_NAME)
     if entity_property_has_value(training_design_id):
@@ -492,7 +492,7 @@ async def __get_training_mini_details(item_info: EntityInfo, items_data: Entitie
         return None
 
 
-def __get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> str:
+def __get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     item_sub_type = item_info.get('ItemSubType')
     if entity_property_has_value(item_sub_type) and 'Equipment' not in item_sub_type:
         result = item_sub_type.replace('Equipment', '')

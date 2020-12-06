@@ -1,6 +1,6 @@
 from datetime import datetime
 import pprint
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from discord import Embed, Guild, Message
 from discord.ext.commands import Bot, Context
@@ -276,7 +276,7 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
 
 # ---------- Transformation functions ----------
 
-def __get_news_footer(news_info: EntityInfo, **kwargs) -> str:
+def __get_news_footer(news_info: EntityInfo, **kwargs) -> Optional[str]:
     return 'PSS News'
 
 
@@ -286,7 +286,7 @@ def __get_pss_datetime(*args, **kwargs) -> datetime:
     return result
 
 
-def __get_value(*args, **kwargs) -> str:
+def __get_value(*args, **kwargs) -> Optional[str]:
     entity_property = kwargs.get('entity_property')
     if entity_property_has_value(entity_property):
         return entity_property
@@ -294,7 +294,7 @@ def __get_value(*args, **kwargs) -> str:
         return None
 
 
-def __sanitize_text(*args, **kwargs) -> str:
+def __sanitize_text(*args, **kwargs) -> Optional[str]:
     entity_property = kwargs.get('entity_property')
     if entity_property:
         result = utils.escape_escape_sequences(entity_property)

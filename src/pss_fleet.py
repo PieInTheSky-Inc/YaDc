@@ -212,7 +212,7 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo
 
 # ---------- Transformation functions ----------
 
-def __get_description_as_text(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_description_as_text(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     description = fleet_info.get('AllianceDescription')
     if description is not None:
@@ -220,7 +220,7 @@ def __get_description_as_text(fleet_info: EntityInfo, fleet_users_data: Entities
     return result
 
 
-def __get_division_name_and_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_division_name_and_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     division_name = get_division_name(fleet_info)
     if division_name is not None and division_name != '-':
@@ -232,7 +232,7 @@ def __get_division_name_and_ranking(fleet_info: EntityInfo, fleet_users_data: En
     return result
 
 
-def __get_historic_data_note(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> str:
+def __get_historic_data_note(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_past_data: bool = None, **kwargs) -> Optional[str]:
     if is_past_data:
         result = utils.datetime.get_historic_data_note(retrieved_at)
     else:
@@ -240,7 +240,7 @@ def __get_historic_data_note(fleet_info: EntityInfo, fleet_users_data: EntitiesD
     return result
 
 
-def __get_member_count(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_member_count(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     member_count = fleet_info.get('NumberOfMembers')
     if member_count is not None:
@@ -250,12 +250,12 @@ def __get_member_count(fleet_info: EntityInfo, fleet_users_data: EntitiesData, *
     return result
 
 
-def __get_min_trophies(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_min_trophies(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = fleet_info.get('MinTrophyRequired')
     return result
 
 
-def __get_name(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_name(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     fleet_name = fleet_info.get(FLEET_DESCRIPTION_PROPERTY_NAME)
     if fleet_name is not None:
@@ -266,7 +266,7 @@ def __get_name(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs)
     return result
 
 
-def __get_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     ranking = fleet_info.get('Ranking')
     if ranking is not None and ranking != '0':
@@ -274,7 +274,7 @@ def __get_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwar
     return result
 
 
-def __get_stars(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, **kwargs) -> str:
+def __get_stars(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, **kwargs) -> Optional[str]:
     result = None
     stars = fleet_info.get('Score')
     if stars is not None and stars != '0':
@@ -285,7 +285,7 @@ def __get_stars(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tour
     return result
 
 
-def __get_trophies(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_trophies(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     trophy = fleet_info.get('Trophy')
     if trophy is not None:
@@ -295,7 +295,7 @@ def __get_trophies(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwa
     return result
 
 
-def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> str:
+def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
     requires_approval = fleet_info.get('RequiresApproval')
     if requires_approval is not None:

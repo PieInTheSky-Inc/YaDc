@@ -1,5 +1,5 @@
 import datetime
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from discord import Embed
 
@@ -298,7 +298,7 @@ def __get_datetime(api_datetime: str, datetime_format: str) -> datetime.datetime
         return result
 
 
-def __get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> str:
+def __get_pretty_requirement_type(requirement_type: str, language_key: str = 'en') -> Optional[str]:
     if language_key and requirement_type:
         result = lookups.PROMO_REQUIREMENT_TYPE_LOOKUP.get(language_key, {}).get(requirement_type, None)
         return result

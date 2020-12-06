@@ -55,7 +55,7 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
 
 # ---------- Transformation functions ----------
 
-def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> str:
+def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])
 
@@ -75,7 +75,7 @@ def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwar
     return result
 
 
-def __get_duration(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> str:
+def __get_duration(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     seconds = int(research_info['ResearchTime'])
     result = utils.format.timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
     return result

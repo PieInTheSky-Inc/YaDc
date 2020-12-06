@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from discord import Colour, Embed
 from discord.ext.commands import Context
@@ -90,14 +90,6 @@ async def get_collection_details_by_name(ctx: Context, collection_name: str, as_
             return (await collections_details_collection.get_entities_details_as_embed(ctx))
         else:
             return (await collections_details_collection.get_entities_details_as_text())
-
-
-def __get_collection_name(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
-    result = None
-    collection_id = character_info[COLLECTION_DESIGN_KEY_NAME]
-    if collection_id and int(collection_id):
-        result = collections_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    return result
 
 
 
@@ -302,7 +294,7 @@ def __get_crew_costs_as_text(from_level: int, to_level: int, costs: Tuple[int, i
 
 # ---------- Transformation functions ----------
 
-def __get_ability(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_ability(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     if entity_property_has_value(character_info['SpecialAbilityType']):
         result = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_info['SpecialAbilityType'], character_info['SpecialAbilityType'])
     else:
@@ -310,7 +302,7 @@ def __get_ability(character_info: EntityInfo, characters_data: EntitiesData, col
     return result
 
 
-def __get_ability_stat(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_ability_stat(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     value = __get_stat(character_info, characters_data, collections_data, level, stat_name='SpecialAbilityArgument')
     if character_info['SpecialAbilityType']:
         special_ability = lookups.SPECIAL_ABILITIES_LOOKUP.get(character_info['SpecialAbilityType'], character_info['SpecialAbilityType'])
@@ -323,14 +315,18 @@ def __get_ability_stat(character_info: EntityInfo, characters_data: EntitiesData
     return result
 
 
-def __get_collection_member_count(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_collection_hyperlink(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
+    return '<https://pixelstarships.fandom.com/wiki/Category:Crew_Collections>'
+
+
+def __get_collection_member_count(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     collection_id = collection_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_data[char_id] for char_id in characters_data.keys() if characters_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = len(chars_designs_infos)
     return f'{result} members'
 
 
-def __get_collection_member_names(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_collection_member_names(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     collection_id = collection_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_data[char_id] for char_id in characters_data.keys() if characters_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = [char_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for char_info in chars_designs_infos]
@@ -338,17 +334,21 @@ def __get_collection_member_names(collection_info: EntityInfo, collections_data:
     return ', '.join(result)
 
 
-def __get_collection_hyperlink(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
-    return '<https://pixelstarships.fandom.com/wiki/Category:Crew_Collections>'
+def __get_collection_name(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> Optional[str]:
+    result = None
+    collection_id = character_info[COLLECTION_DESIGN_KEY_NAME]
+    if collection_id and int(collection_id):
+        result = collections_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
 
 
-def __get_collection_perk(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_collection_perk(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     enhancement_type = collection_info['EnhancementType']
     result = lookups.COLLECTION_PERK_LOOKUP.get(enhancement_type, enhancement_type)
     return result
 
 
-def __get_crew_card_hyperlink(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_crew_card_hyperlink(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     crew_name: str = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if crew_name:
         crew_name_escaped = utils.convert.url_escape(crew_name)
@@ -359,7 +359,7 @@ def __get_crew_card_hyperlink(character_info: EntityInfo, characters_data: Entit
         return None
 
 
-def __get_pixel_prestige_hyperlink(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_pixel_prestige_hyperlink(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     crew_id: str = character_info.get(CHARACTER_DESIGN_KEY_NAME)
     if crew_id:
         url = f'https://pixel-prestige.com/crew.php?nId={crew_id}'
@@ -377,42 +377,42 @@ def __get_embed_color(collection_info: EntityInfo, collections_data: EntitiesDat
     return result
 
 
-def __get_enhancement(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_enhancement(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     base_enhancement_value = collection_info['BaseEnhancementValue']
     step_enhancement_value = collection_info['StepEnhancementValue']
     result = f'{base_enhancement_value} (Base), {step_enhancement_value} (Step)'
     return result
 
 
-def __get_level(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_level(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     if level is None:
         return None
     else:
         return str(level)
 
 
-def __get_members_count_display_name(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_members_count_display_name(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     collection_id = collection_info[COLLECTION_DESIGN_KEY_NAME]
     chars_designs_infos = [characters_data[char_id] for char_id in characters_data.keys() if characters_data[char_id][COLLECTION_DESIGN_KEY_NAME] == collection_id]
     result = f'Members ({len(chars_designs_infos)})'
     return result
 
 
-def __get_min_max_combo(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> str:
+def __get_min_max_combo(collection_info: EntityInfo, collections_data: EntitiesData, characters_data: EntitiesData, **kwargs) -> Optional[str]:
     min_combo = collection_info['MinCombo']
     max_combo = collection_info['MaxCombo']
     result = f'{min_combo}...{max_combo}'
     return result
 
 
-def __get_name_with_level(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> str:
+def __get_name_with_level(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, **kwargs) -> Optional[str]:
     result = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if level:
         result += f' {settings.DEFAULT_HYPHEN} Level {level}'
     return result
 
 
-def __get_prestige_from_title(character_info: EntityInfo, for_embed: bool = None, **kwargs) -> str:
+def __get_prestige_from_title(character_info: EntityInfo, for_embed: bool = None, **kwargs) -> Optional[str]:
     char_name = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if for_embed:
         result = f'To {char_name} with'
@@ -421,12 +421,12 @@ def __get_prestige_from_title(character_info: EntityInfo, for_embed: bool = None
     return result
 
 
-def __get_prestige_names(character_info: EntityInfo, separator: str = ', ', **kwargs) -> str:
+def __get_prestige_names(character_info: EntityInfo, separator: str = ', ', **kwargs) -> Optional[str]:
     result = sorted([prestige_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME] for prestige_info in character_info['Prestige']])
     return separator.join(result)
 
 
-def __get_prestige_to_title(character_info: EntityInfo, for_embed: bool = None, **kwargs) -> str:
+def __get_prestige_to_title(character_info: EntityInfo, for_embed: bool = None, **kwargs) -> Optional[str]:
     char_name = character_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
     if for_embed:
         result = f'{char_name} with'
@@ -435,13 +435,13 @@ def __get_prestige_to_title(character_info: EntityInfo, for_embed: bool = None, 
     return result
 
 
-def __get_rarity(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
+def __get_rarity(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> Optional[str]:
     rarity = character_info.get('Rarity')
     result = f'{rarity} {lookups.RARITY_EMOJIS_LOOKUP.get(rarity)}'
     return result
 
 
-def __get_slots(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
+def __get_slots(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> Optional[str]:
     result = []
     equipment_mask = int(character_info['EquipmentMask'])
     for k in lookups.EQUIPMENT_MASK_LOOKUP.keys():
@@ -452,14 +452,14 @@ def __get_slots(character_info: EntityInfo, characters_data: EntitiesData, colle
     return result
 
 
-def __get_speed(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> str:
+def __get_speed(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> Optional[str]:
     walk_speed = character_info['WalkingSpeed']
     run_speed = character_info['RunSpeed']
     result = f'{walk_speed}/{run_speed}'
     return result
 
 
-def __get_stat(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, stat_name: str, **kwargs) -> str:
+def __get_stat(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int, stat_name: str, **kwargs) -> Optional[str]:
     is_special_stat = stat_name.lower().startswith('specialability')
     if is_special_stat:
         max_stat_name = 'SpecialAbilityFinalArgument'

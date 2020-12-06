@@ -3,7 +3,7 @@ from datetime import datetime
 from discord import Embed, Guild, Message, TextChannel
 from discord.ext.commands import Bot, Context
 from enum import IntEnum
-from typing import Any, Callable, Dict, ItemsView, KeysView, List, Tuple, Union, ValuesView
+from typing import Any, Callable, Dict, ItemsView, KeysView, List, Optional, Tuple, Union, ValuesView
 
 import database as db
 import pss_assert
@@ -120,7 +120,7 @@ class AutoDailySettings():
         return result
 
 
-    def _get_pretty_channel_mention(self) -> str:
+    def _get_pretty_channel_mention(self) -> Optional[str]:
         if self.channel is not None:
             channel_name = self.channel.mention
         else:
@@ -860,7 +860,7 @@ async def __db_get_has_settings(guild_id: int) -> bool:
         return False
 
 
-async def __db_get_prefix(guild_id: int) -> str:
+async def __db_get_prefix(guild_id: int) -> Optional[str]:
     await __db_create_server_settings(guild_id)
     setting_names = [_COLUMN_NAME_PREFIX]
     result = await __db_get_server_setting(guild_id, setting_names=setting_names)

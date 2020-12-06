@@ -2,6 +2,7 @@ import datetime
 import random
 from threading import Lock
 import time
+from typing import Dict, Optional
 
 import pss_core as core
 from pss_entity import EntitiesData
@@ -27,7 +28,7 @@ class PssCache:
 
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self.__name
 
 
@@ -68,7 +69,7 @@ class PssCache:
         return result
 
 
-    async def get_raw_data_dict(self) -> str:
+    async def get_raw_data_dict(self) -> Dict:
         raw_data = await self.get_raw_data()
         result = core.convert_raw_xml_to_dict(raw_data)
         return result

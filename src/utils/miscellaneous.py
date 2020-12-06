@@ -2,7 +2,7 @@ import aiohttp as _aiohttp
 from jellyfish import jaro_winkler as _jaro_winkler
 import subprocess as _subprocess
 from threading import get_ident as _get_ident
-from typing import Any as _Any
+from typing import Any as _Any, Optional
 from typing import Dict as _Dict
 from typing import Iterable as _Iterable
 from typing import List as _List
@@ -68,7 +68,7 @@ def dicts_equal(d1: _Dict[_Any, _Any], d2: _Dict[_Any, _Any]) -> bool:
         return False
 
 
-def escape_escape_sequences(txt: str) -> str:
+def escape_escape_sequences(txt: str) -> Optional[str]:
     if txt:
         txt = txt.replace('\\n', '\n')
         txt = txt.replace('\\r', '\r')
