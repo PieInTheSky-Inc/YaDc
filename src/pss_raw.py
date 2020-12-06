@@ -7,15 +7,14 @@ from typing import Any, List
 from discord.ext.commands import Context
 
 import excel
-import pss_core as core
-from pss_entity import EntitiesData, EntityInfo, EntityRetriever
+import pss_entity as entity
 import settings
 import utils
 
 
 # ---------- Raw info ----------
 
-async def post_raw_data(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str) -> None:
+async def post_raw_data(ctx: Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str) -> None:
     if ctx.author.id in settings.RAW_COMMAND_USERS:
         retrieved_at = utils.get_utc_now()
         mode = None
@@ -54,7 +53,7 @@ def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retri
     return file_name
 
 
-def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
+def __flatten_raw_data(data: entity.EntitiesData) -> List[entity.EntityInfo]:
     flat_data = []
     for row in data.values():
         result_row = __flatten_raw_entity(row)
@@ -62,7 +61,7 @@ def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
     return flat_data
 
 
-def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
+def __flatten_raw_dict_for_excel(raw_dict: entity.EntitiesData) -> List[entity.EntityInfo]:
     entity = {}
     result = []
     children = []
@@ -84,7 +83,7 @@ def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
     return result
 
 
-def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
+def __flatten_raw_entity(entity_info: entity.EntityInfo) -> entity.EntityInfo:
     result = {}
     for field_name, field in entity_info.items():
         if __should_include_raw_field(field):
@@ -96,7 +95,7 @@ def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
     return result
 
 
-async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime) -> None:
+async def __post_raw_entity(ctx: Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime) -> None:
     async with ctx.typing():
         output = []
         data = await retriever.get_data_dict3()
@@ -128,7 +127,7 @@ async def __post_raw_entity(ctx: Context, retriever: EntityRetriever, entity_nam
         await utils.discord.post_output(ctx, output)
 
 
-async def __post_raw_file(ctx: Context, retriever: EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
+async def __post_raw_file(ctx: Context, retriever: entity.EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
     async with ctx.typing():
         retrieved_at = retrieved_at or utils.get_utc_now()
         entity_name = entity_name.replace(' ', '_')

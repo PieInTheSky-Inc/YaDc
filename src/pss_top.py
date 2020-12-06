@@ -8,7 +8,7 @@ from discord.utils import escape_markdown
 import emojis
 import pss_assert
 import pss_core as core
-from pss_entity import EntitiesData, EntityInfo, EntityRetriever
+import pss_entity as entity
 from pss_exception import Error
 import pss_fleet as fleet
 import pss_login as login
@@ -74,7 +74,7 @@ def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]
     return result
 
 
-def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
+def __prepare_top_fleets(fleets_data: entity.EntitiesData) -> List[Tuple]:
     result = [
         (
             position,
@@ -119,7 +119,7 @@ def __create_body_lines_top_captains(prepared_data: List[Tuple[int, str, str, st
     return result
 
 
-async def __get_top_captains_data(skip: int, take: int) -> EntitiesData:
+async def __get_top_captains_data(skip: int, take: int) -> entity.EntitiesData:
     path = await __get_top_captains_path(skip, take)
     raw_data = await core.get_data_from_path(path)
     data = utils.convert.xmltree_to_dict3(raw_data)
@@ -133,7 +133,7 @@ async def __get_top_captains_path(skip: int, take: int) -> str:
     return result
 
 
-def __prepare_top_captains(users_data: EntitiesData, skip: int, take: int) -> List[Tuple]:
+def __prepare_top_captains(users_data: entity.EntitiesData, skip: int, take: int) -> List[Tuple]:
     start = skip + 1
     end = skip + take
     result = [
@@ -214,7 +214,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
         raise Error(f'An unknown error occured while retrieving division info. Please contact the bot\'s author!')
 
 
-def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
+def __get_division_stars_as_text(fleet_infos: List[entity.EntityInfo]) -> List[str]:
     lines = []
     fleet_infos = utils.sort_entities_by(fleet_infos, [('Score', int, True)])
     fleet_infos_count = len(fleet_infos)
@@ -234,7 +234,7 @@ def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     return lines
 
 
-def __get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool) -> str:
+def __get_division_title(division_design_id: str, divisions_designs_infos: entity.EntitiesData, include_markdown: bool) -> str:
     title = divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     if include_markdown:
         return f'__**{title}**__'
@@ -268,7 +268,7 @@ def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> Li
 
 # ---------- Initilization ----------
 
-divisions_designs_retriever: EntityRetriever = EntityRetriever(
+divisions_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     DIVISION_DESIGN_BASE_PATH,
     DIVISION_DESIGN_KEY_NAME,
     DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME,

@@ -4,9 +4,8 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from discord import Embed
 
 import pss_assert
-import pss_core as core
 import pss_crew as crew
-from pss_entity import EntityDetailsCollection, EntityInfo, EntityRetriever, LegacyEntityDetails
+import pss_entity as entity
 from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
@@ -37,8 +36,8 @@ REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 
 # ---------- Classes ----------
 
-class LegacyPromotionDesignDetails(LegacyEntityDetails):
-    def __init__(self, promotion_info: EntityInfo) -> None:
+class LegacyPromotionDesignDetails(entity.LegacyEntityDetails):
+    def __init__(self, promotion_info: entity.EntityInfo) -> None:
         """
         RewardString
         """
@@ -212,7 +211,7 @@ async def get_promotion_details_by_id(promotion_design_id: str, promotions_data:
     return None
 
 
-def get_promotions_details_by_name(promotion_name: str) -> EntityDetailsCollection:
+def get_promotions_details_by_name(promotion_name: str) -> entity.EntityDetailsCollection:
     pss_assert.valid_entity_name(promotion_name, 'promotion_name')
     raise NotImplemented()
 
@@ -314,7 +313,7 @@ def __get_pretty_reward_string(rewards: Dict[str, List[str]]) -> str:
         if get_entity_details_function:
             intermediate = []
             for entity_id in rewards[entity_type]:
-                entity_details: LegacyEntityDetails = get_entity_details_function(entity_id)
+                entity_details: entity.LegacyEntityDetails = get_entity_details_function(entity_id)
                 intermediate.append(entity_details.get_details_as_text_short())
             result.append(', '.join(intermediate))
         else:
@@ -340,7 +339,7 @@ def __get_requirement_type_and_value(requirement_string: str, separator: str, ad
 
 # ---------- Initilization ----------
 
-promotion_designs_retriever = EntityRetriever(
+promotion_designs_retriever = entity.EntityRetriever(
     PROMOTION_DESIGN_BASE_PATH,
     PROMOTION_DESIGN_KEY_NAME,
     PROMOTION_DESIGN_DESCRIPTION_PROPERTY_NAME,

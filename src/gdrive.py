@@ -14,7 +14,7 @@ import pydrive.auth
 import pydrive.drive
 import pydrive.files
 
-from pss_entity import EntitiesData, EntityInfo
+import pss_entity as entity
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_user as user
@@ -28,8 +28,8 @@ class TourneyData(object):
     def __init__(self, raw_data: str) -> None:
         data = json.loads(raw_data)
 
-        self.__fleets: EntitiesData
-        self.__users: EntitiesData
+        self.__fleets: entity.EntitiesData
+        self.__users: entity.EntitiesData
         self.__meta: Dict[str, object] = data['meta']
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
@@ -57,7 +57,7 @@ class TourneyData(object):
         return list(self.__fleets.keys())
 
     @property
-    def fleets(self) -> EntitiesData:
+    def fleets(self) -> entity.EntitiesData:
         """
         Copy of fleet data
         """
@@ -89,7 +89,7 @@ class TourneyData(object):
         return list(self.__users.keys())
 
     @property
-    def users(self) -> EntitiesData:
+    def users(self) -> entity.EntitiesData:
         """
         Copy of user data
         """
@@ -103,14 +103,14 @@ class TourneyData(object):
         return self.__data_date.year
 
 
-    def get_fleet_data_by_id(self, fleet_id: str) -> EntityInfo:
+    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityInfo:
         """
         Look up fleet by id
         """
         return dict(self.__fleets.get(fleet_id, None))
 
 
-    def get_fleet_data_by_name(self, fleet_name: str) -> EntitiesData:
+    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesData:
         """
         Looks up fleets having the specified fleet_name in their name.
         Case-insensitive.
@@ -123,14 +123,14 @@ class TourneyData(object):
         return result
 
 
-    def get_user_data_by_id(self, user_id: str) -> EntityInfo:
+    def get_user_data_by_id(self, user_id: str) -> entity.EntityInfo:
         """
         Look up user by id
         """
         return dict(self.__users.get(user_id, None))
 
 
-    def get_user_data_by_name(self, user_name: str) -> EntitiesData:
+    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesData:
         """
         Looks up users having the specified user_name in their name.
         Case-insensitive.
@@ -144,7 +144,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v3(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v3(fleet_data: List[List[Union[int, str]]]) -> entity.EntitiesData:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
             alliance_id = entry[0]
@@ -172,7 +172,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v4(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v4(fleet_data: List[List[Union[int, str]]]) -> entity.EntitiesData:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
             alliance_id = str(entry[0])
@@ -190,12 +190,12 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v5(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v5(fleet_data: List[List[Union[int, str]]]) -> entity.EntitiesData:
         return TourneyData.__create_fleet_data_from_data_v4(fleet_data)
 
 
     @staticmethod
-    def __create_user_data_from_data_v3(users: List[List[Union[int, str]]], data: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+    def __create_user_data_from_data_v3(users: List[List[Union[int, str]]], data: List[List[Union[int, str]]], fleet_data: entity.EntitiesData) -> entity.EntitiesData:
         result = {}
         users_dict = dict(users)
         for entry in data:
@@ -220,7 +220,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v4(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+    def __create_user_dict_from_data_v4(users: List[List[Union[int, str]]], fleet_data: entity.EntitiesData) -> entity.EntitiesData:
         result = {}
         for user in users:
             fleet_id = str(user[2])
@@ -251,7 +251,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v5(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+    def __create_user_dict_from_data_v5(users: List[List[Union[int, str]]], fleet_data: entity.EntitiesData) -> entity.EntitiesData:
         result = {}
         for user in users:
             fleet_id = str(user[2])

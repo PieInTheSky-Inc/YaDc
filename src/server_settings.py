@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, ItemsView, KeysView, List, Optional, Tup
 
 import database as db
 import pss_assert
-from pss_entity import DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR
+import pss_entity as entity
 import settings as app_settings
 import utils
 
@@ -674,7 +674,7 @@ async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str,
             result.append(f'**```{title}```**')
         if note:
             result.append(f'_{note}_')
-        result.extend([f'{pretty_setting[0]}{DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
+        result.extend([f'{pretty_setting[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
     return result
 
 

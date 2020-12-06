@@ -1,4 +1,4 @@
-from pss_entity import EntityRetriever
+import pss_entity as entity
 
 
 # ---------- Constants ----------
@@ -10,7 +10,7 @@ ACHIEVEMENT_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'AchievementTitle'
 
 # ---------- Initialization ----------
 
-achievements_designs_retriever: EntityRetriever = EntityRetriever(
+achievements_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     ACHIEVEMENT_DESIGN_BASE_PATH,
     ACHIEVEMENT_DESIGN_KEY_NAME,
     ACHIEVEMENT_DESIGN_DESCRIPTION_PROPERTY_NAME,

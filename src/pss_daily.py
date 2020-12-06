@@ -8,7 +8,7 @@ from discord.ext.commands import Context
 import database as db
 import emojis
 import pss_core as core
-from pss_entity import EntityDetailsType, EntityInfo
+import pss_entity as entity
 from pss_exception import Error
 import pss_item as item
 import pss_crew as crew
@@ -88,7 +88,7 @@ async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: b
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = reversed([sales_info for sales_info in sales_infos if sales_info['expires_in'] >= 0])
     for sales_info in sales_infos:
-        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(EntityDetailsType.SHORT, for_embed=for_embed)))
+        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
         price = sales_info['price']
         currency = sales_info['currency']
         result = f'{expiring_entity_details}: {price} {currency}'
@@ -129,7 +129,7 @@ async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool 
     return result
 
 
-async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_sales_history(ctx: Context, entity_info: entity.EntityInfo, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     utc_now = utils.get_utc_now()
 
     entity_id = entity_info.get('entity_id')
@@ -165,7 +165,7 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
     raise Error(f'There is no past sales data available for {entity_name}.')
 
 
-def get_sales_search_details(entity_info: EntityInfo) -> str:
+def get_sales_search_details(entity_info: entity.EntityInfo) -> str:
     entity_type = entity_info.get('entity_type')
     if entity_type == 'Crew':
         entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -232,7 +232,7 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
 
 # ---------- Helper functions ----------
 
-async def db_get_daily_info(skip_cache: bool = False) -> Tuple[EntityInfo, datetime]:
+async def db_get_daily_info(skip_cache: bool = False) -> Tuple[entity.EntityInfo, datetime]:
     if __daily_info_cache is None or skip_cache:
         result = {}
         modify_dates = []
@@ -247,7 +247,7 @@ async def db_get_daily_info(skip_cache: bool = False) -> Tuple[EntityInfo, datet
         return (__daily_info_cache, __daily_info_modified_at)
 
 
-async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
+async def db_set_daily_info(daily_info: entity.EntityInfo, utc_now: datetime) -> bool:
     settings = {__get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
     settings_success = await db.set_settings(settings)
     if settings_success:
@@ -279,13 +279,13 @@ async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool 
     return result
 
 
-async def get_daily_info() -> EntityInfo:
+async def get_daily_info() -> entity.EntityInfo:
     latest_settings = await core.get_latest_settings()
     result = __convert_to_daily_info(latest_settings)
     return result
 
 
-def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: EntityInfo, db_modify_date: datetime) -> bool:
+def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: entity.EntityInfo, db_modify_date: datetime) -> bool:
     if retrieved_date.hour >= 23:
         return False
 
@@ -314,7 +314,7 @@ def remove_duplicate_autodaily_settings(autodaily_settings: List[AutoDailySettin
     return list(result.values())
 
 
-def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
+def __convert_to_daily_info(dropship_info: entity.EntityInfo) -> entity.EntityInfo:
     result = {}
     for field_name in DAILY_INFO_FIELDS:
         value = None
@@ -345,7 +345,7 @@ def __get_daily_info_setting_name(field_name: str) -> str:
 
 # ---------- Mocks ----------
 
-def mock_get_daily_info() -> EntityInfo:
+def mock_get_daily_info() -> entity.EntityInfo:
     utc_now = utils.get_utc_now()
     if utc_now.hour < 1:
         if utc_now.minute < 20:
@@ -356,7 +356,7 @@ def mock_get_daily_info() -> EntityInfo:
         return __mock_get_daily_info_1()
 
 
-def __mock_get_daily_info_1() -> EntityInfo:
+def __mock_get_daily_info_1() -> entity.EntityInfo:
     result = {
         'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
         'CargoPrices': f'starbux:{random.randint(0, 10)}',
@@ -379,7 +379,7 @@ def __mock_get_daily_info_1() -> EntityInfo:
     return result
 
 
-def __mock_get_daily_info_2() -> EntityInfo:
+def __mock_get_daily_info_2() -> entity.EntityInfo:
     result = {
         'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
         'CargoPrices': f'starbux:{random.randint(0, 10)}',

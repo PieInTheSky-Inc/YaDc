@@ -9,7 +9,7 @@ import emojis
 import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsCreationPropertiesCollection, EntityDetailsType, EntityInfo, entity_property_has_value
+import pss_entity as entity
 from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
@@ -102,23 +102,23 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     return lines, [embed], True
 
 
-def __get_daily_news_from_info_as_text(daily_info: EntityInfo) -> List[str]:
+def __get_daily_news_from_info_as_text(daily_info: entity.EntityInfo) -> List[str]:
     result = ['No news have been provided :(']
     if daily_info and 'News' in daily_info.keys():
         result = [daily_info['News']]
     return result
 
 
-async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData) -> List[str]:
+async def __get_dropship_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData) -> List[str]:
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if daily_info:
         common_crew_id = daily_info['CommonCrewId']
         common_crew_details = crew.get_char_details_by_id(common_crew_id, chars_data, collections_data)
-        common_crew_info = await common_crew_details.get_details_as_text(EntityDetailsType.SHORT)
+        common_crew_info = await common_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
 
         hero_crew_id = daily_info['HeroCrewId']
         hero_crew_details = crew.get_char_details_by_id(hero_crew_id, chars_data, collections_data)
-        hero_crew_info = await hero_crew_details.get_details_as_text(EntityDetailsType.SHORT)
+        hero_crew_info = await hero_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
 
         common_crew_rarity = common_crew_details.entity_info['Rarity']
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
@@ -133,7 +133,7 @@ async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_dat
     return result
 
 
-async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
+async def __get_merchantship_msg_from_info_as_text(daily_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if daily_info:
         cargo_items = daily_info['CargoItems'].split('|')
@@ -148,7 +148,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
                 _, item_id = item_id.split(':')
             if item_id:
                 item_details = item.get_item_details_by_id(item_id, items_data, trainings_data)
-                item_details = ''.join(await item_details.get_details_as_text(EntityDetailsType.SHORT))
+                item_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
                 currency_type, price = cargo_prices[i].split(':')
                 currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
                 result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
@@ -157,7 +157,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
     return result
 
 
-async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
+async def __get_shop_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = daily_info['LimitedCatalogType']
@@ -170,13 +170,13 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     entity_details = []
     if shop_type == 'Character':
         char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data)
-        entity_details = await char_details.get_details_as_text(EntityDetailsType.SHORT)
+        entity_details = await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)
     elif shop_type == 'Item':
         item_details = item.get_item_details_by_id(entity_id, items_data, trainings_data)
-        entity_details = await item_details.get_details_as_text(EntityDetailsType.SHORT)
+        entity_details = await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)
     elif shop_type == 'Room':
         room_details = room.get_room_details_by_id(entity_id, rooms_data, None, None, None)
-        entity_details = await room_details.get_details_as_text(EntityDetailsType.SHORT)
+        entity_details = await room_details.get_details_as_text(entity.EntityDetailsType.SHORT)
     else:
         result.append('-')
         return result
@@ -190,7 +190,7 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     return result
 
 
-async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
+async def __get_sale_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -202,13 +202,13 @@ async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     sale_argument = daily_info['SaleArgument']
     if sale_type == 'Character':
         char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data)
-        entity_details = ''.join(await char_details.get_details_as_text(EntityDetailsType.SHORT))
+        entity_details = ''.join(await char_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Item':
         item_details = item.get_item_details_by_id(sale_argument, items_data, trainings_data)
-        entity_details = ''.join(await item_details.get_details_as_text(EntityDetailsType.SHORT))
+        entity_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Room':
         room_details = room.get_room_details_by_id(sale_argument, rooms_data, None, None, None)
-        entity_details = ''.join(await room_details.get_details_as_text(EntityDetailsType.SHORT))
+        entity_details = ''.join(await room_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
     else: # Print debugging info
@@ -224,7 +224,7 @@ async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     return result
 
 
-async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
+async def __get_daily_reward_from_info_as_text(daily_info: entity.EntityInfo, item_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
     result = ['**Daily rewards**']
 
     reward_currency = daily_info['DailyRewardType'].lower()
@@ -236,8 +236,8 @@ async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data
     item_rewards = daily_info['DailyItemRewards'].split('|')
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
-        item_details: EntityDetails = item.get_item_details_by_id(item_id, item_data, trainings_data)
-        item_details_text = ''.join(await item_details.get_details_as_text(EntityDetailsType.SHORT))
+        item_details: entity.EntityDetails = item.get_item_details_by_id(item_id, item_data, trainings_data)
+        item_details_text = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
         result.append(f'{amount} x {item_details_text}')
 
     return result
@@ -276,7 +276,7 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
 
 # ---------- Transformation functions ----------
 
-def __get_news_footer(news_info: EntityInfo, **kwargs) -> Optional[str]:
+def __get_news_footer(news_info: entity.EntityInfo, **kwargs) -> Optional[str]:
     return 'PSS News'
 
 
@@ -288,7 +288,7 @@ def __get_pss_datetime(*args, **kwargs) -> datetime:
 
 def __get_value(*args, **kwargs) -> Optional[str]:
     entity_property = kwargs.get('entity_property')
-    if entity_property_has_value(entity_property):
+    if entity.entity_property_has_value(entity_property):
         return entity_property
     else:
         return None
@@ -308,16 +308,16 @@ def __sanitize_text(*args, **kwargs) -> Optional[str]:
 
 
 
-# ---------- Create EntityDetails ----------
+# ---------- Create entity.EntityDetails ----------
 
-def __create_news_details_collection_from_infos(news_infos: List[EntityInfo]) -> EntityDetailsCollection:
+def __create_news_details_collection_from_infos(news_infos: List[entity.EntityInfo]) -> entity.EntityDetailsCollection:
     base_details = [__create_news_details_from_info(news_info) for news_info in news_infos]
-    result = EntityDetailsCollection(base_details, big_set_threshold=0)
+    result = entity.EntityDetailsCollection(base_details, big_set_threshold=0)
     return result
 
 
-def __create_news_details_from_info(news_info: EntityInfo) -> EntityDetails:
-    return EntityDetails(news_info, __properties['title_news'], __properties['description_news'], __properties['properties_news'], __properties['embed_settings'])
+def __create_news_details_from_info(news_info: entity.EntityInfo) -> entity.EntityDetails:
+    return entity.EntityDetails(news_info, __properties['title_news'], __properties['description_news'], __properties['properties_news'], __properties['embed_settings'])
 
 
 
@@ -325,21 +325,21 @@ def __create_news_details_from_info(news_info: EntityInfo) -> EntityDetails:
 
 # ---------- Initilization ----------
 
-__properties: EntityDetailsCreationPropertiesCollection = {
-    'title_news': EntityDetailPropertyCollection(
-        EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='Title')
+__properties: entity.EntityDetailsCreationPropertiesCollection = {
+    'title_news': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='Title')
     ),
-    'description_news': EntityDetailPropertyCollection(
-        EntityDetailProperty('Description', False, entity_property_name='Description', transform_function=__sanitize_text)
+    'description_news': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, entity_property_name='Description', transform_function=__sanitize_text)
     ),
-    'properties_news': EntityDetailPropertyListCollection(
+    'properties_news': entity.EntityDetailPropertyListCollection(
         [
-            EntityDetailProperty('Link', True, entity_property_name='Link', transform_function=__get_value)
+            entity.EntityDetailProperty('Link', True, entity_property_name='Link', transform_function=__get_value)
         ]
     ),
     'embed_settings': {
-        'image_url': EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
-        'footer': EntityDetailProperty('footer', False, transform_function=__get_news_footer),
-        'timestamp': EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
+        'image_url': entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'footer': entity.EntityDetailProperty('footer', False, transform_function=__get_news_footer),
+        'timestamp': entity.EntityDetailProperty('timestamp', False, entity_property_name='UpdateDate', transform_function=__get_pss_datetime)
     }
 }

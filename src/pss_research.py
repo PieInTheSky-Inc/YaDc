@@ -5,8 +5,8 @@ from discord import Embed
 from discord.ext.commands import Context
 
 import pss_assert
+import pss_entity as entity
 from pss_exception import Error
-from pss_entity import EntitiesData, EntityDetailProperty, EntityDetailPropertyCollection, EntityDetailPropertyListCollection, EntityDetails, EntityDetailsCollection, EntityDetailsCreationPropertiesCollection, EntityInfo, EntityRetriever, NO_PROPERTY
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
@@ -25,7 +25,7 @@ RESEARCH_DESIGN_KEY_NAME: str = 'ResearchDesignId'
 
 # ---------- Research info ----------
 
-def get_research_details_by_id(research_design_id: str, researches_data: EntitiesData) -> EntityDetails:
+def get_research_details_by_id(research_design_id: str, researches_data: entity.EntitiesData) -> entity.EntityDetails:
     if research_design_id:
         if research_design_id and research_design_id in researches_data.keys():
             research_info = researches_data[research_design_id]
@@ -55,7 +55,7 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
 
 # ---------- Transformation functions ----------
 
-def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
+def __get_costs(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])
 
@@ -75,13 +75,13 @@ def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwar
     return result
 
 
-def __get_duration(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
+def __get_duration(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
     seconds = int(research_info['ResearchTime'])
     result = utils.format.timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
     return result
 
 
-def __get_required_research_name(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
+def __get_required_research_name(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
     required_research_design_id = research_info['RequiredResearchDesignId']
     if required_research_design_id != '0':
         result = researches_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -95,7 +95,7 @@ def __get_required_research_name(research_info: EntityInfo, researches_data: Ent
 
 # ---------- Helper functions ----------
 
-def __get_key_for_research_sort(research_info: EntityInfo, researches_data: EntitiesData) -> str:
+def __get_key_for_research_sort(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> str:
     result = ''
     parent_infos = __get_parents(research_info, researches_data)
     if parent_infos:
@@ -105,7 +105,7 @@ def __get_key_for_research_sort(research_info: EntityInfo, researches_data: Enti
     return result
 
 
-def __get_parents(research_info: EntityInfo, researches_data: EntitiesData) -> List[EntityInfo]:
+def __get_parents(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> List[entity.EntityInfo]:
     parent_research_design_id = research_info['RequiredResearchDesignId']
     if parent_research_design_id == '0':
         parent_research_design_id = None
@@ -119,7 +119,7 @@ def __get_parents(research_info: EntityInfo, researches_data: EntitiesData) -> L
         return []
 
 
-def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -> Optional[str]:
+def get_research_name_from_id(research_id: str, researches_data: entity.EntitiesData) -> Optional[str]:
     if research_id != '0':
         research_info = researches_data[research_id]
         return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -130,15 +130,15 @@ def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -
 
 
 
-# ---------- Create EntityDetails ----------
+# ---------- Create entity.EntityDetails ----------
 
-def __create_research_design_data_from_info(research_info: EntityInfo, researches_data: EntitiesData) -> EntityDetails:
-    return EntityDetails(research_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], researches_data)
+def __create_research_design_data_from_info(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> entity.EntityDetails:
+    return entity.EntityDetails(research_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], researches_data)
 
 
-def __create_researches_details_collection_from_infos(researches_designs_infos: List[EntityInfo], researches_data: EntitiesData) -> EntityDetailsCollection:
+def __create_researches_details_collection_from_infos(researches_designs_infos: List[entity.EntityInfo], researches_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
     researches_details = [__create_research_design_data_from_info(item_info, researches_data) for item_info in researches_designs_infos]
-    result = EntityDetailsCollection(researches_details, big_set_threshold=3)
+    result = entity.EntityDetailsCollection(researches_details, big_set_threshold=3)
     return result
 
 
@@ -147,36 +147,36 @@ def __create_researches_details_collection_from_infos(researches_designs_infos: 
 
 # ---------- Initilization ----------
 
-researches_designs_retriever = EntityRetriever(
+researches_designs_retriever = entity.EntityRetriever(
     RESEARCH_DESIGN_BASE_PATH,
     RESEARCH_DESIGN_KEY_NAME,
     RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME,
     cache_name='ResearchDesigns'
 )
 
-__properties: EntityDetailsCreationPropertiesCollection = {
-    'title': EntityDetailPropertyCollection(
-        EntityDetailProperty('Title', False, omit_if_none=False, property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
+__properties: entity.EntityDetailsCreationPropertiesCollection = {
+    'title': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),
-    'description': EntityDetailPropertyCollection(
-        EntityDetailProperty('Description', False, omit_if_none=False, property_name='ResearchDescription'),
-        property_short=NO_PROPERTY
+    'description': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, property_name='ResearchDescription'),
+        property_short=entity.NO_PROPERTY
     ),
-    'properties': EntityDetailPropertyListCollection(
+    'properties': entity.EntityDetailPropertyListCollection(
         [
-            EntityDetailProperty('Cost', True, transform_function=__get_costs),
-            EntityDetailProperty('Duration', True, transform_function=__get_duration),
-            EntityDetailProperty('Required LAB lvl', True, property_name='RequiredLabLevel'),
-            EntityDetailProperty('Required Research', True, transform_function=__get_required_research_name)
+            entity.EntityDetailProperty('Cost', True, transform_function=__get_costs),
+            entity.EntityDetailProperty('Duration', True, transform_function=__get_duration),
+            entity.EntityDetailProperty('Required LAB lvl', True, property_name='RequiredLabLevel'),
+            entity.EntityDetailProperty('Required Research', True, transform_function=__get_required_research_name)
         ],
         properties_short=[
-            EntityDetailProperty('Cost', False, transform_function=__get_costs),
-            EntityDetailProperty('Duration', False, transform_function=__get_duration),
-            EntityDetailProperty('LAB lvl', True, property_name='RequiredLabLevel')
+            entity.EntityDetailProperty('Cost', False, transform_function=__get_costs),
+            entity.EntityDetailProperty('Duration', False, transform_function=__get_duration),
+            entity.EntityDetailProperty('LAB lvl', True, property_name='RequiredLabLevel')
         ],
         properties_mini=[]
     ),
     'embed_settings': {
-        'thumbnail_url': EntityDetailProperty('thumbnail_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
     }
 }

@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 
-from pss_entity import EntitiesData, EntityInfo
+import pss_entity as entity
 import settings
 import utils
 
@@ -20,7 +20,7 @@ __RX_ALLOWED_CANDIDATE_FIX_REPLACE: re.Pattern = re.compile(r'(\(.*?\)|[^a-z0-9 
 
 # ---------- Functions ----------
 
-def filter_entities_data(data: EntitiesData, by: Dict[str, str], ignore_case: bool = False) -> Optional[EntitiesData]:
+def filter_entities_data(data: entity.EntitiesData, by: Dict[str, str], ignore_case: bool = False) -> Optional[entity.EntitiesData]:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values.
        Parameter 'by':
@@ -56,7 +56,7 @@ async def get_data_from_path(path: str) -> str:
     return await __get_data_from_url(url)
 
 
-async def get_latest_settings(language_key: str = 'en', use_default: bool = False) -> EntityInfo:
+async def get_latest_settings(language_key: str = 'en', use_default: bool = False) -> entity.EntityInfo:
     if not language_key:
         language_key = 'en'
     base_url = await get_base_url(use_default=use_default)
@@ -66,7 +66,7 @@ async def get_latest_settings(language_key: str = 'en', use_default: bool = Fals
     return result
 
 
-def get_ids_from_property_value(data: EntitiesData, property_name: str, property_value: str, fix_data_delegate: Callable[[str], str] = None, match_exact: bool = False) -> List[str]:
+def get_ids_from_property_value(data: entity.EntitiesData, property_name: str, property_value: str, fix_data_delegate: Callable[[str], str] = None, match_exact: bool = False) -> List[str]:
     # data structure: {id: content}
     # fixed_data structure: {description: id}
     if not data or not property_name or not property_value:
@@ -126,7 +126,7 @@ def read_links_file(language_key: str = 'en') -> Dict[str, List[List[str]]]:
     return links.get(language_key)
 
 
-def __filter_data_dict(data: EntitiesData, by_key: Any, by_value: Any, ignore_case: bool) -> Optional[EntitiesData]:
+def __filter_data_dict(data: entity.EntitiesData, by_key: Any, by_value: Any, ignore_case: bool) -> Optional[entity.EntitiesData]:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
     if data:

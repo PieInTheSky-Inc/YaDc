@@ -1,4 +1,4 @@
-from pss_entity import EntityRetriever
+import pss_entity as entity
 
 
 # ---------- Constants ----------
@@ -17,14 +17,14 @@ CONDITION_TYPE_DESIGN_KEY_NAME: str = 'ConditionTypeId'
 
 # ---------- Initialization ----------
 
-action_types_designs_retriever: EntityRetriever = EntityRetriever(
+action_types_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     ACTION_TYPE_DESIGN_BASE_PATH,
     ACTION_TYPE_DESIGN_KEY_NAME,
     ACTION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME,
     'ActionTypeDesigns'
 )
 
-condition_types_designs_retriever: EntityRetriever = EntityRetriever(
+condition_types_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     CONDITION_TYPE_DESIGN_BASE_PATH,
     CONDITION_TYPE_DESIGN_KEY_NAME,
     CONDITION_TYPE_DESIGN_DESCRIPTION_PROPERTY_NAME,

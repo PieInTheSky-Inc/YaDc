@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Tuple
 
 import pss_core as core
-from pss_entity import EntitiesData, EntityInfo, EntityRetriever
+import pss_entity as entity
 import pss_login as login
 import utils
 
@@ -25,7 +25,7 @@ async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
     return result.get('User', None), result.get('Ship', None)
 
 
-async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData = None) -> Optional[str]:
+async def get_ship_level(ship_info: entity.EntityInfo, ship_design_data: entity.EntitiesData = None) -> Optional[str]:
     if not ship_info:
         return None
     if not ship_design_data:
@@ -58,7 +58,7 @@ async def __get_inspect_ship_base_path(user_id: str) -> str:
 
 # ---------- Initilization ----------
 
-ships_designs_retriever = EntityRetriever(
+ships_designs_retriever = entity.EntityRetriever(
     SHIP_DESIGN_BASE_PATH,
     SHIP_DESIGN_KEY_NAME,
     SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME,
