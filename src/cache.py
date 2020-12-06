@@ -5,8 +5,8 @@ import time
 from typing import Dict, Optional
 
 import pss_core as core
-import pss_entity as entity
 import utils
+from typehints import EntitiesData
 
 
 # ---------- Classes ----------
@@ -75,7 +75,7 @@ class PssCache:
         return result
 
 
-    async def get_data_dict3(self) -> entity.EntitiesData:
+    async def get_data_dict3(self) -> EntitiesData:
         data = await self.get_raw_data()
         return utils.convert.xmltree_to_dict3(data)
 

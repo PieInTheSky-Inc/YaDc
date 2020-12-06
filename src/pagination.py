@@ -7,13 +7,13 @@ from discord import ChannelType, Message, Reaction, User
 from discord.ext.commands import Context
 
 import emojis
-import pss_entity as entity
 import utils
+from typehints import EntityInfo
 
 
 # ---------- Typehint definitions ----------
 
-PaginatorOption = Union[entity.EntityDetails, entity.EntityInfo]
+PaginatorOption = Union[EntityInfo, EntityInfo]
 
 
 

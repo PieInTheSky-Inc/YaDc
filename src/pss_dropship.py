@@ -17,6 +17,7 @@ import pss_room as room
 import pss_training as training
 import pss_sprites as sprites
 import settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -102,14 +103,14 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     return lines, [embed], True
 
 
-def __get_daily_news_from_info_as_text(daily_info: entity.EntityInfo) -> List[str]:
+def __get_daily_news_from_info_as_text(daily_info: EntityInfo) -> List[str]:
     result = ['No news have been provided :(']
     if daily_info and 'News' in daily_info.keys():
         result = [daily_info['News']]
     return result
 
 
-async def __get_dropship_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData) -> List[str]:
+async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData) -> List[str]:
     result = [f'{emojis.pss_dropship} **Dropship crew**']
     if daily_info:
         common_crew_id = daily_info['CommonCrewId']
@@ -133,7 +134,7 @@ async def __get_dropship_msg_from_info_as_text(daily_info: entity.EntityInfo, ch
     return result
 
 
-async def __get_merchantship_msg_from_info_as_text(daily_info: entity.EntityInfo, items_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
+async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if daily_info:
         cargo_items = daily_info['CargoItems'].split('|')
@@ -157,7 +158,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: entity.EntityInfo
     return result
 
 
-async def __get_shop_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
+async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = daily_info['LimitedCatalogType']
@@ -190,7 +191,7 @@ async def __get_shop_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_
     return result
 
 
-async def __get_sale_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_data: entity.EntitiesData, collections_data: entity.EntitiesData, items_data: entity.EntitiesData, rooms_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
+async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
@@ -224,7 +225,7 @@ async def __get_sale_msg_from_info_as_text(daily_info: entity.EntityInfo, chars_
     return result
 
 
-async def __get_daily_reward_from_info_as_text(daily_info: entity.EntityInfo, item_data: entity.EntitiesData, trainings_data: entity.EntitiesData) -> List[str]:
+async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
     result = ['**Daily rewards**']
 
     reward_currency = daily_info['DailyRewardType'].lower()
@@ -276,7 +277,7 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
 
 # ---------- Transformation functions ----------
 
-def __get_news_footer(news_info: entity.EntityInfo, **kwargs) -> Optional[str]:
+def __get_news_footer(news_info: EntityInfo, **kwargs) -> Optional[str]:
     return 'PSS News'
 
 
@@ -310,13 +311,13 @@ def __sanitize_text(*args, **kwargs) -> Optional[str]:
 
 # ---------- Create entity.EntityDetails ----------
 
-def __create_news_details_collection_from_infos(news_infos: List[entity.EntityInfo]) -> entity.EntityDetailsCollection:
+def __create_news_details_collection_from_infos(news_infos: List[EntityInfo]) -> entity.EntityDetailsCollection:
     base_details = [__create_news_details_from_info(news_info) for news_info in news_infos]
     result = entity.EntityDetailsCollection(base_details, big_set_threshold=0)
     return result
 
 
-def __create_news_details_from_info(news_info: entity.EntityInfo) -> entity.EntityDetails:
+def __create_news_details_from_info(news_info: EntityInfo) -> entity.EntityDetails:
     return entity.EntityDetails(news_info, __properties['title_news'], __properties['description_news'], __properties['properties_news'], __properties['embed_settings'])
 
 

@@ -9,8 +9,10 @@ from discord.ext.commands import Context
 
 from cache import PssCache
 import pss_core as core
+import pss_entity as entity
 from pss_exception import Error
 import settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -34,8 +36,6 @@ NO_PROPERTY: 'EntityDetailProperty'
 
 # ---------- Typehint definitions ----------
 
-EntityInfo = Dict[str, 'EntityInfo']
-EntitiesData = Dict[str, EntityInfo]
 EntityDetailsCreationPropertiesCollection = Dict[str, Union['EntityDetailPropertyCollection', 'EntityDetailPropertyListCollection', Dict[str, 'EntityDetailProperty']]]
 
 
@@ -595,11 +595,11 @@ class EscapedEntityDetails(EntityDetails):
 
 
 class EntityDetailsCollection():
-    def __init__(self, entities_details: Iterable[EntityDetails], big_set_threshold: int = 0, add_empty_lines: bool = True) -> None:
+    def __init__(self, entities_details: Iterable[entity.EntityDetails], big_set_threshold: int = 0, add_empty_lines: bool = True) -> None:
         """
         big_set_threshold: if 0 or less, there's no threshold
         """
-        self.__entities_details: List[EntityDetails] = list(entities_details)
+        self.__entities_details: List[entity.EntityDetails] = list(entities_details)
         self.__set_size: int = len(self.__entities_details)
         self.__big_set_threshold: int = big_set_threshold or 0
         if self.__big_set_threshold < 0:
@@ -782,7 +782,7 @@ def entity_property_has_value(entity_property: str) -> bool:
     return entity_property and entity_property != '0' and entity_property.lower() != 'none' and entity_property.strip()
 
 
-def group_entities_details(entities_details: List[EntityDetails], property_name: str) -> Dict[Any, List[EntityDetails]]:
+def group_entities_details(entities_details: List[entity.EntityDetails], property_name: str) -> Dict[Any, List[entity.EntityDetails]]:
     result = {}
     for entity_details in entities_details:
         key = entity_details.entity_info[property_name]

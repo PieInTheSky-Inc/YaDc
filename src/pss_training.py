@@ -12,6 +12,7 @@ import pss_lookups as lookups
 import pss_research as research
 import pss_sprites as sprites
 import settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -29,7 +30,7 @@ TRAINING_DESIGN_KEY_NAME: str = 'TrainingDesignId'
 
 # ---------- Training info ----------
 
-async def get_training_details_from_id(training_id: str, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData = None, researches_data: entity.EntitiesData = None) -> entity.EntityDetails:
+async def get_training_details_from_id(training_id: str, trainings_data: EntitiesData, items_data: EntitiesData = None, researches_data: EntitiesData = None) -> entity.EntityDetails:
     if not items_data:
         items_data = await item.items_designs_retriever.get_data_dict3()
     if not researches_data:
@@ -64,7 +65,7 @@ async def get_training_details_from_name(training_name: str, ctx: Context, as_em
 
 # ---------- Transformation functions ----------
 
-def __get_costs(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     cost = int(training_info['MineralCost'])
     if cost:
         cost_compact = utils.format.get_reduced_number_compact(cost)
@@ -74,7 +75,7 @@ def __get_costs(training_info: entity.EntityInfo, trainings_data: entity.Entitie
     return result
 
 
-def __get_duration(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_duration(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     seconds = int(training_info['Duration'])
     if seconds:
         result = utils.format.duration(seconds, include_relative_indicator=False)
@@ -83,7 +84,7 @@ def __get_duration(training_info: entity.EntityInfo, trainings_data: entity.Enti
     return result
 
 
-def __get_fatigue(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_fatigue(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     fatigue = int(training_info['Fatigue'])
     if fatigue:
         result = f'{fatigue}h'
@@ -92,13 +93,13 @@ def __get_fatigue(training_info: entity.EntityInfo, trainings_data: entity.Entit
     return result
 
 
-def __get_required_research(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_required_research(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     required_research_id = training_info['RequiredResearchDesignId']
     result = research.get_research_name_from_id(required_research_id, researches_data)
     return result
 
 
-def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     add_line_breaks = kwargs.get('add_line_breaks', False)
     chances = []
     max_chance_value = 0
@@ -121,7 +122,7 @@ def __get_stat_chances(training_info: entity.EntityInfo, trainings_data: entity.
     return separator.join(result)
 
 
-async def __get_thumbnail_url(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+async def __get_thumbnail_url(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     training_sprite_id = training_info.get('TrainingSpriteId')
     sprite_id = None
     if entity.entity_property_has_value(training_sprite_id) and training_sprite_id != '454':
@@ -140,14 +141,14 @@ async def __get_thumbnail_url(training_info: entity.EntityInfo, trainings_data: 
     return result
 
 
-async def __get_training_item_name(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+async def __get_training_item_name(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     training_id = training_info[TRAINING_DESIGN_KEY_NAME]
     items_details = item.get_item_details_by_training_id(training_id, items_data, trainings_data)
     result = [''.join(await item_details.get_details_as_text(entity.EntityDetailsType.MINI)) for item_details in items_details]
     return ', '.join(result)
 
 
-def __get_training_room(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_training_room(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     required_room_level = training_info['RequiredRoomLevel']
     training_room_type = int(training_info['Rank'])
     room_name, _ = __get_room_names(training_room_type)
@@ -163,15 +164,15 @@ def __get_training_room(training_info: entity.EntityInfo, trainings_data: entity
 
 # ---------- Create entity.EntityDetails ----------
 
-def __create_training_details_from_info(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData) -> entity.EntityDetails:
+def __create_training_details_from_info(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> entity.EntityDetails:
     return entity.EntityDetails(training_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], trainings_data, items_data, researches_data)
 
 
-def __create_training_details_list_from_infos(trainings_designs_infos: List[entity.EntityInfo], trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData) -> List[entity.EntitiesData]:
+def __create_training_details_list_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> List[EntitiesData]:
     return [__create_training_details_from_info(training_info, trainings_data, items_data, researches_data) for training_info in trainings_designs_infos]
 
 
-def __create_trainings_details_collection_from_infos(trainings_designs_infos: List[entity.EntityInfo], trainings_data: entity.EntitiesData, items_data: entity.EntitiesData, researches_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
+def __create_trainings_details_collection_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> entity.EntityDetailsCollection:
     trainings_details = __create_training_details_list_from_infos(trainings_designs_infos, trainings_data, items_data, researches_data)
     result = entity.EntityDetailsCollection(trainings_details, big_set_threshold=3)
     return result
@@ -182,7 +183,7 @@ def __create_trainings_details_collection_from_infos(trainings_designs_infos: Li
 
 # ---------- Helper functions ----------
 
-def __get_key_for_training_sort(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData) -> str:
+def __get_key_for_training_sort(training_info: EntityInfo, trainings_data: EntitiesData) -> str:
     result = ''
     parent_infos = __get_parents(training_info, trainings_data)
     if parent_infos:
@@ -192,7 +193,7 @@ def __get_key_for_training_sort(training_info: entity.EntityInfo, trainings_data
     return result
 
 
-def __get_parents(training_info: entity.EntityInfo, trainings_data: entity.EntitiesData) -> List[entity.EntityInfo]:
+def __get_parents(training_info: EntityInfo, trainings_data: EntitiesData) -> List[EntityInfo]:
     parent_training_design_id = training_info['RequiredTrainingDesignId']
     if parent_training_design_id == '0':
         parent_training_design_id = None
@@ -210,7 +211,7 @@ def __get_room_names(training_room_type: int) -> Tuple[Optional[str], Optional[s
     return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
 
 
-def __get_stat_chance(stat_name: str, training_info: entity.EntityInfo, guaranteed: bool = False) -> Optional[Tuple[str, str, str, str]]:
+def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool = False) -> Optional[Tuple[str, str, str, str]]:
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
         if chance_name in training_info.keys():

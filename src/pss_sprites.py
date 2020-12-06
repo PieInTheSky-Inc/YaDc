@@ -2,6 +2,7 @@ from typing import Optional
 
 import pss_core as core
 import pss_entity as entity
+from typehints import EntitiesData, EntityInfo
 
 
 # ---------- Constants ----------
@@ -23,7 +24,7 @@ async def get_download_sprite_link(sprite_id: str) -> Optional[str]:
         return None
 
 
-async def get_download_sprite_link_by_property(entity_info: entity.EntityInfo, *entities_data: entity.EntitiesData, **kwargs) -> str:
+async def get_download_sprite_link_by_property(entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> str:
     entity_property = kwargs.get('entity_property')
     return await get_download_sprite_link(entity_property)
 

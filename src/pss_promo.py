@@ -13,6 +13,7 @@ import pss_research as research
 import pss_room as room
 import pss_sprites as sprites
 import settings
+from typehints import EntityInfo
 import utils
 
 
@@ -37,7 +38,7 @@ REWARD_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
 # ---------- Classes ----------
 
 class LegacyPromotionDesignDetails(entity.LegacyEntityDetails):
-    def __init__(self, promotion_info: entity.EntityInfo) -> None:
+    def __init__(self, promotion_info: EntityInfo) -> None:
         """
         RewardString
         """
@@ -331,7 +332,7 @@ def __get_requirement_type_and_value(requirement_string: str, separator: str, ad
 
 
 
-# ---------- Create EntityDetails ----------
+# ---------- Create entity.EntityDetails ----------
 
 
 

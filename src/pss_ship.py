@@ -3,6 +3,7 @@ from typing import Dict, Optional, Tuple
 import pss_core as core
 import pss_entity as entity
 import pss_login as login
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -25,7 +26,7 @@ async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
     return result.get('User', None), result.get('Ship', None)
 
 
-async def get_ship_level(ship_info: entity.EntityInfo, ship_design_data: entity.EntitiesData = None) -> Optional[str]:
+async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData = None) -> Optional[str]:
     if not ship_info:
         return None
     if not ship_design_data:

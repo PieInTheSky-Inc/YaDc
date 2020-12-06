@@ -6,8 +6,8 @@ from . import format as _format
 from . import parse as _parse
 
 import pss_data as _pss_data
-import pss_entity as _entity
 import pss_lookups as _lookups
+from typehints import EntitiesData
 
 
 # ---------- Typehint definitions ----------
@@ -91,11 +91,11 @@ def url_escape(s: str) -> str:
     return s
 
 
-def xmltree_to_dict2(raw_text: str) -> _entity.EntitiesData:
+def xmltree_to_dict2(raw_text: str) -> EntitiesData:
     return __xmltree_to_dict(raw_text, 2)
 
 
-def xmltree_to_dict3(raw_text: str) -> _entity.EntitiesData:
+def xmltree_to_dict3(raw_text: str) -> EntitiesData:
     return __xmltree_to_dict(raw_text, 3)
 
 
@@ -194,7 +194,7 @@ def __get_child_tag_count(root: _ElementTree.Element) -> Dict[str, int]:
     return result
 
 
-def __xmltree_to_dict(raw_text: str, depth: int) -> _entity.EntitiesData:
+def __xmltree_to_dict(raw_text: str, depth: int) -> EntitiesData:
     result = raw_xml_to_dict(raw_text)
     while depth > 0:
         found_new_root = False

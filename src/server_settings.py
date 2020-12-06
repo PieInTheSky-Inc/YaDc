@@ -9,6 +9,7 @@ import database as db
 import pss_assert
 import pss_entity as entity
 import settings as app_settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -162,7 +163,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
             self.__delete_on_change = None
@@ -179,7 +180,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
             self.__latest_message_id = None
@@ -192,7 +193,7 @@ class AutoDailySettings():
         settings = {
             _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE
         }
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__delete_on_change = None
         return success
@@ -204,7 +205,7 @@ class AutoDailySettings():
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
             _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
         }
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__latest_message_id = None
             self.__latest_message_created_at = None
@@ -218,7 +219,7 @@ class AutoDailySettings():
                 _COLUMN_NAME_DAILY_CHANNEL_ID: channel.id,
                 _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None
             }
-            success = await __db_update_server_settings(self.guild_id, settings)
+            success = await db_update_server_settings(self.guild_id, settings)
             if success:
                 self.__channel = channel
             return success
@@ -245,7 +246,7 @@ class AutoDailySettings():
             settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = None
 
         if settings:
-            success = await __db_update_server_settings(self.guild_id, settings)
+            success = await db_update_server_settings(self.guild_id, settings)
             if success:
                 self.__latest_message_id = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
                 self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
@@ -262,7 +263,7 @@ class AutoDailySettings():
         settings = {
             _COLUMN_NAME_DAILY_CHANGE_MODE: new_value
         }
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__change_mode = new_value
         return success
@@ -287,7 +288,7 @@ class AutoDailySettings():
                 settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
         if update_change_mode:
             settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = change_mode
-        success = await __db_update_server_settings(self.guild_id, settings)
+        success = await db_update_server_settings(self.guild_id, settings)
         if success:
             if update_channel:
                 self.__channel = channel
@@ -441,7 +442,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: None
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__bot_news_channel_id = None
                 self.__bot_news_channel = None
@@ -455,7 +456,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_PREFIX: None
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__prefix = None
             return success
@@ -468,7 +469,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_USE_EMBEDS: None
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__use_embeds = None
             return success
@@ -480,7 +481,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_USE_PAGINATION: None
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__use_pagination = None
             return success
@@ -494,7 +495,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: channel.id
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__bot_news_channel_id = channel.id
                 self.__bot_news_channel = channel
@@ -508,7 +509,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_PREFIX: prefix
             }
-            success = await __db_update_server_settings(self.__guild_id, settings)
+            success = await db_update_server_settings(self.__guild_id, settings)
             if success:
                 self.__prefix = prefix
             return success
@@ -529,7 +530,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_USE_EMBEDS: use_embeds
             }
-            success = await __db_update_server_settings(self.id, settings)
+            success = await db_update_server_settings(self.id, settings)
             if success:
                 self.__use_embeds = use_embeds
             return success
@@ -550,7 +551,7 @@ class GuildSettings(object):
             settings = {
                 _COLUMN_NAME_USE_PAGINATION: use_pagination
             }
-            success = await __db_update_server_settings(self.id, settings)
+            success = await db_update_server_settings(self.id, settings)
             if success:
                 self.__use_pagination = use_pagination
             return success
@@ -577,7 +578,7 @@ class GuildSettingsCollection():
     async def create_guild_settings(self, bot: Bot, guild_id: int) -> bool:
         success = await __db_create_server_settings(guild_id)
         if success:
-            new_server_settings = await __db_get_server_settings(guild_id)
+            new_server_settings = await db_get_server_settings(guild_id)
             if new_server_settings:
                 self.__data[guild_id] = GuildSettings(bot, new_server_settings[0])
             else:
@@ -600,7 +601,7 @@ class GuildSettingsCollection():
 
 
     async def init(self, bot: Bot) -> None:
-        for server_settings in (await __db_get_server_settings()):
+        for server_settings in (await db_get_server_settings()):
             self.__data[server_settings[_COLUMN_NAME_GUILD_ID]] = GuildSettings(bot, server_settings)
 
 
@@ -693,7 +694,7 @@ async def reset_prefix(guild_id: int) -> bool:
 
 
 async def __fix_prefixes() -> bool:
-    all_prefixes = await __db_get_server_settings(guild_id=None, setting_names=[_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_PREFIX])
+    all_prefixes = await db_get_server_settings(guild_id=None, setting_names=[_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_PREFIX])
     all_success = True
     if all_prefixes:
         for guild_id, prefix in all_prefixes:
@@ -791,7 +792,7 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
         setting_names = [_COLUMN_NAME_GUILD_ID]
     else:
         setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_CHANGE_MODE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
-    settings = await __db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
+    settings = await db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
     for setting in settings:
         if only_guild_ids:
@@ -824,67 +825,7 @@ async def db_get_daily_channel_id(guild_id: int) -> int:
     return result[0] or None if result else None
 
 
-async def db_get_use_pagination(guild: Guild) -> bool:
-    if guild:
-        setting_names = [_COLUMN_NAME_USE_PAGINATION]
-        settings = await __db_get_server_settings(guild.id, setting_names=setting_names)
-        if settings:
-            for setting in settings:
-                result = setting[0]
-                if result is None:
-                    return True
-                return result
-    return app_settings.DEFAULT_USE_EMOJI_PAGINATOR
-
-
-async def __db_create_server_settings(guild_id: int) -> bool:
-    if await __db_get_has_settings(guild_id):
-        return True
-    else:
-        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
-        success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
-        return success
-
-
-async def __db_delete_server_settings(guild_id: int) -> bool:
-    query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
-    success = await db.try_execute(query, [guild_id])
-    return success
-
-
-async def __db_get_has_settings(guild_id: int) -> bool:
-    results = await __db_get_server_settings(guild_id)
-    if results:
-        return True
-    else:
-        return False
-
-
-async def __db_get_prefix(guild_id: int) -> Optional[str]:
-    await __db_create_server_settings(guild_id)
-    setting_names = [_COLUMN_NAME_PREFIX]
-    result = await __db_get_server_setting(guild_id, setting_names=setting_names)
-    return result[0] or None
-
-
-async def __db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
-    settings = await __db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=additional_wheres)
-    if settings:
-        for setting in settings:
-            result = []
-            if conversion_functions:
-                for i, value in enumerate(setting):
-                    result.append(conversion_functions[i](value))
-            else:
-                result = setting
-            if not result:
-                result = [None] * len(setting_names)
-            return result
-    else:
-        return None
-
-
-async def __db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> List[asyncpg.Record]:
+async def db_get_server_settings(guild_id: int = None, setting_names: list = None, additional_wheres: list = None) -> List[asyncpg.Record]:
     additional_wheres = additional_wheres or []
     wheres = []
     if guild_id is not None:
@@ -912,29 +853,20 @@ async def __db_get_server_settings(guild_id: int = None, setting_names: list = N
     return records or []
 
 
-async def __db_reset_prefix(guild_id: int) -> bool:
-    current_prefix = await __db_get_prefix(guild_id)
-    if current_prefix is not None:
-        settings = {
-            _COLUMN_NAME_PREFIX: None
-        }
-        success = await __db_update_server_settings(guild_id, settings)
-        return success
-    return True
+async def db_get_use_pagination(guild: Guild) -> bool:
+    if guild:
+        setting_names = [_COLUMN_NAME_USE_PAGINATION]
+        settings = await db_get_server_settings(guild.id, setting_names=setting_names)
+        if settings:
+            for setting in settings:
+                result = setting[0]
+                if result is None:
+                    return True
+                return result
+    return app_settings.DEFAULT_USE_EMOJI_PAGINATOR
 
 
-async def __db_update_prefix(guild_id: int, prefix: str) -> bool:
-    current_prefix = await __db_get_prefix(guild_id)
-    if not current_prefix or prefix != current_prefix:
-        settings = {
-            _COLUMN_NAME_PREFIX: prefix
-        }
-        success = await __db_update_server_settings(guild_id, settings)
-        return success
-    return True
-
-
-async def __db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -> bool:
+async def db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -> bool:
     if settings:
         set_names = []
         set_values = [guild_id]
@@ -947,6 +879,75 @@ async def __db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -
         return success
     else:
         return True
+
+
+async def __db_create_server_settings(guild_id: int) -> bool:
+    if await __db_get_has_settings(guild_id):
+        return True
+    else:
+        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
+        success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
+        return success
+
+
+async def __db_delete_server_settings(guild_id: int) -> bool:
+    query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
+    success = await db.try_execute(query, [guild_id])
+    return success
+
+
+async def __db_get_has_settings(guild_id: int) -> bool:
+    results = await db_get_server_settings(guild_id)
+    if results:
+        return True
+    else:
+        return False
+
+
+async def __db_get_prefix(guild_id: int) -> Optional[str]:
+    await __db_create_server_settings(guild_id)
+    setting_names = [_COLUMN_NAME_PREFIX]
+    result = await __db_get_server_setting(guild_id, setting_names=setting_names)
+    return result[0] or None
+
+
+async def __db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
+    settings = await db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=additional_wheres)
+    if settings:
+        for setting in settings:
+            result = []
+            if conversion_functions:
+                for i, value in enumerate(setting):
+                    result.append(conversion_functions[i](value))
+            else:
+                result = setting
+            if not result:
+                result = [None] * len(setting_names)
+            return result
+    else:
+        return None
+
+
+async def __db_reset_prefix(guild_id: int) -> bool:
+    current_prefix = await __db_get_prefix(guild_id)
+    if current_prefix is not None:
+        settings = {
+            _COLUMN_NAME_PREFIX: None
+        }
+        success = await db_update_server_settings(guild_id, settings)
+        return success
+    return True
+
+
+async def __db_update_prefix(guild_id: int, prefix: str) -> bool:
+    current_prefix = await __db_get_prefix(guild_id)
+    if not current_prefix or prefix != current_prefix:
+        settings = {
+            _COLUMN_NAME_PREFIX: prefix
+        }
+        success = await db_update_server_settings(guild_id, settings)
+        return success
+    return True
 
 
 

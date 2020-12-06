@@ -9,6 +9,7 @@ from discord.ext.commands import Context
 import excel
 import pss_entity as entity
 import settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -53,7 +54,7 @@ def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retri
     return file_name
 
 
-def __flatten_raw_data(data: entity.EntitiesData) -> List[entity.EntityInfo]:
+def __flatten_raw_data(data: EntitiesData) -> List[EntityInfo]:
     flat_data = []
     for row in data.values():
         result_row = __flatten_raw_entity(row)
@@ -61,7 +62,7 @@ def __flatten_raw_data(data: entity.EntitiesData) -> List[entity.EntityInfo]:
     return flat_data
 
 
-def __flatten_raw_dict_for_excel(raw_dict: entity.EntitiesData) -> List[entity.EntityInfo]:
+def __flatten_raw_dict_for_excel(raw_dict: EntitiesData) -> List[EntityInfo]:
     entity = {}
     result = []
     children = []
@@ -83,7 +84,7 @@ def __flatten_raw_dict_for_excel(raw_dict: entity.EntitiesData) -> List[entity.E
     return result
 
 
-def __flatten_raw_entity(entity_info: entity.EntityInfo) -> entity.EntityInfo:
+def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
     result = {}
     for field_name, field in entity_info.items():
         if __should_include_raw_field(field):

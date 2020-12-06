@@ -10,6 +10,7 @@ from pss_exception import Error
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
+from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -25,7 +26,7 @@ RESEARCH_DESIGN_KEY_NAME: str = 'ResearchDesignId'
 
 # ---------- Research info ----------
 
-def get_research_details_by_id(research_design_id: str, researches_data: entity.EntitiesData) -> entity.EntityDetails:
+def get_research_details_by_id(research_design_id: str, researches_data: EntitiesData) -> entity.EntityDetails:
     if research_design_id:
         if research_design_id and research_design_id in researches_data.keys():
             research_info = researches_data[research_design_id]
@@ -55,7 +56,7 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
 
 # ---------- Transformation functions ----------
 
-def __get_costs(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_costs(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     bux_cost = int(research_info['StarbuxCost'])
     gas_cost = int(research_info['GasCost'])
 
@@ -75,13 +76,13 @@ def __get_costs(research_info: entity.EntityInfo, researches_data: entity.Entiti
     return result
 
 
-def __get_duration(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_duration(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     seconds = int(research_info['ResearchTime'])
     result = utils.format.timedelta(timedelta(seconds=seconds), include_relative_indicator=False)
     return result
 
 
-def __get_required_research_name(research_info: entity.EntityInfo, researches_data: entity.EntitiesData, **kwargs) -> Optional[str]:
+def __get_required_research_name(research_info: EntityInfo, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     required_research_design_id = research_info['RequiredResearchDesignId']
     if required_research_design_id != '0':
         result = researches_data[required_research_design_id][RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -95,7 +96,7 @@ def __get_required_research_name(research_info: entity.EntityInfo, researches_da
 
 # ---------- Helper functions ----------
 
-def __get_key_for_research_sort(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> str:
+def __get_key_for_research_sort(research_info: EntityInfo, researches_data: EntitiesData) -> str:
     result = ''
     parent_infos = __get_parents(research_info, researches_data)
     if parent_infos:
@@ -105,7 +106,7 @@ def __get_key_for_research_sort(research_info: entity.EntityInfo, researches_dat
     return result
 
 
-def __get_parents(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> List[entity.EntityInfo]:
+def __get_parents(research_info: EntityInfo, researches_data: EntitiesData) -> List[EntityInfo]:
     parent_research_design_id = research_info['RequiredResearchDesignId']
     if parent_research_design_id == '0':
         parent_research_design_id = None
@@ -119,7 +120,7 @@ def __get_parents(research_info: entity.EntityInfo, researches_data: entity.Enti
         return []
 
 
-def get_research_name_from_id(research_id: str, researches_data: entity.EntitiesData) -> Optional[str]:
+def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -> Optional[str]:
     if research_id != '0':
         research_info = researches_data[research_id]
         return research_info[RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME]
@@ -132,11 +133,11 @@ def get_research_name_from_id(research_id: str, researches_data: entity.Entities
 
 # ---------- Create entity.EntityDetails ----------
 
-def __create_research_design_data_from_info(research_info: entity.EntityInfo, researches_data: entity.EntitiesData) -> entity.EntityDetails:
+def __create_research_design_data_from_info(research_info: EntityInfo, researches_data: EntitiesData) -> entity.EntityDetails:
     return entity.EntityDetails(research_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], researches_data)
 
 
-def __create_researches_details_collection_from_infos(researches_designs_infos: List[entity.EntityInfo], researches_data: entity.EntitiesData) -> entity.EntityDetailsCollection:
+def __create_researches_details_collection_from_infos(researches_designs_infos: List[EntityInfo], researches_data: EntitiesData) -> entity.EntityDetailsCollection:
     researches_details = [__create_research_design_data_from_info(item_info, researches_data) for item_info in researches_designs_infos]
     result = entity.EntityDetailsCollection(researches_details, big_set_threshold=3)
     return result

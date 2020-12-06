@@ -31,7 +31,7 @@ DEFAULT_EMBED_INLINE: bool = True
 MAXIMUM_CHARACTERS: int = 1900
 MAXIMUM_CHARACTERS_EMBED_DESCRIPTION: int = 2048
 
-RX_DISCORD_INVITE: _Pattern[_AnyStr] = _compile(r'(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?')
+RX_DISCORD_INVITE: _Pattern = _compile(r'(?:https?://)?discord(?:(?:app)?\.com/invite|\.gg)/?[a-zA-Z0-9]+/?')
 
 ZERO_WIDTH_SPACE: str = '\u200b'
 
