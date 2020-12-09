@@ -5,6 +5,7 @@
         "HERO_MODULE_NOTE": "**Note:** _Hero_, _Special_ and _Legendary_ rarity modules don't get a bonus stat upon crafting or purchase.",
         "HERO_MODULE_NOTE_EMBED": "Note: Hero, Special and Legendary rarity modules don't get a bonus stat upon crafting or purchase.",
         "MARKET_FAIR_PRICE_NOTE": "**Note:** 1st price is the market price. 2nd price is Savy's fair price.",
-        "PRICE_NOTE": "**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons."
+        "PRICE_NOTE": "**Note:** bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons.",
+        "PRICE_NOTE_EMBED": "Note: bux prices listed here may not always be accurate due to transfers between alts/friends or other reasons."
     }
 }
