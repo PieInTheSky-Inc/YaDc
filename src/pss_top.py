@@ -217,7 +217,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
 
 def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     lines = []
-    fleet_infos = utils.sort_entities_by(fleet_infos, [('Score', int, True)])
+    fleet_infos = entity.sort_entities_by(fleet_infos, [('Score', int, True)])
     fleet_infos_count = len(fleet_infos)
     for i, fleet_info in enumerate(fleet_infos, start=1):
         fleet_name = escape_markdown(fleet_info['AllianceName'])

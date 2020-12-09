@@ -170,7 +170,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
-    fleet_users_infos = utils.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (USER_KEY_NAME, int, False)])
+    fleet_users_infos = entity.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
 
     title = f'{fleet_name} member stars (division {division})'

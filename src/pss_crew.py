@@ -266,7 +266,7 @@ def get_level_costs(ctx: Context, from_level: int, to_level: int = None, as_embe
         result.extend(legendary_crew_cost_txt)
         result.append(utils.discord.ZERO_WIDTH_SPACE)
         result.append('**Note:** Gas costs are higher, if **Advanced Training 7** hasn\'t been reseached, yet.')
-    return result, True
+    return result
 
 
 def __get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: List[int], xp_cost_lookup: List[int]) -> Tuple[int, int, int, int]:

@@ -28,6 +28,7 @@ IngredientsTree = Tuple[str, int, 'IngredientsTree']
 # ---------- Constants ----------
 
 ALLOWED_ITEM_NAMES: List[str]
+ANY_SLOT_MARKERS = ['all', 'any']
 
 ITEM_DESIGN_BASE_PATH: str = 'ItemService/ListItemDesigns2?languageKey=en'
 ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ItemDesignName'
@@ -101,13 +102,15 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
     if error:
         raise Error(error)
 
-    any_slot = not slot or slot == 'all' or slot == 'any'
+    any_slot = not slot or slot in ANY_SLOT_MARKERS
     slot_filter = __get_slot_filter(slot, any_slot)
     stat_filter = __get_stat_filter(stat)
     best_items = __get_best_items_designs(slot_filter, stat_filter, items_details)
 
     if not best_items:
-        raise Error(f'Could not find an item for slot `{slot}` providing bonus `{stat}`.')
+        if not any_slot:
+            slot = f' for slot `{slot}`'
+        raise Error(f'Could not find an item{slot} providing bonus `{stat_filter.lower()}`.')
     else:
         groups = await __get_collection_groups(best_items, stat_filter, as_embed)
 
@@ -117,7 +120,7 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
                 footer = __get_footer_text_for_group(title, as_embed)
                 embeds = await best_items_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_footer_text=footer)
                 result.extend(embeds)
-            return result, True
+            return result
         else:
             module_title = None
             for title, best_items_collection in groups.items():
@@ -128,7 +131,7 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
                 result.append(utils.discord.ZERO_WIDTH_SPACE)
             footer = __get_footer_text_for_group(module_title, as_embed)
             result.append(footer)
-            return result, True
+            return result
 
 
 def __get_best_items_designs(slot_filter: List[str], stat_filter: str, items_data: EntitiesData) -> Dict[str, List[entity.EntityDetails]]:
@@ -234,7 +237,7 @@ async def get_item_price(ctx: Context, item_name: str, as_embed: bool = settings
         if get_best_match:
             item_infos = [item_infos[0]]
 
-        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = entity.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
         items_details_collection = __create_price_details_collection_from_infos(item_infos, items_data)
 
         if as_embed:
@@ -333,7 +336,7 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
         for item_id in item_ids:
             item_infos.extend(__get_upgrades_for(item_id, items_data))
         item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
-        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = entity.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
         upgrade_details_collection = __create_upgrade_details_collection_from_infos(item_infos, items_data)
 
         if as_embed:
@@ -575,7 +578,7 @@ async def get_items_details_by_name(item_name: str, sorted: bool = True) -> List
     trainings_data = await training.trainings_designs_retriever.get_data_dict3()
     item_infos = __get_item_infos_by_name(item_name, items_data)
     if sorted:
-        item_infos = utils.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        item_infos = entity.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
     result = __create_base_details_list_from_infos(item_infos, items_data, trainings_data)
     return result
 
