@@ -6,6 +6,7 @@ import asyncio
 from discord import ChannelType, Message, Reaction, User
 from discord.ext.commands import Context
 
+from pss_entity import EntityDetails
 import emojis
 import utils
 from typehints import EntityInfo
@@ -13,7 +14,7 @@ from typehints import EntityInfo
 
 # ---------- Typehint definitions ----------
 
-PaginatorOption = Union[EntityInfo, EntityInfo]
+PaginatorOption = Union[EntityDetails, EntityInfo]
 
 
 
