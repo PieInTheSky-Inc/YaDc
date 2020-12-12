@@ -42,21 +42,6 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
     'Joined ago': None,
     'Tournament attempts left': settings.EXCEL_COLUMN_FORMAT_NUMBER,
 }
-FLEET_SHEET_COLUMN_TYPES: List[Optional[str]] = [
-    settings.EXCEL_COLUMN_FORMAT_DATETIME,
-    None,
-    None,
-    None,
-    settings.EXCEL_COLUMN_FORMAT_DATETIME,
-    settings.EXCEL_COLUMN_FORMAT_NUMBER,
-    settings.EXCEL_COLUMN_FORMAT_NUMBER,
-    settings.EXCEL_COLUMN_FORMAT_DATETIME,
-    settings.EXCEL_COLUMN_FORMAT_NUMBER,
-    settings.EXCEL_COLUMN_FORMAT_NUMBER,
-    None,
-    None,
-    settings.EXCEL_COLUMN_FORMAT_NUMBER
-]
 
 
 
@@ -326,9 +311,9 @@ def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
         return False
 
 
-def __create_fleet_sheet_xl(fleet_users_infos: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
-    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_infos, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
-    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, list(FLEET_SHEET_COLUMN_TYPES.values()), file_name=file_name)
+def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, list(FLEET_SHEET_COLUMN_NAMES.values()), file_name=file_name)
     return fleet_sheet_path
 
 
@@ -341,7 +326,7 @@ async def __get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, flee
 
 
 def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
-    result = list(FLEET_SHEET_COLUMN_NAMES.keys())
+    result = [list(FLEET_SHEET_COLUMN_NAMES.keys())]
     if include_player_id:
         result[0].append('Player ID')
     if include_fleet_id:

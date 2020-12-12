@@ -44,7 +44,7 @@ class DeviceInUseError(LoginError):
 # ---------- Classes ----------
 
 class Device():
-    def __init__(self, device_key: str, device_type: str = None, checksum: str = None, can_login_until: datetime = None) -> None:
+    def __init__(self, device_key: str, checksum: str = None, can_login_until: datetime = None, device_type: str = None) -> None:
         self.__key: str = device_key
         self.__device_type = device_type or DEFAULT_DEVICE_TYPE
         self.__checksum: str = checksum or __create_device_checksum(self.__key, self.__device_type)
@@ -62,7 +62,7 @@ class Device():
 
     @property
     def access_token_expired(self) -> bool:
-        if self.__access_token:
+        if self.__access_token and self.__access_token_expires_at:
             return self.__access_token_expires_at < utils.get_utc_now()
         return True
 

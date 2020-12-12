@@ -604,7 +604,7 @@ class EntityDetailsCollection():
         self.__big_set_threshold: int = big_set_threshold or 0
         if self.__big_set_threshold < 0:
             self.__big_set_threshold = 0
-        self.__is_big_set: bool = not self.__big_set_threshold or self.__set_size > self.__big_set_threshold
+        self.__is_big_set: bool = self.__big_set_threshold and self.__set_size >= self.__big_set_threshold
         self.__add_empty_lines: bool = add_empty_lines or False
 
 

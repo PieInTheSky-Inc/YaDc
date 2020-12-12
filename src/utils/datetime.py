@@ -71,7 +71,7 @@ def get_month_from_short_name(month_short_name: str) -> int:
 def get_next_day(utc_now: _datetime = None) -> _datetime:
     utc_now = utc_now or get_utc_now()
     result = _datetime(utc_now.year, utc_now.month, utc_now.day, tzinfo=_timezone.utc)
-    result = result + _constants.ONE_DAY
+    result = result + ONE_DAY
     return result
 
 
