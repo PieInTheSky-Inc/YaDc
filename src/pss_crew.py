@@ -75,9 +75,11 @@ async def get_collection_details_by_name(ctx: Context, collection_name: str, as_
     if print_all:
         collections_designs_infos = collections_data.values()
     else:
-        collections_designs_infos.append(await collections_designs_retriever.get_entity_info_by_name(collection_name, collections_data))
+        collection_info = await collections_designs_retriever.get_entity_info_by_name(collection_name, collections_data)
+        if collection_info:
+            collections_designs_infos.append(collection_info)
 
-    if collections_designs_infos is None:
+    if not collections_designs_infos:
         if print_all:
             raise Error(f'An error occured upon retrieving collection info. Please try again later.')
         else:
