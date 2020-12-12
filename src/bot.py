@@ -905,20 +905,25 @@ async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
 
 @BOT.command(name='news', brief='Show the news')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_news(ctx: Context):
+async def cmd_news(ctx: Context, entry_count: int = 5):
     """
-    Prints all news in ascending order.
+    Prints all news in ascending order. You can
+
+    Parameters:
+      entry_count: Optional. The number of news to print. Defaults to 5.
 
     Usage:
       /news
+      /news 3
 
     Examples:
-      /news - Prints the information described above.
+      /news - Prints the latest 5 news in ascending order.
+      /news 3 - Prints the latest 3 news in ascending order.
     """
     __log_command_use(ctx)
     await utils.discord.try_delete_original_message(ctx)
     async with ctx.typing():
-        output = await dropship.get_news(ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+        output = await dropship.get_news(ctx, take=entry_count, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.post_output(ctx, output)
 
 

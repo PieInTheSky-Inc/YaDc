@@ -249,7 +249,7 @@ async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data
 
 # ---------- News info ----------
 
-async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en') -> Union[List[Embed], List[str]]:
+async def get_news(ctx: Context, take: int = 5, as_embed: bool = settings.USE_EMBEDS, language_key: str = 'en') -> Union[List[Embed], List[str]]:
     path = f'SettingService/ListAllNewsDesigns?languageKey={language_key}'
 
     try:
@@ -262,8 +262,8 @@ async def get_news(ctx: Context, as_embed: bool = settings.USE_EMBEDS, language_
     if raw_data:
         news_infos = sorted(list(raw_data.values()), key=lambda news_info: news_info['UpdateDate'])
         news_count = len(news_infos)
-        if news_count > 5:
-            news_infos = news_infos[news_count-5:]
+        if news_count > take:
+            news_infos = news_infos[news_count-take:]
         news_details_collection = __create_news_details_collection_from_infos(news_infos)
 
         if as_embed:
