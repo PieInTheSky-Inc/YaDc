@@ -335,6 +335,10 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
         item_infos = []
         for item_id in item_ids:
             item_infos.extend(__get_upgrades_for(item_id, items_data))
+        if not item_infos:
+            raise Error(f'Could not find an item named `{item_name}` that can be upgraded.')
+
+        # Remove double entries
         item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
         item_infos = entity.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
         upgrade_details_collection = __create_upgrade_details_collection_from_infos(item_infos, items_data)
