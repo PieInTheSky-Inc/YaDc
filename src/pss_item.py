@@ -703,7 +703,7 @@ def __create_best_item_details_from_info(item_info: EntityInfo, items_data: Enti
 
 
 def __create_best_item_details_collection_from_details(best_details: List[entity.EntityDetails]) -> entity.EntityDetailsCollection:
-    result = entity.EntityDetailsCollection(best_details, big_set_threshold=1)
+    result = entity.EntityDetailsCollection(best_details, big_set_threshold=0)
     return result
 
 
