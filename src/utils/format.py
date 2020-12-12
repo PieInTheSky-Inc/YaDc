@@ -86,6 +86,11 @@ def duration(total_seconds: int, include_relative_indicator: bool = True, includ
     return result
 
 
+def get_and_list(values: _Iterable[str]) -> str:
+    result = __get_comma_separated_list_with_separate_last_element(values, 'and')
+    return result
+
+
 def get_reduced_number(num: float) -> _Tuple[float, str]:
     num = float(num)
     is_negative = num < 0
@@ -110,14 +115,8 @@ def get_reduced_number_compact(num: int, max_decimal_count: int = _constants.DEF
 
 
 def get_or_list(values: _Iterable[str]) -> str:
-    if not values:
-        return ''
-    elif len(values) == 1:
-        return values[0]
-    else:
-        result = ', '.join(values[:-1])
-        result += f' or {values[-1]}'
-        return result
+    result = __get_comma_separated_list_with_separate_last_element(values, 'or')
+    return result
 
 
 def number_up_to_decimals(num: float, max_decimal_count: int = _constants.DEFAULT_FLOAT_PRECISION) -> str:
@@ -151,3 +150,15 @@ def timedelta(delta: _timedelta, include_relative_indicator: bool = True, includ
         return duration(total_seconds, include_relative_indicator=include_relative_indicator, include_seconds=include_seconds)
     else:
         return ''
+
+
+def __get_comma_separated_list_with_separate_last_element(values: _Iterable[str], last_element_separator: str) -> str:
+    if not values:
+        return ''
+    values = list(values)
+    if len(values) == 1:
+        return values[0]
+    else:
+        result = ', '.join(values[:-1])
+        result += f' {last_element_separator} {values[-1]}'
+        return result

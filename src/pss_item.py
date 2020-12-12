@@ -147,7 +147,7 @@ def __get_best_items_designs(slot_filter: List[str], stat_filter: str, items_dat
     if filtered_data:
         items_infos = sorted(filtered_data.values(), key=__get_key_for_best_items_sort)
         # Filter out destroyed modules
-        items_infos = [item_info for item_info in items_infos if item_info.get('ItemSubType') != 'Module' or entity.entity_property_has_value(item_info.get('ModuleArgument'))]
+        items_infos = __filter_destroyed_modules_from_item_infos(items_infos)
         items_details = [__create_best_item_details_from_info(item_info, items_data) for item_info in items_infos]
         result = entity.group_entities_details(items_details, 'ItemSubType')
     return result
@@ -327,37 +327,62 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
     pss_assert.valid_entity_name(item_name, allowed_values=ALLOWED_ITEM_NAMES)
 
     items_data = await items_designs_retriever.get_data_dict3()
-    item_ids = __get_item_design_ids_from_name(item_name, items_data)
+    items_ids = __get_item_design_ids_from_name(item_name, items_data)
+    items_infos = __filter_destroyed_modules_from_item_infos([items_data[item_id] for item_id in items_ids])
 
-    if not item_ids:
+    if not items_ids:
         raise Error(f'Could not find an item named `{item_name}`.')
     else:
-        item_infos = []
-        for item_id in item_ids:
-            item_infos.extend(__get_upgrades_for(item_id, items_data))
-        if not item_infos:
-            raise Error(f'Could not find an item named `{item_name}` that can be upgraded.')
+        upgrades_infos = []
+        found_upgrades_for_data = {}
+        no_upgrades_for_data = {}
+        for item_id in items_ids:
+            upgrades_for = __get_upgrades_for(item_id, items_data)
+            upgrades_infos.extend(upgrades_for)
+            if all(upgrades_for):
+                found_upgrades_for_data[item_id] = items_data[item_id]
+            else:
+                no_upgrades_for_data[item_id] = items_data[item_id]
+
+        if all(item_info is None for item_info in upgrades_infos):
+            item_names = ', '.join(sorted(item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME] for item_info in items_infos))
+            raise Error(f'Found the following items that can\'t be upgraded: {item_names}')
 
         # Remove double entries
-        item_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in item_infos]).values())
-        item_infos = entity.sort_entities_by(item_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
-        upgrade_details_collection = __create_upgrade_details_collection_from_infos(item_infos, items_data)
+        upgrades_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in upgrades_infos if item_info is not None]).values())
+        upgrades_infos = entity.sort_entities_by(upgrades_infos, [(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, None, False)])
+        upgrades_infos_count = len(upgrades_infos)
+        upgrade_details_collection = __create_upgrade_details_collection_from_infos(upgrades_infos, items_data, found_upgrades_for_data, no_upgrades_for_data, len(upgrades_infos))
 
         if as_embed:
-            custom_title = f'{len(item_infos)} crafting recipes requiring: {item_name}'
+            custom_title = f'Found {upgrades_infos_count} crafting recipes requiring {item_name}'
             return (await upgrade_details_collection.get_entities_details_as_embed(ctx, custom_title=custom_title))
         else:
-            custom_title = f'{len(item_infos)} crafting recipes requiring: **{item_name}**'
+            custom_title = f'Found {upgrades_infos_count} crafting recipes requiring **{item_name}**:'
             return (await upgrade_details_collection.get_entities_details_as_text(custom_title=custom_title, big_set_details_type=entity.EntityDetailsType.LONG))
 
 
-def __get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[EntityInfo]:
+def __get_footer_upgrades(items_data: EntitiesData) -> str:
+    items_names = utils.format.get_and_list(sorted(item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME] for item_info in items_data.values()))
+    result = f'Also found the following items that can\'t be upgraded: {items_names}'
+    return result
+
+
+def __get_title_upgrades(upgrades_infos_count: int, items_data: EntitiesData) -> str:
+    items_names_list = utils.format.get_or_list(sorted(item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME] for item_info in items_data.values()))
+    result = f'{upgrades_infos_count} crafting recipes requiring: {items_names_list}'
+    return result
+
+
+def __get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[Optional[EntityInfo]]:
     # iterate through item_design_data and return every item_design containing the item id in question in property 'Ingredients'
     result = []
     for item_info in items_data.values():
         ingredient_item_ids = list(__get_ingredients_dict(item_info['Ingredients']).keys())
         if item_id in ingredient_item_ids:
             result.append(item_info)
+    if not result:
+        result = [None]
     return result
 
 
@@ -593,6 +618,11 @@ def get_slot_and_stat_type(item_details: entity.EntityDetails) -> Tuple[str, str
     return slot, stat
 
 
+def __filter_destroyed_modules_from_item_infos(items_infos: List[EntityInfo]) -> List[EntityInfo]:
+    result = [item_info for item_info in items_infos if item_info.get('ItemSubType') != 'Module' or entity.entity_property_has_value(item_info.get('ModuleArgument'))]
+    return result
+
+
 def __fix_item_name(item_name: str) -> str:
     result = item_name.lower()
     result = re.sub('[^a-z0-9]', '', result)
@@ -734,12 +764,12 @@ def __create_price_details_collection_from_infos(items_designs_infos: List[Entit
 
 
 
-def __create_upgrade_design_data_from_info(item_info: EntityInfo, items_data: EntitiesData) -> entity.EntityDetails:
-    return entity.EntityDetails(item_info, __properties['title'], entity.NO_PROPERTY, __properties['upgrade'], __properties['embed_settings'], items_data)
+def __create_upgrade_design_data_from_info(item_info: EntityInfo, items_data: EntitiesData, found_upgrades_for_data: EntitiesData, no_upgrades_for_data: EntitiesData, upgrades_infos_count: int) -> entity.EntityDetails:
+    return entity.EntityDetails(item_info, __properties['title'], entity.NO_PROPERTY, __properties['upgrade'], __properties['embed_settings'], items_data, found_upgrades_for_data=found_upgrades_for_data, no_upgrades_for_data=no_upgrades_for_data, upgrades_infos_count=upgrades_infos_count)
 
 
-def __create_upgrade_details_collection_from_infos(items_designs_infos: List[EntityInfo], items_data: EntitiesData) -> entity.EntityDetailsCollection:
-    price_details = [__create_upgrade_design_data_from_info(item_info, items_data) for item_info in items_designs_infos]
+def __create_upgrade_details_collection_from_infos(items_designs_infos: List[EntityInfo], items_data: EntitiesData, found_upgrades_for_data: EntitiesData, no_upgrades_for_data: EntitiesData, upgrades_infos_count: int) -> entity.EntityDetailsCollection:
+    price_details = [__create_upgrade_design_data_from_info(item_info, items_data, found_upgrades_for_data=found_upgrades_for_data, no_upgrades_for_data=no_upgrades_for_data, upgrades_infos_count=upgrades_infos_count) for item_info in items_designs_infos]
     result = entity.EntityDetailsCollection(price_details, big_set_threshold=1)
     return result
 
