@@ -109,6 +109,9 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
     if not char_from_info:
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
+        rarity = char_from_info.get('Rarity')
+        if rarity in ['Legendary', 'Special']:
+            raise Error(f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged to, due to **{rarity}** rarity.')
         prestige_from_ids, recipe_count = await __get_prestige_from_ids_and_recipe_count(char_from_info)
         utils.make_dict_value_lists_unique(prestige_from_ids)
         prestige_from_infos = sorted(__prepare_prestige_infos(chars_data, prestige_from_ids), key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
@@ -117,10 +120,10 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
         if as_embed:
             title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
             thumbnail_url = await sprites.get_download_sprite_link(char_from_info['ProfileSpriteId'])
-            return (await prestige_from_details_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            return (await prestige_from_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
         else:
             title = f'**{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige combinations)'
-            return (await prestige_from_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
+            return (await prestige_from_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
 
 
 def __create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
@@ -167,6 +170,9 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
     if not char_to_info:
         raise Error(f'Could not find a crew named `{char_name}`.')
     else:
+        rarity = char_to_info.get('Rarity')
+        if rarity in ['Common', 'Special']:
+            raise Error(f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged, due to **{rarity}** rarity.')
         prestige_to_ids, recipe_count = await __get_prestige_to_ids_and_recipe_count(char_to_info)
         utils.make_dict_value_lists_unique(prestige_to_ids)
         prestige_to_infos = sorted(__prepare_prestige_infos(chars_data, prestige_to_ids), key=lambda prestige_to_info: prestige_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
@@ -175,10 +181,10 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
         if as_embed:
             title = f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige recipes)'
             thumbnail_url = await sprites.get_download_sprite_link(char_to_info['ProfileSpriteId'])
-            return (await prestige_to_details_collection.get_entity_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            return (await prestige_to_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
         else:
             title = f'**{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige recipes)'
-            return (await prestige_to_details_collection.get_entity_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
+            return (await prestige_to_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
 
 
 def __create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
@@ -507,7 +513,7 @@ def __create_prestige_from_details_from_info(character_info: EntityInfo) -> enti
     return result
 
 
-def __create_prestige_from_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[entity.entity.EntityDetails]:
+def __create_prestige_from_details_collection_from_infos(characters_infos: List[EntityInfo]) -> entity.EntityDetailsCollection:
     characters_details = [__create_prestige_from_details_from_info(character_info) for character_info in characters_infos]
     result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
     return result
@@ -519,7 +525,7 @@ def __create_prestige_to_details_from_info(character_info: EntityInfo) -> entity
     return result
 
 
-def __create_prestige_to_details_collection_from_infos(characters_infos: List[EntityInfo]) -> List[entity.entity.EntityDetails]:
+def __create_prestige_to_details_collection_from_infos(characters_infos: List[EntityInfo]) -> entity.EntityDetailsCollection:
     characters_details = [__create_prestige_to_details_from_info(character_info) for character_info in characters_infos]
     result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
     return result
