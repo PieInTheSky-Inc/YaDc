@@ -228,15 +228,14 @@ async def post_output_with_files(ctx: _Context, output: _Union[_List[_Embed], _L
         if last_post_index >= 0:
             for i, post in enumerate(posts):
                 if output_is_embeds:
-                    if i == last_post_index and post or files:
-                        await ctx.send(embed=post, files=files)
-                    elif post:
-                        await ctx.send(embed=post)
+                    await ctx.send(embed=post)
                 else:
                     if i == last_post_index and post or files:
                         await ctx.send(content=post, files=files)
                     elif post:
                         await ctx.send(content=post)
+            if output_is_embeds and files:
+                await ctx.send(files=files)
 
 
 async def try_delete_message(message: _Message) -> bool:
