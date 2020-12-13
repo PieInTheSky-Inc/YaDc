@@ -157,27 +157,27 @@ researches_designs_retriever = entity.EntityRetriever(
 
 __properties: entity.EntityDetailsCreationPropertiesCollection = {
     'title': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),
     'description': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Description', False, omit_if_none=False, property_name='ResearchDescription'),
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='ResearchDescription'),
         property_short=entity.NO_PROPERTY
     ),
     'properties': entity.EntityDetailPropertyListCollection(
         [
             entity.EntityDetailProperty('Cost', True, transform_function=__get_costs),
             entity.EntityDetailProperty('Duration', True, transform_function=__get_duration),
-            entity.EntityDetailProperty('Required LAB lvl', True, property_name='RequiredLabLevel'),
+            entity.EntityDetailProperty('Required LAB lvl', True, entity_property_name='RequiredLabLevel'),
             entity.EntityDetailProperty('Required Research', True, transform_function=__get_required_research_name)
         ],
         properties_short=[
             entity.EntityDetailProperty('Cost', False, transform_function=__get_costs),
             entity.EntityDetailProperty('Duration', False, transform_function=__get_duration),
-            entity.EntityDetailProperty('LAB lvl', True, property_name='RequiredLabLevel')
+            entity.EntityDetailProperty('LAB lvl', True, entity_property_name='RequiredLabLevel')
         ],
         properties_mini=[]
     ),
     'embed_settings': {
-        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
+        'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, entity_property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property)
     }
 }
