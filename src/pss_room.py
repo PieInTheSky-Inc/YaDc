@@ -8,6 +8,7 @@ from discord.ext.commands import Context
 import pss_assert
 import pss_core as core
 import pss_entity as entity
+from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
@@ -186,7 +187,7 @@ async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed
     rooms_designs_infos = _get_room_infos(room_name, rooms_data)
 
     if not rooms_designs_infos:
-        raise(f'Could not find a room named **{room_name}**.')
+        raise Error(f'Could not find a room named **{room_name}**.')
     else:
         items_data = await item.items_designs_retriever.get_data_dict3()
         researches_data = await research.researches_designs_retriever.get_data_dict3()
