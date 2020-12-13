@@ -247,6 +247,9 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
     if past_fleet_infos:
         ship_info = {}
         fleet_info = past_fleet_infos.get(user_info.get(fleet.FLEET_KEY_NAME))
+        current_user_info = await __get_user_info_by_id(user_id)
+        if current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME) != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
+            user_info['CurrentName'] = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
     else:
         _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         fleet_info = await __get_fleet_info_by_user_info(user_info)
