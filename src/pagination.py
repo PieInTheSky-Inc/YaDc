@@ -118,7 +118,7 @@ class Paginator():
                         pass
                     else:
                         if selection in self.__current_options.keys():
-                            await utils.discord.post_output_with_files(reply)
+                            await utils.discord.try_delete_message(reply)
                             await self.__try_delete_message()
                             return True, self.__current_options[selection]
 
@@ -166,7 +166,7 @@ class Paginator():
 
 
     async def __try_delete_message(self) -> bool:
-        result = await utils.discord.post_output_with_files(self.__message)
+        result = await utils.discord.try_delete_message(self.__message)
         if result:
             self.__message = None
         return result
