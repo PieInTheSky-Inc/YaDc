@@ -71,7 +71,7 @@ class Device():
         if self.__can_login_until is None:
             return True
         utc_now = utils.get_utc_now()
-        if self.__can_login_until <= utc_now and self.__can_login_until.day == utc_now.day:
+        if self.__can_login_until <= utc_now and self.__can_login_until.date == utc_now.date:
             return False
         return True
 
