@@ -609,7 +609,7 @@ def __get_size(room_info: EntityInfo, rooms_data: EntitiesData, items_data: Enti
 
 def __get_value(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
-        value = kwargs.get('property')
+        value = kwargs.get('entity_property')
         if value:
             max_decimal_count = kwargs.get('max_decimal_count', utils.DEFAULT_FLOAT_PRECISION)
             result = __parse_value(value, max_decimal_count)
@@ -622,7 +622,7 @@ def __get_value(room_info: EntityInfo, rooms_data: EntitiesData, items_data: Ent
 
 def __get_value_as_duration(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
-        value = kwargs.get('property')
+        value = kwargs.get('entity_property')
         if value:
             result = utils.format.duration(int(value), include_relative_indicator=False, exclude_zeros=True)
             return result
@@ -634,7 +634,7 @@ def __get_value_as_duration(room_info: EntityInfo, rooms_data: EntitiesData, ite
 
 def __get_value_as_seconds(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
-        value = kwargs.get('property')
+        value = kwargs.get('entity_property')
         if value:
             value_seconds = utils.convert.ticks_to_seconds(int(value))
             result = f'{utils.format.number_up_to_decimals(value_seconds, 3)}s'
@@ -844,30 +844,30 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
     ),
     'properties': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty(__display_name_properties['category'], True, property_name='CategoryType', transform_function=__get_value),
-            entity.EntityDetailProperty(__display_name_properties['type'], True, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['category'], True, entity_property_name='CategoryType', transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['type'], True, entity_property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
             entity.EntityDetailProperty(__display_name_properties['size'], True, transform_function=__get_size),
-            entity.EntityDetailProperty(__display_name_properties['max_power_used'], True, property_name='MaxSystemPower', transform_function=__get_value),
-            entity.EntityDetailProperty(__display_name_properties['power_generated'], True, property_name='MaxPowerGenerated', transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['max_power_used'], True, entity_property_name='MaxSystemPower', transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['power_generated'], True, entity_property_name='MaxPowerGenerated', transform_function=__get_value),
             entity.EntityDetailProperty(__display_name_properties['innate_armor'], True, transform_function=__get_innate_armor, forbidden_room_types=['Corridor']),
-            entity.EntityDetailProperty(__display_name_properties['enhanced_by'], True, property_name='EnhancementType', transform_function=__get_value),
-            entity.EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, property_name='MinShipLevel', transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['enhanced_by'], True, entity_property_name='EnhancementType', transform_function=__get_value),
+            entity.EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, entity_property_name='MinShipLevel', transform_function=__get_value),
             entity.EntityDetailProperty(__display_name_properties['reload_speed'], True, transform_function=__get_reload_time),
             entity.EntityDetailProperty(__display_name_properties['shots_fired'], True, transform_function=__get_shots_fired),
-            entity.EntityDetailProperty(__display_name_properties['system_dmg'], True, property_name='MissileDesign.SystemDamage', transform_function=__get_damage, print_percent=False),
-            entity.EntityDetailProperty(__display_name_properties['shield_dmg'], True, property_name='MissileDesign.ShieldDamage', transform_function=__get_damage, print_percent=False),
-            entity.EntityDetailProperty(__display_name_properties['crew_dmg'], True, property_name='MissileDesign.CharacterDamage', transform_function=__get_damage, print_percent=False),
-            entity.EntityDetailProperty(__display_name_properties['hull_dmg'], True, property_name='MissileDesign.HullDamage', transform_function=__get_damage, print_percent=False),
-            entity.EntityDetailProperty(__display_name_properties['ap_dmg'], True, property_name='MissileDesign.DirectSystemDamage', transform_function=__get_damage, print_percent=False),
-            entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
+            entity.EntityDetailProperty(__display_name_properties['system_dmg'], True, entity_property_name='MissileDesign.SystemDamage', transform_function=__get_damage, print_percent=False),
+            entity.EntityDetailProperty(__display_name_properties['shield_dmg'], True, entity_property_name='MissileDesign.ShieldDamage', transform_function=__get_damage, print_percent=False),
+            entity.EntityDetailProperty(__display_name_properties['crew_dmg'], True, entity_property_name='MissileDesign.CharacterDamage', transform_function=__get_damage, print_percent=False),
+            entity.EntityDetailProperty(__display_name_properties['hull_dmg'], True, entity_property_name='MissileDesign.HullDamage', transform_function=__get_damage, print_percent=False),
+            entity.EntityDetailProperty(__display_name_properties['ap_dmg'], True, entity_property_name='MissileDesign.DirectSystemDamage', transform_function=__get_damage, print_percent=False),
+            entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
             entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-            entity.EntityDetailProperty(__display_name_properties['cooldown'], True, property_name='CooldownTime', transform_function=__get_value_as_seconds),
+            entity.EntityDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='CooldownTime', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
             entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
-            entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
-            entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
-            entity.EntityDetailProperty(__display_name_properties['build_time'], True, property_name='ConstructionTime', transform_function=__get_value_as_duration),
+            entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
+            entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, entity_property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
+            entity.EntityDetailProperty(__display_name_properties['build_time'], True, entity_property_name='ConstructionTime', transform_function=__get_value_as_duration),
             entity.EntityDetailProperty(__display_name_properties['build_cost'], True, transform_function=__get_build_cost),
             entity.EntityDetailProperty(__display_name_properties['required_research'], True, transform_function=__get_required_research),
             entity.EntityDetailProperty(__display_name_properties['required_item'], True, transform_function=__get_required_item),
@@ -876,13 +876,13 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
         ],
         properties_short=[
-            entity.EntityDetailProperty('Room Type', False, property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
-            entity.EntityDetailProperty('Enhanced by', True, property_name='EnhancementType', transform_function=__get_value),
-            entity.EntityDetailProperty('Ship lvl', True, property_name='MinShipLevel', transform_function=__get_value),
+            entity.EntityDetailProperty('Room Type', False, entity_property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
+            entity.EntityDetailProperty('Enhanced by', True, entity_property_name='EnhancementType', transform_function=__get_value),
+            entity.EntityDetailProperty('Ship lvl', True, entity_property_name='MinShipLevel', transform_function=__get_value),
         ]
     ),
     'embed_settings': {
-        'icon_url': entity.EntityDetailProperty('icon_url', False, property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
+        'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='LogoSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
         'image_url': entity.EntityDetailProperty('image_url', False, transform_function=__get_interior_sprite_url),
         'thumbnail_url': entity.EntityDetailProperty('thumbnail_url', False, transform_function=__get_random_exterior_sprite_url)
     }
