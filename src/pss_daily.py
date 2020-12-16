@@ -1,16 +1,15 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
-from datetime import datetime, timedelta
-import discord
-from discord.ext import commands
+from datetime import datetime
 import random
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+from discord import Embed
+from discord.ext.commands import Context
 
 import database as db
 import emojis
 import pss_core as core
 import pss_entity as entity
+from pss_exception import Error
 import pss_item as item
 import pss_crew as crew
 import pss_lookups as lookups
@@ -18,21 +17,15 @@ import pss_research as research
 import pss_room as room
 import pss_training as training
 import server_settings
+from server_settings import AutoDailySettings
 import settings
-import utility as util
-
-
-
-
-
-
-
-
+from typehints import EntityInfo
+import utils
 
 
 # ---------- Constants ----------
 
-DAILY_INFO_FIELDS = [
+DAILY_INFO_FIELDS: List[str] = [
     'CargoItems',
     'CargoPrices',
     'CommonCrewId',
@@ -54,7 +47,7 @@ DAILY_INFO_FIELDS = [
     'SaleType'
 ]
 
-DAILY_INFO_FIELDS_TO_CHECK = [
+DAILY_INFO_FIELDS_TO_CHECK: List[str] = [
     'LimitedCatalogArgument',
     'LimitedCatalogCurrencyAmount',
     'LimitedCatalogCurrencyType',
@@ -66,19 +59,9 @@ DAILY_INFO_FIELDS_TO_CHECK = [
     'SaleType'
 ]
 
-SALES_DAILY_INFO_FIELDS = {
-    'LimitedCatalogArgument': int,
-    'LimitedCatalogCurrencyAmount': int,
-    'LimitedCatalogCurrencyType': str,
-    'LimitedCatalogExpiryDate': util.parse_pss_datetime,
-    'LimitedCatalogMaxTotal': int,
-    'LimitedCatalogType': str
-}
+DB_DAILY_INFO_COLUMN_NAMES: Dict[str, str] = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
 
 LATE_SALES_PORTAL_HYPERLINK: str = 'https://pixelstarships.com/PlayerCenter/Sales'
-
-DB_DAILY_INFO_COLUMN_NAMES = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
-
 LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
     'item': item.get_item_details_by_id,
     'character': crew.get_char_details_by_id,
@@ -86,20 +69,37 @@ LIMITED_CATALOG_TYPE_GET_ENTITY_FUNCTIONS: Dict[str, Callable] = {
     'room': room.get_room_details_by_id
 }
 
+SALES_DAILY_INFO_FIELDS: Dict[str, Callable] = {
+    'LimitedCatalogArgument': int,
+    'LimitedCatalogCurrencyAmount': int,
+    'LimitedCatalogCurrencyType': str,
+    'LimitedCatalogExpiryDate': utils.parse.pss_datetime,
+    'LimitedCatalogMaxTotal': int,
+    'LimitedCatalogType': str
+}
 
 
 
 
 
+# ---------- Sales info ----------
+
+async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: bool = False) -> List[str]:
+    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now)
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
+    sales_infos = reversed([sales_info for sales_info in sales_infos if sales_info['expires_in'] >= 0])
+    for sales_info in sales_infos:
+        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
+        price = sales_info['price']
+        currency = sales_info['currency']
+        result = f'{expiring_entity_details}: {price} {currency}'
+        return [result]
+    return None
 
 
-
-
-# ---------- Sales ----------
-
-async def get_sales_details(ctx: commands.Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[discord.Embed]]:
-    utc_now = util.get_utcnow()
-    db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
+async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[Embed]]:
+    utc_now = utils.get_utc_now()
+    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now)
     processed_db_sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = [sales_info for sales_info in processed_db_sales_infos if sales_info['expires_in'] >= 0]
     if reverse:
@@ -115,11 +115,11 @@ async def get_sales_details(ctx: commands.Context, reverse: bool = False, as_emb
         details = f'**{expires_in}** {day}: **{sales_info["name"]}** ({sales_info["type"]}) {sales_info["currency"]} {sales_info["price"]}'
         sales_details.append(details)
     if as_embed:
-        body_lines = [description, settings.EMPTY_LINE]
+        body_lines = [description, utils.discord.ZERO_WIDTH_SPACE]
         body_lines.extend(sales_details)
-        colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         footer = 'Click on the title to get redirected to the Late Sales portal, where you can purchase these offers.'
-        result = util.create_basic_embeds_from_description(title, description=body_lines, colour=colour, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
+        result = utils.discord.create_basic_embeds_from_description(title, description=body_lines, colour=colour, footer=footer, author_url=LATE_SALES_PORTAL_HYPERLINK)
     else:
         result = [
             f'**{title}**',
@@ -130,20 +130,58 @@ async def get_sales_details(ctx: commands.Context, reverse: bool = False, as_emb
     return result
 
 
-async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: bool = False) -> List[str]:
-    db_sales_infos = await db_get_sales_infos(utc_now=utc_now)
+async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    utc_now = utils.get_utc_now()
+
+    entity_id = entity_info.get('entity_id')
+    entity_id = int(entity_id) if entity_id else None
+    entity_name = entity_info.get('entity_name')
+
+    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    sales_infos = reversed([sales_info for sales_info in sales_infos if sales_info['expires_in'] >= 0])
-    for sales_info in sales_infos:
-        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
-        price = sales_info['price']
-        currency = sales_info['currency']
-        result = f'{expiring_entity_details}: {price} {currency}'
-        return [result]
-    return None
+    sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
+    if reverse:
+        sales_infos = reversed(sales_infos)
+
+    if sales_infos:
+        title = f'{entity_name} has been sold on'
+        sales_details = []
+        for sales_info in sales_infos:
+            sold_on_date = sales_info['expiry_date'] - utils.datetime.ONE_DAY
+            sold_on = utils.format.datetime(sold_on_date, include_time=False, include_tz=False)
+            star_date = utils.datetime.get_star_date(sold_on_date)
+            sold_ago = (utc_now - sold_on_date).days
+            price = sales_info['original_price']
+            currency = sales_info['currency']
+            day = 'day' + 's' if sold_ago != 1 else ''
+            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago) for {price} {currency}')
+
+        if as_embed:
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = utils.discord.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
+        else:
+            result = [f'**{title}**']
+            result.extend(sales_details)
+        return result
+    raise Error(f'There is no past sales data available for {entity_name}.')
 
 
-async def __process_db_sales_infos(db_sales_infos: List[Dict], utc_now: datetime) -> List[Dict]:
+def get_sales_search_details(entity_info: EntityInfo) -> str:
+    entity_type = entity_info.get('entity_type')
+    if entity_type == 'Crew':
+        entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    elif entity_type == 'Item':
+        entity_name = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    elif entity_type == 'Room':
+        entity_name = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        entity_name = None
+
+    result = f'{entity_name} ({entity_type})'
+    return result
+
+
+async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now: datetime) -> List[Dict[str, Any]]:
     chars_data = await crew.characters_designs_retriever.get_data_dict3()
     collections_data = await crew.collections_designs_retriever.get_data_dict3()
     items_data = await item.items_designs_retriever.get_data_dict3()
@@ -190,114 +228,41 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict], utc_now: datetime
     return result
 
 
-async def get_sales_history(ctx: commands.Context, entity_info: Dict, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[discord.Embed], List[str]]:
-    utc_now = util.get_utcnow()
 
-    entity_id = entity_info.get('entity_id')
-    entity_id = int(entity_id) if entity_id else None
-    entity_name = entity_info.get('entity_name')
 
-    db_sales_infos = await db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
-    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
-    if reverse:
-        sales_infos = reversed(sales_infos)
 
-    if sales_infos:
-        title = f'{entity_name} has been sold on'
-        sales_details = []
-        for sales_info in sales_infos:
-            sold_on_date = sales_info['expiry_date'] - util.ONE_DAY
-            sold_on = util.get_formatted_datetime(sold_on_date, include_time=False, include_tz=False)
-            star_date = util.get_star_date(sold_on_date)
-            sold_ago = (utc_now - sold_on_date).days
-            price = sales_info['original_price']
-            currency = sales_info['currency']
-            day = 'day' + 's' if sold_ago != 1 else ''
-            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago) for {price} {currency}')
+# ---------- Helper functions ----------
 
-        if as_embed:
-            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
-            result = util.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
+async def db_get_daily_info(skip_cache: bool = False) -> Tuple[EntityInfo, datetime]:
+    if __daily_info_cache is None or skip_cache:
+        result = {}
+        modify_dates = []
+        daily_settings = await db.get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
+        result = {DB_DAILY_INFO_COLUMN_NAMES.get(db_setting_name, db_setting_name): details[0] for db_setting_name, details in daily_settings.items()}
+        modify_dates = [details[1] for details in daily_settings.values() if details[1] is not None]
+        if result and modify_dates:
+            return (result, max(modify_dates))
         else:
-            result = [f'**{title}**']
-            result.extend(sales_details)
-        return result
-    return [f'There is no past sales data available for {entity_name}']
-
-
-def get_sales_search_details(entity_info: Dict) -> str:
-    entity_type = entity_info.get('entity_type')
-    if entity_type == 'Crew':
-        entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    elif entity_type == 'Item':
-        entity_name = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    elif entity_type == 'Room':
-        entity_name = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            return ({}, None)
     else:
-        entity_name = None
-
-    result = f'{entity_name} ({entity_type})'
-    return result
+        return (__daily_info_cache, __daily_info_modified_at)
 
 
+async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
+    settings = {__get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
+    settings_success = await db.set_settings(settings)
+    if settings_success:
+        await __update_db_daily_info_cache()
+
+    sales_info = {key: value(daily_info[key]) for key, value in SALES_DAILY_INFO_FIELDS.items()}
+    sales_success = await db.update_sales_info(sales_info)
+    if sales_success:
+        await __update_db_sales_info_cache()
+
+    return settings_success and sales_success
 
 
-
-
-
-
-
-
-# ---------- Utilities ----------
-
-async def try_store_daily_channel(guild_id: int, text_channel_id: int) -> bool:
-    success = False
-    rows = await server_settings.db_get_autodaily_settings(guild_id=guild_id, can_post=None)
-    if len(rows) == 0:
-        success = await insert_daily_channel(guild_id, text_channel_id)
-        if success == False:
-            print(f'[try_store_daily_channel] failed to insert new data row: {guild_id} ({text_channel_id})')
-    else:
-        if str(rows[0][1]) != str(text_channel_id):
-            success = await update_daily_channel(guild_id, text_channel_id, None)
-            if success == False:
-                print(f'[try_store_daily_channel] failed to update data row: {guild_id} ({text_channel_id})')
-        else:
-            success = True
-    return success
-
-
-def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: dict, db_modify_date: datetime) -> bool:
-    if retrieved_date.hour >= 23:
-        return False
-
-    if db_modify_date is None:
-        return True
-    elif retrieved_date.day > db_modify_date.day:
-        for daily_info_field in DAILY_INFO_FIELDS_TO_CHECK:
-            if daily_info[daily_info_field] != db_daily_info[daily_info_field]:
-                return True
-        return False
-    else:
-        daily_info = daily_info.copy()
-        daily_info.pop('News', None)
-        db_daily_info = db_daily_info.copy()
-        db_daily_info.pop('News', None)
-        return not util.dicts_equal(daily_info, db_daily_info)
-
-
-def convert_to_daily_info(dropship_info: dict) -> dict:
-    result = {}
-    for field_name in DAILY_INFO_FIELDS:
-        value = None
-        if field_name in dropship_info.keys():
-            value = dropship_info[field_name]
-        result[field_name] = value
-    return result
-
-
-async def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = None, can_post: bool = None) -> list:
+async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool = None) -> List[str]:
     settings = await server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
     at_least_one = False
@@ -315,24 +280,32 @@ async def get_daily_channels(ctx: discord.ext.commands.Context, guild_id: int = 
     return result
 
 
-async def get_daily_info():
+async def get_daily_info() -> EntityInfo:
     latest_settings = await core.get_latest_settings()
-    result = convert_to_daily_info(latest_settings)
+    result = __convert_to_daily_info(latest_settings)
     return result
 
 
-def get_daily_info_setting_name(field_name: str) -> str:
-    return f'daily{field_name}'
+def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_daily_info: EntityInfo, db_modify_date: datetime) -> bool:
+    if retrieved_date.hour >= 23:
+        return False
+
+    if db_modify_date is None:
+        return True
+    elif retrieved_date.day > db_modify_date.day:
+        for daily_info_field in DAILY_INFO_FIELDS_TO_CHECK:
+            if daily_info[daily_info_field] != db_daily_info[daily_info_field]:
+                return True
+        return False
+    else:
+        daily_info = daily_info.copy()
+        daily_info.pop('News', None)
+        db_daily_info = db_daily_info.copy()
+        db_daily_info.pop('News', None)
+        return not utils.dicts_equal(daily_info, db_daily_info)
 
 
-async def insert_daily_channel(guild_id: int, channel_id: int) -> bool:
-    success = await server_settings.db_create_server_settings(guild_id)
-    if success:
-        success = await update_daily_channel(guild_id, channel_id=channel_id, latest_message_id=None)
-    return success
-
-
-def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
+def remove_duplicate_autodaily_settings(autodaily_settings: List[AutoDailySettings]) -> List[AutoDailySettings]:
     if not autodaily_settings:
         return autodaily_settings
     result = {}
@@ -342,31 +315,17 @@ def remove_duplicate_autodaily_settings(autodaily_settings: list) -> list:
     return list(result.values())
 
 
-async def update_daily_channel(guild_id: int, channel_id: int = None, latest_message_id: int = None) -> bool:
-    success = True
-    if channel_id is not None:
-        success = success and await server_settings.db_update_daily_channel_id(guild_id, channel_id)
-    if latest_message_id is not None:
-        success = success and await server_settings.db_update_daily_latest_message(guild_id, latest_message_id)
-    return success
+def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
+    result = {}
+    for field_name in DAILY_INFO_FIELDS:
+        value = None
+        if field_name in dropship_info.keys():
+            value = dropship_info[field_name]
+        result[field_name] = value
+    return result
 
 
-async def db_get_daily_info(skip_cache: bool = False) -> Tuple[Dict, datetime]:
-    if __daily_info_cache is None or skip_cache:
-        result = {}
-        modify_dates = []
-        daily_settings = await db.get_settings(DB_DAILY_INFO_COLUMN_NAMES.keys())
-        result = {DB_DAILY_INFO_COLUMN_NAMES.get(db_setting_name, db_setting_name): details[0] for db_setting_name, details in daily_settings.items()}
-        modify_dates = [details[1] for details in daily_settings.values() if details[1] is not None]
-        if result and modify_dates:
-            return (result, max(modify_dates))
-        else:
-            return ({}, None)
-    else:
-        return (__daily_info_cache, __daily_info_modified_at)
-
-
-async def db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> List[Dict]:
+async def __db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> List[Dict[str, Any]]:
     if not skip_cache and utc_now is not None and (__sales_info_cache_retrieved_at is None or __sales_info_cache_retrieved_at.day != utc_now.day):
         await __update_db_sales_info_cache()
     if skip_cache:
@@ -378,23 +337,8 @@ async def db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, sk
     return result
 
 
-async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
-    settings = {get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
-    settings_success = await db.set_settings(settings)
-    if settings_success:
-        await __update_db_daily_info_cache()
-
-    sales_info = {key: value(daily_info[key]) for key, value in SALES_DAILY_INFO_FIELDS.items()}
-    sales_success = await db.update_sales_info(sales_info)
-    if sales_success:
-        await __update_db_sales_info_cache()
-
-    return settings_success and sales_success
-
-
-
-
-
+def __get_daily_info_setting_name(field_name: str) -> str:
+    return f'daily{field_name}'
 
 
 
@@ -402,8 +346,8 @@ async def db_set_daily_info(daily_info: dict, utc_now: datetime) -> bool:
 
 # ---------- Mocks ----------
 
-def mock_get_daily_info():
-    utc_now = util.get_utcnow()
+def mock_get_daily_info() -> EntityInfo:
+    utc_now = utils.get_utc_now()
     if utc_now.hour < 1:
         if utc_now.minute < 20:
             return __mock_get_daily_info_1()
@@ -413,7 +357,7 @@ def mock_get_daily_info():
         return __mock_get_daily_info_1()
 
 
-def __mock_get_daily_info_1():
+def __mock_get_daily_info_1() -> EntityInfo:
     result = {
         'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
         'CargoPrices': f'starbux:{random.randint(0, 10)}',
@@ -436,7 +380,7 @@ def __mock_get_daily_info_1():
     return result
 
 
-def __mock_get_daily_info_2():
+def __mock_get_daily_info_2() -> EntityInfo:
     result = {
         'CargoItems': f'{random.randint(0, 200)}x{random.randint(0, 10)}',
         'CargoPrices': f'starbux:{random.randint(0, 10)}',
@@ -462,11 +406,6 @@ def __mock_get_daily_info_2():
 
 
 
-
-
-
-
-
 # ---------- Initialization ----------
 
 __daily_info_cache: dict = None
@@ -475,19 +414,19 @@ __sales_info_cache: dict = None
 __sales_info_cache_retrieved_at: datetime = None
 
 
-async def __update_db_daily_info_cache():
+async def __update_db_daily_info_cache() -> None:
     global __daily_info_cache
     global __daily_info_modified_at
     __daily_info_cache, __daily_info_modified_at = await db_get_daily_info(skip_cache=True)
 
 
-async def __update_db_sales_info_cache():
+async def __update_db_sales_info_cache() -> None:
     global __sales_info_cache
     global __sales_info_cache_retrieved_at
-    __sales_info_cache = await db_get_sales_infos(skip_cache=True)
-    __sales_info_cache_retrieved_at = util.get_utcnow()
+    __sales_info_cache = await __db_get_sales_infos(skip_cache=True)
+    __sales_info_cache_retrieved_at = utils.get_utc_now()
 
 
-async def init():
+async def init() -> None:
     await __update_db_daily_info_cache()
     await __update_db_sales_info_cache()

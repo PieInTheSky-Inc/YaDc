@@ -1,26 +1,15 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import pss_entity as entity
-
-
-
 
 
 # ---------- Constants ----------
 
-STARSYSTEM_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
-STARSYSTEM_DESIGN_KEY_NAME = 'StarSystemId'
-STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
+STARSYSTEM_DESIGN_BASE_PATH: str = 'GalaxyService/ListStarSystems?languageKey=en'
+STARSYSTEM_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'StarSystemTitle'
+STARSYSTEM_DESIGN_KEY_NAME: str = 'StarSystemId'
 
-STARSYSTEMLINK_DESIGN_BASE_PATH = 'GalaxyService/ListStarSystems?languageKey=en'
-STARSYSTEMLINK_DESIGN_KEY_NAME = 'StarSystemId'
-STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME = 'StarSystemTitle'
-
-
-
-
-
+STARSYSTEMLINK_DESIGN_BASE_PATH: str = 'GalaxyService/ListStarSystems?languageKey=en'
+STARSYSTEMLINK_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'StarSystemTitle'
+STARSYSTEMLINK_DESIGN_KEY_NAME: str = 'StarSystemId'
 
 
 

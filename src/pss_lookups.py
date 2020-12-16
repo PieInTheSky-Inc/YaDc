@@ -1,8 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
-import calendar
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import emojis
 
@@ -51,7 +47,7 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
 }
 
 
-DELETE_ON_CHANGE_ORDER = [True, None, False]
+DELETE_ON_CHANGE_ORDER: List[Optional[bool]] = [True, None, False]
 
 
 DIVISION_CHAR_TO_DESIGN_ID: Dict[str, str] = {
@@ -170,13 +166,10 @@ IAP_OPTIONS_MASK_LOOKUP: Dict[int, Tuple[str, int]] = {
 }
 
 
-ITEM_SUB_TYPES_TO_GET_PARENTS_FOR = [
+ITEM_SUB_TYPES_TO_GET_PARENTS_FOR: List[str] = [
     'Module'
 ]
 
-
-MONTH_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_name) if k > 0}
-MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(calendar.month_abbr) if k > 0}
 
 
 PROGRESSION_TYPES: Dict[str, float] = {
@@ -204,14 +197,6 @@ RARITY_EMOJIS_LOOKUP: Dict[str, str] = {
     'Hero': emojis.pss_rarity * 5,
     'Special': emojis.pss_rarity_special,
     'Legendary': emojis.pss_rarity_legendary
-}
-
-
-REDUCE_TOKENS_LOOKUP: Dict[int, str] = {
-    0: '',
-    1: 'k',
-    2: 'm',
-    3: 'g'
 }
 
 
@@ -369,14 +354,9 @@ XP_COSTS_LOOKUP: List[int] = [
 
 
 
+# ---------- Helper functions ----------
 
-
-
-
-
-# ----------
-
-def get_lookup_value_or_default(lookup: object, key: object, default: object = None) -> object:
+def get_lookup_value_or_default(lookup: Any, key: Any, default: Any = None) -> Any:
     if key in lookup.keys():
         result = lookup[key]
     else:
@@ -384,7 +364,7 @@ def get_lookup_value_or_default(lookup: object, key: object, default: object = N
     return result
 
 
-def select_next_element(lookup: list, current_element: object) -> object:
+def select_next_element(lookup: List[Any], current_element: Any) -> Any:
     if lookup is None:
         return None
     elif lookup:

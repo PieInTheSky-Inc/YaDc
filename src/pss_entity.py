@@ -1,30 +1,19 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
-from abc import ABC, abstractstaticmethod
-from collections import namedtuple
-import discord
-import discord.ext.commands as commands
 from enum import IntEnum
 import inspect
 import json
-from typing import Awaitable, Callable, Dict, Iterable, List, NamedTuple, Optional, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 from xml.etree import ElementTree
 
+from discord import Embed
+from discord.ext.commands import Context
 
 from cache import PssCache
 import pss_core as core
-import pss_exception
+import pss_entity as entity
+from pss_exception import Error
 import settings
-import utility as util
-
-
-
-
-
-
-
-
+from typehints import EntitiesData, EntityInfo
+import utils
 
 
 # ---------- Constants ----------
@@ -45,20 +34,9 @@ NO_PROPERTY: 'EntityDetailProperty'
 
 
 
+# ---------- Typehint definitions ----------
 
-
-
-
-
-# ---------- Typing definitions ----------
-
-EntityInfo = Dict[str, 'EntityInfo']
-EntitiesData = Dict[str, EntityInfo]
-
-
-
-
-
+EntityDetailsCreationPropertiesCollection = Dict[str, Union['EntityDetailPropertyCollection', 'EntityDetailPropertyListCollection', Dict[str, 'EntityDetailProperty']]]
 
 
 
@@ -76,13 +54,8 @@ class EntityDetailsType(IntEnum):
 
 
 
-
-
-
-
-
 class CalculatedEntityDetailProperty(object):
-    def __init__(self, display_name: str, value: str, force_display_name: bool, omit_if_none: bool, display_inline_for_embeds: bool = settings.DEFAULT_EMBED_INLINE):
+    def __init__(self, display_name: str, value: str, force_display_name: bool, omit_if_none: bool, display_inline_for_embeds: bool = utils.discord.DEFAULT_EMBED_INLINE) -> None:
         self.__display_name: str = display_name
         self.__display_inline_for_embeds: bool = display_inline_for_embeds
         self.__value: str = value
@@ -129,26 +102,21 @@ class CalculatedEntityDetailProperty(object):
         return result
 
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Union[str, bool]]:
         return iter(self.__tuple)
 
 
 
 
 
-
-
-
-
-
 class EntityDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, embed_only: bool = False, text_only: bool = False, **transform_kwargs):
+    def __init__(self, display_name: Union[str, Callable[[EntityInfo, EntitiesData], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, embed_only: bool = False, text_only: bool = False, **transform_kwargs) -> None:
         if embed_only and text_only:
             raise ValueError('Only one of these parameters may be True at a time: embed_only, text_only')
         self.__embed_only: bool = embed_only or False
         self.__text_only: bool = text_only or False
         self.__display_name: str = None
-        self.__display_name_function: Callable[[EntityInfo, EntitiesData, ...], str] = None
+        self.__display_name_function: Callable[[EntityInfo, EntitiesData], str] = None
         self.__display_name_property: EntityDetailProperty = None
         if display_name:
             if isinstance(display_name, str):
@@ -160,7 +128,7 @@ class EntityDetailProperty(object):
             else:
                 raise TypeError('The display_name must either be of type \'str\', \'Awaitable[[EntityInfo, EntitiesData, ...], str]\' or \'Callable[[EntityInfo, EntitiesData, ...], str]\'.')
 
-        self.__transform_function: Callable[[EntityInfo, EntitiesData, ...], Union[str, Awaitable[str]]] = None
+        self.__transform_function: Callable[[EntityInfo, EntitiesData], Union[str, Awaitable[str]]] = None
         self.__call_transform_function_async: bool = None
         if transform_function:
             if inspect.iscoroutinefunction(transform_function):
@@ -222,7 +190,7 @@ class EntityDetailProperty(object):
             return ''
 
 
-    async def __get_value(self, entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> str:
+    async def __get_value(self, entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> Optional[str]:
         if self.__transform_function:
             if self.__use_entity_property_name:
                 entity_property = get_property_from_entity_info(entity_info, self.__entity_property_name)
@@ -241,13 +209,8 @@ class EntityDetailProperty(object):
 
 
 
-
-
-
-
-
 class EntityDetailEmbedOnlyProperty(EntityDetailProperty):
-    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, display_inline: bool = settings.DEFAULT_EMBED_INLINE, **transform_kwargs):
+    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, display_inline: bool = utils.discord.DEFAULT_EMBED_INLINE, **transform_kwargs) -> None:
         self.__display_inline: bool = display_inline
         super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, embed_only=True, **transform_kwargs)
 
@@ -265,19 +228,9 @@ class EntityDetailEmbedOnlyProperty(EntityDetailProperty):
 
 
 
-
-
-
-
-
 class EntityDetailTextOnlyProperty(EntityDetailProperty):
-    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, **transform_kwargs):
+    def __init__(self, display_name: Union[str, Callable[[EntityInfo, Tuple[EntitiesData, ...]], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, **transform_kwargs) -> None:
         super().__init__(display_name, force_display_name, omit_if_none=omit_if_none, entity_property_name=entity_property_name, transform_function=transform_function, text_only=True, **transform_kwargs)
-
-
-
-
-
 
 
 
@@ -336,11 +289,6 @@ class EntityDetailPropertyCollection(object):
 
 
 
-
-
-
-
-
 class EntityDetailPropertyListCollection(object):
     def __init__(self, properties_long: List[EntityDetailProperty],
                        properties_short: List[EntityDetailProperty] = None,
@@ -380,11 +328,6 @@ class EntityDetailPropertyListCollection(object):
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
         else:
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_NONE_NOT_ALLOWED)
-
-
-
-
-
 
 
 
@@ -460,7 +403,7 @@ class EntityDetails(object):
         return result
 
 
-    async def get_details_as_embed(self, ctx: commands.Context, display_inline: bool = True) -> discord.Embed:
+    async def get_details_as_embed(self, ctx: Context, display_inline: bool = True) -> Embed:
         result = await self.__create_base_embed(ctx)
         details_long = await self._get_details_properties(True, EntityDetailsType.LONG)
         detail: CalculatedEntityDetailProperty
@@ -504,7 +447,7 @@ class EntityDetails(object):
     async def get_full_details(self, as_embed: bool, details_type: EntityDetailsType) -> Tuple[str, str, List[CalculatedEntityDetailProperty]]:
         details_type = details_type or (EntityDetailsType.EMBED if as_embed else None)
         if not details_type:
-            raise pss_exception.Error('You have to specify a details_type or set as_embed to True!')
+            raise Error('You have to specify a details_type or set as_embed to True!')
         title, description = await self.__get_title_and_description(details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
@@ -527,19 +470,19 @@ class EntityDetails(object):
         return await self.__get_property_from_collection(self.__title_property_collection, self.__titles, details_type)
 
 
-    async def __create_base_embed(self, ctx: commands.Context) -> discord.Embed:
+    async def __create_base_embed(self, ctx: Context) -> Embed:
         title = await self._get_title(details_type=EntityDetailsType.EMBED)
         description = await self._get_description(details_type=EntityDetailsType.EMBED)
 
         embed_settings = await self.get_embed_settings()
-        colour = embed_settings.get('color', embed_settings.get('colour', util.get_bot_member_colour(ctx.bot, ctx.guild)))
+        colour = embed_settings.get('color', embed_settings.get('colour', utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)))
         author_url = embed_settings.get('author_url')
         icon_url = embed_settings.get('icon_url')
         image_url = embed_settings.get('image_url')
         thumbnail_url = embed_settings.get('thumbnail_url')
         timestamp = embed_settings.get('timestamp')
         footer = embed_settings.get('footer')
-        result = util.create_embed(title=title, description=description, colour=colour, footer=footer, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, timestamp=timestamp)
+        result = utils.discord.create_embed(title=title, description=description, colour=colour, footer=footer, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, author_url=author_url, timestamp=timestamp)
         return result
 
 
@@ -626,11 +569,6 @@ class EntityDetails(object):
 
 
 
-
-
-
-
-
 class EscapedEntityDetails(EntityDetails):
     async def get_details_as_text(self, details_type: EntityDetailsType, for_embed: bool = False) -> List[str]:
         if details_type == EntityDetailsType.EMBED:
@@ -656,26 +594,21 @@ class EscapedEntityDetails(EntityDetails):
 
 
 
-
-
-
-
-
 class EntityDetailsCollection():
-    def __init__(self, entities_details: Iterable[EntityDetails], big_set_threshold: int = 0, add_empty_lines: bool = True):
+    def __init__(self, entities_details: Iterable[entity.EntityDetails], big_set_threshold: int = 0, add_empty_lines: bool = True) -> None:
         """
         big_set_threshold: if 0 or less, there's no threshold
         """
-        self.__entities_details: List[EntityDetails] = list(entities_details)
+        self.__entities_details: List[entity.EntityDetails] = list(entities_details)
         self.__set_size: int = len(self.__entities_details)
         self.__big_set_threshold: int = big_set_threshold or 0
         if self.__big_set_threshold < 0:
             self.__big_set_threshold = 0
-        self.__is_big_set: bool = self.__big_set_threshold and self.__set_size > self.__big_set_threshold
+        self.__is_big_set: bool = self.__big_set_threshold and self.__set_size >= self.__big_set_threshold
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entities_details_as_embed(self, ctx: commands.Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[discord.Embed]:
+    async def get_entities_details_as_embed(self, ctx: Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[Embed]:
         """
         custom_title: only relevant for big sets
         """
@@ -683,8 +616,8 @@ class EntityDetailsCollection():
         display_names = []
         if self.__is_big_set:
             detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
-            title = custom_title or discord.Embed.Empty
-            colour = util.get_bot_member_colour(ctx.bot, ctx.guild)
+            title = custom_title or Embed.Empty
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.SHORT)
             fields = []
             for entity_details in self.__entities_details:
@@ -702,11 +635,11 @@ class EntityDetailsCollection():
                 footer += custom_footer_text
 
             while (len(fields) > 25):
-                embed = util.create_embed(title, colour=colour, fields=fields[:25], footer=footer)
+                embed = utils.discord.create_embed(title, colour=colour, fields=fields[:25], footer=footer)
                 result.append(embed)
                 fields = fields[25:]
 
-            embed = util.create_embed(title, colour=colour, fields=fields, footer=footer, thumbnail_url=custom_thumbnail_url)
+            embed = utils.discord.create_embed(title, colour=colour, fields=fields, footer=footer, thumbnail_url=custom_thumbnail_url)
             result.append(embed)
         else:
             for entity_details in self.__entities_details:
@@ -729,11 +662,11 @@ class EntityDetailsCollection():
                 details = await entity_details.get_details_as_text(EntityDetailsType.LONG)
                 result.extend(details)
                 if self.__add_empty_lines:
-                    result.append(settings.EMPTY_LINE)
+                    result.append(utils.discord.ZERO_WIDTH_SPACE)
         if result and self.__add_empty_lines and not self.__is_big_set:
             result = result[:-1]
         if custom_footer_text:
-            result.append(settings.EMPTY_LINE)
+            result.append(utils.discord.ZERO_WIDTH_SPACE)
             result.append(custom_footer_text)
         return result
 
@@ -741,13 +674,8 @@ class EntityDetailsCollection():
 
 
 
-
-
-
-
-
 class EntityRetriever:
-    def __init__(self, entity_base_path: str, entity_key_name: str, entity_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None, cache_update_interval: int = 10):
+    def __init__(self, entity_base_path: str, entity_key_name: str, entity_description_property_name: str, cache_name: str = None, sorted_key_function: Callable[[dict, dict], str] = None, fix_data_delegate: Callable[[str], str] = None, cache_update_interval: int = 10) -> None:
         self.__cache_name: str = cache_name or ''
         self.__base_path: str = entity_base_path
         self.__key_name: str = entity_key_name or None
@@ -835,7 +763,7 @@ class EntityRetriever:
         result = None
         raw_xml = await self.get_raw_entity_info_by_id_as_xml(entity_id)
         if raw_xml is not None:
-            result = core.xmltree_to_raw_dict(raw_xml, fix_attributes=True)
+            result = utils.convert.raw_xml_to_dict(raw_xml, fix_attributes=fix_xml_attributes, preserve_lists=True)
         if result is not None:
             result = json.dumps(result)
         return result
@@ -848,14 +776,21 @@ class EntityRetriever:
 
 
 
-
-
-
-
-
 # ---------- Helper ----------
 
-def get_property_from_entity_info(entity_info: EntityInfo, entity_property_name: str) -> object:
+def entity_property_has_value(entity_property: str) -> bool:
+    return entity_property and entity_property != '0' and entity_property.lower() != 'none' and entity_property.strip()
+
+
+def group_entities_details(entities_details: List[entity.EntityDetails], property_name: str) -> Dict[Any, List[entity.EntityDetails]]:
+    result = {}
+    for entity_details in entities_details:
+        key = entity_details.entity_info[property_name]
+        result.setdefault(key, []).append(entity_details)
+    return result
+
+
+def get_property_from_entity_info(entity_info: EntityInfo, entity_property_name: str) -> Any:
     while '.' in entity_property_name:
         split_parameter = entity_property_name.split('.')
         property_name = split_parameter[0]
@@ -876,21 +811,21 @@ def get_property_from_entity_info(entity_info: EntityInfo, entity_property_name:
             return result or None
 
 
-def group_entities_details(entities_details: List[EntityDetails], property_name: str) -> Dict[object, List[EntityDetails]]:
-    result = {}
-    for entity_details in entities_details:
-        key = entity_details.entity_info[property_name]
-        result.setdefault(key, []).append(entity_details)
-    return result
-
-
-def has_value(entity_property: str) -> bool:
-    return entity_property and entity_property != '0' and entity_property.lower() != 'none' and entity_property.strip()
-
-
-
-
-
+def sort_entities_by(entity_infos: List[EntityInfo], order_info: List[Tuple[str, Callable[[Any], Any], bool]]) -> List[EntityInfo]:
+    """order_info is a list of tuples (property_name,transform_function,reverse)"""
+    result = entity_infos
+    if order_info:
+        for i in range(len(order_info), 0, -1):
+            property_name = order_info[i - 1][0]
+            transform_function = order_info[i - 1][1]
+            reverse = utils.convert.to_boolean(order_info[i - 1][2])
+            if transform_function:
+                result = sorted(result, key=lambda entity_info: transform_function(entity_info[property_name]), reverse=reverse)
+            else:
+                result = sorted(result, key=lambda entity_info: entity_info[property_name], reverse=reverse)
+        return result
+    else:
+        return sorted(result)
 
 
 
@@ -899,7 +834,7 @@ def has_value(entity_property: str) -> bool:
 # ---------- Legacy ----------
 
 class LegacyEntityDetails(object):
-    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None):
+    def __init__(self, name: str = None, description: str = None, details_long: List[Tuple[str, str]] = None, details_short: List[Tuple[str, str, bool]] = None, hyperlink: str = None) -> None:
         self.__name: str = name or None
         self.__description: str = description or None
         self.__details_long: List[Tuple[str, str]] = details_long or []
@@ -928,7 +863,7 @@ class LegacyEntityDetails(object):
         return self.__name
 
 
-    def get_details_as_embed(self) -> discord.Embed:
+    def get_details_as_embed(self) -> Embed:
         return LegacyEntityDetails._get_details_as_embed(self.name, self.description, self.details_long, self.link)
 
 
@@ -941,8 +876,8 @@ class LegacyEntityDetails(object):
 
 
     @staticmethod
-    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]], link: str) -> discord.Embed:
-        result = discord.Embed()
+    def _get_details_as_embed(title: str, description: str, details: List[Tuple[str, str]], link: str) -> Embed:
+        result = Embed()
         if title:
             result.title = title
         if description:
@@ -987,11 +922,6 @@ class LegacyEntityDetails(object):
             result.append(f'({", ".join(result_details)})')
         result = [' '.join(result)]
         return result
-
-
-
-
-
 
 
 

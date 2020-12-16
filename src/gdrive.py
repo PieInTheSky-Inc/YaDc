@@ -1,58 +1,48 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import calendar
-import datetime
-import discord
-import discord.ext.commands
+from datetime import datetime, timedelta, timezone
 import json
 import os
-import pydrive.auth
-import pydrive.drive
-import pydrive.files
 import random
 from threading import Lock
 import time
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 import urllib.parse
 import yaml
 
-import pss_entity as entity
-from pss_exception import InvalidParameterValueError
+from discord.ext.commands import Context
+import pydrive.auth
+import pydrive.drive
+import pydrive.files
+
 import pss_fleet as fleet
 import pss_lookups as lookups
 import pss_user as user
 import settings
-import utility as util
+import utils
+from typehints import EntitiesData, EntityInfo
 
 
-
-
-
-
-
-
-
+# ---------- Classes ----------
 
 class TourneyData(object):
-    def __init__(self, raw_data: str):
+    def __init__(self, raw_data: str) -> None:
         data = json.loads(raw_data)
 
-        self.__fleets: entity.EntitiesDesignsData
-        self.__users: entity.EntitiesDesignsData
+        self.__fleets: EntitiesData
+        self.__users: EntitiesData
         self.__meta: Dict[str, object] = data['meta']
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
         if self.__meta['schema_version'] == 3:
-            self.__fleets = TourneyData.__create_fleet_dict_from_data_v3(data['fleets'])
-            self.__users = TourneyData.__create_user_dict_from_data_v3(data['users'], data['data'], self.__fleets)
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v3(data['fleets'])
+            self.__users = TourneyData.__create_user_data_from_data_v3(data['users'], data['data'], self.__fleets)
         elif self.__meta['schema_version'] == 4:
-            self.__fleets = TourneyData.__create_fleet_dict_from_data_v4(data['fleets'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'])
             self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
         elif self.__meta['schema_version'] == 5:
-            self.__fleets = TourneyData.__create_fleet_dict_from_data_v5(data['fleets'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'])
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
-        self.__data_date: datetime.datetime = util.parse_formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
+        self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
 
     @property
@@ -67,7 +57,7 @@ class TourneyData(object):
         return list(self.__fleets.keys())
 
     @property
-    def fleets(self) -> entity.EntitiesData:
+    def fleets(self) -> EntitiesData:
         """
         Copy of fleet data
         """
@@ -81,7 +71,7 @@ class TourneyData(object):
         return self.__data_date.month
 
     @property
-    def retrieved_at(self) -> datetime.datetime:
+    def retrieved_at(self) -> datetime:
         """
         Point in time when the data collection started.
         """
@@ -99,7 +89,7 @@ class TourneyData(object):
         return list(self.__users.keys())
 
     @property
-    def users(self) -> entity.EntitiesData:
+    def users(self) -> EntitiesData:
         """
         Copy of user data
         """
@@ -113,14 +103,14 @@ class TourneyData(object):
         return self.__data_date.year
 
 
-    def get_fleet_data_by_id(self, fleet_id: str) -> entity.EntityInfo:
+    def get_fleet_data_by_id(self, fleet_id: str) -> EntityInfo:
         """
         Look up fleet by id
         """
         return dict(self.__fleets.get(fleet_id, None))
 
 
-    def get_fleet_data_by_name(self, fleet_name: str) -> entity.EntitiesData:
+    def get_fleet_data_by_name(self, fleet_name: str) -> EntitiesData:
         """
         Looks up fleets having the specified fleet_name in their name.
         Case-insensitive.
@@ -133,14 +123,14 @@ class TourneyData(object):
         return result
 
 
-    def get_user_data_by_id(self, user_id: str) -> entity.EntityInfo:
+    def get_user_data_by_id(self, user_id: str) -> EntityInfo:
         """
         Look up user by id
         """
         return dict(self.__users.get(user_id, None))
 
 
-    def get_user_data_by_name(self, user_name: str) -> entity.EntitiesData:
+    def get_user_data_by_name(self, user_name: str) -> EntitiesData:
         """
         Looks up users having the specified user_name in their name.
         Case-insensitive.
@@ -154,7 +144,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_dict_from_data_v3(fleet_data: list) -> dict:
+    def __create_fleet_data_from_data_v3(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
             alliance_id = entry[0]
@@ -182,7 +172,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_dict_from_data_v4(fleet_data: list) -> dict:
+    def __create_fleet_data_from_data_v4(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
         for i, entry in enumerate(fleet_data, 1):
             alliance_id = str(entry[0])
@@ -200,12 +190,12 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_dict_from_data_v5(fleet_data: list) -> dict:
-        return TourneyData.__create_fleet_dict_from_data_v4(fleet_data)
+    def __create_fleet_data_from_data_v5(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+        return TourneyData.__create_fleet_data_from_data_v4(fleet_data)
 
 
     @staticmethod
-    def __create_user_dict_from_data_v3(users: list, data: list, fleet_data: dict) -> dict:
+    def __create_user_data_from_data_v3(users: List[List[Union[int, str]]], data: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
         result = {}
         users_dict = dict(users)
         for entry in data:
@@ -230,7 +220,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v4(users: list, fleet_data: dict) -> dict:
+    def __create_user_dict_from_data_v4(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
         result = {}
         for user in users:
             fleet_id = str(user[2])
@@ -261,7 +251,7 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v5(users: list, fleet_data: dict) -> dict:
+    def __create_user_dict_from_data_v5(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
         result = {}
         for user in users:
             fleet_id = str(user[2])
@@ -299,31 +289,27 @@ class TourneyData(object):
         minutes, seconds = divmod(timestamp, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
-        td = datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-        dt = settings.PSS_START_DATETIME + td
-        result = util.format_pss_datetime(dt)
+        td = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+        dt = utils.constants.PSS_START_DATETIME + td
+        result = utils.format.pss_datetime(dt)
         return result
 
 
 
 
 
-
-
-
-
 class TourneyDataClient():
-    def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: list, folder_id: str, service_account_file_path: str, settings_file_path: str, earliest_date: datetime):
+    def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: List[str], folder_id: str, service_account_file_path: str, settings_file_path: str, earliest_date: datetime) -> None:
         self._client_email: str = client_email
         self._client_id: str = client_id
         self._folder_id: str = folder_id
         self._private_key: str = private_key
         self._private_key_id: str = private_key_id
         self._project_id: str = project_id
-        self._scopes: list = list(scopes)
+        self._scopes: List[str] = list(scopes)
         self._service_account_file_path: str = service_account_file_path
         self._settings_file_path: str = settings_file_path
-        self.__earliest_date: datetime.datetime = earliest_date
+        self.__earliest_date: datetime = earliest_date
 
         self.__READ_LOCK: Lock = Lock()
         self.__WRITE_LOCK: Lock = Lock()
@@ -361,7 +347,7 @@ class TourneyDataClient():
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
             if year > self.to_year or (year == self.to_year and month > self.to_month):
-                utc_now = util.get_utcnow()
+                utc_now = utils.get_utc_now()
                 if utc_now.year <= self.to_year and utc_now.month - 1 <= self.to_month:
                     raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
@@ -375,8 +361,9 @@ class TourneyDataClient():
 
 
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
-        utc_now = util.get_utcnow()
+        utc_now = utils.get_utc_now()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
+        result = None
         while year > self.from_year or month >= self.from_month:
             result = self.get_data(year, month, initializing=initializing)
             if result:
@@ -412,38 +399,6 @@ class TourneyDataClient():
                 return True
             return False
         return False
-
-
-    def __create_service_account_credential_json(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, service_account_file_path: str) -> None:
-        contents = {}
-        contents['type'] = 'service_account'
-        contents['project_id'] = project_id
-        contents['private_key_id'] = private_key_id
-        contents['private_key'] = private_key
-        contents['client_email'] = client_email
-        contents['client_id'] = client_id
-        contents['auth_uri'] = 'https://accounts.google.com/o/oauth2/auth'
-        contents['token_uri'] = 'https://oauth2.googleapis.com/token'
-        contents['auth_provider_x509_cert_url'] = 'https://www.googleapis.com/oauth2/v1/certs'
-        contents['client_x509_cert_url'] = f'https://www.googleapis.com/robot/v1/metadata/x509/{urllib.parse.quote(client_email)}'
-        with open(service_account_file_path, 'w+') as service_file:
-            json.dump(contents, service_file, indent=2)
-        print(f'Created service account connection file at: {service_account_file_path}')
-
-
-    def __create_service_account_settings_yaml(self, settings_file_path: str, service_account_file_path: str, scopes: list) -> None:
-        if not os.path.isfile(settings_file_path):
-            contents = {}
-            contents['client_config_backend'] = 'file'
-            contents['client_config_file'] = service_account_file_path
-            contents['save_credentials'] = True
-            contents['save_credentials_backend'] = 'file'
-            contents['save_credentials_file'] = 'credentials.json'
-            contents['oauth_scope'] = scopes
-
-            with open(settings_file_path, 'w+') as settings_file:
-                yaml.dump(contents, settings_file)
-            print(f'Created settings yaml file at: {settings_file_path}')
 
 
     def __ensure_initialized(self) -> None:
@@ -484,9 +439,9 @@ class TourneyDataClient():
         return result
 
 
-    def __initialize(self):
-        self.__create_service_account_credential_json(self._project_id, self._private_key_id, self._private_key, self._client_email, self._client_id, self._service_account_file_path)
-        self.__create_service_account_settings_yaml(self._settings_file_path, self._service_account_file_path, self._scopes)
+    def __initialize(self) -> None:
+        TourneyDataClient.create_service_account_credential_json(self._project_id, self._private_key_id, self._private_key, self._client_email, self._client_id, self._service_account_file_path)
+        TourneyDataClient.create_service_account_settings_yaml(self._settings_file_path, self._service_account_file_path, self._scopes)
         self.__gauth: pydrive.auth.GoogleAuth = pydrive.auth.GoogleAuth(settings_file=self._settings_file_path)
         credentials = pydrive.auth.ServiceAccountCredentials.from_json_keyfile_name(self._service_account_file_path, self._scopes)
         self.__gauth.credentials = credentials
@@ -530,14 +485,48 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def __fix_filename_datetime(dt: datetime.datetime) -> datetime.datetime:
-        dt = datetime.datetime(dt.year, dt.month, 1, tzinfo=datetime.timezone.utc)
-        dt = dt - datetime.timedelta(minutes=1)
+    def create_service_account_credential_json(project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, service_account_file_path: str) -> None:
+        contents = {}
+        contents['type'] = 'service_account'
+        contents['project_id'] = project_id
+        contents['private_key_id'] = private_key_id
+        contents['private_key'] = private_key
+        contents['client_email'] = client_email
+        contents['client_id'] = client_id
+        contents['auth_uri'] = 'https://accounts.google.com/o/oauth2/auth'
+        contents['token_uri'] = 'https://oauth2.googleapis.com/token'
+        contents['auth_provider_x509_cert_url'] = 'https://www.googleapis.com/oauth2/v1/certs'
+        contents['client_x509_cert_url'] = f'https://www.googleapis.com/robot/v1/metadata/x509/{urllib.parse.quote(client_email)}'
+        with open(service_account_file_path, 'w+') as service_file:
+            json.dump(contents, service_file, indent=2)
+        print(f'Created service account connection file at: {service_account_file_path}')
+
+
+    @staticmethod
+    def create_service_account_settings_yaml(settings_file_path: str, service_account_file_path: str, scopes: List[str]) -> None:
+        if not os.path.isfile(settings_file_path):
+            contents = {}
+            contents['client_config_backend'] = 'file'
+            contents['client_config_file'] = service_account_file_path
+            contents['save_credentials'] = True
+            contents['save_credentials_backend'] = 'file'
+            contents['save_credentials_file'] = 'credentials.json'
+            contents['oauth_scope'] = scopes
+
+            with open(settings_file_path, 'w+') as settings_file:
+                yaml.dump(contents, settings_file)
+            print(f'Created settings yaml file at: {settings_file_path}')
+
+
+    @staticmethod
+    def __fix_filename_datetime(dt: datetime) -> datetime:
+        dt = datetime(dt.year, dt.month, 1, tzinfo=timezone.utc)
+        dt = dt - timedelta(minutes=1)
         return dt
 
 
     @staticmethod
-    def __get_latest_file_name(dt: datetime.datetime) -> str:
+    def __get_latest_file_name(dt: datetime) -> str:
         dt = TourneyDataClient.__fix_filename_datetime(dt)
         timestamp = dt.strftime('%Y%m%d-%H%M%S')
         result = f'pss-top-100_{timestamp}.json'
@@ -545,13 +534,13 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def __get_tourney_year_and_month(dt: datetime.datetime) -> (int, int):
+    def __get_tourney_year_and_month(dt: datetime) -> Tuple[int, int]:
         dt = TourneyDataClient.__fix_filename_datetime(dt)
         return dt.year, dt.month
 
 
     @staticmethod
-    def retrieve_past_parameters(ctx: discord.ext.commands.Context, month: str, year: str) -> Tuple[str, str, str]:
+    def retrieve_past_parameters(ctx: Context, month: str, year: str) -> Tuple[str, str, str]:
         param = None
 
         if month is not None:
@@ -560,7 +549,7 @@ class TourneyDataClient():
                     int(year)
                 except (TypeError, ValueError):
                     year = None
-            if util.is_valid_month(month) is False:
+            if utils.datetime.is_valid_month(month) is False:
                 try:
                     year = int(month)
                 except (TypeError, ValueError):
@@ -570,7 +559,7 @@ class TourneyDataClient():
                 month = None
 
         args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-        param = util.get_exact_args(ctx, args_provided_count)
+        param = utils.discord.get_exact_args(ctx, args_provided_count)
         if not param:
             param = None
 
@@ -578,15 +567,15 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_month_year(month: str, year: str, utc_now: datetime.datetime) -> (int, int):
+    def retrieve_past_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
         if not utc_now:
-            utc_now = util.get_utcnow()
+            utc_now = utils.get_utc_now()
 
         if month is None:
             temp_month = (utc_now.month - 2) % 12 + 1
         else:
-            temp_month = lookups.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
-            temp_month = temp_month or lookups.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = utils.datetime.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = temp_month or utils.datetime.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
             if temp_month is None:
                 try:
                     temp_month = int(month)
