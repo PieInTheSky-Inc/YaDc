@@ -29,7 +29,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
-from pss_exception import Error, InvalidParameterValueError, MissingParameterError, ParameterTypeError
+from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
 import pss_item as item
@@ -811,7 +811,7 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
             for file_path in file_paths:
                 os.remove(file_path)
     else:
-        raise Error(f'Could not find a fleet named `{fleet_name}`.')
+        raise NotFound(f'Could not find a fleet named `{fleet_name}`.')
 
 
 @BOT.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
@@ -1082,7 +1082,7 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
     elif error:
         raise Error(str(error))
     else:
-        raise Error(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
 
 
 @cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
@@ -1173,7 +1173,7 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
     elif error:
         raise Error(str(error))
     else:
-        raise Error(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
+        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
     await utils.discord.post_output(ctx, output)
 
 
@@ -1216,7 +1216,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
                 output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.post_output(ctx, output)
     else:
-        raise Error(f'Could not find a player named `{player_name}`.')
+        raise NotFound(f'Could not find a player named `{player_name}`.')
 
 
 @BOT.command(name='prestige', brief='Get prestige combos of crew')
@@ -1404,7 +1404,7 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
             else:
                 output = []
         else:
-            raise Error(f'Could not find an object with the name `{object_name}`.')
+            raise NotFound(f'Could not find an object with the name `{object_name}`.')
     else:
         async with ctx.typing():
             output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
@@ -1491,7 +1491,7 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
                     output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await server_settings.get_use_embeds(ctx)))
                 await utils.discord.post_output(ctx, output)
         else:
-            raise Error(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+            raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
     else:
         cmd = BOT.get_command('past stars fleet')
         await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
@@ -1545,7 +1545,7 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
         await utils.discord.post_output(ctx, item_output)
 
     if not char_success and not item_success:
-        raise Error(f'Could not find a character or an item named `{full_name}`.')
+        raise NotFound(f'Could not find a character or an item named `{full_name}`.')
 
 
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')

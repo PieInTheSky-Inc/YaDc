@@ -8,7 +8,7 @@ import pss_assert
 from cache import PssCache
 import emojis
 import pss_entity as entity
-from pss_exception import Error
+from pss_exception import Error, NotFound
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
@@ -50,7 +50,7 @@ async def get_char_details_by_name(ctx: Context, char_name: str, level: int, as_
     char_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if char_info is None:
-        raise Error(f'Could not find a crew named `{char_name}`.')
+        raise NotFound(f'Could not find a crew named `{char_name}`.')
     else:
         collections_data = await collections_designs_retriever.get_data_dict3()
         characters_details_collection = __create_characters_details_collection_from_infos([char_info], chars_data, collections_data, level)
@@ -83,7 +83,7 @@ async def get_collection_details_by_name(ctx: Context, collection_name: str, as_
         if print_all:
             raise Error(f'An error occured upon retrieving collection info. Please try again later.')
         else:
-            raise Error(f'Could not find a collection named `{collection_name}`.')
+            raise NotFound(f'Could not find a collection named `{collection_name}`.')
     else:
         collections_designs_infos = sorted(collections_designs_infos, key=lambda x: x[COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME])
         collections_designs_infos = collections_designs_infos if print_all else [collections_designs_infos[0]]
@@ -107,7 +107,7 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
     char_from_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if not char_from_info:
-        raise Error(f'Could not find a crew named `{char_name}`.')
+        raise NotFound(f'Could not find a crew named `{char_name}`.')
     else:
         rarity = char_from_info.get('Rarity')
         if rarity in ['Legendary', 'Special']:
@@ -168,7 +168,7 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
     char_to_info = await characters_designs_retriever.get_entity_info_by_name(char_name, chars_data)
 
     if not char_to_info:
-        raise Error(f'Could not find a crew named `{char_name}`.')
+        raise NotFound(f'Could not find a crew named `{char_name}`.')
     else:
         rarity = char_to_info.get('Rarity')
         if rarity in ['Common', 'Special']:

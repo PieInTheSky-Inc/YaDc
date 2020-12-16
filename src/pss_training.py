@@ -6,7 +6,7 @@ from discord.ext.commands import Context
 import emojis
 import pss_assert
 import pss_entity as entity
-from pss_exception import Error
+from pss_exception import NotFound
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
@@ -47,7 +47,7 @@ async def get_training_details_from_name(training_name: str, ctx: Context, as_em
     training_infos = await trainings_designs_retriever.get_entities_infos_by_name(training_name, trainings_data)
 
     if not training_infos:
-        raise Error(f'Could not find a training named **{training_name}**.')
+        raise NotFound(f'Could not find a training named **{training_name}**.')
     else:
         items_data = await item.items_designs_retriever.get_data_dict3()
         researches_data = await research.researches_designs_retriever.get_data_dict3()

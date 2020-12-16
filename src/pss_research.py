@@ -6,7 +6,7 @@ from discord.ext.commands import Context
 
 import pss_assert
 import pss_entity as entity
-from pss_exception import Error
+from pss_exception import NotFound
 import pss_lookups as lookups
 import pss_sprites as sprites
 import settings
@@ -42,7 +42,7 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
     researches_designs_infos = await researches_designs_retriever.get_entities_infos_by_name(research_name, entities_data=researches_data, sorted_key_function=__get_key_for_research_sort)
 
     if not researches_designs_infos:
-        raise Error(f'Could not find a research named **{research_name}**.')
+        raise NotFound(f'Could not find a research named **{research_name}**.')
     else:
         researches_details = __create_researches_details_collection_from_infos(researches_designs_infos, researches_data)
         if as_embed:

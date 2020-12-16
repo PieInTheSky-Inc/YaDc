@@ -64,5 +64,9 @@ class MissingParameterError(Error):
     pass
 
 
+class NotFound(Error):
+    pass
+
+
 class ParameterTypeError(TypeError):
     pass

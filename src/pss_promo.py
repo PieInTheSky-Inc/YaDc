@@ -6,7 +6,7 @@ from discord import Embed
 import pss_assert
 import pss_crew as crew
 import pss_entity as entity
-from pss_exception import Error
+from pss_exception import Error, NotFound
 import pss_item as item
 import pss_lookups as lookups
 import pss_research as research
@@ -224,7 +224,7 @@ async def get_promotions_infos_by_name(promotion_name: str, as_embed: bool = set
     promotions_details = [LegacyPromotionDesignDetails(promotion_info) for promotion_info in promotion_infos if promotion_info['PromotionType'] == 'FirstPurchase']
 
     if not promotions_details:
-        raise Error(f'Could not find a promotion named `{promotion_name}`.')
+        raise NotFound(f'Could not find a promotion named `{promotion_name}`.')
     else:
         if as_embed:
             return _get_promotions_details_as_embed(promotions_details)

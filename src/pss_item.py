@@ -7,7 +7,7 @@ from discord.ext.commands import Context
 import pss_assert
 import pss_core as core
 import pss_entity as entity
-from pss_exception import Error
+from pss_exception import Error, NotFound
 import pss_lookups as lookups
 import pss_sprites as sprites
 import pss_training as training
@@ -62,7 +62,7 @@ async def get_item_details_by_name(ctx: Context, item_name: str, as_embed: bool 
     item_infos = __get_item_infos_by_name(item_name, items_data)
 
     if not item_infos:
-        raise Error(f'Could not find an item named `{item_name}`.')
+        raise NotFound(f'Could not find an item named `{item_name}`.')
     else:
         trainings_data = await training.trainings_designs_retriever.get_data_dict3()
         items_data_for_sort = {item_info.get(ITEM_DESIGN_KEY_NAME): item_info for item_info in item_infos}
@@ -110,7 +110,7 @@ async def get_best_items(ctx: Context, slot: str, stat: str, as_embed: bool = se
     if not best_items:
         if not any_slot:
             slot = f' for slot `{slot}`'
-        raise Error(f'Could not find an item{slot} providing bonus `{stat_filter.lower()}`.')
+        raise NotFound(f'Could not find an item{slot} providing bonus `{stat_filter.lower()}`.')
     else:
         groups = await __get_collection_groups(best_items, stat_filter, as_embed)
 
@@ -231,7 +231,7 @@ async def get_item_price(ctx: Context, item_name: str, as_embed: bool = settings
     item_infos = __get_item_infos_by_name(item_name, items_data)
 
     if not item_infos:
-        raise Error(f'Could not find an item named `{item_name}`.')
+        raise NotFound(f'Could not find an item named `{item_name}`.')
     else:
         get_best_match = utils.is_str_in_list(item_name, ALLOWED_ITEM_NAMES, case_sensitive=False) and len(item_name) < settings.MIN_ENTITY_NAME_LENGTH - 1
         if get_best_match:
@@ -260,7 +260,7 @@ async def get_ingredients_for_item(ctx: Context, item_name: str, as_embed: bool 
     item_infos = __get_item_infos_by_name(item_name, items_data, return_best_match=True)
 
     if not item_infos:
-        raise Error(f'Could not find an item named `{item_name}`.')
+        raise NotFound(f'Could not find an item named `{item_name}`.')
     else:
         ingredients_details_collection = __create_ingredients_details_collection_from_infos([item_infos[0]], items_data)
         if as_embed:
@@ -331,7 +331,7 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
     items_infos = __filter_destroyed_modules_from_item_infos([items_data[item_id] for item_id in items_ids])
 
     if not items_ids:
-        raise Error(f'Could not find an item named `{item_name}`.')
+        raise NotFound(f'Could not find an item named `{item_name}`.')
     else:
         upgrades_infos = []
         found_upgrades_for_data = {}
