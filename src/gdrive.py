@@ -262,7 +262,7 @@ class TourneyData(object):
                 'Trophy': str(user[3]),
                 'AllianceScore': str(user[4]),
                 'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
-                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]),
+                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]) if user[6] else None,
                 'LastLoginDate': TourneyData.__convert_timestamp_v4(user[7]),
                 'Name': user[1],
                 'LastHeartBeatDate': TourneyData.__convert_timestamp_v4(user[8]),
