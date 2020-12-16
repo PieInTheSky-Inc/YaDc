@@ -193,14 +193,11 @@ def __get_stars(user_info: EntityInfo, max_tourney_battle_attempts: int = None, 
 
 
 def __get_timestamp(user_info: EntityInfo, retrieved_at: datetime = None, **kwargs) -> Optional[str]:
-    field_name = kwargs.get('entity_property')
-    timestamp = __parse_timestamp(user_info, field_name)
-    result = None
-    timestamp = __parse_timestamp(user_info, field_name)
-    result = None
-    if timestamp is not None:
-        result = __format_past_timestamp(timestamp, retrieved_at)
-    return result
+    value = kwargs.get('entity_property')
+    timestamp = utils.parse.pss_datetime(value)
+    if timestamp is None:
+        return None
+    return __format_past_timestamp(timestamp, retrieved_at)
 
 
 def __get_trophies(user_info: EntityInfo, **kwargs) -> Optional[str]:
