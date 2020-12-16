@@ -1274,26 +1274,50 @@ async def cmd_price(ctx: Context, *, item_name: str):
 
 @BOT.command(name='recipe', brief='Get character recipes')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_recipe(ctx: Context, *, crew_name: str):
+async def cmd_recipe(ctx: Context, *, name: str):
     """
-    Get the prestige recipes of the crew specified.
+    Get the prestige recipes of the crew or the ingredients of the item specified.
 
     Usage:
-      /recipe [crew_name]
+      /recipe [name]
 
     Parameters:
-      crew_name: Mandatory. (Part of) the name of the crew to be prestiged into.
+      name: Mandatory. (Part of) the name of the crew to be prestiged into or item to be crafted.
 
     Examples:
       /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
+      /recipe hug - Will print all prestige combinations resulting in the crew 'Huge Hellaloya'
+      /recipe medium mineral crate - Will print ingredients for the item 'Medium Mineral Crate'
 
     Notes:
-      This command will only print recipes for the crew with the best matching crew name.
+      This command will only print recipes for the crew or item with the best matching name.
     """
     __log_command_use(ctx)
     async with ctx.typing():
-        output = await crew.get_prestige_to_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+        use_embeds = (await server_settings.get_use_embeds(ctx))
+        try:
+            char_output = await crew.get_prestige_to_info(ctx, name, as_embed=use_embeds)
+            char_success = True
+        except (InvalidParameterValueError, Error):
+            char_output = None
+            char_success = False
+        if not char_success:
+            try:
+                item_output = await item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
+                item_success = True
+            except (InvalidParameterValueError, Error):
+                item_output = None
+                item_success = False
+        else:
+            item_output = None
+            item_success = None
+
+    if char_success:
+        await utils.discord.post_output(ctx, char_output)
+    elif item_success:
+        await utils.discord.post_output(ctx, item_output)
+    else:
+        raise NotFound(f'Could not find a character or an item named `{name}`.')
 
 
 @BOT.command(name='research', brief='Get research data')
