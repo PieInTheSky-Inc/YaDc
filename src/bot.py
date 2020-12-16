@@ -3324,7 +3324,9 @@ async def cmd_test(ctx: Context, action, *, params = None):
 @BOT.command(name='updatecache', brief='Updates all caches manually', hidden=True)
 @is_owner()
 async def cmd_updatecache(ctx: Context):
-    """This command is to be used to update all caches manually."""
+    """
+    This command is to be used to update all caches manually.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
         await crew.characters_designs_retriever.update_cache()
@@ -3361,7 +3363,7 @@ async def __assert_settings_command_valid(ctx: Context) -> None:
         if permissions.manage_guild is not True:
             raise command_errors.MissingPermissions(['manage_guild'])
     else:
-        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds!')
+        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds.')
 
 
 def __log_command_use(ctx: Context):
