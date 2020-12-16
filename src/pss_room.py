@@ -210,10 +210,10 @@ def _get_room_infos(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo
     else:
         room_level = None
 
-    room_design_ids = _get_room_design_ids_from_name(room_name, rooms_data, room_level)
+    room_design_ids = _get_room_design_ids_from_room_shortname(room_short_name, rooms_data)
 
     if not room_design_ids:
-        room_design_ids = _get_room_design_ids_from_room_shortname(room_short_name, rooms_data)
+        room_design_ids = _get_room_design_ids_from_name(room_name, rooms_data, room_level)
 
     result = [rooms_data[room_design_id] for room_design_id in room_design_ids if room_design_id in rooms_data.keys()]
     result = sorted(result, key=lambda info: _get_key_for_room_sort(info, rooms_data))
@@ -228,10 +228,7 @@ def _get_room_design_ids_from_name(room_name: str, rooms_data: EntitiesData, roo
 
 
 def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_data: EntitiesData) -> List[str]:
-    return_best_match = any(char.isdigit() for char in room_short_name)
-    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name)
-    if results and return_best_match:
-        results = [results[0]]
+    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name, match_exact=True)
     return results
 
 
