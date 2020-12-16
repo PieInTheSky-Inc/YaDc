@@ -1583,7 +1583,7 @@ async def cmd_time(ctx: Context):
         time_till_next_prestige_change = ('Time until next prestige recipe changes', utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
 
         fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
-        as_embed = server_settings.get_use_embeds(ctx)
+        as_embed = await server_settings.get_use_embeds(ctx)
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             output = [utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
