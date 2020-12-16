@@ -193,7 +193,9 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
     result = []
 
     for db_sales_info in db_sales_infos:
-        expiry_date = db_sales_info['limitedcatalogexpirydate']
+        expiry_date: datetime = db_sales_info['limitedcatalogexpirydate']
+        if expiry_date.date() >= utc_now.date():
+            continue
         expires_in = 29 - (utc_now - expiry_date).days
         entity_id = db_sales_info['limitedcatalogargument']
         entity_type = db_sales_info['limitedcatalogtype']
