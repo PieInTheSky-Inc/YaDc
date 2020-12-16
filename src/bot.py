@@ -10,7 +10,7 @@ import json
 import os
 import pytz
 import sys
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import asyncio
 from discord import Activity, ActivityType, Message, Embed, Guild, TextChannel
@@ -1365,7 +1365,7 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
     """
     __log_command_use(ctx)
 
-    object_name, reverse_output = __extract_dash_parameters(object_name, '--reverse')
+    object_name, reverse_output = __extract_dash_parameters(object_name, None, '--reverse')
 
     if object_name:
         async with ctx.typing():
@@ -3378,7 +3378,7 @@ def __log_command_use_error(ctx: Context, err: Exception, force_printing: bool =
             print(str(err))
 
 
-def __extract_dash_parameters(full_arg: str, args: List[str], *dash_parameters) -> Tuple[Union[bool, str], ...]:
+def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_parameters) -> Tuple[Union[bool, str], ...]:
     new_arg = full_arg or ''
     if args:
         new_arg += f' {" ".join(args)}'
