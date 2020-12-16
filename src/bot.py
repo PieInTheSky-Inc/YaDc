@@ -2272,7 +2272,7 @@ async def cmd_settings(ctx: Context, *args):
         await utils.discord.post_output(ctx, output)
 
 
-@cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings')
+@cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_settings_get_autodaily(ctx: Context, *args):
     """
