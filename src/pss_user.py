@@ -106,13 +106,6 @@ def __get_division_name(user_info: EntityInfo, fleet_info: EntityInfo = None, **
     return result
 
 
-def __get_fleet_joined_at(user_info: EntityInfo, fleet_info: EntityInfo = None, retrieved_at: datetime = None, **kwargs) -> Optional[str]:
-    result = None
-    if fleet_info:
-        result = __get_timestamp(user_info, 'AllianceJoinDate', retrieved_at)
-    return result
-
-
 def __get_fleet_name_and_rank(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> Optional[str]:
     result = None
     if fleet_info:
