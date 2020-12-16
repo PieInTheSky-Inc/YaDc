@@ -138,7 +138,7 @@ class AutoDailySettings():
 
 
     def _get_pretty_mode(self) -> str:
-        result = __convert_to_edit_delete(self.change_mode)
+        result = _convert_to_edit_delete(self.change_mode)
         return result
 
 
@@ -373,11 +373,11 @@ class GuildSettings(object):
 
     @property
     def pretty_use_embeds(self) -> str:
-        return __convert_to_on_off(self.use_embeds)
+        return _convert_to_on_off(self.use_embeds)
 
     @property
     def pretty_use_pagination(self) -> str:
-        return __convert_to_on_off(self.use_pagination)
+        return _convert_to_on_off(self.use_pagination)
 
     @property
     def prefix(self) -> str:
@@ -525,7 +525,7 @@ class GuildSettings(object):
             use_embeds = not use_embeds
         else:
             pss_assert.valid_parameter_value(use_embeds, 'use_embeds', min_length=1, allowed_values=_VALID_BOOL_SWITCH_VALUES.keys(), case_sensitive=False)
-            use_embeds = __convert_from_on_off(use_embeds)
+            use_embeds = _convert_from_on_off(use_embeds)
         if self.__use_embeds is None or use_embeds != self.__use_embeds:
             settings = {
                 _COLUMN_NAME_USE_EMBEDS: use_embeds
@@ -546,7 +546,7 @@ class GuildSettings(object):
             use_pagination = not use_pagination
         else:
             pss_assert.valid_parameter_value(use_pagination, 'use_pagination', min_length=1, allowed_values=_VALID_BOOL_SWITCH_VALUES.keys(), case_sensitive=False)
-            use_pagination = __convert_from_on_off(use_pagination)
+            use_pagination = _convert_from_on_off(use_pagination)
         if self.__use_pagination is None or use_pagination != self.__use_pagination:
             settings = {
                 _COLUMN_NAME_USE_PAGINATION: use_pagination
@@ -743,7 +743,7 @@ async def __set_prefix(guild_id: int, prefix: str) -> bool:
 # ---------- Helper functions ----------
 
 
-def __convert_from_on_off(switch: str) -> bool:
+def _convert_from_on_off(switch: str) -> bool:
     if switch is None:
         return None
     else:
@@ -755,7 +755,16 @@ def __convert_from_on_off(switch: str) -> bool:
             return None
 
 
-def __convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
+def _convert_to_on_off(value: bool) -> str:
+    if value is True:
+        return 'ON'
+    elif value is False:
+        return 'OFF'
+    else:
+        return '<NOT SET>'
+
+
+def _convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
     if value == AutoDailyChangeMode.DELETE_AND_POST_NEW:
         return 'Delete daily post and post new daily on change.'
     elif value == AutoDailyChangeMode.EDIT:
@@ -764,15 +773,6 @@ def __convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
         return 'Post new daily on change.'
     else:
         return '<not specified>'
-
-
-def __convert_to_on_off(value: bool) -> str:
-    if value is True:
-        return 'ON'
-    elif value is False:
-        return 'OFF'
-    else:
-        return '<NOT SET>'
 
 
 
