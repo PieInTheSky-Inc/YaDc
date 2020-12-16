@@ -629,9 +629,11 @@ async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
       /best [item name]
 
     Parameters:
-      slot: the equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
-      stat: the crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
-      item name: an item's name, whose slot and stat will be used to look up best data.
+      slot:      Optional. The equipment slot. Use 'all' or 'any' or omit this parameter to get info for all slots. Optional. Valid values are: [all/any (for all slots), head, hat, helm, helmet, body, shirt, armor, leg, pant, pants, weapon, hand, gun, accessory, shoulder, pet]
+      stat:      Mandatory. The crew stat you're looking for. Mandatory. Valid values are: [hp, health, attack, atk, att, damage, dmg, repair, rep, ability, abl, pilot, plt, science, sci, stamina, stam, stm, engine, eng, weapon, wpn, fire resistance, fire]
+      item name: Optional. an item's name, whose slot and stat will be used to look up best data.
+
+      If the parameter item_name is specified, all other parameters become optional.
 
     Examples:
       /best hand atk - Prints all equipment items for the weapon slot providing an attack bonus.
@@ -680,8 +682,8 @@ async def cmd_char(ctx: Context, level: str = None, *, crew_name: str = None):
       /stats <level> [name]
 
     Parameters:
-      level: Level of a crew. Optional.
-      name:  (Part of) the name of a crew. Mandatory.
+      level: Optional. Level of a crew.
+      name:  Mandatory. (Part of) the name of a crew.
 
     Examples:
       /stats hug - Will print the stats range for a crew having 'hug' in its name.
@@ -709,7 +711,7 @@ async def cmd_craft(ctx: Context, *, item_name: str):
       /upg [item_name]
 
     Parameters:
-      item_name: (Part of) the name of an item to be upgraded. Mandatory.
+      item_name: Mandatory. (Part of) the name of an item to be upgraded.
 
     Examples:
       /craft large mineral crate - Prints all crafting options for a 'Large Mineral Crate'.
@@ -733,7 +735,7 @@ async def cmd_collection(ctx: Context, *, collection_name: str = None):
       /collection <collection_name>
 
     Parameters:
-      collection_name: The name of the collection to get details on.
+      collection_name: Mandatory. The name of the collection to get details on.
 
     Examples:
       /collection savy - Will print information on a collection having 'savy' in its name.
@@ -782,7 +784,7 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
       /alliance [fleet_name]
 
     Parameters:
-      fleet_name: The (beginning of the) name of the fleet to search for. Mandatory.
+      fleet_name: Mandatory. The (beginning of the) name of the fleet to search for.
 
     Examples:
       /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
@@ -825,7 +827,7 @@ async def cmd_ingredients(ctx: Context, *, item_name: str):
       /ing [item_name]
 
     Parameters:
-      item_name: (Part of) the name of an item to be crafted. Mandatory.
+      item_name: Mandatory. (Part of) the name of an item to be crafted.
 
     Examples:
       /ingredients large mineral crate - Prints the crafting costs and recipe for a 'Large Mineral Crate'.
@@ -849,7 +851,7 @@ async def cmd_item(ctx: Context, *, item_name: str):
       /item [item_name]
 
     Parameters:
-      item_name:  (Part of) the name of an item. Mandatory.
+      item_name: Mandatory. (Part of) the name of an item.
 
     Examples:
       /item hug - Will print some stats for an item having 'hug' in its name.
@@ -874,8 +876,8 @@ async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
       /lvl <from_level> [to_level]
 
     Parameters:
-      from_level: The level from which on the requirements shall be calculated. If specified, must be lower than [to_level]. Optional.
-      to_level:   The level to which the requirements shall be calculated. Must be greater than 0 and lower than 41. Mandatory.
+      from_level: Optional. The level from which on the requirements shall be calculated. If specified, must be lower than [to_level].
+      to_level:   Mandatory. The level to which the requirements shall be calculated. Must be greater than 0 and lower than 41.
 
     Examples:
       /level 35 - Prints exp and gas requirements from level 1 to 35
@@ -939,7 +941,7 @@ async def cmd_past(ctx: Context, month: str = None, year: str = None):
 
     Parameters:
       month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      year:  Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
 
@@ -956,8 +958,8 @@ async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, d
     Get historic tournament division stars data.
 
     Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month:    Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year:     Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
       division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
@@ -990,8 +992,8 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
     Get historic tournament fleet stars data.
 
     Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
       fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
@@ -1040,8 +1042,8 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
     Get historic tournament fleet data.
 
     Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
       fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
@@ -1092,8 +1094,8 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     Get historic tournament fleet data.
 
     Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
       fleet_name: Mandatory. The fleet for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
@@ -1130,8 +1132,8 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
     Get historic tournament player data.
 
     Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year: Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
+      month:       Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
+      year:        Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
       player_name: Mandatory. The player for which the data should be displayed.
 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
@@ -1188,7 +1190,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
       /user [player_name]
 
     Parameters:
-      player_name: The (beginning of the) name of the player to search for. Mandatory.
+      player_name: Mandatory. The (beginning of the) name of the player to search for.
 
     Examples:
       /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
@@ -1229,7 +1231,7 @@ async def cmd_prestige(ctx: Context, *, crew_name: str):
       /prestige [crew_name]
 
     Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged. Mandatory.
+      crew_name: Mandatory. (Part of) the name of the crew to be prestiged.
 
     Examples:
       /prestige xin - Will print all prestige combinations including the crew 'Xin'.
@@ -1255,7 +1257,7 @@ async def cmd_price(ctx: Context, *, item_name: str):
       /cost [item_name]
 
     Parameters:
-      item_name: (Part of) the name of an item to be crafted. Mandatory.
+      item_name: Mandatory. (Part of) the name of an item to be crafted.
 
     Examples:
       /price mineral crate - Prints prices for all items having 'mineral crate' in their names.
@@ -1280,7 +1282,7 @@ async def cmd_recipe(ctx: Context, *, crew_name: str):
       /recipe [crew_name]
 
     Parameters:
-      crew_name: (Part of) the name of the crew to be prestiged into. Mandatory.
+      crew_name: Mandatory. (Part of) the name of the crew to be prestiged into.
 
     Examples:
       /recipe xin - Will print all prestige combinations resulting in the crew 'Xin'.
@@ -1304,7 +1306,7 @@ async def cmd_research(ctx: Context, *, research_name: str):
       /research [research_name]
 
     Parameters:
-      research_name: The name of the research to get details on.
+      research_name: Mandatory. The name of the research to get details on.
 
     Examples:
       /research python - Will print information on all researches having 'python' in their names.
@@ -1329,9 +1331,9 @@ async def cmd_room(ctx: Context, *, room_name: str):
       /room [short name] [room level]
 
     Parameters:
-      name:       A room's name or part of it. Mandatory.
-      short name: A room's short name (2 or 3 characters). Mandatory.
-      room level: A room's level. Mandatory.
+      name:       Mandatory. A room's name or part of it.
+      short name: Mandatory. A room's short name (2 or 3 characters).
+      room level: Mandatory. A room's level.
 
     Examples:
       /room mineral - Searches for rooms having 'mineral' in their names and prints their details.
@@ -1355,8 +1357,8 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
       /sales <object_name> --reverse
 
     Parameter:
-      object_name: The name of the object you want to see the shop history for. Optional
-      --reverse:   Will sort the output from old to new
+      object_name: Optional. The name of the object you want to see the shop history for.
+      --reverse:   Optional. Will sort the output from old to new
 
     Examples:
       /sales - Prints information on the last 30 sales.
@@ -1422,7 +1424,7 @@ async def cmd_stars(ctx: Context, *, division: str = None):
       /stars <division>
 
     Parameters:
-      division: The letter of the division to show the star counts for. Optional. Valid values: [A, B, C, D]
+      division: Optional. The letter of the division to show the star counts for. Valid values: [A, B, C, D]
 
     Examples:
       /stars - Prints the star count for every fleet competing in the current tournament finals.
@@ -1457,7 +1459,7 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
       /stars fleet [fleet_name]
 
     Parameters:
-      fleet_name: The (beginning of the) name of a fleet to show the star counts for. Mandatory.
+      fleet_name: Mandatory. The (beginning of the) name of a fleet to show the star counts for.
 
     Examples:
       /stars fleet HYDRA - Offers a list of fleets having a name starting with 'hydra'. Upon selection, prints the star count for every member of the fleet, if it competes in the current tournament finals.
@@ -1507,8 +1509,8 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
       /stats <level> [name]
 
     Parameters:
-      level: Level of a crew. Will only apply to crew stats. Optional.
-      name:  (Part of) the name of a crew or item. Mandatory.
+      level: Optional. Level of a crew. Will only apply to crew stats.
+      name:  Mandatory. (Part of) the name of a crew or item.
 
     Examples:
       /stats hug - Will output results of the commands '/char hug' and '/item hug'
@@ -1601,7 +1603,7 @@ async def cmd_top(ctx: Context, *, count: str = '100'):
       /top <count>
 
     Parameters:
-      count: The number of rows to be printed. Optional.
+      count: Optional. The number of rows to be printed.
 
     Examples:
       /top - prints top 100 fleets.
@@ -1640,7 +1642,7 @@ async def cmd_top_captains(ctx: Context, count: str = '100'):
       /top <count> captains
 
     Parameters:
-      count: The number of rows to be printed. Optional.
+      count: Optional. The number of rows to be printed.
 
     Examples:
       /top captains - prints top 100 captains.
@@ -1669,7 +1671,7 @@ async def cmd_top_fleets(ctx: Context, count: str = '100'):
       /top <count> fleets
 
     Parameters:
-      count: The number of rows to be printed. Optional.
+      count: Optional. The number of rows to be printed.
 
     Examples:
       /top fleets - prints top 100 fleets.
@@ -1767,7 +1769,7 @@ async def cmd_training(ctx: Context, *, training_name: str):
       /training [name]
 
     Parameters:
-      name: A room's name or part of it. Mandatory.
+      name: Mandatory. A room's name or part of it.
 
     Examples:
       /training bench - Searches for trainings having 'bench' in their names and prints their details.
@@ -2821,7 +2823,7 @@ async def cmd_settings_set_autodaily_channel(ctx: Context, text_channel: TextCha
       /settings set daily ch <text_channel_mention>
 
     Parameters:
-      text_channel_mention: A mention of a text-channel on the current Discord server/guild. Optional. If omitted, will try to set the current channel.
+      text_channel_mention: Optional. A mention of a text-channel on the current Discord server/guild. If omitted, the bot will attempt try to set the current channel.
 
     Examples:
       /settings set daily channel - Sets the current channel to receive the /daily message once a day.
@@ -2891,6 +2893,9 @@ async def cmd_settings_set_bot_news_channel(ctx: Context, text_channel: TextChan
       /settings set botnews <text channel mention>
       /settings set botchannel <text channel mention>
 
+    Parameters:
+      text_channel_mention: Optional. A mention of a text-channel on the current Discord server/guild. If omitted, the bot will attempt to set the current channel.
+
     Examples:
       /settings set botnews #announcements - Sets the channel '#announcements' to receive bot news.
     """
@@ -2931,7 +2936,7 @@ async def cmd_settings_set_embeds(ctx: Context, switch: str = None):
       /settings set embeds <switch>
 
     Parameters:
-      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+      format: Optional. A string determining the new pagination setting. Valid values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
 
     Notes:
       If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
@@ -2966,7 +2971,7 @@ async def cmd_settings_set_pagination(ctx: Context, switch: str = None):
       /settings set pages <switch>
 
     Parameters:
-      format: A string determining the new pagination setting. Optional. Can be one of these values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
+      format: Optional. A string determining the new pagination setting. Valid values: [on, off, true, false, yes, no, 1, 0, 👍, 👎]
 
     Notes:
       If the parameter <switch> is being omitted, the command will toggle between 'ON' and 'OFF' depending on the current setting.
@@ -3000,7 +3005,7 @@ async def cmd_settings_set_prefix(ctx: Context, prefix: str):
       /settings set prefix [prefix]
 
     Parameters:
-      prefix: A string determining the new prefix. Mandatory. Leading whitespace will be omitted.
+      prefix: Mandatory. A string determining the new prefix. Leading whitespace will be omitted.
 
     Examples:
       /settings set prefix & - Sets the bot's prefix for the current Discord server/guild to '&'
@@ -3045,6 +3050,9 @@ async def cmd_autodaily(ctx: Context):
 @cmd_autodaily.group(name='list', brief='List configured auto-daily channels', invoke_without_command=False, hidden=True)
 @is_owner()
 async def cmd_autodaily_list(ctx: Context):
+    """
+    Lists auto-daily channels currently configured.
+    """
     __log_command_use(ctx)
     pass
 
@@ -3052,6 +3060,9 @@ async def cmd_autodaily_list(ctx: Context):
 @cmd_autodaily_list.command(name='all', brief='List all configured auto-daily channels', hidden=True)
 @is_owner()
 async def cmd_autodaily_list_all(ctx: Context):
+    """
+    Lists all auto-daily channels currently configured across all guilds.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
         output = await daily.get_daily_channels(ctx, None, None)
@@ -3079,6 +3090,9 @@ async def cmd_autodaily_list_valid(ctx: Context):
 @cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
 @is_owner()
 async def cmd_autodaily_post(ctx: Context):
+    """
+    Posts the daily message to all auto-daily channels currently configured across all guilds.
+    """
     __log_command_use(ctx)
     guild = ctx.guild
     channel_id = await server_settings.db_get_daily_channel_id(guild.id)
@@ -3095,6 +3109,9 @@ async def cmd_autodaily_post(ctx: Context):
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
 @is_owner()
 async def cmd_db(ctx: Context):
+    """
+    Database commands
+    """
     __log_command_use(ctx)
     await ctx.send_help('db')
 
@@ -3102,6 +3119,9 @@ async def cmd_db(ctx: Context):
 @cmd_db.command(name='query', brief='Try to execute a DB query', hidden=True)
 @is_owner()
 async def cmd_db_query(ctx: Context, *, query: str):
+    """
+    Starts a database query and returns a success message.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
         success = await db.try_execute(query)
@@ -3114,6 +3134,9 @@ async def cmd_db_query(ctx: Context, *, query: str):
 @cmd_db.command(name='select', brief='Try to select from DB', hidden=True)
 @is_owner()
 async def cmd_db_select(ctx: Context, *, query: str):
+    """
+    Selects from a database and returns the results.
+    """
     __log_command_use(ctx)
     async with ctx.typing():
         if not query.lower().startswith('select '):
@@ -3257,8 +3280,8 @@ async def cmd_send_bot_news(ctx: Context, *, news: str = None):
       /sendnews [--<property_key>=<property_value> ...]
 
     Available property keys:
-      title:   The title of the news.
-      content: The contents of the news.
+      --title:   The title of the news.
+      --content: The contents of the news.
 
     Example:
       /sendnews --title=This is a title. --content=This is the content.
