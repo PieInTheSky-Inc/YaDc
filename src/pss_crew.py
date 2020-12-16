@@ -492,7 +492,7 @@ def __create_character_details_from_info(character_info: EntityInfo, characters_
 
 def __create_characters_details_collection_from_infos(characters_designs_infos: List[EntityInfo], characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> entity.EntityDetailsCollection:
     characters_details = [__create_character_details_from_info(character_info, characters_data, collections_data, level) for character_info in characters_designs_infos]
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=2)
     return result
 
 
@@ -503,7 +503,7 @@ def __create_collection_details_from_info(collection_info: EntityInfo, collectio
 
 def __create_collections_details_collection_from_infos(collections_infos: List[EntityInfo], collections_data: EntitiesData, characters_data: EntitiesData) -> entity.EntityDetailsCollection:
     collections_details = [__create_collection_details_from_info(collection_info, collections_data, characters_data) for collection_info in collections_infos]
-    result = entity.EntityDetailsCollection(collections_details, big_set_threshold=1)
+    result = entity.EntityDetailsCollection(collections_details, big_set_threshold=2)
     return result
 
 
@@ -515,7 +515,7 @@ def __create_prestige_from_details_from_info(character_info: EntityInfo) -> enti
 
 def __create_prestige_from_details_collection_from_infos(characters_infos: List[EntityInfo]) -> entity.EntityDetailsCollection:
     characters_details = [__create_prestige_from_details_from_info(character_info) for character_info in characters_infos]
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=2, add_empty_lines=False)
     return result
 
 
@@ -527,7 +527,7 @@ def __create_prestige_to_details_from_info(character_info: EntityInfo) -> entity
 
 def __create_prestige_to_details_collection_from_infos(characters_infos: List[EntityInfo]) -> entity.EntityDetailsCollection:
     characters_details = [__create_prestige_to_details_from_info(character_info) for character_info in characters_infos]
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=1, add_empty_lines=False)
+    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=2, add_empty_lines=False)
     return result
 
 

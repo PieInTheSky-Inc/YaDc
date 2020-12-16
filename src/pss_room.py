@@ -259,7 +259,7 @@ def __create_room_details_list_from_infos(rooms_designs_infos: List[EntityInfo],
 
 def __create_rooms_details_collection_from_infos(rooms_designs_infos: List[EntityInfo], rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData) -> entity.EntityDetailsCollection:
     rooms_details = __create_room_details_list_from_infos(rooms_designs_infos, rooms_data, items_data, researches_data, rooms_designs_sprites_data)
-    result = entity.EntityDetailsCollection(rooms_details, big_set_threshold=3)
+    result = entity.EntityDetailsCollection(rooms_details, big_set_threshold=4)
     return result
 
 

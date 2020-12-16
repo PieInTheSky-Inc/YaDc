@@ -139,7 +139,7 @@ def __create_research_design_data_from_info(research_info: EntityInfo, researche
 
 def __create_researches_details_collection_from_infos(researches_designs_infos: List[EntityInfo], researches_data: EntitiesData) -> entity.EntityDetailsCollection:
     researches_details = [__create_research_design_data_from_info(item_info, researches_data) for item_info in researches_designs_infos]
-    result = entity.EntityDetailsCollection(researches_details, big_set_threshold=3)
+    result = entity.EntityDetailsCollection(researches_details, big_set_threshold=4)
     return result
 
 

@@ -174,7 +174,7 @@ def __create_training_details_list_from_infos(trainings_designs_infos: List[Enti
 
 def __create_trainings_details_collection_from_infos(trainings_designs_infos: List[EntityInfo], trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData) -> entity.EntityDetailsCollection:
     trainings_details = __create_training_details_list_from_infos(trainings_designs_infos, trainings_data, items_data, researches_data)
-    result = entity.EntityDetailsCollection(trainings_details, big_set_threshold=3)
+    result = entity.EntityDetailsCollection(trainings_details, big_set_threshold=4)
     return result
 
 
