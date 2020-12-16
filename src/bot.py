@@ -3069,24 +3069,6 @@ async def cmd_autodaily_list_all(ctx: Context):
     await utils.discord.post_output(ctx, output)
 
 
-@cmd_autodaily_list.command(name='invalid', brief='List all invalid configured auto-daily channels', hidden=True)
-@is_owner()
-async def cmd_autodaily_list_invalid(ctx: Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, False)
-    await utils.discord.post_output(ctx, output)
-
-
-@cmd_autodaily_list.command(name='valid', brief='List all valid configured auto-daily channels', hidden=True)
-@is_owner()
-async def cmd_autodaily_list_valid(ctx: Context):
-    __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, True)
-    await utils.discord.post_output(ctx, output)
-
-
 @cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
 @is_owner()
 async def cmd_autodaily_post(ctx: Context):
@@ -3261,13 +3243,6 @@ async def cmd_embed(ctx: Context, *, message: str = None):
     colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
     embed = utils.discord.create_embed('Your message in an embed', description=message, colour=colour)
     await ctx.send(embed=embed)
-
-
-@BOT.command(name='repeat', brief='Repeat your message.', hidden=True)
-@is_owner()
-async def cmd_repeat(ctx: Context, *, message: str = None):
-    __log_command_use(ctx)
-    await ctx.send(message)
 
 
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)
