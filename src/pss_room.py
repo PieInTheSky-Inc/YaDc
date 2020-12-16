@@ -205,8 +205,9 @@ def _get_room_infos(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo
     room_name_reverse = room_name[::-1]
     numbers_in_room_name = RX_NUMBER.findall(room_name_reverse)
     if numbers_in_room_name:
-        room_level = int(numbers_in_room_name[0])
-        room_name = re.sub(numbers_in_room_name[0], '', room_name, count=1)
+        level_in_room_name = numbers_in_room_name[0][::-1]
+        room_level = int(level_in_room_name)
+        room_name = re.sub(level_in_room_name, '', room_name, count=1)
     else:
         room_level = None
 
