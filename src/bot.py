@@ -1489,8 +1489,9 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
 
             if fleet_info:
                 async with ctx.typing():
+                    max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
                     fleet_users_infos = await fleet.get_fleet_users_data_by_fleet_info(fleet_info)
-                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, as_embed=(await server_settings.get_use_embeds(ctx)))
+                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
                 await utils.discord.post_output(ctx, output)
         else:
             raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')

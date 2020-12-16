@@ -151,7 +151,7 @@ async def __get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
 
 # ---------- Stars info ----------
 
-async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, fleet_users_infos: EntitiesData, retrieved_date: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, fleet_users_infos: EntitiesData, max_tourney_battle_attempts: int, retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
@@ -169,9 +169,13 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         else:
             difference = 0
         user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
-        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({user_rank})')
+        attempts_left = ''
+        attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
+        if attempts is not None and max_tourney_battle_attempts:
+            attempts_left = f'{max_tourney_battle_attempts - attempts}, '
+        lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({attempts_left}{user_rank})')
 
-    footer_text = utils.datetime.get_historic_data_note(retrieved_date)
+    footer_text = utils.datetime.get_historic_data_note(retrieved_at)
 
     if as_embed:
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -179,7 +183,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         result = utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
         return result
     else:
-        if retrieved_date is not None:
+        if retrieved_at is not None:
             lines.append(f'```{footer_text}```')
         return lines
 
@@ -190,7 +194,7 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_date=retrieved_date, as_embed=as_embed)
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_at=retrieved_date, as_embed=as_embed)
 
 
 
