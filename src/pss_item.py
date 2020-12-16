@@ -743,7 +743,7 @@ def __create_best_item_details_collection_from_details(best_details: List[entity
 
 
 def __create_ingredients_design_data_from_info(item_info: EntityInfo, items_data: EntitiesData) -> entity.EntityDetails:
-    return entity.EntityDetails(item_info, __properties['title_ingredients'], entity.NO_PROPERTY, __properties['ingredients'], __properties['embed_settings'], items_data)
+    return entity.EntityDetails(item_info, __properties['title_ingredients'], __properties['description_ingredients'], None, __properties['embed_settings'], items_data)
 
 
 def __create_ingredients_details_collection_from_infos(items_designs_infos: List[EntityInfo], items_data: EntitiesData) -> entity.EntityDetailsCollection:
@@ -792,8 +792,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
     ),
     'title_ingredients': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients, text_only=True),
-        property_embed=entity.NO_PROPERTY
+        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients),
     ),
     'description': entity.EntityDetailPropertyCollection(
         entity.EntityDetailProperty('Description', False, entity_property_name='ItemDesignDescription'),
@@ -825,10 +824,8 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price)
         ]
     ),
-    'ingredients': entity.EntityDetailPropertyListCollection(
-        [
-            entity.EntityDetailProperty(entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, transform_function=__get_title_ingredients), False, transform_function=__get_all_ingredients)
-        ]
+    'description_ingredients': entity.EntityDetailPropertyCollection(
+        entity.EntityDetailProperty('Ingredients', False, transform_function=__get_all_ingredients)
     ),
     'price': entity.EntityDetailPropertyListCollection(
         [

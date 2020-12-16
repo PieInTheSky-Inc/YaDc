@@ -349,18 +349,33 @@ class EntityDetails(object):
         self.__entity_info: EntityInfo = entity_info or {}
         self.__title_property_collection: EntityDetailPropertyCollection = title or NO_PROPERTY
         self.__description_property_collection: EntityDetailPropertyCollection = description or NO_PROPERTY
-        self.__properties: Dict[bool, Dict[EntityDetailsType, List[EntityDetailProperty]]] = {
-            False: {
-                EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.embed_only],
-                EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.embed_only],
-                EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.embed_only]
-            },
-            True: {
-                EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.text_only],
-                EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.text_only],
-                EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.text_only]
+        self.__properties: Dict[bool, Dict[EntityDetailsType, List[EntityDetailProperty]]] = {}
+        if properties:
+            self.__properties = {
+                False: {
+                    EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.embed_only],
+                    EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.embed_only],
+                    EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.embed_only]
+                },
+                True: {
+                    EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.text_only],
+                    EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.text_only],
+                    EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.text_only]
+                }
             }
-        }
+        else:
+            self.__properties = {
+                False: {
+                    EntityDetailsType.LONG: [],
+                    EntityDetailsType.SHORT: [],
+                    EntityDetailsType.MINI: []
+                },
+                True: {
+                    EntityDetailsType.LONG: [],
+                    EntityDetailsType.SHORT: [],
+                    EntityDetailsType.MINI: []
+                }
+            }
         self.__embed_settings: Dict[str, EntityDetailProperty] = embed_settings or {}
         self.__calculated_embed_settings: Dict[str, str] = None
         self.__titles: Dict[EntityDetailsType, str] = {}
