@@ -42,7 +42,6 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
     'Crew Borrowed': settings.EXCEL_COLUMN_FORMAT_NUMBER,
     'Logged in ago': None,
     'Joined ago': None,
-    'Tournament attempts left': settings.EXCEL_COLUMN_FORMAT_NUMBER,
 }
 
 
@@ -52,8 +51,15 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
 # ---------- Fleet info ----------
 
 def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
+    start = time.perf_counter()
     fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True)
+    time1 = time.perf_counter() - start
+    print(f'Creating the fleet users lines took {time1:.2f} seconds.')
+
+    start = time.perf_counter()
     fleet_sheet_path = excel.create_csv_from_data(fleet_sheet_contents, None, None, file_name=file_name)
+    time2 = time.perf_counter() - start
+    print(f'Creating the csv file took {time2:.2f} seconds ({(time1+time2):.2f} seconds in total).')
     return fleet_sheet_path
 
 
@@ -317,17 +323,17 @@ def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
         return False
 
 
-def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
+def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None, include_player_id: bool = False, include_fleet_id: bool = False, sort_data: bool = True) -> str:
     start = time.perf_counter()
-    fleet_sheet_lines = __get_fleet_sheet_data(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    fleet_sheet_lines = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts, include_player_id=include_player_id, include_fleet_id=include_fleet_id, sort_lines=sort_data)
+    fleet_sheet_data = __get_fleet_sheet_data_from_lines(fleet_sheet_lines)
     time1 = time.perf_counter() - start
+    print(f'Creating the fleet users data took {time1:.2f} seconds.')
 
     start = time.perf_counter()
-    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_lines, None, retrieved_at, file_name=file_name)
+    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_data, None, retrieved_at, file_name=file_name)
     time2 = time.perf_counter() - start
-
-    print(f'Creating the fleet users data took {time1:.2f} seconds.')
-    print(f'Creating the excel sheet took {time2:.2f} seconds.')
+    print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
 
     return fleet_sheet_path
 
@@ -340,14 +346,16 @@ async def __get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, flee
         return (await fleet_details.get_details_as_text(entity.EntityDetailsType.LONG))
 
 
-def __get_fleet_sheet_data(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
-    fleet_sheet_lines = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts, fleet_name=fleet_name, include_player_id=include_player_id, include_fleet_id=include_fleet_id)
-    fleet_sheet_data = [{fleet_sheet_lines[0][j]: fleet_sheet_lines[i][j] for j in range(len(fleet_sheet_lines[0])-1)} for i in range(1, len(fleet_sheet_lines)-1)]
+def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Any]:
+    fleet_sheet_data = [{fleet_sheet_lines[0][j]: fleet_sheet_lines[i][j] for j in range(len(fleet_sheet_lines[0]))} for i in range(1, len(fleet_sheet_lines))]
     return fleet_sheet_data
 
 
-def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
+def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, sort_lines: bool = True) -> List[Any]:
     titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
+    include_tourney_battle_attempts = max_tourney_battle_attempts is not None
+    if include_tourney_battle_attempts:
+        titles.append('Tournament attempts left')
     if include_player_id:
         titles.append('Player ID')
     if include_fleet_id:
@@ -366,11 +374,6 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             joined_ago = retrieved_at - utils.parse.pss_datetime(alliance_join_date)
         if fleet_name is None and FLEET_DESCRIPTION_PROPERTY_NAME in user_info.keys():
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
-        attempts_left = None
-        if tourney_running:
-            attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
-            if attempts is not None and max_tourney_battle_attempts:
-                attempts_left = max_tourney_battle_attempts - attempts
         line = [
             utils.format.datetime_for_excel(retrieved_at),
             fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, '')),
@@ -384,20 +387,26 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             int(user_info['CrewReceived']) if 'CrewReceived' in user_info else '',
             utils.format.timedelta(logged_in_ago, include_relative_indicator=False),
             utils.format.timedelta(joined_ago, include_relative_indicator=False),
-            attempts_left if attempts_left is not None else '',
         ]
+        if include_tourney_battle_attempts:
+            attempts_left = None
+            attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
+            if attempts is not None and max_tourney_battle_attempts:
+                attempts_left = max_tourney_battle_attempts - attempts
+            line.append('' if attempts_left is None else attempts_left)
         if include_player_id:
             line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
         result.append(line)
 
-    result = sorted(result, key=lambda x: (
-        lookups.ALLIANCE_MEMBERSHIP_LOOKUP.index(x[3]),
-        x[6],
-        x[5],
-        x[2]
-    ))
+    if sort_lines:
+        result = sorted(result, key=lambda x: (
+            lookups.ALLIANCE_MEMBERSHIP_LOOKUP.index(x[3]),
+            -x[6],
+            -x[5],
+            x[2]
+        ))
     result.insert(0, titles)
     return result
 

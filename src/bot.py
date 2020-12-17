@@ -791,6 +791,7 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
     """
     __log_command_use(ctx)
     async with ctx.typing():
+        is_tourney_running = tourney.is_tourney_running()
         exact_name = utils.discord.get_exact_args(ctx)
         if exact_name:
             fleet_name = exact_name
@@ -807,7 +808,10 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
         if fleet_info:
             async with ctx.typing():
                 as_embed = await server_settings.get_use_embeds(ctx)
-                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                if is_tourney_running:
+                    max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                else:
+                    max_tourney_battle_attempts = None
                 output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
             await utils.discord.post_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
@@ -1104,7 +1108,6 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     async with ctx.typing():
         error = None
         utc_now = utils.get_utc_now()
-        month, year = TourneyDataClient.retr
         (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
@@ -1114,7 +1117,7 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
         async with ctx.typing():
-            file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
+            file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.xlsx'
             file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
         await utils.discord.post_output_with_files(ctx, [], file_paths)
         for file_path in file_paths:
