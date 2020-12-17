@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import IntEnum
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import openpyxl
 from openpyxl.worksheet.table import TableStyleInfo
@@ -38,7 +38,7 @@ class FILE_ENDING(IntEnum):
 # ---------- Functions ----------
 
 
-def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: str = None, delimiter: str = '\t') -> str:
+def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: Optional[str] = None, delimiter: Optional[str] = '\t') -> str:
     if data_retrieved_at is None:
         data_retrieved_at = utils.get_utc_now()
     if file_name:
@@ -64,13 +64,10 @@ def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retri
     return save_to
 
 
-def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: str = None) -> str:
+def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: Optional[str] = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = utils.get_utc_now()
-    if file_name:
-        save_to = file_name
-    else:
-        save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL)
+    save_to = file_name or get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -90,10 +87,10 @@ def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrie
     return save_to
 
 
-def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime = None) -> str:
+def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: Optional[datetime] = None, file_name: Optional[str] = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = utils.get_utc_now()
-    save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
+    save_to = file_name or get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
 
     wb = openpyxl.Workbook(write_only=True)
     ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()

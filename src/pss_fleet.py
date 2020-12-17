@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from discord import Embed
@@ -13,6 +14,7 @@ import pss_entity as entity
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
+import pss_raw as raw
 import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_top as top
@@ -126,8 +128,8 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
 
     post_content = await __get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
-    fleet_sheet_path_current = __create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
-    file_paths = [fleet_sheet_path_current]
+    file_path = __create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    file_paths = [file_path]
 
     return post_content, file_paths
 
@@ -316,8 +318,17 @@ def is_tournament_fleet(fleet_info: EntityInfo) -> bool:
 
 
 def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str, max_tourney_battle_attempts: int = None) -> str:
-    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
-    fleet_sheet_path = excel.create_xl_from_data(fleet_sheet_contents, None, None, list(FLEET_SHEET_COLUMN_NAMES.values()), file_name=file_name)
+    start = time.perf_counter()
+    fleet_sheet_lines = __get_fleet_sheet_data(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    time1 = time.perf_counter() - start
+
+    start = time.perf_counter()
+    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_lines, None, retrieved_at, file_name=file_name)
+    time2 = time.perf_counter() - start
+
+    print(f'Creating the fleet users data took {time1:.2f} seconds.')
+    print(f'Creating the excel sheet took {time2:.2f} seconds.')
+
     return fleet_sheet_path
 
 
@@ -329,14 +340,21 @@ async def __get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, flee
         return (await fleet_details.get_details_as_text(entity.EntityDetailsType.LONG))
 
 
+def __get_fleet_sheet_data(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
+    fleet_sheet_lines = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, max_tourney_battle_attempts=max_tourney_battle_attempts, fleet_name=fleet_name, include_player_id=include_player_id, include_fleet_id=include_fleet_id)
+    fleet_sheet_data = [{fleet_sheet_lines[0][j]: fleet_sheet_lines[i][j] for j in range(len(fleet_sheet_lines[0])-1)} for i in range(1, len(fleet_sheet_lines)-1)]
+    return fleet_sheet_data
+
+
 def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False) -> List[Any]:
-    result = [list(FLEET_SHEET_COLUMN_NAMES.keys())]
+    titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
     if include_player_id:
-        result[0].append('Player ID')
+        titles.append('Player ID')
     if include_fleet_id:
-        result[0].append('Fleet ID')
+        titles.append('Fleet ID')
     tourney_running = tourney.is_tourney_running(retrieved_at)
 
+    result = []
     for user_info in fleet_users_data.values():
         last_login_date = user_info.get('LastLoginDate')
         alliance_join_date = user_info.get('AllianceJoinDate')
@@ -373,6 +391,14 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
         result.append(line)
+
+    result = sorted(result, key=lambda x: (
+        lookups.ALLIANCE_MEMBERSHIP_LOOKUP.index(x[3]),
+        x[6],
+        x[5],
+        x[2]
+    ))
+    result.insert(0, titles)
     return result
 
 
