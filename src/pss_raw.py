@@ -141,13 +141,13 @@ async def __post_raw_file(ctx: Context, retriever: entity.EntityRetriever, entit
             data = json.dumps(raw_data_dict)
             file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
         else:
-            #flattened_data = __flatten_raw_data(raw_data)
             start = time.perf_counter()
             flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
             time1 = time.perf_counter() - start
+            start = time.perf_counter()
             file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
             time2 = time.perf_counter() - start
-            print(f'Flattening the data took {time1:.2f} seconds.')
+            print(f'Flattening the {entity_name} data took {time1:.2f} seconds.')
             print(f'Creating the excel sheet took {time2:.2f} seconds.')
     await utils.discord.post_output_with_files(ctx, [], [file_path])
     os.remove(file_path)
