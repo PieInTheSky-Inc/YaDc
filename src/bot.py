@@ -1038,7 +1038,10 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
     elif error:
         raise Error(str(error))
     else:
-        raise Error (f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
+        leading_space_note = ''
+        if fleet_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
     await utils.discord.post_output(ctx, output)
 
 
