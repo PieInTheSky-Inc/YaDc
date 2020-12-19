@@ -817,7 +817,10 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
             for file_path in file_paths:
                 os.remove(file_path)
     else:
-        raise NotFound(f'Could not find a fleet named `{fleet_name}`.')
+        leading_space_note = ''
+        if fleet_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a fleet named `{fleet_name}`.{leading_space_note}')
 
 
 @BOT.command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
@@ -1088,7 +1091,10 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
     elif error:
         raise Error(str(error))
     else:
-        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
+        leading_space_note = ''
+        if fleet_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
 
 
 @cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
@@ -1178,7 +1184,10 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
     elif error:
         raise Error(str(error))
     else:
-        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.')
+        leading_space_note = ''
+        if player_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
     await utils.discord.post_output(ctx, output)
 
 
@@ -1221,7 +1230,10 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
                 output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.post_output(ctx, output)
     else:
-        raise NotFound(f'Could not find a player named `{player_name}`.')
+        leading_space_note = ''
+        if player_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
+        raise NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
 
 
 @BOT.command(name='prestige', brief='Get prestige combos of crew')
