@@ -20,6 +20,8 @@ import utils
 
 # ---------- Constants ----------
 
+BIG_SET_THRESHOLD: int = 4
+
 # RoomType: 'unit'
 CAPACITY_PER_TICK_UNITS: Dict[str, str] = {
     'Lift': ' pixel/s',
@@ -189,14 +191,29 @@ async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed
     if not rooms_designs_infos:
         raise NotFound(f'Could not find a room named **{room_name}**.')
     else:
+        exact_match_details = None
         items_data = await item.items_designs_retriever.get_data_dict3()
         researches_data = await research.researches_designs_retriever.get_data_dict3()
         rooms_designs_sprites_data = await rooms_designs_sprites_retriever.get_data_dict3()
+
+        if len(rooms_designs_infos) >= BIG_SET_THRESHOLD:
+            lower_room_name = room_name.strip().lower()
+            for room_design_info in rooms_designs_infos:
+                if room_design_info.get(ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME, '').lower() == lower_room_name:
+                    exact_match_details = __create_room_details_from_info(room_design_info, rooms_data, items_data, researches_data, rooms_designs_sprites_data)
+                    break
         rooms_details_collection = __create_rooms_details_collection_from_infos(rooms_designs_infos, rooms_data, items_data, researches_data, rooms_designs_sprites_data)
+
+        result = []
         if as_embed:
-            return (await rooms_details_collection.get_entities_details_as_embed(ctx))
+            if exact_match_details:
+                result.append(await exact_match_details.get_details_as_embed(ctx))
+            result.extend(await rooms_details_collection.get_entities_details_as_embed(ctx))
         else:
-            return (await rooms_details_collection.get_entities_details_as_text())
+            if exact_match_details:
+                result.append(await exact_match_details.get_details_as_text(details_type=entity.EntityDetailsType.LONG))
+            result.extend(await rooms_details_collection.get_entities_details_as_text(ctx))
+        return result
 
 
 def _get_room_infos(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo]:

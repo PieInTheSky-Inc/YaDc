@@ -5,6 +5,7 @@ from discord import Embed
 from discord.ext.commands import Context
 
 import pss_assert
+import pss_core as core
 import pss_entity as entity
 from pss_exception import NotFound
 import pss_lookups as lookups
@@ -15,6 +16,8 @@ import utils
 
 
 # ---------- Constants ----------
+
+BIG_SET_THRESHOLD: int = 4
 
 RESEARCH_DESIGN_BASE_PATH: str = 'ResearchService/ListAllResearchDesigns2?languageKey=en'
 RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ResearchName'
@@ -30,7 +33,7 @@ def get_research_details_by_id(research_design_id: str, researches_data: Entitie
     if research_design_id:
         if research_design_id and research_design_id in researches_data.keys():
             research_info = researches_data[research_design_id]
-            research_details = __create_research_design_data_from_info(research_info, researches_data)
+            research_details = __create_research_details_from_info(research_info, researches_data)
             return research_details
     return None
 
@@ -44,11 +47,25 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
     if not researches_designs_infos:
         raise NotFound(f'Could not find a research named **{research_name}**.')
     else:
+        exact_match_details = None
+        if len(researches_designs_infos) >= BIG_SET_THRESHOLD:
+            lower_research_name = research_name.strip().lower()
+            for research_design_info in researches_designs_infos:
+                if research_design_info.get(RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, '').lower() == lower_research_name:
+                    exact_match_details = __create_research_details_from_info(research_design_info, researches_data)
+                    break
+
         researches_details = __create_researches_details_collection_from_infos(researches_designs_infos, researches_data)
+        result = []
         if as_embed:
-            return (await researches_details.get_entities_details_as_embed(ctx))
+            if exact_match_details:
+                result.append(await exact_match_details.get_details_as_embed(ctx))
+            result.extend(await researches_details.get_entities_details_as_embed(ctx))
         else:
-            return (await researches_details.get_entities_details_as_text())
+            if exact_match_details:
+                result.append(await exact_match_details.get_details_as_text(details_type=entity.EntityDetailsType.LONG))
+            result.extend(await researches_details.get_entities_details_as_text(ctx))
+        return result
 
 
 
@@ -133,13 +150,13 @@ def get_research_name_from_id(research_id: str, researches_data: EntitiesData) -
 
 # ---------- Create entity.EntityDetails ----------
 
-def __create_research_design_data_from_info(research_info: EntityInfo, researches_data: EntitiesData) -> entity.EntityDetails:
+def __create_research_details_from_info(research_info: EntityInfo, researches_data: EntitiesData) -> entity.EntityDetails:
     return entity.EntityDetails(research_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], researches_data)
 
 
 def __create_researches_details_collection_from_infos(researches_designs_infos: List[EntityInfo], researches_data: EntitiesData) -> entity.EntityDetailsCollection:
-    researches_details = [__create_research_design_data_from_info(item_info, researches_data) for item_info in researches_designs_infos]
-    result = entity.EntityDetailsCollection(researches_details, big_set_threshold=4)
+    researches_details = [__create_research_details_from_info(item_info, researches_data) for item_info in researches_designs_infos]
+    result = entity.EntityDetailsCollection(researches_details, big_set_threshold=BIG_SET_THRESHOLD)
     return result
 
 
