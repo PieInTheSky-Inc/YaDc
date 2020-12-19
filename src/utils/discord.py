@@ -6,6 +6,7 @@ from discord import Guild as _Guild
 from discord import Forbidden as _Forbidden
 from discord import Member as _Member
 from discord import Message as _Message
+from discord import NotFound as _NotFound
 from discord import Reaction as _Reaction
 from discord import TextChannel as _TextChannel
 from discord import User as _User
@@ -244,6 +245,8 @@ async def try_delete_message(message: _Message) -> bool:
         return True
     except _Forbidden:
         return False
+    except _NotFound:
+        return True
 
 
 async def try_delete_original_message(ctx: _Context) -> bool:
