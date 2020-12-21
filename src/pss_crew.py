@@ -536,6 +536,11 @@ def __create_prestige_to_details_collection_from_infos(characters_infos: List[En
 
 # ---------- Helper functions ----------
 
+def get_crew_search_details(character_info: EntityInfo) -> str:
+    result = character_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
+
+
 def __calculate_stat_value(min_value: float, max_value: float, level: int, progression_type: str) -> float:
     exponent = lookups.PROGRESSION_TYPES[progression_type]
     result = min_value + (max_value - min_value) * ((level - 1) / 39) ** exponent

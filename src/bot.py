@@ -1388,7 +1388,7 @@ async def cmd_room(ctx: Context, *, room_name: str):
     await utils.discord.post_output(ctx, output)
 
 
-@BOT.command(name='sales', brief='List expired sales')
+@BOT.group(name='sales', brief='List expired sales', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_sales(ctx: Context, *, object_name: str = None):
     """
@@ -3286,6 +3286,98 @@ async def cmd_embed(ctx: Context, *, message: str = None):
     colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
     embed = utils.discord.create_embed('Your message in an embed', description=message, colour=colour)
     await ctx.send(embed=embed)
+
+
+@cmd_sales.command(name='add', brief='Add a past sale.', hidden=True)
+@is_owner()
+async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, category: str, *, name: str):
+    """
+    Add a past sale to the database.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        if price <= 0:
+            error_msg = '\n'.join([
+                f'Parameter {price.__name__} received an invalid value: {price}'
+                f'The value must be greater than 0.'
+            ])
+            raise ValueError(error_msg)
+
+        currency_lower = currency.lower()
+        if currency_lower.startswith('min'):
+            currency_type = 'Mineral'
+        elif currency_lower.startswith('gas'):
+            currency_type = 'Gas'
+        elif 'bux' in currency_lower:
+            currency_type = 'Starbux'
+        else:
+            error_msg = '\n'.join([
+                f'Parameter `{currency.__name__}` received wrong value: {currency}'
+                'Valid values are: Bux, Gas, Min, Mineral, Mins, Minerals, Starbux'
+            ])
+            raise ValueError(error_msg)
+
+        try:
+            expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
+        except Exception as ex:
+            error_msg = '\n'.join((
+                f'Parameter {sold_on.__name__} received an invalid value: {sold_on}',
+                f'Values must be dates in format: yyyy-MM-dd'
+            ))
+            raise ValueError(error_msg) from ex
+
+        category = category.capitalize()
+        if category == 'Crew':
+            entities_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(name)
+        elif category == 'Item':
+            entities_infos = await item.items_designs_retriever.get_entities_infos_by_name(name)
+        elif category == 'Room':
+            entities_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(name)
+        else:
+            error_msg = '\n'.join([
+                f'Parameter `{category.__name__}` received wrong value: {category}'
+                f'Valid values are: Crew, Item, Room'
+            ])
+            raise ValueError(error_msg)
+
+    entity_id = None
+    entity_info = None
+    entity_name = None
+    if entities_infos:
+        if len(entities_infos) == 1:
+            entity_info = entities_infos[0]
+        else:
+            paginator = None
+            if category == 'Crew':
+                paginator = pagination.Paginator(ctx, name, entities_infos, crew.get_crew_search_details, True)
+            elif category == 'Item':
+                paginator = pagination.Paginator(ctx, name, entities_infos, item.get_item_search_details, True)
+            elif category == 'Room':
+                paginator = pagination.Paginator(ctx, name, entities_infos, room.get_room_search_details, True)
+            if paginator:
+                _, entity_info = await paginator.wait_for_option_selection()
+
+        if entity_info:
+            if category == 'Crew':
+                entity_id = entity_info.get(crew.CHARACTER_DESIGN_KEY_NAME)
+                entity_name = entity_info.get(crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
+            elif category == 'Item':
+                entity_id = entity_info.get(item.ITEM_DESIGN_KEY_NAME)
+                entity_name = entity_info.get(item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+            elif category == 'Room':
+                entity_id = entity_info.get(room.ROOM_DESIGN_KEY_NAME)
+                entity_name = entity_info.get(room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
+    else:
+        raise NotFound(f'Could not find a {category} with name `{name}`')
+
+    if entity_id:
+        async with ctx.typing():
+            entity_id = int(entity_id)
+            success = await daily.db_add_sale(entity_id, price, currency_type, category, expires_at)
+        if success:
+            await ctx.send(f'Successfully added {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
+        else:
+            await ctx.send(f'Failed adding {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
 
 
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)

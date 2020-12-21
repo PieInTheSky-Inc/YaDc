@@ -693,6 +693,10 @@ def __is_allowed_room_type(room_info: EntityInfo, allowed_room_types: Iterable, 
 
 # ---------- Helper functions ----------
 
+def get_room_search_details(room_info: EntityInfo) -> str:
+    result = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
+
 
 def __create_display_name_properties(display_names: List[str]) -> Dict[str, entity.EntityDetailProperty]:
     result = {key: __create_display_name_property(key, display_names) for key in display_names.keys()}

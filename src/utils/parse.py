@@ -7,8 +7,10 @@ from . import constants as _constants
 
 # ---------- Functions ----------
 
-def formatted_datetime(date_time: _datetime, include_tz: bool = True, include_tz_brackets: bool = True) -> _datetime:
-    format_string = '%Y-%m-%d %H:%M:%S'
+def formatted_datetime(date_time: str, include_time: bool = True, include_tz: bool = True, include_tz_brackets: bool = True) -> _datetime:
+    format_string = '%Y-%m-%d'
+    if include_time:
+        format_string += ' %H:%M:%S'
     if include_tz:
         if include_tz_brackets:
             format_string += ' (%Z)'

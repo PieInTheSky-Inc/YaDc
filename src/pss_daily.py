@@ -235,6 +235,43 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
 
 # ---------- Helper functions ----------
 
+__SALES_FIELDS: List[str] = [
+    'limitedcatalogargument',
+    'limitedcatalogtype',
+    'limitedcatalogcurrencytype',
+    'limitedcatalogcurrencyamount',
+    'limitedcatalogmaxtotal',
+    'limitedcatalogexpirydate',
+]
+
+__SALES_FIELDS_PLACEHOLDERS_TEXT: str = ', '.join(f'${i+1}' for i, _ in enumerate(__SALES_FIELDS))
+__SALES_FIELDS_TEXT: List[str] = ', '.join(__SALES_FIELDS)
+
+
+async def db_add_sale(entity_id: int, price: int, currency: str, entity_type: str, expires_at: datetime) -> bool:
+    query = f'INSERT INTO sales ({__SALES_FIELDS_TEXT}) VALUES ({__SALES_FIELDS_PLACEHOLDERS_TEXT})'
+    args = [
+        entity_id,
+        entity_type,
+        currency,
+        price,
+        1 if entity_type == 'Room' else 100,
+        expires_at
+    ]
+    try:
+        success = await db.try_execute(query, args, raise_db_error=True)
+    except Exception as ex:
+        error_msg = '\n'.join([
+            'Could not add sales to database.',
+            f'Query: {query}',
+            f'Values: {args}'
+        ])
+        raise Error(error_msg) from ex
+    if success:
+        await __update_db_sales_info_cache()
+    return success
+
+
 async def db_get_daily_info(skip_cache: bool = False) -> Tuple[EntityInfo, datetime]:
     if __daily_info_cache is None or skip_cache:
         result = {}
