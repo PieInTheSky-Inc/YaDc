@@ -3498,29 +3498,32 @@ async def cmd_send_bot_news(ctx: Context, *, news: str = None):
     Sends an embed to all guilds which have a bot news channel configured.
 
     Usage:
-      /sendnews [--<property_key>=<property_value> ...]
+      /sendnews [--test] [--<property_key>=<property_value> ...]
 
     Available property keys:
-      --title:   The title of the news.
-      --content: The contents of the news.
+      --test:    Optional. Use to only send the news to the current channel.
+      --title:   Mandatory. The title of the news.
+      --content: Optional. The contents of the news.
 
     Example:
       /sendnews --title=This is a title. --content=This is the content.
+      /sendnews --test --title=This is a title. --content=This is the content.
     """
     __log_command_use(ctx)
     if not news:
         return
 
     async with ctx.typing():
-        _, title, content = __extract_dash_parameters(news, '--title=', '--content=')
+        _, for_testing, title, content = __extract_dash_parameters(news, None, '--test', '--title=', '--content=')
         if not title:
             raise ValueError('You need to specify a title!')
         avatar_url = BOT.user.avatar_url
-        for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
-            embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
-            embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
-            embed.set_thumbnail(url=avatar_url)
-            await bot_news_channel.send(embed=embed)
+        if not for_testing:
+            for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
+                embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
+                embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
+                embed.set_thumbnail(url=avatar_url)
+                await bot_news_channel.send(embed=embed)
         embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
         embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
         embed.set_thumbnail(url=avatar_url)
