@@ -576,7 +576,7 @@ class GuildSettingsCollection():
 
 
     async def create_guild_settings(self, bot: Bot, guild_id: int) -> bool:
-        success = await __db_create_server_settings(guild_id)
+        success = await _db_create_server_settings(guild_id)
         if success:
             new_server_settings = await db_get_server_settings(guild_id)
             if new_server_settings:
@@ -657,7 +657,7 @@ async def get_prefix(bot: Bot, message: Message) -> str:
 
 
 async def get_prefix_or_default(guild_id: int) -> str:
-    result = await __db_get_prefix(guild_id)
+    result = await _db_get_prefix(guild_id)
     if result is None or result.lower() == 'none':
         result = app_settings.DEFAULT_PREFIX
     return result
@@ -689,7 +689,7 @@ async def get_use_embeds(ctx: Context, bot: Bot = None, guild: Guild = None) -> 
 
 
 async def reset_prefix(guild_id: int) -> bool:
-    success = await __db_reset_prefix(guild_id)
+    success = await _db_reset_prefix(guild_id)
     return success
 
 
@@ -732,8 +732,8 @@ def __prettify_guild_settings(guild_settings: Dict[str, str]) -> List[Tuple[str,
 
 
 async def __set_prefix(guild_id: int, prefix: str) -> bool:
-    await __db_create_server_settings(guild_id)
-    success = await __db_update_prefix(guild_id, prefix)
+    await _db_create_server_settings(guild_id)
+    success = await _db_update_prefix(guild_id, prefix)
     return success
 
 
@@ -821,7 +821,7 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
 
 async def db_get_daily_channel_id(guild_id: int) -> int:
     setting_names = [_COLUMN_NAME_DAILY_CHANNEL_ID]
-    result = await __db_get_server_setting(guild_id, setting_names=setting_names)
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None if result else None
 
 
@@ -879,7 +879,14 @@ async def db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -> 
         return success
     else:
         return True
-        return success
+
+
+async def _db_create_server_settings(guild_id: int) -> bool:
+    if await _db_get_has_settings(guild_id):
+        return True
+    else:
+        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
+        success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
 
 
 async def _db_delete_server_settings(guild_id: int) -> bool:
@@ -888,15 +895,7 @@ async def _db_delete_server_settings(guild_id: int) -> bool:
     return success
 
 
-async def __db_create_server_settings(guild_id: int) -> bool:
-    if await __db_get_has_settings(guild_id):
-        return True
-    else:
-        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
-        success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
-
-
-async def __db_get_has_settings(guild_id: int) -> bool:
+async def _db_get_has_settings(guild_id: int) -> bool:
     results = await db_get_server_settings(guild_id)
     if results:
         return True
@@ -904,14 +903,14 @@ async def __db_get_has_settings(guild_id: int) -> bool:
         return False
 
 
-async def __db_get_prefix(guild_id: int) -> Optional[str]:
-    await __db_create_server_settings(guild_id)
+async def _db_get_prefix(guild_id: int) -> Optional[str]:
+    await _db_create_server_settings(guild_id)
     setting_names = [_COLUMN_NAME_PREFIX]
-    result = await __db_get_server_setting(guild_id, setting_names=setting_names)
+    result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None
 
 
-async def __db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
+async def _db_get_server_setting(guild_id: int = None, setting_names: list = None, additional_wheres: list = None, conversion_functions: List[Callable[[object], object]] = None) -> object:
     settings = await db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=additional_wheres)
     if settings:
         for setting in settings:
@@ -928,8 +927,8 @@ async def __db_get_server_setting(guild_id: int = None, setting_names: list = No
         return None
 
 
-async def __db_reset_prefix(guild_id: int) -> bool:
-    current_prefix = await __db_get_prefix(guild_id)
+async def _db_reset_prefix(guild_id: int) -> bool:
+    current_prefix = await _db_get_prefix(guild_id)
     if current_prefix is not None:
         settings = {
             _COLUMN_NAME_PREFIX: None
@@ -939,8 +938,8 @@ async def __db_reset_prefix(guild_id: int) -> bool:
     return True
 
 
-async def __db_update_prefix(guild_id: int, prefix: str) -> bool:
-    current_prefix = await __db_get_prefix(guild_id)
+async def _db_update_prefix(guild_id: int, prefix: str) -> bool:
+    current_prefix = await _db_get_prefix(guild_id)
     if not current_prefix or prefix != current_prefix:
         settings = {
             _COLUMN_NAME_PREFIX: prefix
