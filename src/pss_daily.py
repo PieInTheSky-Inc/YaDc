@@ -19,7 +19,7 @@ import pss_training as training
 import server_settings
 from server_settings import AutoDailySettings
 import settings
-from typehints import EntityInfo
+from typehints import EntityInfo, SalesCache
 import utils
 
 
@@ -84,10 +84,20 @@ SALES_DAILY_INFO_FIELDS: Dict[str, Callable] = {
 
 # ---------- Sales info ----------
 
+async def add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int) -> bool:
+    already_exists = len([sale_info for sale_info in __sales_info_cache if sale_info['limitedcatalogexpirydate'] == expires_at])
+    if already_exists:
+        raise Error(f'There\'s already a sale info in the database expiring on: {utils.format.date(expires_at)}')
+    success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+    if success:
+        await __update_db_sales_info_cache()
+    return success
+
+
 async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: bool = False) -> List[str]:
     db_sales_infos = await __db_get_sales_infos(utc_now=utc_now)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    sales_infos = reversed([sales_info for sales_info in sales_infos if sales_info['expires_in'] >= 0])
+    sales_infos = reversed(sales_infos)
     for sales_info in sales_infos:
         expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
         price = sales_info['price']
@@ -100,8 +110,7 @@ async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: b
 async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[Embed]]:
     utc_now = utils.get_utc_now()
     db_sales_infos = await __db_get_sales_infos(utc_now=utc_now)
-    processed_db_sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    sales_infos = [sales_info for sales_info in processed_db_sales_infos if sales_info['expires_in'] >= 0]
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     if reverse:
         sales_infos = reversed(sales_infos)
 
@@ -139,7 +148,6 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
 
     db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
-    sales_infos = [sales_info for sales_info in sales_infos if sales_info['expiry_date'] <= utc_now]
     if reverse:
         sales_infos = reversed(sales_infos)
 
@@ -194,9 +202,11 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
 
     for db_sales_info in db_sales_infos:
         expiry_date: datetime = db_sales_info['limitedcatalogexpirydate']
-        if expiry_date.date() >= utc_now.date():
+        if expiry_date.date() > utc_now.date():
             continue
-        expires_in = 29 - (utc_now - expiry_date).days
+        expires_in = 30 - (utc_now - expiry_date).days
+        if expires_in < 1:
+            continue
         entity_id = db_sales_info['limitedcatalogargument']
         entity_type = db_sales_info['limitedcatalogtype']
         currency_type = db_sales_info['limitedcatalogcurrencytype']
@@ -248,14 +258,14 @@ __SALES_FIELDS_PLACEHOLDERS_TEXT: str = ', '.join(f'${i+1}' for i, _ in enumerat
 __SALES_FIELDS_TEXT: List[str] = ', '.join(__SALES_FIELDS)
 
 
-async def db_add_sale(entity_id: int, price: int, currency: str, entity_type: str, expires_at: datetime) -> bool:
+async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int) -> bool:
     query = f'INSERT INTO sales ({__SALES_FIELDS_TEXT}) VALUES ({__SALES_FIELDS_PLACEHOLDERS_TEXT})'
     args = [
         entity_id,
         entity_type,
-        currency,
+        currency_type,
         price,
-        1 if entity_type == 'Room' else 100,
+        max_amount,
         expires_at
     ]
     try:
@@ -267,8 +277,6 @@ async def db_add_sale(entity_id: int, price: int, currency: str, entity_type: st
             f'Values: {args}'
         ])
         raise Error(error_msg) from ex
-    if success:
-        await __update_db_sales_info_cache()
     return success
 
 
@@ -364,7 +372,7 @@ def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
     return result
 
 
-async def __db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> List[Dict[str, Any]]:
+async def __db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> SalesCache:
     if not skip_cache and utc_now is not None and (__sales_info_cache_retrieved_at is None or __sales_info_cache_retrieved_at.day != utc_now.day):
         await __update_db_sales_info_cache()
     if skip_cache:
@@ -449,7 +457,7 @@ def __mock_get_daily_info_2() -> EntityInfo:
 
 __daily_info_cache: dict = None
 __daily_info_modified_at: datetime = None
-__sales_info_cache: dict = None
+__sales_info_cache: SalesCache = None
 __sales_info_cache_retrieved_at: datetime = None
 
 

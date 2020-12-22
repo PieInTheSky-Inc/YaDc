@@ -9,6 +9,7 @@ import logging
 import json
 import os
 import pytz
+import re
 import sys
 from typing import List, Optional, Tuple, Union
 
@@ -29,6 +30,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
+import emojis
 from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
@@ -1407,52 +1409,53 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
       /sales Virgo - Prints information on the sale history of the crew Virgo
       /sales Flower - Prints information on the sale history of the room Flower Gardens
     """
-    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
 
-    object_name, reverse_output = __extract_dash_parameters(object_name, None, '--reverse')
+        object_name, reverse_output = __extract_dash_parameters(object_name, None, '--reverse')
 
-    if object_name:
-        async with ctx.typing():
-            entities_infos = []
-            characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
-            for entity_info in characters_designs_infos:
-                entity_info['entity_type'] = 'Crew'
-                entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
-                entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                entities_infos.append(entity_info)
-            items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
-            for entity_info in items_designs_infos:
-                entity_info['entity_type'] = 'Item'
-                entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
-                entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                entities_infos.append(entity_info)
-            rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
-            for entity_info in rooms_designs_infos:
-                entity_info['entity_type'] = 'Room'
-                entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
-                entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                entities_infos.append(entity_info)
+        if object_name:
+            async with ctx.typing():
+                entities_infos = []
+                characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
+                for entity_info in characters_designs_infos:
+                    entity_info['entity_type'] = 'Character'
+                    entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+                    entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                    entities_infos.append(entity_info)
+                items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
+                for entity_info in items_designs_infos:
+                    entity_info['entity_type'] = 'Item'
+                    entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+                    entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                    entities_infos.append(entity_info)
+                rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
+                for entity_info in rooms_designs_infos:
+                    entity_info['entity_type'] = 'Room'
+                    entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+                    entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                    entities_infos.append(entity_info)
 
-        if entities_infos:
-            if len(entities_infos) == 1:
-                entity_info = entities_infos[0]
+            if entities_infos:
+                if len(entities_infos) == 1:
+                    entity_info = entities_infos[0]
+                else:
+                    entities_infos = sorted(entities_infos, key=lambda x: x['entity_name'])
+                    use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+                    paginator = pagination.Paginator(ctx, object_name, entities_infos, daily.get_sales_search_details, use_pagination)
+                    _, entity_info = await paginator.wait_for_option_selection()
+
+                if entity_info:
+                    async with ctx.typing():
+                        output = await daily.get_sales_history(ctx, entity_info, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+                else:
+                    output = []
             else:
-                entities_infos = sorted(entities_infos, key=lambda x: x['entity_name'])
-                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, object_name, entities_infos, daily.get_sales_search_details, use_pagination)
-                _, entity_info = await paginator.wait_for_option_selection()
-
-            if entity_info:
-                async with ctx.typing():
-                    output = await daily.get_sales_history(ctx, entity_info, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
-            else:
-                output = []
+                raise NotFound(f'Could not find an object with the name `{object_name}`.')
         else:
-            raise NotFound(f'Could not find an object with the name `{object_name}`.')
-    else:
-        async with ctx.typing():
-            output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+            async with ctx.typing():
+                output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+        await utils.discord.post_output(ctx, output)
 
 
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
@@ -3290,7 +3293,7 @@ async def cmd_embed(ctx: Context, *, message: str = None):
 
 @cmd_sales.command(name='add', brief='Add a past sale.', hidden=True)
 @is_owner()
-async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, category: str, *, name: str):
+async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, category: str, max_amount: int, *, name: str):
     """
     Add a past sale to the database.
     """
@@ -3298,7 +3301,14 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
     async with ctx.typing():
         if price <= 0:
             error_msg = '\n'.join([
-                f'Parameter {price.__name__} received an invalid value: {price}'
+                f'Parameter `price` received an invalid value: {price}'
+                f'The value must be greater than 0.'
+            ])
+            raise ValueError(error_msg)
+
+        if max_amount <= 0:
+            error_msg = '\n'.join([
+                f'Parameter `max_amount` received an invalid value: {max_amount}'
                 f'The value must be greater than 0.'
             ])
             raise ValueError(error_msg)
@@ -3312,7 +3322,7 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
             currency_type = 'Starbux'
         else:
             error_msg = '\n'.join([
-                f'Parameter `{currency.__name__}` received wrong value: {currency}'
+                f'Parameter `currency` received wrong value: {currency}'
                 'Valid values are: Bux, Gas, Min, Mineral, Mins, Minerals, Starbux'
             ])
             raise ValueError(error_msg)
@@ -3321,22 +3331,28 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
             expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
         except Exception as ex:
             error_msg = '\n'.join((
-                f'Parameter {sold_on.__name__} received an invalid value: {sold_on}',
+                f'Parameter `sold_on` received an invalid value: {sold_on}',
                 f'Values must be dates in format: yyyy-MM-dd'
             ))
             raise ValueError(error_msg) from ex
 
         category = category.capitalize()
-        if category == 'Crew':
+        is_crew = False
+        is_item = False
+        is_room = False
+        if category in ['Character', 'Crew']:
             entities_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(name)
+            is_crew = True
         elif category == 'Item':
             entities_infos = await item.items_designs_retriever.get_entities_infos_by_name(name)
+            is_item = True
         elif category == 'Room':
             entities_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(name)
+            is_room = True
         else:
             error_msg = '\n'.join([
-                f'Parameter `{category.__name__}` received wrong value: {category}'
-                f'Valid values are: Crew, Item, Room'
+                f'Parameter `category` received wrong value: {category}'
+                f'Valid values are: Character, Crew, Item, Room'
             ])
             raise ValueError(error_msg)
 
@@ -3348,23 +3364,23 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
             entity_info = entities_infos[0]
         else:
             paginator = None
-            if category == 'Crew':
+            if is_crew:
                 paginator = pagination.Paginator(ctx, name, entities_infos, crew.get_crew_search_details, True)
-            elif category == 'Item':
+            elif is_item:
                 paginator = pagination.Paginator(ctx, name, entities_infos, item.get_item_search_details, True)
-            elif category == 'Room':
+            elif is_room:
                 paginator = pagination.Paginator(ctx, name, entities_infos, room.get_room_search_details, True)
             if paginator:
                 _, entity_info = await paginator.wait_for_option_selection()
 
         if entity_info:
-            if category == 'Crew':
+            if is_crew:
                 entity_id = entity_info.get(crew.CHARACTER_DESIGN_KEY_NAME)
                 entity_name = entity_info.get(crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
-            elif category == 'Item':
+            elif is_item:
                 entity_id = entity_info.get(item.ITEM_DESIGN_KEY_NAME)
                 entity_name = entity_info.get(item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-            elif category == 'Room':
+            elif is_room:
                 entity_id = entity_info.get(room.ROOM_DESIGN_KEY_NAME)
                 entity_name = entity_info.get(room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
     else:
@@ -3373,11 +3389,106 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
     if entity_id:
         async with ctx.typing():
             entity_id = int(entity_id)
-            success = await daily.db_add_sale(entity_id, price, currency_type, category, expires_at)
+            success = await daily.add_sale(entity_id, price, currency_type, category, expires_at, max_amount)
         if success:
             await ctx.send(f'Successfully added {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
         else:
-            await ctx.send(f'Failed adding {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
+            await ctx.send(f'Failed adding {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database. Check the log for more information.')
+
+
+@cmd_sales.command(name='parse', brief='Parse and add a past sale.', hidden=True)
+@is_owner()
+async def cmd_sales_parse(ctx: Context, sold_on: str, *, sale_text: str):
+    """
+    Parse a sale from the daily news and add it to the database.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        try:
+            expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
+        except Exception as ex:
+            error_msg = '\n'.join((
+                f'Parameter `sold_on` received an invalid value: {sold_on}',
+                f'Values must be dates in format: yyyy-MM-dd'
+            ))
+            raise ValueError(error_msg) from ex
+
+        rx_entity_name = r'(.*?)(?= [\(\[])'
+        rx_number = r'(\d+)'
+        rx_currency = r'<:.+?:\d+>'
+
+        sale_text_lines = sale_text.split('\n')
+        entity_name_match = re.search(rx_entity_name, sale_text_lines[0])
+        if entity_name_match:
+            entity_name = entity_name_match.group(0)
+        else:
+            raise Error(f'Could not extract the entity name from: {sale_text_lines[0]}')
+
+        price_match = re.search(rx_number, sale_text_lines[1])
+        if price_match:
+            price = int(price_match.group(0))
+        else:
+            raise Error(f'Could not extract the price from: {sale_text_lines[1]}')
+
+        currency_match = re.search(rx_currency, sale_text_lines[1])
+        if currency_match:
+            currency = currency_match.group(0).lower()
+        else:
+            raise Error(f'Could not extract the currency from: {sale_text_lines[1]}')
+
+        currency_type = lookups.CURRENCY_EMOJI_LOOKUP_REVERSE.get(currency)
+        if currency_type:
+            currency_type = currency_type.capitalize()
+        else:
+            raise Error(f'Could not convert currency emoji to currency type: {currency}')
+
+        max_amount_match = re.search(rx_number, sale_text_lines[2])
+        if max_amount_match:
+            max_amount = int(max_amount_match.group(0))
+        else:
+            raise Error(f'Could not extract the currency from: {sale_text_lines[2]}')
+
+        entities_infos = []
+        characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in characters_designs_infos:
+            entity_info['entity_type'] = 'Character'
+            entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in items_designs_infos:
+            entity_info['entity_type'] = 'Item'
+            entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in rooms_designs_infos:
+            entity_info['entity_type'] = 'Room'
+            entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+
+    entity_info = None
+    entity_id = None
+    entity_type = None
+    if entities_infos:
+        if len(entities_infos) == 1:
+            entity_info = entities_infos[0]
+        else:
+            paginator = pagination.Paginator(ctx, entity_name, entities_infos, daily.get_sales_search_details, True)
+            _, entity_info = await paginator.wait_for_option_selection()
+    if entity_info:
+        entity_id = int(entity_info['entity_id'])
+        entity_type = entity_info['entity_type']
+
+    if entity_id:
+        async with ctx.typing():
+            entity_id = int(entity_id)
+            success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+        if success:
+            await ctx.send(f'Successfully added {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
+        else:
+            await ctx.send(f'Failed adding {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database. Check the log for more information.')
 
 
 @BOT.command(name='sendnews', aliases=['botnews'], brief='Send bot news to all servers.', hidden=True)

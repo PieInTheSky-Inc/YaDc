@@ -46,6 +46,8 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
     'equipment': 'items'
 }
 
+CURRENCY_EMOJI_LOOKUP_REVERSE: Dict[str, str] = {value: key for key, value in CURRENCY_EMOJI_LOOKUP.items()}
+
 
 DELETE_ON_CHANGE_ORDER: List[Optional[bool]] = [True, None, False]
 

@@ -5,6 +5,7 @@ import asyncpg
 
 import pss_daily as daily
 import settings
+from typehints import SalesCache
 import utils
 
 
@@ -671,7 +672,7 @@ async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[objec
     return result
 
 
-async def get_sales_infos(expiry_date: datetime = None) -> List[Dict[str, Union[int, str, datetime]]]:
+async def get_sales_infos(expiry_date: datetime = None) -> SalesCache:
     __log_db_function_enter('get_sales_infos')
 
     args = []
