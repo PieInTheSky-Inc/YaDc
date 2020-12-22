@@ -177,14 +177,14 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
 
 def get_sales_search_details(entity_info: EntityInfo) -> str:
     entity_type = entity_info.get('entity_type')
-    if entity_type == 'Crew':
-        entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    elif entity_type == 'Item':
-        entity_name = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    elif entity_type == 'Room':
-        entity_name = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-    else:
-        entity_name = None
+    entity_name = entity_info.get('entity_name')
+    if not entity_name:
+        if entity_type in ['Character', 'Crew']:
+            entity_name = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        elif entity_type == 'Item':
+            entity_name = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        elif entity_type == 'Room':
+            entity_name = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
 
     result = f'{entity_name} ({entity_type})'
     return result
