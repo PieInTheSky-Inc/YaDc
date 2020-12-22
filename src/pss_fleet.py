@@ -202,7 +202,7 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, retrieved_at=retrieved_date, as_embed=as_embed)
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, None, retrieved_at=retrieved_date, as_embed=as_embed)
 
 
 
