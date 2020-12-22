@@ -147,7 +147,7 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
     entity_name = entity_info.get('entity_name')
 
     db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
-    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now, filter_old=(entity_id is None))
     if reverse:
         sales_infos = reversed(sales_infos)
 
@@ -189,7 +189,7 @@ def get_sales_search_details(entity_info: EntityInfo) -> str:
     return result
 
 
-async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now: datetime) -> List[Dict[str, Any]]:
+async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now: datetime, filter_old: bool = True) -> List[Dict[str, Any]]:
     chars_data = await crew.characters_designs_retriever.get_data_dict3()
     collections_data = await crew.collections_designs_retriever.get_data_dict3()
     items_data = await item.items_designs_retriever.get_data_dict3()
@@ -205,7 +205,7 @@ async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now
         if expiry_date.date() > utc_now.date():
             continue
         expires_in = 30 - (utc_now - expiry_date).days
-        if expires_in < 1:
+        if filter_old and expires_in < 1:
             continue
         entity_id = db_sales_info['limitedcatalogargument']
         entity_type = db_sales_info['limitedcatalogtype']
