@@ -142,11 +142,12 @@ async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool 
 async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     utc_now = utils.get_utc_now()
 
+    category_type = entity_info.get('entity_type')
     entity_id = entity_info.get('entity_id')
     entity_id = int(entity_id) if entity_id else None
     entity_name = entity_info.get('entity_name')
 
-    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, entity_id=entity_id)
+    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, category_type=category_type, entity_id=entity_id)
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now, filter_old=(entity_id is None))
     if reverse:
         sales_infos = reversed(sales_infos)
@@ -372,7 +373,7 @@ def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
     return result
 
 
-async def __db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, skip_cache: bool = False) -> SalesCache:
+async def __db_get_sales_infos(utc_now: datetime = None, category_type: str = None, entity_id: int = None, skip_cache: bool = False) -> SalesCache:
     if not skip_cache and utc_now is not None and (__sales_info_cache_retrieved_at is None or __sales_info_cache_retrieved_at.day != utc_now.day):
         await __update_db_sales_info_cache()
     if skip_cache:
@@ -381,6 +382,8 @@ async def __db_get_sales_infos(utc_now: datetime = None, entity_id: int = None, 
         result = __sales_info_cache
     if entity_id:
         result = [db_sales_info for db_sales_info in result if db_sales_info['limitedcatalogargument'] == entity_id]
+    if category_type:
+        result = [db_sales_info for db_sales_info in result if db_sales_info['limitedcatalogtype'] == category_type]
     return result
 
 
