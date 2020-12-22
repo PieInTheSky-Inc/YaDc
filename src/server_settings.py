@@ -588,7 +588,7 @@ class GuildSettingsCollection():
 
 
     async def delete_guild_settings(self, guild_id: int) -> bool:
-        success = await __db_delete_server_settings(guild_id)
+        success = await _db_delete_server_settings(guild_id)
         if success and guild_id in self.__data:
             self.__data.pop(guild_id)
         return success
@@ -879,6 +879,13 @@ async def db_update_server_settings(guild_id: int, settings: Dict[str, Any]) -> 
         return success
     else:
         return True
+        return success
+
+
+async def _db_delete_server_settings(guild_id: int) -> bool:
+    query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
+    success = await db.try_execute(query, [guild_id])
+    return success
 
 
 async def __db_create_server_settings(guild_id: int) -> bool:
@@ -887,13 +894,6 @@ async def __db_create_server_settings(guild_id: int) -> bool:
     else:
         query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
         success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
-        return success
-
-
-async def __db_delete_server_settings(guild_id: int) -> bool:
-    query = f'DELETE FROM serversettings WHERE {_COLUMN_NAME_GUILD_ID} = $1'
-    success = await db.try_execute(query, [guild_id])
-    return success
 
 
 async def __db_get_has_settings(guild_id: int) -> bool:
