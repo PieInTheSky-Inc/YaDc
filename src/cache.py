@@ -1,17 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 import datetime
-from threading import Thread, Lock
-import time
 import random
+from threading import Lock
+import time
+from typing import Dict, Optional
 
 import pss_core as core
-import utility as util
+import utils
+from typehints import EntitiesData
 
+
+# ---------- Classes ----------
 
 class PssCache:
-    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 15):
+    def __init__(self, update_path: str, name: str, key_name: str = None, update_interval: int = 15) -> None:
         self.__update_path: str = update_path
         self.__name: str = name
         self.__obj_key_name: str = key_name
@@ -27,15 +28,15 @@ class PssCache:
 
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self.__name
 
 
-    async def update_data(self, old_data=None) -> bool:
-        util.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
-        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
+    async def update_data(self, old_data: str = None) -> bool:
+        utils.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
+        utils.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
         data = await core.get_data_from_path(self.__update_path)
-        util.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
+        utils.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
         if data_changed:
             self.__request_write()
@@ -51,9 +52,9 @@ class PssCache:
 
 
     async def get_raw_data(self) -> str:
-        util.dbg_prnt(f'+ PssCache[{self.name}].get_data()')
+        utils.dbg_prnt(f'+ PssCache[{self.name}].get_data()')
         if self.__get_is_data_outdated():
-            util.dbg_prnt(f'[PssCache[{self.name}].get_data] Data is outdated')
+            utils.dbg_prnt(f'[PssCache[{self.name}].get_data] Data is outdated')
             await self.update_data()
 
         can_read = False
@@ -68,22 +69,22 @@ class PssCache:
         return result
 
 
-    async def get_raw_data_dict(self) -> str:
+    async def get_raw_data_dict(self) -> Dict:
         raw_data = await self.get_raw_data()
-        result = core.convert_raw_xml_to_dict(raw_data)
+        result = utils.convert.raw_xml_to_dict(raw_data)
         return result
 
 
-    async def get_data_dict3(self) -> dict:
+    async def get_data_dict3(self) -> EntitiesData:
         data = await self.get_raw_data()
-        return core.xmltree_to_dict3(data)
+        return utils.convert.xmltree_to_dict3(data)
 
 
     def __get_is_data_outdated(self) -> bool:
         if self.__UPDATE_INTERVAL_ORIG == 0:
             return True
 
-        utc_now = util.get_utcnow()
+        utc_now = utils.get_utc_now()
         self.__WRITE_LOCK.acquire()
         modify_date = self.__modify_date
         self.__WRITE_LOCK.release()
@@ -117,11 +118,11 @@ class PssCache:
         self.__WRITE_LOCK.release()
 
 
-    def __write_data(self, data) -> None:
+    def __write_data(self, data: str) -> None:
         self.__WRITE_LOCK.acquire()
         self.__data = data
-        self.__modify_date = util.get_utcnow()
-        util.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} bytes on {self.__modify_date}')
+        self.__modify_date = utils.get_utc_now()
+        utils.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} bytes on {self.__modify_date}')
         self.__WRITE_LOCK.release()
 
 
