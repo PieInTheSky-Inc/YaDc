@@ -190,6 +190,13 @@ def get_sales_search_details(entity_info: EntityInfo) -> str:
     return result
 
 
+def get_sales_search_details_with_id(entity_info: EntityInfo) -> str:
+    result = get_sales_search_details(entity_info)
+    entity_id = entity_info.get('entity_id')
+    result += f' id: {entity_id}'
+    return result
+
+
 async def __process_db_sales_infos(db_sales_infos: List[Dict[str, Any]], utc_now: datetime, filter_old: bool = True) -> List[Dict[str, Any]]:
     chars_data = await crew.characters_designs_retriever.get_data_dict3()
     collections_data = await crew.collections_designs_retriever.get_data_dict3()

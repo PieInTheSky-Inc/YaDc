@@ -3475,7 +3475,7 @@ async def cmd_sales_parse(ctx: Context, sold_on: str, *, sale_text: str):
         if len(entities_infos) == 1:
             entity_info = entities_infos[0]
         else:
-            paginator = pagination.Paginator(ctx, entity_name, entities_infos, daily.get_sales_search_details, True)
+            paginator = pagination.Paginator(ctx, entity_name, entities_infos, daily.get_sales_search_details_with_id, True)
             _, entity_info = await paginator.wait_for_option_selection()
     if entity_info:
         entity_id = int(entity_info['entity_id'])
