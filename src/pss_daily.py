@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+import json
 import random
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -82,6 +83,40 @@ SALES_DAILY_INFO_FIELDS: Dict[str, Callable] = {
 
 
 
+# ---------- Classes ----------
+
+class SaleInfoDecoder(json.JSONDecoder):
+    def __init__(self, encoding=None, object_hook=None, parse_float=None, parse_int=None, parse_constant=None, strict=True, object_pairs_hook=None):
+        json.JSONDecoder.__init__(self, encoding, object_hook, parse_float, parse_int, parse_constant, strict, object_pairs_hook)
+
+def sale_info_decoder_object_hook(obj):
+    if '__type__' in obj and '__value__' in obj:
+        if obj['__type__'] in ['date', 'datetime']:
+            return utils.parse.formatted_datetime(obj['__value__'], include_time=False, include_tz=False, include_tz_brackets=False)
+    return json.JSONDecoder.object_hook(obj)
+
+
+
+
+
+class SaleInfoEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return {
+                '__type__': 'datetime',
+                '__value__': utils.format.datetime(obj, include_time=False, include_tz=False, include_tz_brackets=False)
+            }
+        if isinstance(obj, date):
+            return {
+                '__type__': 'date',
+                '__value__': utils.format.datetime(obj, include_time=False, include_tz=False, include_tz_brackets=False)
+            }
+        return json.JSONEncoder.default(self, obj)
+
+
+
+
+
 # ---------- Sales info ----------
 
 async def add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int) -> bool:
@@ -91,6 +126,12 @@ async def add_sale(entity_id: int, price: int, currency_type: str, entity_type: 
     success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
     if success:
         await __update_db_sales_info_cache()
+    return success
+
+
+async def clear_sales() -> None:
+    query = f'DELETE FROM sales'
+    success = await db.try_execute(query)
     return success
 
 
@@ -105,6 +146,15 @@ async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: b
         result = f'{expiring_entity_details}: {price} {currency}'
         return [result]
     return None
+
+
+async def get_sales_infos(category_type: str = None, currency_type: str = None) -> SalesCache:
+    result = list(__sales_info_cache)
+    if category_type:
+        result = [sales_info for sales_info in result if sales_info['limitedcatalogtype'] == category_type]
+    if currency_type:
+        result = [sales_info for sales_info in result if sales_info['limitedcatalogcurrencytype'] == currency_type]
+    return result
 
 
 async def get_sales_details(ctx: Context, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[str], List[Embed]]:
@@ -266,7 +316,7 @@ __SALES_FIELDS_PLACEHOLDERS_TEXT: str = ', '.join(f'${i+1}' for i, _ in enumerat
 __SALES_FIELDS_TEXT: List[str] = ', '.join(__SALES_FIELDS)
 
 
-async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int) -> bool:
+async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int, overwrite: bool = False) -> bool:
     query = f'INSERT INTO sales ({__SALES_FIELDS_TEXT}) VALUES ({__SALES_FIELDS_PLACEHOLDERS_TEXT})'
     args = [
         entity_id,
@@ -279,12 +329,27 @@ async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_t
     try:
         success = await db.try_execute(query, args, raise_db_error=True)
     except Exception as ex:
-        error_msg = '\n'.join([
-            'Could not add sales to database.',
-            f'Query: {query}',
-            f'Values: {args}'
-        ])
-        raise Error(error_msg) from ex
+        success = False
+        if not overwrite:
+            error_msg = '\n'.join([
+                'Could not add sales to database.',
+                f'Query: {query}',
+                f'Values: {args}'
+            ])
+            raise Error(error_msg) from ex
+    if not success and overwrite:
+        success_delete = __db_try_remove_sale(expires_at)
+        if success_delete:
+            success = __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+    return success
+
+
+async def __db_try_remove_sale(expiry_date: datetime) -> bool:
+    if not expiry_date:
+        raise ValueError('The parameter \'expiry_date\' is required.')
+    query = f'DELETE FROM sales WHERE limitedcatalogexpirydate = $1'
+    args = (expiry_date,)
+    success = db.try_execute(query, args)
     return success
 
 

@@ -14,7 +14,7 @@ import sys
 from typing import List, Optional, Tuple, Union
 
 import asyncio
-from discord import Activity, ActivityType, Message, Embed, Guild, TextChannel
+from discord import Activity, ActivityType, Embed, File, Guild, Message, TextChannel
 from discord import __version__ as discord_version
 from discord.ext.commands import Bot, BucketType, Context, cooldown, is_owner, when_mentioned_or
 import discord.errors as errors
@@ -30,7 +30,6 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
-import emojis
 from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
@@ -3293,7 +3292,7 @@ async def cmd_embed(ctx: Context, *, message: str = None):
 
 @cmd_sales.command(name='add', brief='Add a past sale.', hidden=True)
 @is_owner()
-async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, category: str, max_amount: int, *, name: str):
+async def cmd_sales_add(ctx: Context, sold_on: str, price: int, currency: str, max_amount: int, *, entity_name: str):
     """
     Add a past sale to the database.
     """
@@ -3336,64 +3335,123 @@ async def cmd_sales_add(ctx: Context, price: int, currency: str, sold_on: str, c
             ))
             raise ValueError(error_msg) from ex
 
-        category = category.capitalize()
-        is_crew = False
-        is_item = False
-        is_room = False
-        if category in ['Character', 'Crew']:
-            entities_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(name)
-            is_crew = True
-        elif category == 'Item':
-            entities_infos = await item.items_designs_retriever.get_entities_infos_by_name(name)
-            is_item = True
-        elif category == 'Room':
-            entities_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(name)
-            is_room = True
-        else:
-            error_msg = '\n'.join([
-                f'Parameter `category` received wrong value: {category}'
-                f'Valid values are: Character, Crew, Item, Room'
-            ])
-            raise ValueError(error_msg)
 
-    entity_id = None
+        entities_infos = []
+        characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in characters_designs_infos:
+            entity_info['entity_type'] = 'Character'
+            entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in items_designs_infos:
+            entity_info['entity_type'] = 'Item'
+            entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
+        for entity_info in rooms_designs_infos:
+            entity_info['entity_type'] = 'Room'
+            entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+
     entity_info = None
-    entity_name = None
+    entity_id = None
+    entity_type = None
     if entities_infos:
         if len(entities_infos) == 1:
             entity_info = entities_infos[0]
         else:
-            paginator = None
-            if is_crew:
-                paginator = pagination.Paginator(ctx, name, entities_infos, crew.get_crew_search_details, True)
-            elif is_item:
-                paginator = pagination.Paginator(ctx, name, entities_infos, item.get_item_search_details, True)
-            elif is_room:
-                paginator = pagination.Paginator(ctx, name, entities_infos, room.get_room_search_details, True)
-            if paginator:
-                _, entity_info = await paginator.wait_for_option_selection()
-
-        if entity_info:
-            if is_crew:
-                entity_id = entity_info.get(crew.CHARACTER_DESIGN_KEY_NAME)
-                entity_name = entity_info.get(crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)
-            elif is_item:
-                entity_id = entity_info.get(item.ITEM_DESIGN_KEY_NAME)
-                entity_name = entity_info.get(item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-            elif is_room:
-                entity_id = entity_info.get(room.ROOM_DESIGN_KEY_NAME)
-                entity_name = entity_info.get(room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME)
-    else:
-        raise NotFound(f'Could not find a {category} with name `{name}`')
+            paginator = pagination.Paginator(ctx, entity_name, entities_infos, daily.get_sales_search_details_with_id, True)
+            _, entity_info = await paginator.wait_for_option_selection()
+    if entity_info:
+        entity_id = int(entity_info['entity_id'])
+        entity_type = entity_info['entity_type']
 
     if entity_id:
         async with ctx.typing():
             entity_id = int(entity_id)
-            success = await daily.add_sale(entity_id, price, currency_type, category, expires_at, max_amount)
+            success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
         if success:
-            await ctx.send(f'Successfully added {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
+            await ctx.send(f'Successfully added {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
         else:
-            await ctx.send(f'Failed adding {category} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database. Check the log for more information.')
+            await ctx.send(f'Failed adding {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database. Check the log for more information.')
+
+
+@cmd_sales.command(name='export', brief='Export sales history.', hidden=True)
+@is_owner()
+async def cmd_sales_export(ctx: Context):
+    """
+    Export sales history to json.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        sales_infos = await daily.get_sales_infos()
+        utc_now = utils.get_utc_now()
+        file_name = f'sales_history_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+        with open(file_name, 'w') as fp:
+            json.dump(sales_infos, fp, indent=4, cls=daily.SaleInfoEncoder)
+    await ctx.send(file=File(file_name))
+    os.remove(file_name)
+
+
+@cmd_sales.command(name='import', brief='Import sales history.', hidden=True)
+@is_owner()
+async def cmd_sales_import(ctx: Context, *, args: str = None):
+    """
+    Import sales history from json.
+    """
+    __log_command_use(ctx)
+    if not ctx.message.attachments:
+        raise Error('You need to upload a file to be imported.')
+    if len(ctx.message.attachments) > 1:
+        raise Error('Too many files provided.')
+
+    async with ctx.typing():
+        _, overwrite, overwrite_all = __extract_dash_parameters(args, None, '--overwrite', '--overwriteall')
+        if overwrite and overwrite_all:
+            raise ValueError('You may only specify one of the parameters: `--overwrite`, `--overwriteall`')
+
+        attachment = ctx.message.attachments[0]
+        file_contents = (await attachment.read()).decode('utf-8')
+        if not file_contents:
+            raise Error('The file provided must not be empty.')
+
+        sales_infos = json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook).decode(file_contents)
+        #sales_infos = json.loads(file_contents, cls=json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook))
+        if not sales_infos:
+            raise Error('The data provided must not be empty.')
+        sales_infos = sorted(sales_infos, key=lambda x: x['limitedcatalogexpirydate'])
+
+        if overwrite_all:
+            await daily.clear_sales()
+
+        failed_sales_infos = []
+        for sale_info in sales_infos:
+            success = daily.__db_add_sale(
+                sale_info.get('limitedcatalogargument'),
+                sale_info.get('limitedcatalogcurrencyamount'),
+                sale_info.get('limitedcatalogcurrencytype'),
+                sale_info.get('limitedcatalogargumenttype'),
+                sale_info.get('limitedcatalogexpirydate'),
+                sale_info.get('limitedcatalogmaxtotal'),
+                overwrite=overwrite
+            )
+            if not success:
+                failed_sales_infos.append(sale_info)
+
+        if len(failed_sales_infos) == len(sales_infos):
+            raise Error('Could not import any sales info from the specified file.')
+        output = [
+            f'Successfully imported file {attachment.filename}.'
+        ]
+        if failed_sales_infos:
+            output.append(
+                f'Failed to import the following sales infos:'
+            )
+            output.extend([json.dumps(sale_info) for sale_info in failed_sales_infos])
+        await utils.discord.post_output(ctx, output)
 
 
 @cmd_sales.command(name='parse', brief='Parse and add a past sale.', hidden=True)
@@ -3635,9 +3693,12 @@ def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_pa
 
     for dash_parameter in dash_parameters:
         if dash_parameter:
-            if dash_parameter in new_arg:
+            rx_dash_parameter = ''.join((r'\B', dash_parameter, r'\b'))
+            dash_parameter_match = re.search(rx_dash_parameter, new_arg)
+            if dash_parameter_match:
                 remove = ''
-                parameter_pos = new_arg.find(dash_parameter)
+                parameter_pos = dash_parameter_match.span()[0]
+
                 if '=' in dash_parameter:
                     value_start = parameter_pos + len(dash_parameter)
                     value_end = new_arg.find('--', value_start)
@@ -3653,7 +3714,8 @@ def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_pa
                     result.append(True)
                 if parameter_pos > 0:
                     remove = f' {remove}'
-                new_arg = new_arg.replace(remove, '').strip()
+                rx_remove = ''.join((' ', remove, r'\b'))
+                new_arg = re.sub(rx_remove, '', new_arg).strip()
             else:
                 if '=' in dash_parameter:
                     result.append(None)
