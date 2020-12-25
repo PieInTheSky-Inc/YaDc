@@ -160,6 +160,7 @@ async def __get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
 # ---------- Stars info ----------
 
 async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, fleet_users_infos: EntitiesData, max_tourney_battle_attempts: int, retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    utc_now = utils.get_utc_now()
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
@@ -178,20 +179,31 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
             difference = 0
         user_rank = lookups.get_lookup_value_or_default(lookups.ALLIANCE_MEMBERSHIP, fleet_membership, default=fleet_membership)
         attempts_left = ''
-        attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at)
+        attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at or utc_now)
         if attempts is not None and max_tourney_battle_attempts:
             attempts_left = f'{max_tourney_battle_attempts - attempts}, '
         lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({attempts_left}{user_rank})')
 
-    footer_text = utils.datetime.get_historic_data_note(retrieved_at)
+    properties_attempts = '' if retrieved_at else 'Attempts left today, '
+    properties_text = f'Properties displayed: Rank. Stars (Difference to next) Player name ({properties_attempts}Fleet rank)'
+    if retrieved_at is not None:
+        footer_text = utils.datetime.get_historic_data_note(retrieved_at)
+    else:
+        footer_text = None
 
     if as_embed:
+        if footer_text:
+            footer_text = ''.join((properties_text, footer_text))
+        else:
+            footer_text = properties_text
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         icon_url = await sprites.get_download_sprite_link(fleet_info.get('AllianceSpriteId'))
         result = utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url, footer=footer_text)
         return result
     else:
-        if retrieved_at is not None:
+        lines.insert(0, f'**{title}**')
+        lines.append(f'_{properties_text}_')
+        if footer_text:
             lines.append(f'```{footer_text}```')
         return lines
 
