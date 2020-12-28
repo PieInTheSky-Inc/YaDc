@@ -41,12 +41,14 @@ TOP_FLEETS_BASE_PATH: str = 'AllianceService/ListAlliancesByRanking?skip=0&take=
 
 async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     tourney_running = tourney.is_tourney_running()
+    divisions_designs_data = await divisions_designs_retriever.get_data_dict3()
+    fleets_divisions_max_ranks = [int(fleet_division_design_info['MaxRank']) for fleet_division_design_info in __get_fleet_division_designs(divisions_designs_data).values()]
     raw_data = await core.get_data_from_path(TOP_FLEETS_BASE_PATH + str(take))
     data = utils.convert.xmltree_to_dict3(raw_data)
     if data:
         title = f'Top {take} fleets'
         prepared_data = __prepare_top_fleets(data)
-        body_lines = __create_body_lines_top_fleets(prepared_data, tourney_running)
+        body_lines = __create_body_lines_top_fleets(prepared_data, tourney_running, fleets_divisions_max_ranks)
 
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -59,7 +61,7 @@ async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = setting
         raise Error(f'An unknown error occured while retrieving the top fleets. Please contact the bot\'s author!')
 
 
-def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]], tourney_running: bool) -> List[str]:
+def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]], tourney_running: bool, fleets_divisions_max_ranks: List[int]) -> List[str]:
     if tourney_running:
         result = [
             f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})'
@@ -72,6 +74,9 @@ def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]
             for position, fleet_name, trophies, _
             in prepared_data
         ]
+    for rank in sorted(fleets_divisions_max_ranks, reverse=True):
+        if rank < len(result):
+            result.insert(rank, utils.discord.ZERO_WIDTH_SPACE)
     return result
 
 
@@ -261,6 +266,11 @@ def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> Li
     result = []
     for body in bodies:
         result.append(utils.discord.create_embed(title, description=body, colour=colour))
+    return result
+
+
+def __get_fleet_division_designs(divisions_designs_data: EntitiesData) -> EntitiesData:
+    result = {key: value for key, value in divisions_designs_data.items() if value.get('DivisionType') == 'Fleet'}
     return result
 
 
