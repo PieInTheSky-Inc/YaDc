@@ -619,17 +619,16 @@ class EntityDetailsCollection():
         self.__big_set_threshold: int = big_set_threshold or 0
         if self.__big_set_threshold < 0:
             self.__big_set_threshold = 0
-        self.__is_big_set: bool = self.__big_set_threshold and self.__set_size >= self.__big_set_threshold
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
-    async def get_entities_details_as_embed(self, ctx: Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True) -> List[Embed]:
+    async def get_entities_details_as_embed(self, ctx: Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True, big_set_threshold: int = None) -> List[Embed]:
         """
         custom_title: only relevant for big sets
         """
         result = []
         display_names = []
-        if self.__is_big_set:
+        if self._get_is_big_set(big_set_threshold):
             detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
             title = custom_title or Embed.Empty
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -665,12 +664,13 @@ class EntityDetailsCollection():
         return result
 
 
-    async def get_entities_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT) -> List[str]:
+    async def get_entities_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT, big_set_threshold: int = None) -> List[str]:
         result = []
+        is_big_set = self._get_is_big_set(big_set_threshold)
         if custom_title:
             result.append(custom_title)
         for entity_details in self.__entities_details:
-            if self.__is_big_set:
+            if is_big_set:
                 details = await entity_details.get_details_as_text(big_set_details_type)
                 result.extend(details)
             else:
@@ -678,11 +678,18 @@ class EntityDetailsCollection():
                 result.extend(details)
                 if self.__add_empty_lines:
                     result.append(utils.discord.ZERO_WIDTH_SPACE)
-        if result and self.__add_empty_lines and not self.__is_big_set:
+        if result and self.__add_empty_lines and not is_big_set:
             result = result[:-1]
         if custom_footer_text:
             result.append(utils.discord.ZERO_WIDTH_SPACE)
             result.append(custom_footer_text)
+        return result
+
+
+    def _get_is_big_set(self, big_set_threshold: int = None) -> bool:
+        if big_set_threshold is None:
+            big_set_threshold = self.__big_set_threshold
+        result = big_set_threshold and self.__set_size >= big_set_threshold
         return result
 
 

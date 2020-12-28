@@ -48,23 +48,31 @@ async def get_research_infos_by_name(research_name: str, ctx: Context, as_embed:
         raise NotFound(f'Could not find a research named **{research_name}**.')
     else:
         exact_match_details = None
-        if len(researches_designs_infos) >= BIG_SET_THRESHOLD:
+        exact_research_info = None
+        big_set_threshold = BIG_SET_THRESHOLD
+        if len(researches_designs_infos) >= big_set_threshold:
             lower_research_name = research_name.strip().lower()
             for research_design_info in researches_designs_infos:
                 if research_design_info.get(RESEARCH_DESIGN_DESCRIPTION_PROPERTY_NAME, '').lower() == lower_research_name:
-                    exact_match_details = __create_research_details_from_info(research_design_info, researches_data)
+                    exact_research_info = research_design_info
                     break
 
+        if exact_research_info:
+            researches_designs_infos = [research_design_info for research_design_info in researches_designs_infos if research_design_info[RESEARCH_DESIGN_KEY_NAME] != exact_research_info[RESEARCH_DESIGN_KEY_NAME]]
+            exact_match_details = __create_research_details_from_info(exact_research_info, researches_data)
+            big_set_threshold -= 1
         researches_details = __create_researches_details_collection_from_infos(researches_designs_infos, researches_data)
+
         result = []
         if as_embed:
             if exact_match_details:
                 result.append(await exact_match_details.get_details_as_embed(ctx))
-            result.extend(await researches_details.get_entities_details_as_embed(ctx))
+            result.extend(await researches_details.get_entities_details_as_embed(ctx, big_set_threshold=big_set_threshold))
         else:
             if exact_match_details:
-                result.append(await exact_match_details.get_details_as_text(details_type=entity.EntityDetailsType.LONG))
-            result.extend(await researches_details.get_entities_details_as_text(ctx))
+                result.extend(await exact_match_details.get_details_as_text(details_type=entity.EntityDetailsType.LONG))
+                result.append(utils.discord.ZERO_WIDTH_SPACE)
+            result.extend(await researches_details.get_entities_details_as_text(big_set_threshold=big_set_threshold))
         return result
 
 
