@@ -752,7 +752,7 @@ async def cmd_collection(ctx: Context, *, collection_name: str = None):
 
 
 @BOT.command(name='daily', brief='Show the dailies')
-@cooldown(rate=RATE, per=COOLDOWN*2, type=BucketType.user)
+@cooldown(rate=RATE, per=COOLDOWN*2, type=BucketType.guild)
 async def cmd_daily(ctx: Context):
     """
     Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
@@ -772,6 +772,22 @@ async def cmd_daily(ctx: Context):
         await utils.discord.post_output(ctx, output_embed)
     else:
         await utils.discord.post_output(ctx, output)
+
+
+@BOT.command(name='event', brief='Get current event info')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_event(ctx: Context):
+    """
+    Prints information on currently running events in PSS.
+
+    Usage:
+      /event
+
+    Examples:
+      /event - Prints the information described above.
+    """
+
+    pass
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
