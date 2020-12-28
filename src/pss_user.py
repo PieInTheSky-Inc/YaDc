@@ -1,4 +1,5 @@
 from datetime import datetime
+import math
 from typing import List, Optional, Union
 
 from discord import Embed
@@ -169,6 +170,13 @@ def __get_pvp_defense_stats(user_info: EntityInfo, **kwargs) -> Optional[str]:
     return result
 
 
+def __get_star_value(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> Optional[str]:
+    result = None
+    if is_in_tourney_fleet:
+        result = str(get_star_value_from_user_info(user_info))
+    return result
+
+
 def __get_stars(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> Optional[str]:
     attempts = __get_tourney_battle_attempts(user_info, retrieved_at)
     if attempts is not None and max_tourney_battle_attempts:
@@ -227,6 +235,20 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 
 # ---------- Helper functions ----------
+
+def get_star_value_from_user_info(user_info: EntityInfo) -> Optional[int]:
+    result = None
+    trophies = user_info.get('Trophy')
+    if trophies:
+        trophies = int(trophies)
+        stars = user_info.get('AllianceScore')
+        if stars:
+            stars = int(stars)
+        else:
+            stars = 0
+        result = math.floor(max(trophies/1000, stars*0.15))
+    return result
+
 
 async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: EntitiesData = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     is_past_data = past_fleet_infos is not None and past_fleet_infos
@@ -375,6 +397,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
         entity.EntityDetailProperty('League', True, transform_function=__get_league),
         entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
+        entity.EntityDetailProperty('Star value', True, transform_function=__get_star_value),
         entity.EntityDetailProperty('Crew donated', True, transform_function=__get_crew_donated, text_only=True),
         entity.EntityDetailProperty('Crew borrowed', True, transform_function=__get_crew_borrowed, text_only=True),
         entity.EntityDetailProperty('Crew donated/borrowed', True, transform_function=__get_crew_donated_borrowed, embed_only=True),
