@@ -368,6 +368,7 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
     include_tourney_battle_attempts = max_tourney_battle_attempts is not None
     if include_tourney_battle_attempts:
         titles.append('Tournament attempts left')
+        titles.append('Star value')
     if include_player_id:
         titles.append('Player ID')
     if include_fleet_id:
@@ -406,6 +407,9 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             if attempts is not None and max_tourney_battle_attempts:
                 attempts_left = max_tourney_battle_attempts - attempts
             line.append('' if attempts_left is None else attempts_left)
+
+            star_value = user.get_star_value_from_user_info(user_info)
+            line.append('' if star_value is None else star_value)
         if include_player_id:
             line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
