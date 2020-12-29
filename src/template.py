@@ -56,13 +56,13 @@ async def get_entity_details_by_name(ctx: Context, entity_name: str, as_embed: b
 
 # ---------- Create entity.entity.EntityDetails ----------
 
-def __create_entity_details_from_info(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> entity.entity.EntityDetails:
-    return entity.entity.EntityDetails(character_info, __properties['character_title'], __properties['character_description'], __properties['character_properties'], __properties['character_embed_settings'], characters_data, collections_data, level=level)
+def __create_entity_details_from_info(entity_info: EntityInfo, entities_data: EntitiesData) -> entity.entity.EntityDetails:
+    return entity.entity.EntityDetails(entity_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], entities_data)
 
 
-def __create_entities_details_collection_from_infos(characters_designs_infos: List[EntityInfo], characters_data: EntitiesData, collections_data: EntitiesData, level: int) -> entity.EntityDetailsCollection:
-    characters_details = [__create_entity_details_from_info(character_info, characters_data, collections_data, level) for character_info in characters_designs_infos]
-    result = entity.EntityDetailsCollection(characters_details, big_set_threshold=2)
+def __create_entities_details_collection_from_infos(entities_designs_infos: List[EntityInfo], entities_data: EntitiesData) -> entity.EntityDetailsCollection:
+    entities_details = [__create_entity_details_from_info(entity_info, entities_data) for entity_info in entities_designs_infos]
+    result = entity.EntityDetailsCollection(entities_details, big_set_threshold=3)
     return result
 
 
