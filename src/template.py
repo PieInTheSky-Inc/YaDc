@@ -30,8 +30,7 @@ def get_entity_details_by_id(entity_design_id: str, entities_data: EntitiesData)
 
 
 async def get_entity_details_by_name(ctx: Context, entity_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    pss_assert.valid_entity_name(entity_name, 'char_name', min_length=2)
-    pss_assert.parameter_is_valid_integer(level, 'level', min_value=1, max_value=40, allow_none=True)
+    pss_assert.valid_entity_name(entity_name, 'entity_name')
 
     entities_data = await entities_designs_retriever.get_data_dict3()
     entity_info = await entities_designs_retriever.get_entity_info_by_name(entity_name, entities_data)
