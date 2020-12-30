@@ -50,6 +50,9 @@ async def get_entity_details_by_name(ctx: Context, entity_name: str, as_embed: b
 
 # ---------- Transformation functions ----------
 
+async def __get(entity_info: EntityInfo, entities_data: EntitiesData, **kwargs) -> Optional[str]:
+    pass
+
 
 
 

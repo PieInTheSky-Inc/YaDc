@@ -42,6 +42,7 @@ import pss_raw as raw
 import pss_research as research
 import pss_room as room
 import pss_ship as ship
+import pss_situation as situation
 import pss_tournament as tourney
 import pss_top
 import pss_training as training
@@ -776,7 +777,7 @@ async def cmd_daily(ctx: Context):
 
 @BOT.command(name='event', brief='Get current event info')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_event(ctx: Context):
+async def cmd_event(ctx: Context, *, params: str = None):
     """
     Prints information on currently running events in PSS.
 
@@ -786,8 +787,10 @@ async def cmd_event(ctx: Context):
     Examples:
       /event - Prints the information described above.
     """
-
-    pass
+    async with ctx.typing():
+        _, print_all, latest, situation_id = __extract_dash_parameters(params, None, '--all', '--latest', '--id=')
+        output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, latest_only=latest, as_embed=(await server_settings.get_use_embeds(ctx)))
+    await utils.discord.post_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
@@ -2024,6 +2027,30 @@ async def cmd_raw_collection(ctx: Context, *, collection_id: str = None):
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, crew.collections_designs_retriever, 'collection', collection_id)
+
+
+@cmd_raw.command(name='event', aliases=['events'], brief='Get raw event data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_raw_event(ctx: Context, *, situation_id: str = None):
+    """
+    Get raw event design data (actually situation design data) from the PSS API.
+
+    Usage:
+      /raw event <id> <format>
+
+    Parameters:
+      id:     A natural number. If specified, the command will only return the raw data for the event with the specified id.
+      format: A string determining the format of the output to be returned. These are valid values:
+                • --json (JSON)
+                • --xml (raw XML as returned by the API)
+              If this parameter is omitted, an Excel spreadsheet will be created or, when having specified an id, a list of properties will be printed.
+      All parameters are optional.
+
+    It may take a while for the bot to create the file, so be patient ;)
+    NOTE: This command is only available to certain users. If you think, you should be eligible to use this command, please contact the author of this bot.
+    """
+    __log_command_use(ctx)
+    await raw.post_raw_data(ctx, situation.situations_designs_retriever, 'situation', situation_id)
 
 
 @cmd_raw.group(name='gm', aliases=['galaxymap', 'galaxy'], brief='Get raw gm data', invoke_without_command=True)

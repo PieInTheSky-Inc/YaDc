@@ -46,6 +46,7 @@
     "Setting": ["SettingId"],
     "Ship": ["ShipId"],
     "ShipDesign": ["ShipDesignId"],
+    "SituationDesign": ["SituationDesignId"],
     "Sprite": ["SpriteId"],
     "StarSystem": ["StarSystemId"],
     "StarSystemLink": ["StarSystemLinkId"],

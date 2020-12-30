@@ -1,5 +1,11 @@
 {
     "en": {
+        "AMOUNTMODIFIERx": "x",
+        "AMOUNTMODIFIER==": "x",
+        "AMOUNTMODIFIER>=": " or more",
+        "AMOUNTMODIFIER<=": " or less",
+        "AMOUNTMODIFIER>": " or more",
+        "AMOUNTMODIFIER<": " or less",
         "HERO_MODULE_NOTE": "**Note:** _Hero_, _Special_ and _Legendary_ rarity modules don't get a bonus stat upon crafting or purchase.",
         "HERO_MODULE_NOTE_EMBED": "Note: Hero, Special and Legendary rarity modules don't get a bonus stat upon crafting or purchase.",
         "MARKET_FAIR_PRICE_NOTE": "**Note:** 1st price is the market price. 2nd price is Savy's fair price.",

@@ -1,9 +1,11 @@
+from datetime import datetime
 import json
 import re
 from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 
+import pss_entity as entity
 import settings
 from typehints import EntitiesData, EntityInfo
 import utils
@@ -126,6 +128,43 @@ def read_links_file(language_key: str = 'en') -> Dict[str, List[List[str]]]:
     return links.get(language_key)
 
 
+def transform_pss_datetime(*args, **kwargs) -> datetime:
+    dt = __parse_entity_datetime(*args, **kwargs)
+    result = None
+    if dt:
+        result = f'{utils.format.datetime(dt, include_tz_brackets=False)}'
+    return result
+
+
+def transform_pss_datetime_with_timespan(*args, **kwargs) -> datetime:
+    dt = __parse_entity_datetime(*args, **kwargs)
+    utc_now = kwargs.get('utc_now')
+    result = None
+    if dt and utc_now:
+        td = utc_now - dt if utc_now < dt else dt - utc_now
+        result = f'{utils.format.datetime(dt, include_tz_brackets=False)} ({utils.format.timedelta(td)})'
+    return result
+
+
+def transform_get_value(*args, **kwargs) -> Optional[str]:
+    entity_property = kwargs.get('entity_property')
+    if entity.entity_property_has_value(entity_property):
+        return entity_property
+    else:
+        return None
+
+
+def transform_sanitize_text(*args, **kwargs) -> Optional[str]:
+    entity_property = kwargs.get('entity_property')
+    if entity_property:
+        result = utils.escape_escape_sequences(entity_property)
+        while '\n\n' in result:
+            result = result.replace('\n\n', '\n')
+        return result
+    else:
+        return None
+
+
 def __filter_data_dict(data: EntitiesData, by_key: Any, by_value: Any, ignore_case: bool) -> Optional[EntitiesData]:
     """Parameter 'data':
        - A dict with entity ids as keys and entity info as values. """
@@ -164,3 +203,11 @@ async def __get_data_from_url(url: str) -> str:
 async def __get_production_server(language_key: str = 'en') -> str:
     latest_settings = await get_latest_settings(language_key=language_key, use_default=True)
     return latest_settings['ProductionServer']
+
+
+def __parse_entity_datetime(*args, **kwargs) -> Optional[datetime]:
+    result = None
+    entity_property = kwargs.get('entity_property')
+    if entity_property:
+        result = utils.parse.pss_datetime(entity_property)
+    return result
