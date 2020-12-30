@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 from discord import Embed
 from discord.ext.commands import Context
@@ -8,13 +8,11 @@ import emojis
 import pss_core as core
 import pss_crew as crew
 import pss_entity as entity
-from pss_exception import Error, NotFound
+from pss_exception import NotFound
 import pss_item as item
 import pss_mission as mission
-import pss_research as research
 import pss_room as room
 import pss_sprites as sprites
-import pss_training as training
 import resources
 import settings
 from typehints import EntitiesData, EntityInfo
