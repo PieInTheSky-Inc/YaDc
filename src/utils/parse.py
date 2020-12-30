@@ -20,7 +20,7 @@ __SEPARATORS_AMOUNT_MODIFICATION_LOOKUP: Dict[str, int] = {
 
 # ---------- Functions ----------
 
-def entity_string(entity_str: str, default_amount: str = '1') -> Tuple[str, str, str, str]:
+def entity_string(entity_str: str, default_amount: str = '1') -> Tuple[str, str, int, str]:
     entity_str = entity_str.lower()
     entity_type = entity_str
     if ':' in entity_str:
