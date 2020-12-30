@@ -374,7 +374,7 @@ def __get_capacity_per_tick(room_info: EntityInfo, rooms_data: EntitiesData, ite
 
 def __get_damage(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
-        dmg = kwargs.get('property')
+        dmg = kwargs.get('entity_property')
         print_percent = kwargs.get('print_percent')
         reload_time = room_info.get('ReloadTime')
         max_power = room_info.get('MaxSystemPower')
@@ -782,7 +782,7 @@ def __get_manufacture_type(room_info: EntityInfo) -> Optional[str]:
 
 def __get_min_ship_lvl_display_name(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, **kwargs) -> Optional[str]:
     display_name_key = kwargs.get('display_name_key')
-    display_names = kwargs.get('property')
+    display_names = kwargs.get('entity_property')
     room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
     result = None
     if display_name_key and room_type:
