@@ -57,7 +57,7 @@ class EntityDetailsType(IntEnum):
 class CalculatedEntityDetailProperty(object):
     def __init__(self, display_name: str, value: str, force_display_name: bool, omit_if_none: bool, display_inline_for_embeds: bool = utils.discord.DEFAULT_EMBED_INLINE) -> None:
         self.__display_name: str = display_name
-        self.__display_inline_for_embeds: bool = display_inline_for_embeds
+        self.__display_inline_for_embeds: bool = utils.discord.DEFAULT_EMBED_INLINE if display_inline_for_embeds is None else display_inline_for_embeds
         self.__value: str = value
         self.__force_display_name: bool = force_display_name
         self.__omit_if_none: bool = omit_if_none
@@ -173,8 +173,9 @@ class EntityDetailProperty(object):
         kwargs = {**self.__kwargs, **additional_kwargs}
         display_name = await self.__get_display_name(entity_info, *entities_data, **kwargs)
         value = await self.__get_value(entity_info, *entities_data, **kwargs)
+        display_inline_for_embeds = kwargs.get('display_inline_for_embeds')
 
-        return CalculatedEntityDetailProperty(display_name, value, self.__force_display_name, self.__omit_if_none)
+        return CalculatedEntityDetailProperty(display_name, value, self.__force_display_name, self.__omit_if_none, display_inline_for_embeds=display_inline_for_embeds)
 
 
     async def __get_display_name(self, entity_info: EntityInfo, *entities_data: EntitiesData, **kwargs) -> str:
@@ -418,14 +419,14 @@ class EntityDetails(object):
         return result
 
 
-    async def get_details_as_embed(self, ctx: Context, display_inline: bool = True) -> Embed:
+    async def get_details_as_embed(self, ctx: Context, display_inline: bool = None) -> Embed:
         result = await self.__create_base_embed(ctx)
         details_long = await self._get_details_properties(True, EntityDetailsType.LONG)
         detail: CalculatedEntityDetailProperty
         for detail in details_long:
             if detail.value or not detail.omit_if_none:
-                display_inline = display_inline if display_inline is not None else (detail.display_inline if detail.display_inline is not None else True)
-                result.add_field(name=detail.display_name, value=detail.value, inline=display_inline)
+                inline = display_inline if display_inline is not None else (detail.display_inline if detail.display_inline is not None else True)
+                result.add_field(name=detail.display_name, value=detail.value, inline=inline)
         return result
 
 

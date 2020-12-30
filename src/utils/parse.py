@@ -37,9 +37,9 @@ def entity_string(entity_str: str, default_amount: str = '1') -> Tuple[str, str,
             break
         entity_amount = default_amount
         entity_amount_modifier = None
-    if entity_type == entity_str:
-        entity_type = entity_id
-        entity_id = None
+    if not entity_id:
+        entity_id = entity_str
+        entity_str = None
     entity_type = entity_type.strip() if entity_type else None
     entity_id = entity_id.strip() if entity_id else None
     entity_amount = int(entity_amount.strip()) if entity_amount else None

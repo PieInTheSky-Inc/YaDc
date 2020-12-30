@@ -86,8 +86,8 @@ def duration(total_seconds: int, include_relative_indicator: bool = True, includ
     return result
 
 
-def get_and_list(values: _Iterable[str]) -> str:
-    result = __get_comma_separated_list_with_separate_last_element(values, 'and')
+def get_and_list(values: _Iterable[str], emphasis: str = '') -> str:
+    result = __get_comma_separated_list_with_separate_last_element(values, 'and', emphasis=emphasis)
     return result
 
 
@@ -114,8 +114,8 @@ def get_reduced_number_compact(num: int, max_decimal_count: int = _constants.DEF
     return result
 
 
-def get_or_list(values: _Iterable[str]) -> str:
-    result = __get_comma_separated_list_with_separate_last_element(values, 'or')
+def get_or_list(values: _Iterable[str], emphasis: str = '') -> str:
+    result = __get_comma_separated_list_with_separate_last_element(values, 'or', emphasis)
     return result
 
 
@@ -152,13 +152,14 @@ def timedelta(delta: _timedelta, include_relative_indicator: bool = True, includ
         return ''
 
 
-def __get_comma_separated_list_with_separate_last_element(values: _Iterable[str], last_element_separator: str) -> str:
+def __get_comma_separated_list_with_separate_last_element(values: _Iterable[str], last_element_separator: str, emphasis: str = '') -> str:
     if not values:
         return ''
     values = list(values)
     if len(values) == 1:
         return values[0]
     else:
+        emphasis = emphasis or ''
         result = ', '.join(values[:-1])
-        result += f' {last_element_separator} {values[-1]}'
+        result += f' {emphasis}{last_element_separator}{emphasis} {values[-1]}'
         return result

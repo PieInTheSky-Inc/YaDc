@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 
+import emojis
 import pss_core as core
 import pss_crew as crew
 import pss_entity as entity
@@ -27,10 +28,17 @@ SITUATION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'SituationName'
 SITUATION_DESIGN_KEY_NAME: str = 'SituationDesignId'
 
 SITUATION_CHANGE_TYPE_LOOKUP: Dict[str, str] = {
-    'AddCrew': 'Extra crew',
-    'AddExp': 'Extra EXP',
-    'AddLoot': 'Item drops',
-    'LeagueBonusGas': 'Extra Gas',
+    'AddCrew': 'Additional crew on board',
+    'AddEXP': 'EXP event',
+    'AddLeagueBonusGas': f'Gas event',
+    'AddLoot': 'Item drop',
+}
+
+SITUATION_CHANGE_TYPE_TITLE_LOOKUP: Dict[str, str] = {
+    'AddCrew': 'Crew added to ship',
+    'AddEXP': 'Extra EXP',
+    'AddLeagueBonusGas': f'Extra {emojis.pss_gas_big} from league bonus',
+    'AddLoot': 'Item dropped',
 }
 
 SITUATION_TRIGGER_TYPE_LOOKUP: Dict[str, str] = {
@@ -58,13 +66,14 @@ async def get_event_details(ctx: Context, situation_id: str = None, all_events: 
         raise ValueError(f'Only one of these parameters may be True: situation_id, all_events, latest_only')
     utc_now = utils.get_utc_now()
     situations_data = await situations_designs_retriever.get_data_dict3()
+    situation_infos = sorted(situations_data.values(), key=lambda x: (utils.parse.pss_datetime(x['EndDate']), -int(x[SITUATION_DESIGN_KEY_NAME])), reverse=True)
 
     if situation_id:
         situation_infos = [situations_data[situation_id]]
     elif all_events:
         situation_infos = list(situations_data.values())
     elif latest_only:
-        situation_infos = [sorted(situations_data.values(), key=lambda x: x['EndDate'], reverse=True)[0]]
+        situation_infos = [situation_infos[0]]
     else:
         situation_infos = __get_current_situation_infos(situations_data, utc_now)
 
@@ -81,14 +90,9 @@ async def get_event_details(ctx: Context, situation_id: str = None, all_events: 
             return (await situations_details_collection.get_entities_details_as_text())
 
 
-
-
-
-# ---------- Transformation functions ----------
-
-async def __get_event_reward(situation_info: EntityInfo, situations_data: EntitiesData, **kwargs) -> Optional[str]:
-    for_embed = kwargs.get('for_embed', False)
-    change_argument = situation_info.get('ChangeArgumentString')
+async def __get_event_reward(change_type: str, change_argument: str, for_embed: Optional[bool] = False) -> Optional[str]:
+    if for_embed is None:
+        for_embed = False
     result = None
     reward_amount = None
     reward_details = None
@@ -102,19 +106,33 @@ async def __get_event_reward(situation_info: EntityInfo, situations_data: Entiti
             items_data = await item.items_designs_retriever.get_data_dict3()
             reward_details = item.get_item_details_by_id(entity_id, items_data, None)
         else:
-            reward_amount = entity_type
-            reward_details = None
+            reward_amount = change_argument
     if reward_details:
         details_text = "".join(await reward_details.get_details_as_text(entity.EntityDetailsType.MINI, for_embed=for_embed))
-        result = f'{reward_amount}x {details_text}'
+        if reward_amount:
+            result = f'{reward_amount}x {details_text}'
+        else:
+            result = details_text
+    elif change_type == 'AddLeagueBonusGas':
+        result = f'+{reward_amount} % {emojis.pss_gas_big} from league bonus'
+    elif change_type == 'AddEXP':
+        result = f'{reward_amount} % exp from battles'
     else:
-        result = reward_amount
+        result = change_argument
     return result
 
 
-async def __get_event_type(situation_info: EntityInfo, situations_data: EntitiesData, **kwargs) -> Optional[str]:
+
+
+
+# ---------- Transformation functions ----------
+
+async def __get_event_type_and_reward(situation_info: EntityInfo, situations_data: EntitiesData, **kwargs) -> Optional[str]:
+    for_embed = kwargs.get('for_embed', False)
+    change_argument = situation_info.get('ChangeArgumentString')
     change_type = situation_info.get('ChangeType')
-    result = SITUATION_CHANGE_TYPE_LOOKUP.get(change_type)
+    reward = await __get_event_reward(change_type, change_argument, for_embed=for_embed)
+    result = f'{SITUATION_CHANGE_TYPE_LOOKUP.get(change_type)}: {reward}'
     return result
 
 
@@ -156,14 +174,14 @@ async def __get_situation_requirements(situation_info: EntityInfo, situations_da
                 details = "".join(await entity_details.get_details_as_text(entity.EntityDetailsType.MINI, for_embed=for_embed))
             if details:
                 results.append(details)
-        result = utils.format.get_and_list(results) or None
+        result = utils.format.get_and_list(results, emphasis='**') or None
     return result
 
 
 def __get_situation_trigger(situation_info: EntityInfo, situations_data: EntitiesData, **kwargs) -> Optional[str]:
     trigger_type = situation_info.get('TriggerType')
     if entity.entity_property_has_value(trigger_type):
-        return trigger_type
+        return SITUATION_TRIGGER_TYPE_LOOKUP.get(trigger_type, trigger_type)
     return None
 
 
@@ -187,9 +205,9 @@ def __create_situations_details_collection_from_infos(situations_designs_infos: 
 
 # ---------- Helper functions ----------
 
-def __get_current_situation_infos(situations_data: EntitiesData, utc_now: datetime) -> List[EntityInfo]:
+def __get_current_situation_infos(situations_infos: List[EntityInfo], utc_now: datetime) -> List[EntityInfo]:
     result = []
-    for situation_info in situations_data.values():
+    for situation_info in situations_infos:
         from_date = situation_info.get('FromDate')
         end_date = situation_info.get('EndDate')
         if from_date and end_date:
@@ -222,16 +240,15 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
     ),
     'properties': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty('Event type', True, transform_function=__get_event_type),
-            entity.EntityDetailProperty('Reward', True, transform_function=__get_event_reward, embed_only=True, for_embed=True),
-            entity.EntityDetailProperty('Reward', True, transform_function=__get_event_reward, text_only=True),
+            entity.EntityDetailProperty('Event type', True, transform_function=__get_event_type_and_reward, embed_only=True, for_embed=True, display_inline_for_embeds=False),
+            entity.EntityDetailProperty('Event type', True, transform_function=__get_event_type_and_reward, text_only=True),
             entity.EntityDetailProperty('Chance', True, transform_function=__get_situation_chance),
             entity.EntityDetailProperty('Limit per day', True, entity_property_name='DailyOccurrenceLimit', transform_function=core.transform_get_value),
-            entity.EntityDetailProperty('Starts at', True, entity_property_name='FromDate', transform_function=core.transform_pss_datetime_with_timespan),
-            entity.EntityDetailProperty('Ends at', True, entity_property_name='EndDate', transform_function=core.transform_pss_datetime_with_timespan),
-            entity.EntityDetailProperty('Requirement', True, entity_property_name='RequirementString', transform_function=__get_situation_requirements, embed_only=True, for_embed=True),
-            entity.EntityDetailProperty('Requirement', True, entity_property_name='RequirementString', transform_function=__get_situation_requirements, text_only=True),
             entity.EntityDetailProperty('Triggered by', True, entity_property_name='TriggerType', transform_function=__get_situation_trigger),
+            entity.EntityDetailProperty('Requirement', True, entity_property_name='RequirementString', transform_function=__get_situation_requirements, embed_only=True, for_embed=True, display_inline_for_embeds=False),
+            entity.EntityDetailProperty('Requirement', True, entity_property_name='RequirementString', transform_function=__get_situation_requirements, text_only=True),
+            entity.EntityDetailProperty('Starts at', True, entity_property_name='FromDate', transform_function=core.transform_pss_datetime_with_timespan, display_inline_for_embeds=False, omit_time_if_zero=True, include_seconds_in_timespan=False),
+            entity.EntityDetailProperty('Ends at', True, entity_property_name='EndDate', transform_function=core.transform_pss_datetime_with_timespan, display_inline_for_embeds=False, omit_time_if_zero=True, include_seconds_in_timespan=False),
         ],
         properties_mini=[]
         ),

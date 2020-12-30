@@ -138,11 +138,15 @@ def transform_pss_datetime(*args, **kwargs) -> datetime:
 
 def transform_pss_datetime_with_timespan(*args, **kwargs) -> datetime:
     dt = __parse_entity_datetime(*args, **kwargs)
+    include_seconds_in_timespan = kwargs.get('include_seconds_in_timespan', True)
+    omit_time_if_zero = kwargs.get('omit_time_if_zero', False)
     utc_now = kwargs.get('utc_now')
     result = None
     if dt and utc_now:
+        time_is_zero = dt.hour == 0 and dt.minute == 0 and dt.second == 0
+        include_time = not (omit_time_if_zero and time_is_zero)
         td = utc_now - dt if utc_now < dt else dt - utc_now
-        result = f'{utils.format.datetime(dt, include_tz_brackets=False)} ({utils.format.timedelta(td)})'
+        result = f'{utils.format.datetime(dt, include_time=include_time, include_tz_brackets=False)} ({utils.format.timedelta(td, include_seconds=include_seconds_in_timespan)})'
     return result
 
 

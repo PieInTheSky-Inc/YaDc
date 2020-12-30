@@ -1,7 +1,11 @@
 {
     "en": {
-        "ANY_SLOT_NAMES": ["all", "any"],
-        "CANNOT_BE_SOLD": "Can't be sold",
+        "AMOUNTMODIFIERx": "x",
+        "AMOUNTMODIFIER==": " (exact)",
+        "AMOUNTMODIFIER>=": " or more/higher",
+        "AMOUNTMODIFIER<=": " or less/lower",
+        "AMOUNTMODIFIER>": " or more/higher",
+        "AMOUNTMODIFIER<": " or less/lower",
         "HERO_MODULE_NOTE": "**Note:** _Hero_, _Special_ and _Legendary_ rarity modules don't get a bonus stat upon crafting or purchase.",
         "HERO_MODULE_NOTE_EMBED": "Note: Hero, Special and Legendary rarity modules don't get a bonus stat upon crafting or purchase.",
         "MARKET_FAIR_PRICE_NOTE": "**Note:** 1st price is the market price. 2nd price is Savy's fair price.",
