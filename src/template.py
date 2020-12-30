@@ -10,6 +10,12 @@ import settings
 from typehints import EntitiesData, EntityInfo
 
 
+# ---------- Typehint definitions ----------
+
+
+
+
+
 # ---------- Constants ----------
 
 ENTITY_DESIGN_BASE_PATH: str = ''
@@ -20,9 +26,15 @@ ENTITY_DESIGN_KEY_NAME: str = ''
 
 
 
+# ---------- Classes ----------
+
+
+
+
+
 # ---------- Entity info ----------
 
-def get_entity_details_by_id(entity_design_id: str, entities_data: EntitiesData) -> entity.entity.EntityDetails:
+def get_entity_details_by_id(entity_design_id: str, entities_data: EntitiesData) -> entity.EntityDetails:
     if entity_design_id:
         if entity_design_id and entity_design_id in entities_data.keys():
             return __create_entity_details_from_info(entities_data[entity_design_id], entities_data)
@@ -57,6 +69,12 @@ async def __get(entity_info: EntityInfo, entities_data: EntitiesData, **kwargs) 
 
 
 
+# ---------- Helper functions ----------
+
+
+
+
+
 # ---------- Create entity.entity.EntityDetails ----------
 
 def __create_entity_details_from_info(entity_info: EntityInfo, entities_data: EntitiesData) -> entity.entity.EntityDetails:
@@ -66,13 +84,18 @@ def __create_entity_details_from_info(entity_info: EntityInfo, entities_data: En
 def __create_entities_details_collection_from_infos(entities_designs_infos: List[EntityInfo], entities_data: EntitiesData) -> entity.EntityDetailsCollection:
     entities_details = [__create_entity_details_from_info(entity_info, entities_data) for entity_info in entities_designs_infos]
     result = entity.EntityDetailsCollection(entities_details, big_set_threshold=3)
-    return result
 
 
 
 
 
-# ---------- Helper functions ----------
+# ---------- DB ----------
+
+
+
+
+
+# ---------- Mocks ----------
 
 
 
