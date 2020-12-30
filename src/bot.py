@@ -775,7 +775,7 @@ async def cmd_daily(ctx: Context):
         await utils.discord.post_output(ctx, output)
 
 
-@BOT.group(name='event', brief='Get current event info', invoke_without_subcommand=True)
+@BOT.group(name='event', brief='Get current event info', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_event(ctx: Context, *, params: str = None):
     """
@@ -790,14 +790,14 @@ async def cmd_event(ctx: Context, *, params: str = None):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
         async with ctx.typing():
-            _, print_all, latest, situation_id = __extract_dash_parameters(params, None, '--all', '--latest', '--id=')
-            output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, latest_only=latest, as_embed=(await server_settings.get_use_embeds(ctx)))
+            _, print_all, situation_id = __extract_dash_parameters(params, None, '--all', '--id=')
+            output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, as_embed=(await server_settings.get_use_embeds(ctx)))
         await utils.discord.post_output(ctx, output)
 
 
 @cmd_event.command(name='last', aliases=['latest'], brief='Get last event info')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_event(ctx: Context, *, params: str = None):
+async def cmd_event(ctx: Context):
     """
     Prints information on the last event that run in PSS.
 
@@ -809,10 +809,9 @@ async def cmd_event(ctx: Context, *, params: str = None):
       /event last - Prints the information described above.
     """
     __log_command_use(ctx)
-    if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            output = await situation.get_event_details(ctx, latest_only=True, as_embed=(await server_settings.get_use_embeds(ctx)))
-        await utils.discord.post_output(ctx, output)
+    async with ctx.typing():
+        output = await situation.get_event_details(ctx, latest_only=True, as_embed=(await server_settings.get_use_embeds(ctx)))
+    await utils.discord.post_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
