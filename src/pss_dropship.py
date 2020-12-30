@@ -13,9 +13,11 @@ import pss_entity as entity
 from pss_exception import Error
 import pss_item as item
 import pss_lookups as lookups
+import pss_mission as mission
 import pss_room as room
-import pss_training as training
+import pss_situation as situation
 import pss_sprites as sprites
+import pss_training as training
 import settings
 from typehints import EntitiesData, EntityInfo
 import utils
@@ -57,10 +59,12 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
 
-    collections_designs_data = await crew.collections_designs_retriever.get_data_dict3()
     chars_designs_data = await crew.characters_designs_retriever.get_data_dict3()
+    collections_designs_data = await crew.collections_designs_retriever.get_data_dict3()
     items_designs_data = await item.items_designs_retriever.get_data_dict3()
+    missions_designs_data = await mission.missions_designs_retriever.get_data_dict3()
     rooms_designs_data = await room.rooms_designs_retriever.get_data_dict3()
+    situations_designs_data = await situation.situations_designs_retriever.get_data_dict3()
     trainings_designs_data = await training.trainings_designs_retriever.get_data_dict3()
 
     try:
@@ -79,9 +83,15 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
     expiring_sale_details_embed = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=True)
 
+    current_events_details_text = await __get_current_events_details_as_text(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
+
     parts = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
     lines = list(daily_msg)
+    if current_events_details_text:
+        lines.insert(0, '**Current event(s) running**')
+        for event_text in current_events_details_text:
+            lines.insert(1, event_text)
     for part in parts:
         lines.append(utils.discord.ZERO_WIDTH_SPACE)
         lines.extend(part)
@@ -95,12 +105,18 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     description = ''.join(daily_msg)
     fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
     expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
-    fields.append(('Sale expiring today', '\n'.join(expiring_sale_details_embed), False))
+    fields.append(('**Sale expiring today**', '\n'.join(expiring_sale_details_embed), False))
     sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
     colour = utils.discord.get_bot_member_colour(bot, guild)
     embed = utils.discord.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)
 
     return lines, [embed], True
+
+
+async def __get_current_events_details_as_text(situations_designs_data: EntitiesData, chars_designs_data: EntitiesData, collections_designs_data: EntitiesData, items_designs_data: EntitiesData, missions_designs_data: EntitiesData, rooms_designs_data: EntitiesData, utc_now: datetime) -> Optional[List[str]]:
+    events_details = await situation.get_current_events_details(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
+    result = [event_details.get_details_as_text(entity.EntityDetailsType.SHORT) for event_details in events_details]
+    return result or None
 
 
 def __get_daily_news_from_info_as_text(daily_info: EntityInfo) -> List[str]:

@@ -73,7 +73,7 @@ async def get_event_details(ctx: Context, situation_id: str = None, all_events: 
     elif latest_only:
         situation_infos = [situation_infos[0]]
     else:
-        situation_infos = __get_current_situation_infos(situations_data, utc_now)
+        situation_infos = __get_current_situations_infos(situations_data, utc_now)
 
     if not situation_infos:
         if all_events:
@@ -94,8 +94,9 @@ async def get_event_details(ctx: Context, situation_id: str = None, all_events: 
             return (await situations_details_collection.get_entities_details_as_text())
 
 
-async def get_current_events_details(situations_data: EntitiesData, utc_now: datetime) -> List[entity.EntityDetails]:
-    result = __get_current_situation_infos(situations_data, utc_now)
+async def get_current_events_details(situations_data: EntitiesData, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, missions_data: EntitiesData, rooms_data: EntitiesData, utc_now: datetime) -> List[entity.EntityDetails]:
+    current_situations_infos = __get_current_situations_infos(situations_data.values(), utc_now)
+    result = __create_situations_details_list_from_infos(current_situations_infos, chars_data, collections_data, items_data, missions_data, rooms_data, utc_now)
     return result
 
 
@@ -198,8 +199,13 @@ def __create_situation_details_from_info(situation_info: EntityInfo, situations_
     return entity.entity.EntityDetails(situation_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], situations_data, chars_data, collections_data, items_data, missions_data, rooms_data, utc_now=utc_now)
 
 
+def __create_situations_details_list_from_infos(situations_designs_infos: List[EntityInfo], situations_data: EntitiesData, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, missions_data: EntitiesData, rooms_data: EntitiesData, utc_now: datetime = None) -> List[entity.EntityDetails]:
+    result = [__create_situation_details_from_info(situation_info, situations_data, chars_data, collections_data, items_data, missions_data, rooms_data, utc_now=utc_now) for situation_info in situations_designs_infos]
+    return result
+
+
 def __create_situations_details_collection_from_infos(situations_designs_infos: List[EntityInfo], situations_data: EntitiesData, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, missions_data: EntitiesData, rooms_data: EntitiesData, utc_now: datetime = None) -> entity.EntityDetailsCollection:
-    situations_details = [__create_situation_details_from_info(situation_info, situations_data, chars_data, collections_data, items_data, missions_data, rooms_data, utc_now=utc_now) for situation_info in situations_designs_infos]
+    situations_details = __create_situations_details_list_from_infos(situations_designs_infos, chars_data, collections_data, items_data, missions_data, rooms_data, utc_now=utc_now)
     result = entity.EntityDetailsCollection(situations_details, big_set_threshold=0)
     return result
 
@@ -209,7 +215,7 @@ def __create_situations_details_collection_from_infos(situations_designs_infos: 
 
 # ---------- Helper functions ----------
 
-def __get_current_situation_infos(situations_infos: List[EntityInfo], utc_now: datetime) -> List[EntityInfo]:
+def __get_current_situations_infos(situations_infos: List[EntityInfo], utc_now: datetime) -> List[EntityInfo]:
     result = []
     for situation_info in situations_infos:
         from_date = situation_info.get('FromDate')
