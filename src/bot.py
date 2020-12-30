@@ -114,11 +114,22 @@ setattr(BOT, 'logger', logging.getLogger('bot.py'))
 
 @BOT.event
 async def on_ready() -> None:
+    print('+ on_ready()')
     print(f'sys.argv: {sys.argv}')
+    print(f'Current time: {utils.format.datetime(utils.get_utc_now())}')
     print(f'Current Working Directory: {PWD}')
     print(f'Bot logged in as {BOT.user.name} (id={BOT.user.id}) on {len(BOT.guilds)} servers')
-    await db.init()
+    print(f'Bot version is: {settings.VERSION}')
     schema_version = await db.get_schema_version()
+    print(f'DB schema version is: {schema_version}')
+    print(f'discord.py version: {discord_version}')
+    BOT.loop.create_task(post_dailies_loop())
+
+
+@BOT.event
+async def on_connect() -> None:
+    print('+ on_connect()')
+    await db.init()
     await server_settings.init(BOT)
     await server_settings.clean_up_invalid_server_settings(BOT)
     await login.init()
@@ -131,30 +142,20 @@ async def on_ready() -> None:
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
     print(f'Initialized!')
-    print(f'Bot version is: {settings.VERSION}')
-    schema_version = await db.get_schema_version()
-    print(f'DB schema version is: {schema_version}')
-    print(f'discord.py version: {discord_version}')
-    BOT.loop.create_task(post_dailies_loop())
 
 
 @BOT.event
-async def on_connect():
-    print('+ on_connect()')
-
-
-@BOT.event
-async def on_resumed():
+async def on_resumed() -> None:
     print('+ on_resumed()')
 
 
 @BOT.event
-async def on_disconnect():
+async def on_disconnect() -> None:
     print('+ on_disconnect()')
 
 
 @BOT.event
-async def on_shard_ready():
+async def on_shard_ready() -> None:
     print('+ on_shard_ready()')
 
 
@@ -3804,3 +3805,4 @@ def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_pa
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)
+
