@@ -145,7 +145,7 @@ def transform_pss_datetime_with_timespan(*args, **kwargs) -> datetime:
     if dt and utc_now:
         time_is_zero = dt.hour == 0 and dt.minute == 0 and dt.second == 0
         include_time = not (omit_time_if_zero and time_is_zero)
-        td = utc_now - dt if utc_now < dt else dt - utc_now
+        td = dt - utc_now
         result = f'{utils.format.datetime(dt, include_time=include_time, include_tz_brackets=False)} ({utils.format.timedelta(td, include_seconds=include_seconds_in_timespan)})'
     return result
 

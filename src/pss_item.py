@@ -578,6 +578,17 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
     return slot, stat
 
 
+async def get_image_url(item_info: EntityInfo) -> Optional[str]:
+    logo_sprite_id = item_info.get('LogoSpriteId')
+    image_sprite_id = item_info.get('ImageSpriteId')
+    if entity.entity_property_has_value(logo_sprite_id) and logo_sprite_id != image_sprite_id:
+        return await sprites.get_download_sprite_link(logo_sprite_id)
+    elif entity.entity_property_has_value(image_sprite_id):
+        return await sprites.get_download_sprite_link(image_sprite_id)
+    else:
+        return None
+
+
 def get_include_partial_artifacts(item_info: EntityInfo) -> bool:
     item_name = item_info.get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
     result = RX_ARTIFACTS_INDICATORS.search(item_name) is not None

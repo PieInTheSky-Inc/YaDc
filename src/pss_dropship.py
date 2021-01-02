@@ -71,7 +71,7 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         daily_msg = __get_daily_news_from_info_as_text(daily_info)
         dropship_msg = await __get_dropship_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data)
         merchantship_msg = await __get_merchantship_msg_from_info_as_text(daily_info, items_designs_data, trainings_designs_data)
-        shop_msg = await __get_shop_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
+        shop_msg, image_id = await __get_shop_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
         sale_msg = await __get_sale_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
         daily_reward_msg = await __get_daily_reward_from_info_as_text(daily_info, items_designs_data, trainings_designs_data)
     except Exception as e:
@@ -81,42 +81,55 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         return [], False
 
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
+    expiring_sale_details_text.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
+    expiring_sale_details_text.insert(0, '**Sale expiring today**')
+
     expiring_sale_details_embed = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=True)
+    expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
+    expiring_sale_details_embed.insert(0, '**Sale expiring today**')
 
-    current_events_details_text = await __get_current_events_details_as_text(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
+    current_events_details_text, event_sprite_id = await __get_current_events_details_as_text(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
+    if current_events_details_text:
+        plural = '(s)' if len(current_events_details_text) > 1 else ''
+        current_events_details_text.insert(0, f'**Current event{plural} running**')
 
-    parts = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
+    parts_text = [current_events_details_text, dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
+    parts_embed = list(parts_text) + [expiring_sale_details_embed]
+    parts_text += expiring_sale_details_text
 
     lines = list(daily_msg)
-    if current_events_details_text:
-        lines.insert(0, '**Current event(s) running**')
-        for event_text in current_events_details_text:
-            lines.insert(1, event_text)
-    for part in parts:
+    for part in parts_text:
         lines.append(utils.discord.ZERO_WIDTH_SPACE)
         lines.extend(part)
-    lines.append(utils.discord.ZERO_WIDTH_SPACE)
-    lines.append('**Sale expiring today**')
-    lines.extend(expiring_sale_details_text)
-    lines.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
 
     title = 'Pixel Starships Dropships'
     footer = f'Star date {utils.datetime.get_star_date(utc_now)}'
     description = ''.join(daily_msg)
-    fields = [(part[0], '\n'.join(part[1:]), False) for part in parts]
-    expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
-    fields.append(('**Sale expiring today**', '\n'.join(expiring_sale_details_embed), False))
-    sprite_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
+    fields = [(part[0], '\n'.join(part[1:]), False) for part in parts_embed if part]
+    thumbnail_url = await sprites.get_download_sprite_link(daily_info['NewsSpriteId'])
+    image_url = await sprites.get_download_sprite_link(image_id) if image_id else None
+    icon_url = await sprites.get_download_sprite_link(event_sprite_id) if event_sprite_id else None
+    if thumbnail_url == image_url:
+        thumbnail_url = None
     colour = utils.discord.get_bot_member_colour(bot, guild)
-    embed = utils.discord.create_embed(title, description=description, fields=fields, image_url=sprite_url, colour=colour, footer=footer)
+    embed = utils.discord.create_embed(title, description=description, fields=fields, thumbnail_url=thumbnail_url, image_url=image_url, icon_url=icon_url, colour=colour, footer=footer)
 
     return lines, [embed], True
 
 
-async def __get_current_events_details_as_text(situations_designs_data: EntitiesData, chars_designs_data: EntitiesData, collections_designs_data: EntitiesData, items_designs_data: EntitiesData, missions_designs_data: EntitiesData, rooms_designs_data: EntitiesData, utc_now: datetime) -> Optional[List[str]]:
+async def __get_current_events_details_as_text(situations_designs_data: EntitiesData, chars_designs_data: EntitiesData, collections_designs_data: EntitiesData, items_designs_data: EntitiesData, missions_designs_data: EntitiesData, rooms_designs_data: EntitiesData, utc_now: datetime) -> Optional[Tuple[List[str], str]]:
     events_details = await situation.get_current_events_details(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
-    result = [event_details.get_details_as_text(entity.EntityDetailsType.SHORT) for event_details in events_details]
-    return result or None
+    if events_details:
+        result = []
+        sprite_id = None
+        for event_details in events_details:
+            result.append(''.join(await event_details.get_details_as_text(entity.EntityDetailsType.SHORT)))
+            icon_sprite_id = event_details.entity_info['IconSpriteId']
+            if not sprite_id and entity.entity_property_has_value(icon_sprite_id):
+                sprite_id = icon_sprite_id
+        return result, sprite_id
+    else:
+        return None, None
 
 
 def __get_daily_news_from_info_as_text(daily_info: EntityInfo) -> List[str]:
@@ -174,7 +187,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
     return result
 
 
-async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
+async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> Tuple[List[str], str]:
     result = [f'{emojis.pss_shop} **Shop**']
 
     shop_type = daily_info['LimitedCatalogType']
@@ -184,27 +197,34 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     can_own_max = daily_info['LimitedCatalogMaxTotal']
 
     entity_id = daily_info['LimitedCatalogArgument']
-    entity_details = []
+    entity_details_txt = []
     if shop_type == 'Character':
         char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data)
-        entity_details = await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        sprite_id = char_details.entity_info.get('ProfileSpriteId')
     elif shop_type == 'Item':
         item_details = item.get_item_details_by_id(entity_id, items_data, trainings_data)
-        entity_details = await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        logo_sprite_id = item_details.entity_info.get('LogoSpriteId')
+        image_sprite_id = item_details.entity_info.get('ImageSpriteId')
+        sprite_id = logo_sprite_id if logo_sprite_id != image_sprite_id else None
     elif shop_type == 'Room':
         room_details = room.get_room_details_by_id(entity_id, rooms_data, None, None, None)
-        entity_details = await room_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await room_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        sprite_id = room_details.entity_info.get('ImageSpriteId')
     else:
         result.append('-')
-        return result
+        return result, None
 
-    if entity_details:
-        result.extend(entity_details)
+    if entity_details_txt:
+        result.extend(entity_details_txt)
+
+    sprite_id = sprite_id if entity.entity_property_has_value(sprite_id) else None
 
     result.append(f'Cost: {price} {currency_emoji}')
     result.append(f'Can own (max): {can_own_max}')
 
-    return result
+    return result, sprite_id
 
 
 async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
