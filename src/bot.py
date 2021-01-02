@@ -249,7 +249,6 @@ async def post_dailies_loop() -> None:
 
     while True:
         utc_now = utils.get_utc_now()
-        yesterday = datetime.datetime(utc_now.year, utc_now.month, utc_now.day) - utils.datetime.ONE_SECOND
 
         daily_info = await daily.get_daily_info()
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
@@ -257,7 +256,7 @@ async def post_dailies_loop() -> None:
 
         autodaily_settings = await server_settings.get_autodaily_settings(BOT, no_post_yet=True)
         if autodaily_settings:
-            print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} channels')
+            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels')
         if has_daily_changed:
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
             post_here = await server_settings.get_autodaily_settings(BOT)
@@ -268,17 +267,15 @@ async def post_dailies_loop() -> None:
         posted_count = 0
         if autodaily_settings:
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
-            print(f'[post_dailies_loop] going to post to {len(autodaily_settings)} guilds')
+            guild_count = len(autodaily_settings)
+            print(f'[post_dailies_loop] removed duplicates: going to post to {guild_count} guilds')
 
-            latest_message_output_text, latest_message_output_embeds, _ = await dropship.get_dropship_text(daily_info=db_daily_info)
-            latest_daily_message = '\n'.join(latest_message_output_text)
-            lastest_daily_embed = latest_message_output_embeds[0]
             output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
                 current_daily_embed = output_embeds[0]
-                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now, yesterday, latest_daily_message, lastest_daily_embed)
-            print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
+                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
+            print(f'[post_dailies_loop] posted to {posted_count} of {guild_count} guilds')
 
         if has_daily_changed:
             if created_output or not autodaily_settings:
@@ -288,18 +285,18 @@ async def post_dailies_loop() -> None:
         await asyncio.sleep(seconds_to_wait)
 
 
-async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: Embed) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime) -> int:
     posted_count = 0
     for settings in autodaily_settings:
         if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now, yesterday, latest_daily_message_contents, latest_daily_message_embed)
+            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now)
             if posted:
                 posted_count += 1
             await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
-async def post_autodaily(text_channel: TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: Embed, utc_now: datetime.datetime, yesterday: datetime.datetime, latest_daily_message_contents: str, latest_daily_message_embed: Embed) -> Tuple[bool, bool, Message]:
+async def post_autodaily(text_channel: TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: Embed, utc_now: datetime.datetime) -> Tuple[bool, bool, Message]:
     """
     Returns (posted, can_post, latest_message)
     """
@@ -318,14 +315,12 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         latest_message: Message = None
 
         if can_post:
-            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id, yesterday, latest_daily_message_contents, current_daily_message, latest_daily_message_embed, current_daily_embed)
+            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
-                if dropship.compare_dropship_messages(latest_message, current_daily_message, current_daily_embed):
-                    post_new = False
-                elif change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
+                if change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
                         await latest_message.delete()
                         latest_message = None
@@ -383,7 +378,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_id: int, yesterday: datetime.datetime, latest_daily: str, current_daily: str, latest_daily_embed: Embed, current_daily_embed: Embed) -> Tuple[bool, Message]:
+async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_id: int) -> Tuple[bool, Message]:
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
@@ -401,18 +396,6 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
             except Exception as err:
                 print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
                 can_post = False
-        if result is None:
-            try:
-                async for message in text_channel.history(after=yesterday):
-                    if message.author == BOT.user and (dropship.compare_dropship_messages(message, latest_daily, latest_daily_embed) or dropship.compare_dropship_messages(message, current_daily, current_daily_embed)) and (message.content == latest_daily or message.content == current_daily):
-                        result = message
-                        print(f'[daily_fetch_latest_message] found latest message by content in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {result.id}')
-                        break
-            except Exception as err:
-                print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
-                can_post = False
-            if result is None:
-                print(f'[daily_fetch_latest_message] could not find latest message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
 
     return can_post, result
 
