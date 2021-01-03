@@ -680,8 +680,10 @@ async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str,
 
 
 async def get_use_embeds(ctx: Context, bot: Bot = None, guild: Guild = None) -> bool:
-    if (not ctx or not ctx.guild) and (not guild or not bot):
+    if not ctx and (not guild or not bot):
         return app_settings.USE_EMBEDS
+    if not utils.discord.is_guild_channel(ctx.channel):
+        return False
     bot = bot or ctx.bot
     guild = guild or ctx.guild
     guild_settings = await GUILD_SETTINGS.get(bot, guild.id)
