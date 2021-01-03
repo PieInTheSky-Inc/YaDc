@@ -1,6 +1,7 @@
+members = '\U0001F465'
 star = '\u2b50'
-
 trophy = '\U0001f3c6'
+
 
 pss_bux = '<:bux:582495505905352725>'
 pss_dove = '<:dove:615878722431483904>'
@@ -8,6 +9,7 @@ pss_dropship = '<:dropship:638677070108688385>'
 pss_merchantship = '<:merchantship:638677073241702421>'
 pss_gas_big = '<:gas_big:586222567866499129>'
 pss_gas_small = '<:gas_small:586222568046985277>'
+pss_member_count = '<:members:795281948640804875>'
 pss_min_big = '<:min_big:586222661139693568>'
 pss_min_small = '<:min_small:586222672669835335>'
 pss_rarity = '<:rarity:585041736204681217>'
