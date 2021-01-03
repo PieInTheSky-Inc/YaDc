@@ -226,17 +226,20 @@ def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     fleet_infos_count = len(fleet_infos)
     for i, fleet_info in enumerate(fleet_infos, start=1):
         fleet_name = escape_markdown(fleet_info['AllianceName'])
-        if 'Trophy' in fleet_info.keys():
-            trophies = fleet_info['Trophy']
-            trophy_str = f' ({trophies} {emojis.trophy})'
-        else:
-            trophy_str = ''
+        additional_info: List[Tuple[str, str]] = []
+        trophies = fleet_info.get('Trophy')
+        if trophies:
+            additional_info.append((trophies, emojis.trophy))
+        member_count = fleet_info.get('NumberOfMembers')
+        if member_count:
+            additional_info.append((str(member_count), emojis.members))
         stars = fleet_info['Score']
         if i < fleet_infos_count:
             difference = int(stars) - int(fleet_infos[i]['Score'])
         else:
             difference = 0
-        lines.append(f'**{i:d}.** {stars} (+{difference}) {emojis.star} {fleet_name}{trophy_str}')
+        additional_str = f' ({" ".join([" ".join(info) for info in additional_info])})'
+        lines.append(f'**{i:d}.** {stars} (+{difference}) {emojis.star} {fleet_name}{additional_str}')
     return lines
 
 
