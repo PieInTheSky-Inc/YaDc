@@ -34,13 +34,13 @@ class TourneyData(object):
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
         if self.__meta['schema_version'] == 3:
-            self.__fleets = TourneyData.__create_fleet_data_from_data_v3(data['fleets'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v3(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_data_from_data_v3(data['users'], data['data'], self.__fleets)
         elif self.__meta['schema_version'] == 4:
-            self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
         elif self.__meta['schema_version'] == 5:
-            self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
         self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
@@ -144,10 +144,11 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v3(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v3(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
-        for i, entry in enumerate(fleet_data, 1):
+        for i, entry in enumerate(fleets_data, 1):
             alliance_id = entry[0]
+            users = [user_info for user_info in users_data if user_info[1] == alliance_id]
             if len(entry) == 4:
                 division_design_id = entry[3]
             else:
@@ -163,7 +164,8 @@ class TourneyData(object):
                 'AllianceId': alliance_id,
                 'AllianceName': entry[1],
                 'Score': entry[2],
-                'DivisionDesignId': division_design_id
+                'DivisionDesignId': division_design_id,
+                'NumberOfMembers': len(users),
             }
         ranked_fleets_infos = sorted(sorted(result.values(), key=lambda fleet_info: int(fleet_info['Score']), reverse=True), key=lambda fleet_info: fleet_info['DivisionDesignId'])
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
@@ -172,16 +174,18 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v4(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v4(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
-        for i, entry in enumerate(fleet_data, 1):
+        for i, entry in enumerate(fleets_data, 1):
             alliance_id = str(entry[0])
+            users = [user_info for user_info in users_data if user_info[2] == entry[0]]
             result[alliance_id] = {
                 'AllianceId': alliance_id,
                 'AllianceName': entry[1],
                 'Score': str(entry[2]),
                 'DivisionDesignId': str(entry[3]),
-                'Trophy': str(entry[4])
+                'Trophy': str(entry[4]),
+                'NumberOfMembers': len(users),
             }
         ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
@@ -190,8 +194,8 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v5(fleet_data: List[List[Union[int, str]]]) -> EntitiesData:
-        return TourneyData.__create_fleet_data_from_data_v4(fleet_data)
+    def __create_fleet_data_from_data_v5(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
+        return TourneyData.__create_fleet_data_from_data_v4(fleets_data, users_data)
 
 
     @staticmethod
