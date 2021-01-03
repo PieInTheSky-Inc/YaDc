@@ -426,7 +426,8 @@ class EntityDetails(object):
         for detail in details_long:
             if detail.value or not detail.omit_if_none:
                 inline = display_inline if display_inline is not None else (detail.display_inline if detail.display_inline is not None else True)
-                result.add_field(name=detail.display_name, value=detail.value, inline=inline)
+                field_name = detail.display_name if '**' in detail.display_name else f'**{detail.display_name}**'
+                result.add_field(name=field_name, value=detail.value, inline=inline)
         return result
 
 
@@ -637,8 +638,9 @@ class EntityDetailsCollection():
             fields = []
             for entity_details in self.__entities_details:
                 entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.SHORT)
+                field_name = entity_title if '**' in entity_title else f'**{entity_title}**'
                 details = detail_property_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
-                fields.append((entity_title, details, display_inline))
+                fields.append((field_name, details, display_inline))
 
             footer = ''
             if display_names:
