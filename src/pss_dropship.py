@@ -81,7 +81,6 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         return [], False
 
     parts_text = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
-    parts_embed = list(parts_text)
 
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
     expiring_sale_details_text.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
@@ -96,6 +95,11 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         plural = '(s)' if len(current_events_details_text) > 1 else ''
         current_events_details_text.insert(0, f'**Current event{plural} running**')
         parts_text.insert(0, current_events_details_text)
+
+    parts_embed = list(parts_text)
+
+    parts_text.append(expiring_sale_details_text)
+    parts_embed.append(expiring_sale_details_embed)
 
     lines = list(daily_msg)
     for part in parts_text:
