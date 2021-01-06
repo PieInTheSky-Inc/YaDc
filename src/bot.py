@@ -776,9 +776,9 @@ async def cmd_event(ctx: Context, *, params: str = None):
 
 @cmd_event.command(name='last', aliases=['latest'], brief='Get last event info')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_event(ctx: Context):
+async def cmd_event_last(ctx: Context):
     """
-    Prints information on the last event that run in PSS.
+    Prints information on the last event that ran in PSS.
 
     Usage:
       /event last
