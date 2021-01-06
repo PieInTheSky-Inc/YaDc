@@ -3506,11 +3506,11 @@ async def cmd_sales_import(ctx: Context, *, args: str = None):
 
         failed_sales_infos = []
         for sale_info in sales_infos:
-            success = daily.__db_add_sale(
+            success = await daily.__db_add_sale(
                 sale_info.get('limitedcatalogargument'),
                 sale_info.get('limitedcatalogcurrencyamount'),
                 sale_info.get('limitedcatalogcurrencytype'),
-                sale_info.get('limitedcatalogargumenttype'),
+                sale_info.get('limitedcatalogtype'),
                 sale_info.get('limitedcatalogexpirydate'),
                 sale_info.get('limitedcatalogmaxtotal'),
                 overwrite=overwrite
@@ -3528,6 +3528,7 @@ async def cmd_sales_import(ctx: Context, *, args: str = None):
                 f'Failed to import the following sales infos:'
             )
             output.extend([json.dumps(sale_info) for sale_info in failed_sales_infos])
+        await daily.update_db_sales_info_cache()
         await utils.discord.post_output(ctx, output)
 
 
@@ -3725,7 +3726,7 @@ async def cmd_updatecache(ctx: Context):
         await research.researches_designs_retriever.update_cache()
         await room.rooms_designs_retriever.update_cache()
         await training.trainings_designs_retriever.update_cache()
-        await daily.__update_db_sales_info_cache()
+        await daily.update_db_sales_info_cache()
     await ctx.send('Updated all caches successfully!')
 
 

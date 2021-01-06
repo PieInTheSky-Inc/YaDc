@@ -93,7 +93,7 @@ def sale_info_decoder_object_hook(obj):
     if '__type__' in obj and '__value__' in obj:
         if obj['__type__'] in ['date', 'datetime']:
             return utils.parse.formatted_datetime(obj['__value__'], include_time=False, include_tz=False, include_tz_brackets=False)
-    return json.JSONDecoder.object_hook(obj)
+    return obj
 
 
 
@@ -125,7 +125,7 @@ async def add_sale(entity_id: int, price: int, currency_type: str, entity_type: 
         raise Error(f'There\'s already a sale info in the database expiring on: {utils.format.date(expires_at)}')
     success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
     if success:
-        await __update_db_sales_info_cache()
+        await update_db_sales_info_cache()
     return success
 
 
@@ -371,9 +371,9 @@ async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_t
             ])
             raise Error(error_msg) from ex
     if not success and overwrite:
-        success_delete = __db_try_remove_sale(expires_at)
+        success_delete = await __db_try_remove_sale(expires_at)
         if success_delete:
-            success = __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+            success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
     return success
 
 
@@ -410,7 +410,7 @@ async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
     sales_info = {key: value(daily_info[key]) for key, value in SALES_DAILY_INFO_FIELDS.items()}
     sales_success = await db.update_sales_info(sales_info)
     if sales_success:
-        await __update_db_sales_info_cache()
+        await update_db_sales_info_cache()
 
     return settings_success and sales_success
 
@@ -480,7 +480,7 @@ def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
 
 async def __db_get_sales_infos(utc_now: datetime = None, category_type: str = None, entity_id: int = None, skip_cache: bool = False) -> SalesCache:
     if not skip_cache and utc_now is not None and (__sales_info_cache_retrieved_at is None or __sales_info_cache_retrieved_at.day != utc_now.day):
-        await __update_db_sales_info_cache()
+        await update_db_sales_info_cache()
     if skip_cache:
         result = await db.get_sales_infos()
     else:
@@ -575,7 +575,7 @@ async def __update_db_daily_info_cache() -> None:
     __daily_info_cache, __daily_info_modified_at = await db_get_daily_info(skip_cache=True)
 
 
-async def __update_db_sales_info_cache() -> None:
+async def update_db_sales_info_cache() -> None:
     global __sales_info_cache
     global __sales_info_cache_retrieved_at
     __sales_info_cache = await __db_get_sales_infos(skip_cache=True)
@@ -584,4 +584,4 @@ async def __update_db_sales_info_cache() -> None:
 
 async def init() -> None:
     await __update_db_daily_info_cache()
-    await __update_db_sales_info_cache()
+    await update_db_sales_info_cache()
