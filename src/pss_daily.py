@@ -246,7 +246,7 @@ async def get_sales_history_for_rooms(ctx: Context, room_type: str, room_type_pr
             price = sales_info['original_price']
             currency = sales_info['currency']
             day = 'day' + 's' if sold_ago != 1 else ''
-            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago): {name} for {price} {currency}')
+            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago): **{name}** for {price} {currency}')
 
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
