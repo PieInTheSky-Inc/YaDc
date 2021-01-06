@@ -80,7 +80,7 @@ def get_ids_from_property_value(data: EntitiesData, property_name: str, property
     fixed_data = {entry_id: fix_data_delegate(entry_data[property_name]) for entry_id, entry_data in data.items() if entry_data[property_name]}
 
     if match_exact:
-        results = [key for key, value in fixed_data.items() if value == property_value]
+        results = [key for key, value in fixed_data.items() if value == fixed_value]
     else:
         similarity_map = {}
         for entry_id, entry_property in fixed_data.items():
