@@ -225,6 +225,39 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
     raise Error(f'There is no past sales data available for {entity_name}.')
 
 
+async def get_sales_history_for_rooms(ctx: Context, room_type: str, room_type_pretty: str, reverse: bool = False, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    if not room_type:
+        raise ValueError('The room type must neither be None nor empty.')
+    utc_now = utils.get_utc_now()
+
+    db_sales_infos = await __db_get_sales_infos(utc_now=utc_now, category_type='Room')
+    sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now, filter_old=False)
+    sales_infos = [sales_info for sales_info in sales_infos if sales_info['entity_details'].entity_info['RoomType'] == room_type]
+
+    if sales_infos:
+        title = f'{room_type_pretty.capitalize()}s have been sold on'
+        sales_details = []
+        for sales_info in sales_infos:
+            name = sales_info['name']
+            sold_on_date = sales_info['expiry_date'] - utils.datetime.ONE_DAY
+            sold_on = utils.format.datetime(sold_on_date, include_time=False, include_tz=False)
+            star_date = utils.datetime.get_star_date(sold_on_date)
+            sold_ago = (utc_now - sold_on_date).days
+            price = sales_info['original_price']
+            currency = sales_info['currency']
+            day = 'day' + 's' if sold_ago != 1 else ''
+            sales_details.append(f'{sold_on} (Star date {star_date}, {sold_ago} {day} ago): {name} for {price} {currency}')
+
+        if as_embed:
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            result = utils.discord.create_basic_embeds_from_description(title, description=sales_details, colour=colour)
+        else:
+            result = [f'**{title}**']
+            result.extend(sales_details)
+        return result
+    raise Error(f'There is no past sales data available for {room_type_pretty}s.')
+
+
 def get_sales_search_details(entity_info: EntityInfo) -> str:
     entity_type = entity_info.get('entity_type')
     entity_name = entity_info.get('entity_name')

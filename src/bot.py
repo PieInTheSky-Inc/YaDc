@@ -1476,6 +1476,40 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
         await utils.discord.post_output(ctx, output)
 
 
+@cmd_sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List bed room sales')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_sales_bed(ctx: Context, *, params: str = None):
+    __log_command_use(ctx)
+    _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
+
+    async with ctx.typing():
+        room_type = 'Bedroom'
+        room_type_pretty = 'bed room'
+        output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+
+    if output:
+        await utils.discord.post_output(ctx, output)
+    else:
+        raise Error('An unknown error ocurred, please contact the bot\'s author.')
+
+
+@cmd_sales.command(name='droidrooms', aliases=['droid', 'droids', 'droidroom'], brief='List droid room sales')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_sales_droid(ctx: Context, *, params: str = None):
+    __log_command_use(ctx)
+    _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
+
+    async with ctx.typing():
+        room_type = 'Android'
+        room_type_pretty = 'droid room'
+        output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+
+    if output:
+        await utils.discord.post_output(ctx, output)
+    else:
+        raise Error('An unknown error ocurred, please contact the bot\'s author.')
+
+
 @BOT.group(name='stars', brief='Division stars', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_stars(ctx: Context, *, division: str = None):
