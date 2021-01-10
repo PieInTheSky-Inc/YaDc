@@ -186,7 +186,7 @@ async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed
     pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
 
     rooms_data = await rooms_designs_retriever.get_data_dict3()
-    rooms_designs_infos = _get_room_infos(room_name, rooms_data)
+    rooms_designs_infos = _get_room_infos_by_name(room_name, rooms_data)
 
     if not rooms_designs_infos:
         raise NotFound(f'Could not find a room named **{room_name}**.')
@@ -224,9 +224,7 @@ async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed
         return result
 
 
-def _get_room_infos(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo]:
-    room_short_name = room_name
-
+def _get_room_infos_by_name(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo]:
     room_name_reverse = room_name[::-1]
     numbers_in_room_name = RX_NUMBER.findall(room_name_reverse)
     if numbers_in_room_name:
@@ -254,9 +252,11 @@ def _get_room_design_ids_from_name(room_name: str, rooms_data: EntitiesData) -> 
 
 
 def _get_room_design_ids_from_room_shortname(room_short_name: str, rooms_data: EntitiesData, room_level: int = None) -> List[str]:
+    match_exact = False
     if room_level and room_level > 0:
         room_short_name = f'{room_short_name}{room_level}'
-    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name, match_exact=True)
+        match_exact = True
+    results = core.get_ids_from_property_value(rooms_data, ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME_2, room_short_name, match_exact=match_exact)
     return results
 
 
