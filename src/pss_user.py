@@ -107,6 +107,13 @@ def __get_division_name(user_info: EntityInfo, fleet_info: EntityInfo = None, **
     return result
 
 
+def __get_fleet_joined_at(user_info: EntityInfo, fleet_info: EntityInfo = None, retrieved_at: datetime = None, **kwargs) -> Optional[str]:
+    result = None
+    if fleet_info and retrieved_at:
+        result = __get_timestamp(user_info, retrieved_at, **kwargs)
+    return result
+
+
 def __get_fleet_name_and_rank(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> Optional[str]:
     result = None
     if fleet_info:
@@ -393,7 +400,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Last Login', True, entity_property_name='LastLoginDate', transform_function=__get_timestamp),
         entity.EntityDetailProperty('Fleet', True, transform_function=__get_fleet_name_and_rank),
         entity.EntityDetailProperty('Division', True, transform_function=__get_division_name),
-        entity.EntityDetailProperty('Joined fleet', True, entity_property_name='AllianceJoinDate', transform_function=__get_timestamp),
+        entity.EntityDetailProperty('Joined fleet', True, entity_property_name='AllianceJoinDate', transform_function=__get_fleet_joined_at),
         entity.EntityDetailProperty('Trophies', True, transform_function=__get_trophies),
         entity.EntityDetailProperty('League', True, transform_function=__get_league),
         entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
