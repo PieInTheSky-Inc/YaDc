@@ -1412,7 +1412,7 @@ async def cmd_room(ctx: Context, *, room_name: str):
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_sales(ctx: Context, *, object_name: str = None):
     """
-    Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down, so 0 days means only available today). If a parameter is given, the command will output the sales history for that object.
+    Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down, so 0 days means only available today). If a parameter is given, the command will output the sales history for that object along with the original shop prices.
 
     Usage:
       /sales <object_name>
@@ -1476,9 +1476,23 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
         await utils.discord.post_output(ctx, output)
 
 
-@cmd_sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List bed room sales')
+@cmd_sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List expired bed room sales')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_sales_bed(ctx: Context, *, params: str = None):
+    """
+    Get information on bed rooms that have been sold in shop in the past. This command will post the original shop price.
+
+    Usage:
+      /sales bedrooms
+      /sales beds --reverse
+
+    Parameter:
+      --reverse:   Optional. Will sort the output from old to new
+
+    Examples:
+      /sales beds - Prints all available information on bedroom sales.
+      /sales bedrooms --reverse - Prints all available information on bedroom sales from old to new.
+    """
     __log_command_use(ctx)
     _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
 
@@ -1493,9 +1507,23 @@ async def cmd_sales_bed(ctx: Context, *, params: str = None):
         raise Error('An unknown error ocurred, please contact the bot\'s author.')
 
 
-@cmd_sales.command(name='droidrooms', aliases=['droid', 'droids', 'droidroom'], brief='List droid room sales')
+@cmd_sales.command(name='droidrooms', aliases=['droid', 'droids', 'droidroom'], brief='List expired droid room sales')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_sales_droid(ctx: Context, *, params: str = None):
+    """
+    Get information on android rooms that have been sold in shop in the past. This command will post the original shop price.
+
+    Usage:
+      /sales droidrooms
+      /sales droids --reverse
+
+    Parameter:
+      --reverse:   Optional. Will sort the output from old to new
+
+    Examples:
+      /sales droids - Prints all available information on android room sales.
+      /sales droidrooms --reverse - Prints all available information on android room sales from old to new.
+    """
     __log_command_use(ctx)
     _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
 
