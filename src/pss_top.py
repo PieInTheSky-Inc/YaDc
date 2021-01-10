@@ -238,7 +238,10 @@ def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
             difference = int(stars) - int(fleet_infos[i]['Score'])
         else:
             difference = 0
-        additional_str = f' ({" ".join([" ".join(info) for info in additional_info])})'
+        if additional_info:
+            additional_str = f' ({" ".join([" ".join(info) for info in additional_info])})'
+        else:
+            additional_str = ''
         lines.append(f'**{i:d}.** {stars} (+{difference}) {emojis.star} {fleet_name}{additional_str}')
     return lines
 
