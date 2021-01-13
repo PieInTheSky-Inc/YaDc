@@ -3687,7 +3687,10 @@ async def cmd_send_bot_news(ctx: Context, *, news: str = None):
                 embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
                 embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
                 embed.set_thumbnail(url=avatar_url)
-                await bot_news_channel.send(embed=embed)
+                try:
+                    await bot_news_channel.send(embed=embed)
+                except errors.Forbidden:
+                    pass
         embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
         embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
         embed.set_thumbnail(url=avatar_url)
