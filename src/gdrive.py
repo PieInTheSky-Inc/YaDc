@@ -351,9 +351,7 @@ class TourneyDataClient():
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
             if year > self.to_year or (year == self.to_year and month > self.to_month):
-                utc_now = utils.get_utc_now()
-                if utc_now.year <= self.to_year and utc_now.month - 1 <= self.to_month:
-                    raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
         result = self.__read_data(year, month)
 
