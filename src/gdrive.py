@@ -351,7 +351,9 @@ class TourneyDataClient():
                 raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if not initializing:
             if year > self.to_year or (year == self.to_year and month > self.to_month):
-                raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+                utc_now = utils.get_utc_now()
+                if utc_now.year == year and utc_now.month == month:
+                    raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
 
         result = self.__read_data(year, month)
 
@@ -585,6 +587,6 @@ class TourneyDataClient():
                     raise ValueError(f'Parameter month got an invalid value: {month}')
         if year is None:
             year = utc_now.year
-            if utc_now.month < temp_month:
+            if utc_now.month <= temp_month:
                 year -= 1
         return temp_month, int(year)
