@@ -3820,7 +3820,7 @@ def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_pa
                     result.append(True)
                 if parameter_pos > 0:
                     remove = f' {remove}'
-                rx_remove = ''.join((' ', remove, r'\b'))
+                rx_remove = ''.join((' ', re.escape(remove), r'\b'))
                 new_arg = re.sub(rx_remove, '', new_arg).strip()
             else:
                 if '=' in dash_parameter:
