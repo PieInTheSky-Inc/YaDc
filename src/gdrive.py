@@ -34,7 +34,7 @@ class TourneyData(object):
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
         if self.__meta['schema_version'] == 3:
-            self.__fleets = TourneyData.__create_fleet_data_from_data_v3(data['fleets'], data['users'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v3(data['fleets'], data['users'], data['data'])
             self.__users = TourneyData.__create_user_data_from_data_v3(data['users'], data['data'], self.__fleets)
         elif self.__meta['schema_version'] == 4:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users'])
@@ -144,11 +144,11 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v3(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
+    def __create_fleet_data_from_data_v3(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]], data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
         for i, entry in enumerate(fleets_data, 1):
             alliance_id = entry[0]
-            users = [user_info for user_info in users_data if user_info[1] == alliance_id]
+            users = [user_info for user_info in data if user_info[1] == alliance_id]
             if len(entry) == 4:
                 division_design_id = entry[3]
             else:
