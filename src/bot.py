@@ -306,13 +306,16 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
 
-        if change_mode == server_settings.AutoDailyChangeMode.EDIT:
-            post_new = False
-        else:
-            post_new = True
-
+        post_new = change_mode != server_settings.AutoDailyChangeMode.EDIT
         can_post = True
         latest_message: Message = None
+        use_embeds = await server_settings.get_use_embeds(None, bot=BOT, guild=text_channel.guild)
+        if use_embeds:
+            colour = utils.discord.get_bot_member_colour(BOT, text_channel.guild)
+            embed = current_daily_embed.copy()
+            embed.colour = colour
+        else:
+            embed = None
 
         if can_post:
             can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id)
@@ -322,9 +325,12 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                 latest_message_id = latest_message.id
                 if change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
                     try:
-                        await latest_message.delete()
-                        latest_message = None
-                        print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                        deleted = await utils.discord.try_delete_message(latest_message)
+                        if deleted:
+                            latest_message = None
+                            print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                        else:
+                            print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except errors.NotFound:
                         print(f'[post_autodaily] {error_msg_delete}: the message could not be found')
                     except errors.Forbidden:
@@ -335,7 +341,10 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                         can_post = False
                 elif change_mode == server_settings.AutoDailyChangeMode.EDIT:
                     try:
-                        await latest_message.edit(content=current_daily_message)
+                        if use_embeds:
+                            await latest_message.edit(embed=embed)
+                        else:
+                            await latest_message.edit(content=current_daily_message)
                         posted = True
                         print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except errors.NotFound:
@@ -349,13 +358,9 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
             else:
                 post_new = True
 
-            if can_post and post_new:
+            if not posted and can_post and post_new:
                 try:
-                    use_embeds = await server_settings.get_use_embeds(None, bot=BOT, guild=text_channel.guild)
                     if use_embeds:
-                        colour = utils.discord.get_bot_member_colour(BOT, text_channel.guild)
-                        embed = current_daily_embed.copy()
-                        embed.colour = colour
                         latest_message = await text_channel.send(embed=embed)
                     else:
                         latest_message = await text_channel.send(current_daily_message)
@@ -386,16 +391,15 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
     can_post: bool = True
     result: Message = None
 
-    if text_channel:
-        if latest_message_id is not None:
-            try:
-                result = await text_channel.fetch_message(latest_message_id)
-                print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-            except errors.NotFound:
-                print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
-            except Exception as err:
-                print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
-                can_post = False
+    if text_channel and latest_message_id is not None:
+        try:
+            result = await text_channel.fetch_message(latest_message_id)
+            print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+        except errors.NotFound:
+            print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+        except Exception as err:
+            print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
+            can_post = False
 
     return can_post, result
 
