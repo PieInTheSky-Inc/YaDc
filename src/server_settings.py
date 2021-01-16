@@ -635,14 +635,14 @@ async def clean_up_invalid_server_settings(bot: Bot) -> None:
         await GUILD_SETTINGS.delete_guild_settings(invalid_guild_id)
 
 
-async def get_autodaily_settings(bot: Bot, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+async def get_autodaily_settings(bot: Bot, utc_now: datetime, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
     if guild_id:
-        autodaily_settings_collection = [(await GUILD_SETTINGS.get(bot, guild_id))]
-    else:
-        autodaily_settings_collection = [settings for settings in GUILD_SETTINGS.autodaily_settings if settings.channel is not None]
+        autodaily_settings = await GUILD_SETTINGS.get(bot, guild_id)
+        return [autodaily_settings]
+
     result = []
-    for autodaily_settings in autodaily_settings_collection:
-        if not (no_post_yet and autodaily_settings.latest_message_created_at):
+    for autodaily_settings in GUILD_SETTINGS.autodaily_settings:
+        if autodaily_settings.channel is not None and (not autodaily_settings.latest_message_modified_at or (not no_post_yet and autodaily_settings.latest_message_modified_at.date != utc_now.date)):
             result.append(autodaily_settings)
     return result
 

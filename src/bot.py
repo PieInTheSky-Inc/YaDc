@@ -254,12 +254,12 @@ async def post_dailies_loop() -> None:
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        autodaily_settings = await server_settings.get_autodaily_settings(BOT, no_post_yet=True)
+        autodaily_settings = await server_settings.get_autodaily_settings(BOT, utc_now, no_post_yet=True)
         if autodaily_settings:
             print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels')
         if has_daily_changed:
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-            post_here = await server_settings.get_autodaily_settings(BOT)
+            post_here = await server_settings.get_autodaily_settings(BOT, utc_now)
             print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
             autodaily_settings.extend(post_here)
 
