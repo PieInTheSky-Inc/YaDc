@@ -15,7 +15,7 @@ import utils
 
 # ---------- Constants ----------
 
-__AUTODAILY_SETTING_COUNT: int = 9
+__AUTODAILY_SETTING_COUNT: int = 7
 
 _COLUMN_NAME_GUILD_ID: str = 'guildid'
 _COLUMN_NAME_DAILY_CAN_POST: str = 'dailycanpost'

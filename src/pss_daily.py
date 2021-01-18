@@ -419,7 +419,7 @@ async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool 
     settings = await server_settings.db_get_autodaily_settings(guild_id, can_post)
     result = []
     at_least_one = False
-    for (_, channel_id, can_post, _, _, _, _, _, _) in settings:
+    for (_, channel_id, can_post, _, _, _, _) in settings:
         if channel_id:
             at_least_one = True
             text_channel = ctx.bot.get_channel(int(channel_id))
