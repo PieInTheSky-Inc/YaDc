@@ -1002,3 +1002,4 @@ GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 async def init(bot: Bot) -> None:
     await __fix_prefixes()
     await GUILD_SETTINGS.init(bot)
+    utils.dbg_prnt(f'Loaded {len(GUILD_SETTINGS.keys())} guild settings with {len(GUILD_SETTINGS.autodaily_settings)} autodaily settings.')
