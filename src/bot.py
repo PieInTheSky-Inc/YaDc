@@ -43,7 +43,7 @@ import pss_top
 import pss_training as training
 import pss_user as user
 import server_settings
-from server_settings import GUILD_SETTINGS
+from server_settings import AutoDailySettings, GUILD_SETTINGS
 import settings
 import utils
 
@@ -255,30 +255,24 @@ async def post_dailies_loop() -> None:
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
-        if autodaily_settings:
-            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
         if has_daily_changed:
-            post_here = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post changed daily')
-            autodaily_settings.extend(post_here)
-            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-        utils.dbg_prnt(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds in total, including duplicates.')
+            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
+            autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
+            print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
+        else:
+            autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
+            if autodaily_settings:
+                print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
 
         created_output = False
         posted_count = 0
         if autodaily_settings:
-            original_len = len(autodaily_settings)
-            autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
-            guild_count = len(autodaily_settings)
-            print(f'[post_dailies_loop] removed {original_len-guild_count} duplicates: going to post to {guild_count} guilds')
-
             output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
                 current_daily_message = '\n'.join(output)
                 current_daily_embed = output_embeds[0]
                 posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
-            print(f'[post_dailies_loop] posted to {posted_count} of {guild_count} guilds')
+            print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
         if has_daily_changed and (created_output or not autodaily_settings):
             await daily.db_set_daily_info(daily_info, utc_now)
@@ -289,12 +283,18 @@ async def post_dailies_loop() -> None:
 
 async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime) -> int:
     posted_count = 0
-    for settings in autodaily_settings:
-        if settings.guild.id is not None and settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(settings.channel, settings.latest_message_id, settings.change_mode, current_daily_message, current_daily_embed, utc_now)
+    for guild_settings in autodaily_settings:
+        if guild_settings.guild.id is not None and guild_settings.channel_id is not None:
+            posted, can_post, latest_message = await post_autodaily(guild_settings.channel, guild_settings.latest_message_id, guild_settings.change_mode, current_daily_message, current_daily_embed, utc_now)
             if posted:
                 posted_count += 1
-            await settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
+            else:
+                guild_name = guild_settings.guild.name
+                guild_id = guild_settings.guild_id
+                channel_name = f'#{guild_settings.channel.name}' if guild_settings.channel else '<not accessible>'
+                channel_id = guild_settings.channel_id
+                print(f'[post_dailies] Failed to post to guild \'{guild_name}\' ({guild_id}), channel \'{channel_name}\' ({channel_id})')
+            await guild_settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
@@ -330,7 +330,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                         deleted = await utils.discord.try_delete_message(latest_message)
                         if deleted:
                             latest_message = None
-                            print(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                            utils.dbg_prnt(f'[post_autodaily] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                         else:
                             print(f'[post_autodaily] could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except errors.NotFound:
@@ -348,7 +348,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                         else:
                             await latest_message.edit(content=current_daily_message)
                         posted = True
-                        print(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                        utils.dbg_prnt(f'[post_autodaily] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except errors.NotFound:
                         print(f'[post_autodaily] {error_msg_edit}: the message could not be found')
                     except errors.Forbidden:
@@ -367,7 +367,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                     else:
                         latest_message = await text_channel.send(current_daily_message)
                     posted = True
-                    print(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                    utils.dbg_prnt(f'[post_autodaily] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except errors.Forbidden:
                     print(f'[post_autodaily] {error_msg_post}: the bot doesn\'t have the required permissions.')
                     can_post = False
@@ -3324,7 +3324,7 @@ async def cmd_debug_autodaily(ctx: Context):
         os.remove(file_name)
 
 
-@cmd_debug_autodaily.group(name='nopost', brief='Get debug info')
+@cmd_debug_autodaily.group(name='nopost', aliases=['new'], brief='Get debug info')
 @is_owner()
 async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
