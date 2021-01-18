@@ -678,6 +678,7 @@ async def get_autodaily_settings_without_post(autodaily_settings: List[AutoDaily
         autodaily_settings = GUILD_SETTINGS.autodaily_settings
 
     result = [autodaily_settings for autodaily_settings in GUILD_SETTINGS.autodaily_settings if autodaily_settings.no_post_yet]
+    utils.dbg_prnt(f'[get_autodaily_settings_without_post] retrieved auto-daily settings for {len(result)} guilds, without a post yet.')
     return result
 
 
