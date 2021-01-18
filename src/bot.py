@@ -3320,7 +3320,7 @@ async def cmd_debug_autodaily(ctx: Context):
             file_name = f'autodaily_settings_all_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
-        await ctx.send(file=File(file_name))
+        await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
 
@@ -3349,7 +3349,7 @@ async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
             file_name = f'autodaily_settings_nopost_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
-        await ctx.send(file=File(file_name))
+        await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
 
@@ -3378,7 +3378,7 @@ async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
             file_name = f'autodaily_settings_changed_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
-        await ctx.send(file=File(file_name))
+        await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
 
