@@ -3314,9 +3314,9 @@ async def cmd_debug_autodaily(ctx: Context):
 
 
 
-@cmd_debug.group(name='nopost', brief='Get debug info', hidden=True, invoke_without_command=True)
+@cmd_debug_autodaily.group(name='nopost', brief='Get debug info', hidden=True)
 @is_owner()
-async def cmd_debug_autodaily(ctx: Context, *, args: str = None):
+async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
         async with ctx.typing():
@@ -3333,9 +3333,9 @@ async def cmd_debug_autodaily(ctx: Context, *, args: str = None):
         await ctx.send(file=File(file_name))
 
 
-@cmd_debug.group(name='changed', aliases=['daily'], brief='Get debug info', hidden=True, invoke_without_command=True)
+@cmd_debug_autodaily.group(name='changed', brief='Get debug info', hidden=True)
 @is_owner()
-async def cmd_debug_autodaily(ctx: Context, *, args: str = None):
+async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
         async with ctx.typing():
