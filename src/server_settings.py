@@ -100,7 +100,7 @@ class AutoDailySettings():
 
     @property
     def no_post_yet(self) -> bool:
-        return self.__lastest_message_id is None
+        return self.__latest_message_id is None
 
     @property
     def latest_message_id(self) -> int:
