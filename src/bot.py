@@ -256,19 +256,21 @@ async def post_dailies_loop() -> None:
 
         autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
         if autodaily_settings:
-            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels')
+            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
         if has_daily_changed:
-            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
             post_here = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
+            print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post changed daily')
             autodaily_settings.extend(post_here)
+            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
+        print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds in total, including duplicates.')
 
         created_output = False
         posted_count = 0
         if autodaily_settings:
+            original_len = len(autodaily_settings)
             autodaily_settings = daily.remove_duplicate_autodaily_settings(autodaily_settings)
             guild_count = len(autodaily_settings)
-            print(f'[post_dailies_loop] removed duplicates: going to post to {guild_count} guilds')
+            print(f'[post_dailies_loop] removed {original_len-guild_count} duplicates: going to post to {guild_count} guilds')
 
             output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
             if created_output:
