@@ -659,6 +659,7 @@ async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guil
         return [autodaily_settings]
 
     result = [autodaily_settings for autodaily_settings in GUILD_SETTINGS.autodaily_settings if autodaily_settings.channel]
+    utils.dbg_prnt(f'[get_autodaily_settings] retrieved auto-daily settings for {len(result)} guilds')
     if no_post_yet:
         return await get_autodaily_settings_without_post(result)
 
