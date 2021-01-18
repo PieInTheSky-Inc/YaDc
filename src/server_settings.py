@@ -664,7 +664,7 @@ async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guil
         return await get_autodaily_settings_without_post(result)
 
     if utc_now:
-        result = [autodaily_settings for autodaily_settings in result if autodaily_settings.latest_message_created_at.date != utc_now.date]
+        result = [autodaily_settings for autodaily_settings in result if not autodaily_settings.latest_message_created_at or autodaily_settings.latest_message_created_at.date != utc_now.date]
     return result
 
 
