@@ -118,7 +118,8 @@ async def on_ready() -> None:
     schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
     print(f'discord.py version: {discord_version}')
-    BOT.loop.create_task(post_dailies_loop())
+    if settings.FEATURE_AUTODAILY_ENABLED:
+        BOT.loop.create_task(post_dailies_loop())
 
 
 @BOT.event
@@ -262,7 +263,7 @@ async def post_dailies_loop() -> None:
             print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post changed daily')
             autodaily_settings.extend(post_here)
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-        print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds in total, including duplicates.')
+        utils.dbg_prnt(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds in total, including duplicates.')
 
         created_output = False
         posted_count = 0
@@ -3306,12 +3307,21 @@ async def cmd_debug_autodaily(ctx: Context):
         async with ctx.typing():
             utc_now = utils.get_utc_now()
             result = await server_settings.get_autodaily_settings()
-            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            json_base = []
+            for autodaily_settings in result:
+                json_base.append({
+                    'guild_id': autodaily_settings.guild_id,
+                    'channel_id': autodaily_settings.channel_id or '-',
+                    'change_mode': autodaily_settings.change_mode,
+                    'message_id': autodaily_settings.latest_message_id or '-',
+                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+                })
             file_name = f'autodaily_settings_all_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
         await ctx.send(file=File(file_name))
-
+        os.remove(file_name)
 
 
 @cmd_debug_autodaily.group(name='nopost', brief='Get debug info', hidden=True)
@@ -3326,11 +3336,21 @@ async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
                 result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now, no_post_yet=True)
             else:
                 result = await server_settings.get_autodaily_settings(no_post_yet=True)
-            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            json_base = []
+            for autodaily_settings in result:
+                json_base.append({
+                    'guild_id': autodaily_settings.guild_id,
+                    'channel_id': autodaily_settings.channel_id or '-',
+                    'change_mode': autodaily_settings.change_mode,
+                    'message_id': autodaily_settings.latest_message_id or '-',
+                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+                })
             file_name = f'autodaily_settings_nopost_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
         await ctx.send(file=File(file_name))
+        os.remove(file_name)
 
 
 @cmd_debug_autodaily.group(name='changed', brief='Get debug info', hidden=True)
@@ -3345,11 +3365,21 @@ async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
                 result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now)
             else:
                 result = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            json_base = []
+            for autodaily_settings in result:
+                json_base.append({
+                    'guild_id': autodaily_settings.guild_id,
+                    'channel_id': autodaily_settings.channel_id or '-',
+                    'change_mode': autodaily_settings.change_mode,
+                    'message_id': autodaily_settings.latest_message_id or '-',
+                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+                })
             file_name = f'autodaily_settings_changed_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
             with open(file_name, 'w') as fp:
                 json.dump(json_base, fp, indent=4)
         await ctx.send(file=File(file_name))
+        os.remove(file_name)
 
 
 @BOT.group(name='device', brief='list available devices', hidden=True)
