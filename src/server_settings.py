@@ -99,6 +99,10 @@ class AutoDailySettings():
             return None
 
     @property
+    def no_post_yet(self) -> bool:
+        return self.__lastest_message_id is None
+
+    @property
     def latest_message_id(self) -> int:
         return self.__latest_message_id
 
@@ -635,7 +639,7 @@ async def clean_up_invalid_server_settings(bot: Bot) -> None:
         await GUILD_SETTINGS.delete_guild_settings(invalid_guild_id)
 
 
-async def get_autodaily_settings(bot: Bot, utc_now: datetime, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+async def get_autodaily_settings_legacy(bot: Bot, utc_now: datetime, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
     if guild_id:
         autodaily_settings = await GUILD_SETTINGS.get(bot, guild_id)
         return [autodaily_settings]
@@ -644,6 +648,35 @@ async def get_autodaily_settings(bot: Bot, utc_now: datetime, guild_id: int = No
     for autodaily_settings in GUILD_SETTINGS.autodaily_settings:
         if autodaily_settings.channel is not None and (not autodaily_settings.latest_message_modified_at or (not no_post_yet and autodaily_settings.latest_message_modified_at.date != utc_now.date)):
             result.append(autodaily_settings)
+    return result
+
+
+async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+    if guild_id:
+        if not bot:
+            raise ValueError('You need to provide the bot, when specifying the guild_id.')
+        autodaily_settings = await get_autodaily_settings_for_guild(bot, guild_id)
+        return [autodaily_settings]
+
+    result = [autodaily_settings for autodaily_settings in GUILD_SETTINGS.autodaily_settings if autodaily_settings.channel]
+    if no_post_yet:
+        return await get_autodaily_settings_without_post(result)
+
+    if utc_now:
+        result = [autodaily_settings for autodaily_settings in result if autodaily_settings.latest_message_created_at.date != utc_now.date]
+    return result
+
+
+async def get_autodaily_settings_for_guild(bot: Bot, guild_id: int) -> AutoDailySettings:
+    autodaily_settings = await GUILD_SETTINGS.get(bot, guild_id)
+    return autodaily_settings
+
+
+async def get_autodaily_settings_without_post(autodaily_settings: List[AutoDailySettings]) -> List[AutoDailySettings]:
+    if autodaily_settings is None:
+        autodaily_settings = GUILD_SETTINGS.autodaily_settings
+
+    result = [autodaily_settings for autodaily_settings in GUILD_SETTINGS.autodaily_settings if autodaily_settings.no_post_yet]
     return result
 
 

@@ -254,12 +254,12 @@ async def post_dailies_loop() -> None:
         db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
         has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        autodaily_settings = await server_settings.get_autodaily_settings(BOT, utc_now, no_post_yet=True)
+        autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
         if autodaily_settings:
             print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels')
         if has_daily_changed:
             print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info)}')
-            post_here = await server_settings.get_autodaily_settings(BOT, utc_now)
+            post_here = await server_settings.get_autodaily_settings(utc_now=utc_now)
             print(f'[post_dailies_loop] retrieved {len(post_here)} guilds to post')
             autodaily_settings.extend(post_here)
 
@@ -277,9 +277,8 @@ async def post_dailies_loop() -> None:
                 posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
             print(f'[post_dailies_loop] posted to {posted_count} of {guild_count} guilds')
 
-        if has_daily_changed:
-            if created_output or not autodaily_settings:
-                await daily.db_set_daily_info(daily_info, utc_now)
+        if has_daily_changed and (created_output or not autodaily_settings):
+            await daily.db_set_daily_info(daily_info, utc_now)
 
         seconds_to_wait = utils.datetime.get_seconds_to_wait(5)
         await asyncio.sleep(seconds_to_wait)
@@ -3289,6 +3288,66 @@ async def cmd_db_select(ctx: Context, *, query: str):
         await utils.discord.post_output(ctx, result)
     else:
         raise Error(f'The query \'{query}\' didn\'t return any results.')
+
+
+@BOT.group(name='debug', brief='Get debug info', hidden=True)
+@is_owner()
+async def cmd_debug(ctx: Context, *, args: str = None):
+    __log_command_use(ctx)
+
+
+@cmd_debug.group(name='autodaily', aliases=['daily'], brief='Get debug info', hidden=True, invoke_without_command=True)
+@is_owner()
+async def cmd_debug_autodaily(ctx: Context):
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            utc_now = utils.get_utc_now()
+            result = await server_settings.get_autodaily_settings()
+            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            file_name = f'autodaily_settings_all_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+            with open(file_name, 'w') as fp:
+                json.dump(json_base, fp, indent=4)
+        await ctx.send(file=File(file_name))
+
+
+
+@cmd_debug.group(name='nopost', brief='Get debug info', hidden=True, invoke_without_command=True)
+@is_owner()
+async def cmd_debug_autodaily(ctx: Context, *, args: str = None):
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            _, legacy = __extract_dash_parameters(args, None, '--legacy')
+            utc_now = utils.get_utc_now()
+            if legacy:
+                result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now, no_post_yet=True)
+            else:
+                result = await server_settings.get_autodaily_settings(no_post_yet=True)
+            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            file_name = f'autodaily_settings_nopost_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+            with open(file_name, 'w') as fp:
+                json.dump(json_base, fp, indent=4)
+        await ctx.send(file=File(file_name))
+
+
+@cmd_debug.group(name='changed', aliases=['daily'], brief='Get debug info', hidden=True, invoke_without_command=True)
+@is_owner()
+async def cmd_debug_autodaily(ctx: Context, *, args: str = None):
+    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        async with ctx.typing():
+            _, legacy = __extract_dash_parameters(args, None, '--legacy')
+            utc_now = utils.get_utc_now()
+            if legacy:
+                result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now)
+            else:
+                result = await server_settings.get_autodaily_settings(utc_now=utc_now)
+            json_base = [autodaily_settings.__dict__ for autodaily_settings in result]
+            file_name = f'autodaily_settings_changed_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+            with open(file_name, 'w') as fp:
+                json.dump(json_base, fp, indent=4)
+        await ctx.send(file=File(file_name))
 
 
 @BOT.group(name='device', brief='list available devices', hidden=True)
