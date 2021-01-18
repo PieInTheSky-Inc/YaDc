@@ -3293,13 +3293,13 @@ async def cmd_db_select(ctx: Context, *, query: str):
         raise Error(f'The query \'{query}\' didn\'t return any results.')
 
 
-@BOT.group(name='debug', brief='Get debug info', hidden=True)
+@BOT.group(name='debug', brief='Get debug info', hidden=True, invoke_without_command=True)
 @is_owner()
 async def cmd_debug(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
 
 
-@cmd_debug.group(name='autodaily', aliases=['daily'], brief='Get debug info', hidden=True, invoke_without_command=True)
+@cmd_debug.group(name='autodaily', aliases=['daily'], brief='Get debug info', invoke_without_command=True)
 @is_owner()
 async def cmd_debug_autodaily(ctx: Context):
     __log_command_use(ctx)
@@ -3310,9 +3310,9 @@ async def cmd_debug_autodaily(ctx: Context):
             json_base = []
             for autodaily_settings in result:
                 json_base.append({
-                    'guild_id': autodaily_settings.guild_id,
+                    'guild_id': autodaily_settings.guild_id or '-',
                     'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode,
+                    'change_mode': autodaily_settings.change_mode or '-',
                     'message_id': autodaily_settings.latest_message_id or '-',
                     'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
                     'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
@@ -3324,7 +3324,7 @@ async def cmd_debug_autodaily(ctx: Context):
         os.remove(file_name)
 
 
-@cmd_debug_autodaily.group(name='nopost', brief='Get debug info', hidden=True)
+@cmd_debug_autodaily.group(name='nopost', brief='Get debug info')
 @is_owner()
 async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
@@ -3339,9 +3339,9 @@ async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
             json_base = []
             for autodaily_settings in result:
                 json_base.append({
-                    'guild_id': autodaily_settings.guild_id,
+                    'guild_id': autodaily_settings.guild_id or '-',
                     'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode,
+                    'change_mode': autodaily_settings.change_mode or '-',
                     'message_id': autodaily_settings.latest_message_id or '-',
                     'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
                     'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
@@ -3353,7 +3353,7 @@ async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
         os.remove(file_name)
 
 
-@cmd_debug_autodaily.group(name='changed', brief='Get debug info', hidden=True)
+@cmd_debug_autodaily.group(name='changed', brief='Get debug info')
 @is_owner()
 async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
@@ -3368,9 +3368,9 @@ async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
             json_base = []
             for autodaily_settings in result:
                 json_base.append({
-                    'guild_id': autodaily_settings.guild_id,
+                    'guild_id': autodaily_settings.guild_id or '-',
                     'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode,
+                    'change_mode': autodaily_settings.change_mode or '-',
                     'message_id': autodaily_settings.latest_message_id or '-',
                     'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
                     'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
