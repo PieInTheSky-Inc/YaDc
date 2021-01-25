@@ -247,7 +247,9 @@ def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
 
 
 def __get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool, retrieved_date: datetime) -> str:
-    title = f'{divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - {calendar.month_abbr[retrieved_date.month]} {retrieved_date.year}'
+    title = divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    if retrieved_date:
+        title = f'{title} - {calendar.month_abbr[retrieved_date.month]} {retrieved_date.year}'
     if include_markdown:
         return f'__**{title}**__'
     else:
