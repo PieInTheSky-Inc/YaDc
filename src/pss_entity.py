@@ -628,7 +628,7 @@ class EntityDetailsCollection():
         """
         custom_title: only relevant for big sets
         """
-        result = []
+        result: List[Embed] = []
         display_names = []
         if self._get_is_big_set(big_set_threshold):
             detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
@@ -651,13 +651,21 @@ class EntityDetailsCollection():
                     footer += '\n\n'
                 footer += custom_footer_text
 
-            while (len(fields) > 25):
-                embed = utils.discord.create_embed(title, colour=colour, fields=fields[:25], footer=footer)
+            full_embed_length = 0
+            embed = None
+            while len(fields) > 0:
+                full_embed_length = len(title) + len(footer)
+                for i, field in enumerate(fields, 1):
+                    full_embed_length += len(field[0]) + len(field[1])
+                    if i == len(fields) or full_embed_length + len(fields[i][0]) + len(fields[i][1]) > 6000:
+                        break
+                if i == len(fields):
+                    embed = utils.discord.create_embed(title, colour=colour, fields=fields[:i], footer=footer, thumbnail_url=custom_thumbnail_url)
+                else:
+                    embed = utils.discord.create_embed(title, colour=colour, fields=fields[:i], footer=footer)
+                fields = fields[i:]
                 result.append(embed)
-                fields = fields[25:]
-
-            embed = utils.discord.create_embed(title, colour=colour, fields=fields, footer=footer, thumbnail_url=custom_thumbnail_url)
-            result.append(embed)
+                print(len(embed))
         else:
             for entity_details in self.__entities_details:
                 embed = await entity_details.get_details_as_embed(ctx)
