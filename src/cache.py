@@ -33,10 +33,7 @@ class PssCache:
 
 
     async def update_data(self, old_data: str = None) -> bool:
-        utils.dbg_prnt(f'+ PssCache[{self.name}].update_data(old_data)')
-        utils.dbg_prnt(f'[PssCache[{self.name}].update_data] Fetch data from path: {self.__update_path}')
         data = await core.get_data_from_path(self.__update_path)
-        utils.dbg_prnt(f'[PssCache[{self.name}].update_data] Retrieved {len(data)} bytes')
         data_changed = data != old_data
         if data_changed:
             self.__request_write()
@@ -52,9 +49,7 @@ class PssCache:
 
 
     async def get_raw_data(self) -> str:
-        utils.dbg_prnt(f'+ PssCache[{self.name}].get_data()')
         if self.__get_is_data_outdated():
-            utils.dbg_prnt(f'[PssCache[{self.name}].get_data] Data is outdated')
             await self.update_data()
 
         can_read = False
@@ -122,7 +117,6 @@ class PssCache:
         self.__WRITE_LOCK.acquire()
         self.__data = data
         self.__modify_date = utils.get_utc_now()
-        utils.dbg_prnt(f'[PssCache[{self.name}].__write_data] Stored {len(data)} bytes on {self.__modify_date}')
         self.__WRITE_LOCK.release()
 
 

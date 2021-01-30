@@ -665,7 +665,6 @@ class EntityDetailsCollection():
                     embed = utils.discord.create_embed(title, colour=colour, fields=fields[:i], footer=footer)
                 fields = fields[i:]
                 result.append(embed)
-                print(len(embed))
         else:
             for entity_details in self.__entities_details:
                 embed = await entity_details.get_details_as_embed(ctx)
