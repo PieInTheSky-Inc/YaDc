@@ -37,13 +37,18 @@ COLLECTION_PERK_LOOKUP: Dict[str, str] = {
 
 
 CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
-    'starbux': emojis.pss_bux,
-    'gas': emojis.pss_gas_big,
-    'mineral': emojis.pss_min_big,
-    'supply': emojis.pss_supply_big,
     'android': 'droids',
     'capacity': 'rounds',
-    'equipment': 'items'
+    'equipment': 'items',
+    'gas': emojis.pss_gas_big,
+    'item101': emojis.pss_gold,
+    'item102': emojis.pss_carbon,
+    'item103': emojis.pss_iron,
+    'item104': emojis.pss_titanium,
+    'item105': emojis.pss_silicon,
+    'mineral': emojis.pss_min_big,
+    'starbux': emojis.pss_bux,
+    'supply': emojis.pss_supply_big,
 }
 
 CURRENCY_EMOJI_LOOKUP_REVERSE: Dict[str, str] = {value: key for key, value in CURRENCY_EMOJI_LOOKUP.items()}

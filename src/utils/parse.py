@@ -20,7 +20,14 @@ __SEPARATORS_AMOUNT_MODIFICATION_LOOKUP: Dict[str, int] = {
 
 # ---------- Functions ----------
 
-def entity_string(entity_str: str, default_amount: str = '1') -> Tuple[str, str, int, str]:
+def entity_string(entity_str: str, default_amount: str = '1', default_type: str = None) -> Tuple[str, str, int, str]:
+    """
+    Parses an entity string (e.g. from ingredients) and returns:
+    - Entity type
+    - Entity id
+    - Entity amount
+    - Amount modifier
+    """
     entity_str = entity_str.lower()
     entity_type = entity_str
     if ':' in entity_str:
@@ -40,7 +47,7 @@ def entity_string(entity_str: str, default_amount: str = '1') -> Tuple[str, str,
     if not entity_id:
         entity_id = entity_str
         entity_str = None
-    entity_type = entity_type.strip() if entity_type else None
+    entity_type = entity_type.strip() if entity_type else default_type
     entity_id = entity_id.strip() if entity_id else None
     entity_amount = int(entity_amount.strip()) if entity_amount else None
 

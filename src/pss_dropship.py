@@ -173,19 +173,22 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
         cargo_items = daily_info['CargoItems'].split('|')
         cargo_prices = daily_info['CargoPrices'].split('|')
         for i, cargo_info in enumerate(cargo_items):
-            if 'x' in cargo_info:
-                item_id, amount = cargo_info.split('x')
-            else:
-                item_id = cargo_info
-                amount = '1'
-            if ':' in item_id:
-                _, item_id = item_id.split(':')
+            _, item_id, amount, _ = utils.parse.entity_string(cargo_info)
             if item_id:
                 item_details = item.get_item_details_by_id(item_id, items_data, trainings_data)
                 item_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
-                currency_type, price = cargo_prices[i].split(':')
-                currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
-                result.append(f'{amount} x {item_details}: {price} {currency_emoji}')
+                currency_type, currency_id, currency_amount, _ = utils.parse.entity_string(cargo_prices[i])
+                currency_type = currency_type.lower()
+                if 'item' in currency_type:
+                    key = f'item{currency_id}'
+                    currency = lookups.get_lookup_value_or_default(lookups.CURRENCY_EMOJI_LOOKUP, key)
+                    if not currency:
+                        currency_item_details = item.get_item_details_by_id(currency_id, items_data, trainings_data)
+                        currency = ''.join(await currency_item_details.get_details_as_text(entity.EntityDetailsType.MINI))
+                else:
+                    currency_amount = currency_id
+                    currency = lookups.get_lookup_value_or_default(lookups.CURRENCY_EMOJI_LOOKUP, currency_type, default=currency_type)
+                result.append(f'{amount} x {item_details}: {currency_amount} {currency}')
     else:
         result.append('-')
     return result
