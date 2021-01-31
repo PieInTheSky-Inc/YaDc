@@ -396,7 +396,7 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
     if text_channel and latest_message_id is not None:
         try:
             result = await text_channel.fetch_message(latest_message_id)
-            print(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+            utils.dbg_prnt(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
         except errors.NotFound:
             print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
         except Exception as err:
