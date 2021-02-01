@@ -70,6 +70,8 @@ RAW_COMMAND_USERS: List[str] = json.loads(str(RAW_COMMAND_USERS_RAW))
 SETTINGS_TABLE_NAME: str = 'settings'
 SETTINGS_TYPES: List[str] = ['boolean', 'float', 'int', 'text', 'timestamputc']
 
+SPRITE_CACHE_SUB_PATH: str = 'sprite_cache'
+
 
 THROW_COMMAND_ERRORS: int = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
 
