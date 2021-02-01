@@ -898,50 +898,6 @@ async def cmd_item(ctx: Context, *, item_name: str):
     await utils.discord.post_output(ctx, output)
 
 
-@BOT.command(name='layout', brief='Get a ship layout')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_layout(ctx: Context, *, player_name: str):
-    """
-    Searches for the given player and returns their current ship layout
-
-    Usage:
-      /layout [player_name]
-
-    Parameters:
-      player_name: Mandatory. The (beginning of the) name of the player to search for.
-
-    Examples:
-      /layout Namith - Offers a list of players having a name starting with 'Namith'. Upon selection prints the current player's ship layout.
-    """
-    __log_command_use(ctx)
-    async with ctx.typing():
-        exact_name = utils.discord.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        if not player_name:
-            raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_users_infos_by_name(player_name)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            async with ctx.typing():
-                output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=(await server_settings.get_use_embeds(ctx)))
-            await utils.discord.post_output_with_files(ctx, output, [file_path])
-            os.remove(file_path)
-    else:
-        leading_space_note = ''
-        if player_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
-        raise NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
-
-
 @BOT.command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
@@ -1278,7 +1234,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
       player_name: Mandatory. The (beginning of the) name of the player to search for.
 
     Examples:
-      /player Namith - Offers a list of players having a name starting with 'Namith'. Upon selection prints player details.
+      /player Namith - Offers a list of fleets having a name starting with 'Namith'. Upon selection prints player details.
     """
     __log_command_use(ctx)
     async with ctx.typing():
@@ -1287,7 +1243,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
             player_name = exact_name
         if not player_name:
             raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_users_infos_by_name(player_name)
+        user_infos = await user.get_user_infos_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:

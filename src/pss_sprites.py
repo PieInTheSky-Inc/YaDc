@@ -1,16 +1,11 @@
-import os
 from typing import Optional
 
 import pss_core as core
 import pss_entity as entity
 from typehints import EntitiesData, EntityInfo
 
-import settings
-
 
 # ---------- Constants ----------
-
-SPRITES_CACHE_PATH: str
 
 SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
 
@@ -19,10 +14,6 @@ SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
 
 
 # ---------- Sprites ----------
-
-async def download_sprite(sprite_id: str) -> str:
-    pass
-
 
 async def get_download_sprite_link(sprite_id: str) -> Optional[str]:
     if entity.entity_property_has_value(sprite_id):
@@ -40,14 +31,3 @@ async def get_download_sprite_link_by_property(entity_info: EntityInfo, *entitie
 
 def get_sprite_download_url(sprite_id: int) -> str:
     return f'{SPRITES_BASE_PATH}{sprite_id}'
-
-
-
-
-
-# ---------- Initialization ----------
-
-async def init():
-    PWD: str = os.getcwd()
-    if not os.path.isdir(os.path.join(PWD, settings.SPRITE_CACHE_SUB_PATH)):
-        os.makedirs(settings.SPRITE_CACHE_SUB_PATH)
