@@ -81,4 +81,4 @@ TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, hour
 USE_EMBEDS: bool = True
 
 
-VERSION: str = '1.3.2.10'
+VERSION: str = '1.3.2.11'
