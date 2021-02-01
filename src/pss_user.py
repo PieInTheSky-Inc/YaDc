@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 
 from discord import Embed
 from discord.ext.commands import Context
+from PIL import Image
 
 import emojis
 import pss_assert
@@ -41,11 +42,67 @@ USER_KEY_NAME = 'Id'
 
 # ---------- User info ----------
 
-async def get_user_infos_by_name(user_name: str) -> List[EntityInfo]:
+async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: EntitiesData = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    is_past_data = past_fleet_infos is not None and past_fleet_infos
+
+    user_id = user_info[USER_KEY_NAME]
+    retrieved_at = retrieved_at or utils.get_utc_now()
+    tourney_running = tourney.is_tourney_running(utc_now=retrieved_at)
+    if past_fleet_infos:
+        ship_info = {}
+        fleet_info = past_fleet_infos.get(user_info.get(fleet.FLEET_KEY_NAME))
+        current_user_info = await __get_user_info_by_id(user_id)
+        if current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME) != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
+            user_info['CurrentName'] = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
+    else:
+        _, ship_info = await ship.get_inspect_ship_for_user(user_id)
+        fleet_info = await __get_fleet_info_by_user_info(user_info)
+
+    is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
+    user_details = __create_user_details_from_info(user_info, fleet_info, ship_info, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, is_in_tourney_fleet=is_in_tourney_fleet)
+
+    if as_embed:
+        return [(await user_details.get_details_as_embed(ctx, display_inline=False))]
+    else:
+        return (await user_details.get_details_as_text(entity.EntityDetailsType.LONG))
+
+
+async def get_users_infos_by_name(user_name: str) -> List[EntityInfo]:
     pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
 
     user_infos = list((await __get_users_data(user_name)).values())
     return user_infos
+
+
+async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data: EntitiesData) -> List[EntityInfo]:
+    user_name_lower = user_name.lower()
+    result = {user_id: user_info for (user_id, user_info) in users_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
+    user_infos_current = await __get_users_data(user_name)
+    if user_infos_current:
+        for user_info in user_infos_current.values():
+            user_id = user_info[user.USER_KEY_NAME]
+            if user_id in users_data:
+                user_info = await __get_user_info_by_id(user_id)
+                if user_id not in result:
+                    result[user_id] = users_data[user_id]
+                if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
+                    result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    else:
+        for tournament_user_id, tournament_user_info in result.items():
+            user_info = await __get_user_info_by_id(tournament_user_id)
+            if result[tournament_user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
+                result[tournament_user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    return list(result.values())
+
+
+async def get_user_ship_layout(ctx, user_id: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    inspect_ship_path = await __get_inspect_ship_path(user_id)
+    ship_data_raw = await core.get_data_from_path(inspect_ship_path)
+    raw_dict = utils.convert.raw_xml_to_dict(ship_data_raw, preserve_lists=True)
+    ship_info = raw_dict['ShipService']['InspectShip']['Ship']
+    interior_sprite_id = ship_info.get('InteriorSpriteId')
+    for room_info in ship_info['Rooms']:
+        pass
 
 
 def get_user_search_details(user_info: EntityInfo) -> str:
@@ -257,52 +314,6 @@ def get_star_value_from_user_info(user_info: EntityInfo) -> Optional[int]:
     return result
 
 
-async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, past_fleet_infos: EntitiesData = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    is_past_data = past_fleet_infos is not None and past_fleet_infos
-
-    user_id = user_info[USER_KEY_NAME]
-    retrieved_at = retrieved_at or utils.get_utc_now()
-    tourney_running = tourney.is_tourney_running(utc_now=retrieved_at)
-    if past_fleet_infos:
-        ship_info = {}
-        fleet_info = past_fleet_infos.get(user_info.get(fleet.FLEET_KEY_NAME))
-        current_user_info = await __get_user_info_by_id(user_id)
-        if current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME) != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
-            user_info['CurrentName'] = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
-    else:
-        _, ship_info = await ship.get_inspect_ship_for_user(user_id)
-        fleet_info = await __get_fleet_info_by_user_info(user_info)
-
-    is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
-    user_details = __create_user_details_from_info(user_info, fleet_info, ship_info, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, is_in_tourney_fleet=is_in_tourney_fleet)
-
-    if as_embed:
-        return [(await user_details.get_details_as_embed(ctx, display_inline=False))]
-    else:
-        return (await user_details.get_details_as_text(entity.EntityDetailsType.LONG))
-
-
-async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data: EntitiesData) -> List[EntityInfo]:
-    user_name_lower = user_name.lower()
-    result = {user_id: user_info for (user_id, user_info) in users_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
-    user_infos_current = await __get_users_data(user_name)
-    if user_infos_current:
-        for user_info in user_infos_current.values():
-            user_id = user_info[user.USER_KEY_NAME]
-            if user_id in users_data:
-                user_info = await __get_user_info_by_id(user_id)
-                if user_id not in result:
-                    result[user_id] = users_data[user_id]
-                if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                    result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
-    else:
-        for tournament_user_id, tournament_user_info in result.items():
-            user_info = await __get_user_info_by_id(tournament_user_id)
-            if result[tournament_user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                result[tournament_user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
-    return list(result.values())
-
-
 def __calculate_win_rate(wins: int, losses: int, draws: int) -> float:
     battles = wins + losses + draws
     if battles > 0:
@@ -428,3 +439,4 @@ async def init() -> None:
         league_info['MinTrophy'] = int(league_info['MinTrophy'])
         league_info['MaxTrophy'] = int(league_info['MaxTrophy'])
         LEAGUE_INFOS_CACHE.append(league_info)
+    if
