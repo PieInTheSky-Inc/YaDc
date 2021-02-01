@@ -39,7 +39,7 @@ class TourneyData(object):
         elif self.__meta['schema_version'] == 4:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
-        elif self.__meta['schema_version'] == 5:
+        elif self.__meta['schema_version'] in [5, 6]:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
         self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
