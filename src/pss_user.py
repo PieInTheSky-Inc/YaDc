@@ -439,4 +439,3 @@ async def init() -> None:
         league_info['MinTrophy'] = int(league_info['MinTrophy'])
         league_info['MaxTrophy'] = int(league_info['MaxTrophy'])
         LEAGUE_INFOS_CACHE.append(league_info)
-    if
