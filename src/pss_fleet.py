@@ -193,7 +193,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
 
     if as_embed:
         if footer_text:
-            footer_text = ''.join((properties_text, footer_text))
+            footer_text = '\n'.join((properties_text, footer_text))
         else:
             footer_text = properties_text
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -475,6 +475,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Division', True, transform_function=__get_division_name_and_ranking),
         entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
         entity.EntityDetailProperty('Type', True, transform_function=__get_type),
+        entity.EntityDetailProperty('Championship score', True, entity_property_name='ChampionshipScore'),
         entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
     ]),
     'embed_settings': {
