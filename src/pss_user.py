@@ -411,6 +411,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('PVP win/lose/draw', True, transform_function=__get_pvp_attack_stats),
         entity.EntityDetailProperty('Defense win/lose/draw', True, transform_function=__get_pvp_defense_stats),
         entity.EntityDetailProperty('Level', True, transform_function=__get_level),
+        entity.EntityDetailProperty('Championship score', True, entity_property_name='ChampionshipScore'),
         entity.EntityDetailProperty('User type', True, transform_function=__get_user_type),
         entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
     ]),

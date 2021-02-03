@@ -39,9 +39,12 @@ class TourneyData(object):
         elif self.__meta['schema_version'] == 4:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
-        elif self.__meta['schema_version'] in [5, 6]:
+        elif self.__meta['schema_version'] == 5:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
+        elif self.__meta['schema_version'] == 6:
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v6(data['fleets'], data['users'])
+            self.__users = TourneyData.__create_user_dict_from_data_v6(data['users'], self.__fleets)
         self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
 
@@ -199,6 +202,28 @@ class TourneyData(object):
 
 
     @staticmethod
+    def __create_fleet_data_from_data_v6(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
+        result = {}
+        for i, entry in enumerate(fleets_data, 1):
+            alliance_id = str(entry[0])
+            users = [user_info for user_info in users_data if user_info[2] == entry[0]]
+            result[alliance_id] = {
+                'AllianceId': alliance_id,
+                'AllianceName': entry[1],
+                'Score': str(entry[2]),
+                'DivisionDesignId': str(entry[3]),
+                'Trophy': str(entry[4]),
+                'NumberOfMembers': len(users),
+                'ChampionshipScore': str(entry[5]),
+            }
+        ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
+        for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
+            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+        return result
+
+
+
+    @staticmethod
     def __create_user_data_from_data_v3(users: List[List[Union[int, str]]], data: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
         result = {}
         users_dict = dict(users)
@@ -286,6 +311,46 @@ class TourneyData(object):
                     result[user_id]['Alliance'][key] = value
 
         return result
+
+
+    @staticmethod
+    def __create_user_dict_from_data_v6(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+        result = {}
+        for user in users:
+            fleet_id = str(user[2])
+            user_id = str(user[0])
+            result[user_id] = {
+                'Id': user_id,
+                'AllianceId': fleet_id,
+                'Trophy': str(user[3]),
+                'AllianceScore': str(user[4]),
+                'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
+                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]) if user[6] else None,
+                'LastLoginDate': TourneyData.__convert_timestamp_v4(user[7]),
+                'Name': user[1],
+                'LastHeartBeatDate': TourneyData.__convert_timestamp_v4(user[8]),
+                'CrewDonated': str(user[9]),
+                'CrewReceived': str(user[10]),
+                'PVPAttackWins': str(user[11]),
+                'PVPAttackLosses': str(user[12]),
+                'PVPAttackDraws': str(user[13]),
+                'PVPDefenceWins': str(user[14]),
+                'PVPDefenceLosses': str(user[15]),
+                'PVPDefenceDraws': str(user[16]),
+                'ChampionshipScore': str(user[17]),
+                'Alliance': {}
+            }
+            if fleet_id and fleet_id != '0':
+                fleet_info = fleet_data.get(fleet_id, {})
+                for key, value in fleet_info.items():
+                    result[user_id]['Alliance'][key] = value
+
+        return result
+
+
+    @staticmethod
+    def __create_user_dict_from_data_v6(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+        return TourneyData.__create_user_dict_from_data_v5(users, fleet_data)
 
 
     @staticmethod
