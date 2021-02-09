@@ -9,7 +9,6 @@ import database as db
 import pss_assert
 import pss_entity as entity
 import settings as app_settings
-from typehints import EntitiesData, EntityInfo
 import utils
 
 
@@ -58,15 +57,22 @@ class AutoDailyChangeMode(IntEnum):
 
 
 class AutoDailySettings():
-    def __init__(self, guild: Guild, channel: TextChannel, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime, latest_message_modified_at: datetime) -> None:
+    def __init__(self, bot: Bot, guild_id: int, daily_channel_id: int, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime, latest_message_modified_at: datetime) -> None:
+        self.__bot: Bot = bot
         self.__can_post: bool = can_post
-        self.__channel: TextChannel = channel
+        self.__channel_id: int = daily_channel_id
+        self.__channel: TextChannel = None
         self.__change_mode: AutoDailyChangeMode = change_mode or AutoDailyChangeMode.POST_NEW
-        self.__guild: Guild = guild
+        self.__guild: Guild = None
+        self.__guild_id: int = guild_id
         self.__latest_message_id: int = latest_message_id or None
         self.__latest_message_created_at: datetime = latest_message_created_at or None
         self.__latest_message_modified_at: datetime = latest_message_modified_at or None
 
+
+    @property
+    def bot(self) -> Bot:
+        return self.__bot
 
     @property
     def can_post(self) -> bool:
@@ -78,25 +84,35 @@ class AutoDailySettings():
 
     @property
     def channel(self) -> TextChannel:
+        if self.__channel is None:
+            try:
+                self.__channel = self.__bot.get_channel(self.channel_id)
+            except Exception as error:
+                self.__channel = None
+                print(f'Could not get channel for id {self.channel_id}: {error}')
+            if self.__channel is None and self.channel_id is not None:
+                utils.dbg_prnt(f'Could not get channel for id {self.channel_id}')
         return self.__channel
 
     @property
     def channel_id(self) -> int:
-        if self.channel:
-            return self.channel.id
-        else:
-            return None
+        return self.__channel_id
 
     @property
     def guild(self) -> Guild:
+        if self.__guild is None:
+            try:
+                self.__guild = self.bot.get_guild(self.guild_id)
+            except Exception as error:
+                self.__guild = None
+                print(f'Could not get guild for id {self.guild_id}: {error}')
+            if self.__guild is None and self.guild_id is not None:
+                utils.dbg_prnt(f'Could not get guild for id {self.guild_id}')
         return self.__guild
 
     @property
     def guild_id(self) -> int:
-        if self.guild:
-            return self.guild.id
-        else:
-            return None
+        return self.__guild_id
 
     @property
     def no_post_yet(self) -> bool:
@@ -127,18 +143,18 @@ class AutoDailySettings():
 
     def _get_pretty_channel_mention(self) -> Optional[str]:
         if self.channel is not None:
-            channel_name = self.channel.mention
+            result = self.channel.mention
         else:
-            channel_name = None
-        return channel_name
+            result = None
+        return result
 
 
     def _get_pretty_channel_name(self) -> str:
         if self.channel is not None:
-            channel_name = self.channel.name
+            result = self.channel.name
         else:
-            channel_name = '<not set>'
-        return channel_name
+            result = '<not set>'
+        return result
 
 
     def _get_pretty_mode(self) -> str:
@@ -147,7 +163,7 @@ class AutoDailySettings():
 
 
     def get_channel_setting(self) -> Dict[str, str]:
-        if self.channel:
+        if self.channel is not None:
             result = self.channel.mention
         else:
             result = self._get_pretty_channel_name()
@@ -312,6 +328,7 @@ class AutoDailySettings():
 
 class GuildSettings(object):
     def __init__(self, bot: Bot, row: asyncpg.Record) -> None:
+        self.__bot = bot
         self.__guild_id: int = row.get(_COLUMN_NAME_GUILD_ID)
         self.__prefix: str = row.get(_COLUMN_NAME_PREFIX)
         self.__use_pagination: bool = row.get(_COLUMN_NAME_USE_PAGINATION)
@@ -328,31 +345,7 @@ class GuildSettings(object):
         daily_latest_message_created_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
         daily_latest_message_modified_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
 
-        try:
-            channel = bot.get_channel(daily_channel_id)
-        except Exception as error:
-            channel = None
-            print(f'Could not get channel for id {daily_channel_id}: {error}')
-        if channel is None and daily_channel_id is not None:
-            print(f'Could not get channel for id {daily_channel_id}')
-
-        try:
-            self.__guild = bot.get_guild(self.__guild_id)
-        except Exception as error:
-            self.__guild = None
-            print(f'Could not get guild for id {self.__guild_id}: {error}')
-        if self.__guild is None and self.__guild_id is not None:
-            print(f'Could not get channel for id {daily_channel_id}')
-
-        try:
-            self.__bot_news_channel = bot.get_channel(self.__bot_news_channel_id)
-        except Exception as error:
-            self.__bot_news_channel = None
-            print(f'Could not get channel for id {self.__bot_news_channel_id}: {error}')
-        if self.__bot_news_channel is None and self.__bot_news_channel_id is not None:
-            print(f'Could not get channel for id {self.__bot_news_channel_id}')
-
-        self.__autodaily_settings: AutoDailySettings = AutoDailySettings(self.__guild, channel, can_post_daily, daily_latest_message_id, daily_post_mode, daily_latest_message_created_at, daily_latest_message_modified_at)
+        self.__autodaily_settings: AutoDailySettings = AutoDailySettings(self.__bot, self.__guild_id, daily_channel_id, can_post_daily, daily_latest_message_id, daily_post_mode, daily_latest_message_created_at, daily_latest_message_modified_at)
 
 
     @property
@@ -360,7 +353,19 @@ class GuildSettings(object):
         return self.__autodaily_settings
 
     @property
+    def bot(self) -> Bot:
+        return self.__bot
+
+    @property
     def bot_news_channel(self) -> TextChannel:
+        if not self.__bot_news_channel:
+            try:
+                self.__bot_news_channel = self.__bot.get_channel(self.bot_news_channel_id)
+            except Exception as error:
+                self.__bot_news_channel = None
+                print(f'Could not get channel for id {self.bot_news_channel_id}: {error}')
+            if self.__bot_news_channel is None and self.bot_news_channel_id is not None:
+                utils.dbg_prnt(f'Could not get channel for id {self.bot_news_channel_id}')
         return self.__bot_news_channel
 
     @property
@@ -369,6 +374,14 @@ class GuildSettings(object):
 
     @property
     def guild(self) -> Guild:
+        if not self.__guild:
+            try:
+                self.__guild = self.bot.get_guild(self.id)
+            except Exception as error:
+                self.__guild = None
+                print(f'Could not get guild for id {self.id}: {error}')
+            if self.__guild is None and self.id is not None:
+                utils.dbg_prnt(f'Could not get guild for id {self.id}')
         return self.__guild
 
     @property
@@ -572,11 +585,13 @@ class GuildSettingsCollection():
 
     @property
     def autodaily_settings(self) -> List[AutoDailySettings]:
-        return [guild_settings.autodaily for guild_settings in self.__data.values()]
+        result = [guild_settings.autodaily for guild_settings in self.__data.values() if guild_settings.autodaily.channel_id is not None]
+        return result
 
     @property
     def bot_news_channels(self) -> List[TextChannel]:
-        return [guild_settings.bot_news_channel for guild_settings in self.__data.values() if guild_settings.bot_news_channel is not None]
+        result = [guild_settings.bot_news_channel for guild_settings in self.__data.values() if guild_settings.bot_news_channel_id is not None]
+        return result
 
 
     async def create_guild_settings(self, bot: Bot, guild_id: int) -> bool:
@@ -605,8 +620,13 @@ class GuildSettingsCollection():
 
 
     async def init(self, bot: Bot) -> None:
-        for server_settings in (await db_get_server_settings()):
-            self.__data[server_settings[_COLUMN_NAME_GUILD_ID]] = GuildSettings(bot, server_settings)
+        rows = await db_get_server_settings()
+        for row in rows:
+            guild_id = row.get(_COLUMN_NAME_GUILD_ID)
+            if guild_id:
+                self.__data[guild_id] = GuildSettings(bot, row)
+            else:
+                print(f'[GuildSettingsCollection.init(Bot)] Found guild settings without guildid: {row}')
 
 
     def items(self) -> ItemsView[int, GuildSettings]:

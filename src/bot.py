@@ -283,18 +283,18 @@ async def post_dailies_loop() -> None:
 
 async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime) -> int:
     posted_count = 0
-    for guild_settings in autodaily_settings:
-        if guild_settings.guild.id is not None and guild_settings.channel_id is not None:
-            posted, can_post, latest_message = await post_autodaily(guild_settings.channel, guild_settings.latest_message_id, guild_settings.change_mode, current_daily_message, current_daily_embed, utc_now)
+    for guild_autodaily_settings in autodaily_settings:
+        if guild_autodaily_settings.guild_id is not None and guild_autodaily_settings.channel_id is not None:
+            posted, can_post, latest_message = await post_autodaily(guild_autodaily_settings.channel, guild_autodaily_settings.latest_message_id, guild_autodaily_settings.change_mode, current_daily_message, current_daily_embed, utc_now)
             if posted:
                 posted_count += 1
             else:
-                guild_name = guild_settings.guild.name
-                guild_id = guild_settings.guild_id
-                channel_name = f'#{guild_settings.channel.name}' if guild_settings.channel else '<not accessible>'
-                channel_id = guild_settings.channel_id
+                guild_name = guild_autodaily_settings.guild.name
+                guild_id = guild_autodaily_settings.guild_id
+                channel_name = f'#{guild_autodaily_settings.channel.name}' if guild_autodaily_settings.channel else '<not accessible>'
+                channel_id = guild_autodaily_settings.channel_id
                 print(f'[post_dailies] Failed to post to guild \'{guild_name}\' ({guild_id}), channel \'{channel_name}\' ({channel_id})')
-            await guild_settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
+            await guild_autodaily_settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
     return posted_count
 
 
