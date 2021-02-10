@@ -122,7 +122,9 @@ async def on_ready() -> None:
     print(f'DB schema version is: {schema_version}')
     print(f'Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
     print(f'discord.py version: {discord_version}')
-    post_dailies_loop.start()
+    if settings.FEATURE_AUTODAILY_ENABLED:
+        print('Starting auto-daily loop.')
+        post_dailies_loop.start()
 
 
 @BOT.event
@@ -234,39 +236,37 @@ async def on_guild_remove(guild: Guild) -> None:
 
 @tasks.loop(minutes=5)
 async def post_dailies_loop() -> None:
-    if settings.FEATURE_AUTODAILY_ENABLED:
-        utils.dbg_prnt('Starting auto-daily loop.')
-        utc_now = utils.get_utc_now()
-        if utc_now < settings.POST_AUTODAILY_FROM:
-            return
+    utc_now = utils.get_utc_now()
+    if utc_now < settings.POST_AUTODAILY_FROM:
+        return
 
-        utc_now = utils.get_utc_now()
+    utc_now = utils.get_utc_now()
 
-        daily_info = await daily.get_daily_info()
-        db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
-        has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
+    daily_info = await daily.get_daily_info()
+    db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
+    has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        if has_daily_changed:
-            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
-            autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
-        else:
-            autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
-            if autodaily_settings:
-                print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
-
-        created_output = False
-        posted_count = 0
+    if has_daily_changed:
+        print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
+        autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
+        print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
+    else:
+        autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
         if autodaily_settings:
-            output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
-            if created_output:
-                current_daily_message = '\n'.join(output)
-                current_daily_embed = output_embeds[0]
-                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
-            print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
+            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
 
-        if has_daily_changed and (created_output or not autodaily_settings):
-            await daily.db_set_daily_info(daily_info, utc_now)
+    created_output = False
+    posted_count = 0
+    if autodaily_settings:
+        output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
+        if created_output:
+            current_daily_message = '\n'.join(output)
+            current_daily_embed = output_embeds[0]
+            posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
+        print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
+
+    if has_daily_changed and (created_output or not autodaily_settings):
+        await daily.db_set_daily_info(daily_info, utc_now)
 
 
 @post_dailies_loop.before_loop
