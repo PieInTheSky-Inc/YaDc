@@ -13,6 +13,7 @@ import pss_entity as entity
 import pss_fleet as fleet
 import pss_login as login
 import pss_lookups as lookups
+import pss_room as room
 import pss_ship as ship
 import pss_sprites as sprites
 import pss_tournament as tourney
@@ -96,11 +97,14 @@ async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data
 
 
 async def get_user_ship_layout(ctx, user_id: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    ships_designs_data = await ship.ships_designs_retriever.get_data_dict3()
+    rooms_designs_data = await room.rooms_designs_retriever.get_data_dict3()
     inspect_ship_path = await __get_inspect_ship_path(user_id)
     ship_data_raw = await core.get_data_from_path(inspect_ship_path)
     raw_dict = utils.convert.raw_xml_to_dict(ship_data_raw, preserve_lists=True)
     ship_info = raw_dict['ShipService']['InspectShip']['Ship']
-    interior_sprite_id = ship_info.get('InteriorSpriteId')
+    interior_sprite_id = ships_designs_data[ship_info.get('ShipDesignId')]['InteriorSpriteId']
+    interior_sprite_path = await sprites.download_sprite(interior_sprite_id)
     for room_info in ship_info['Rooms']:
         pass
 

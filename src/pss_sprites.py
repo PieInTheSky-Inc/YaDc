@@ -21,7 +21,8 @@ SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
 # ---------- Sprites ----------
 
 async def download_sprite(sprite_id: str) -> str:
-    pass
+    download_url = get_download_sprite_link(sprite_id)
+
 
 
 async def get_download_sprite_link(sprite_id: str) -> Optional[str]:
@@ -49,5 +50,8 @@ def get_sprite_download_url(sprite_id: int) -> str:
 
 async def init():
     PWD: str = os.getcwd()
-    if not os.path.isdir(os.path.join(PWD, settings.SPRITE_CACHE_SUB_PATH)):
+    sprites_cache_path = os.path.join(PWD, settings.SPRITE_CACHE_SUB_PATH)
+    if not os.path.isdir(sprites_cache_path):
         os.makedirs(settings.SPRITE_CACHE_SUB_PATH)
+    global SPRITES_CACHE_PATH
+    SPRITES_CACHE_PATH = sprites_cache_path
