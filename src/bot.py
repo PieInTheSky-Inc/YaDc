@@ -931,10 +931,11 @@ async def cmd_layout(ctx: Context, *, player_name: str):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
+            as_embed = await server_settings.get_use_embeds(ctx)
             async with ctx.typing():
-                output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=(await server_settings.get_use_embeds(ctx)))
-            await utils.discord.post_output_with_files(ctx, output, [file_path])
-            os.remove(file_path)
+                output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
+                await utils.discord.post_output_with_files(ctx, output, [file_path])
+                os.remove(file_path)
     else:
         leading_space_note = ''
         if player_name.startswith(' '):

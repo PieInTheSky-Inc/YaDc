@@ -1,10 +1,11 @@
 from datetime import datetime
 import math
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from discord import Embed
 from discord.ext.commands import Context
-from PIL import Image
+from PIL.Image import Image
+from discord.file import File
 
 import emojis
 import pss_assert
@@ -96,17 +97,54 @@ async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data
     return list(result.values())
 
 
-async def get_user_ship_layout(ctx, user_id: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = settings.USE_EMBEDS) -> Tuple[Union[List[Embed], List[str]], File]:
     ships_designs_data = await ship.ships_designs_retriever.get_data_dict3()
     rooms_designs_data = await room.rooms_designs_retriever.get_data_dict3()
     inspect_ship_path = await __get_inspect_ship_path(user_id)
     ship_data_raw = await core.get_data_from_path(inspect_ship_path)
     raw_dict = utils.convert.raw_xml_to_dict(ship_data_raw, preserve_lists=True)
-    ship_info = raw_dict['ShipService']['InspectShip']['Ship']
-    interior_sprite_id = ships_designs_data[ship_info.get('ShipDesignId')]['InteriorSpriteId']
-    interior_sprite_path = await sprites.download_sprite(interior_sprite_id)
-    for room_info in ship_info['Rooms']:
-        pass
+    user_info: entity.EntityInfo = raw_dict['ShipService']['InspectShip']['User']
+    user_ship_info: entity.EntityInfo = raw_dict['ShipService']['InspectShip']['Ship']
+    ship_design_info: entity.EntityInfo = ships_designs_data[user_ship_info.get('ShipDesignId')]
+    file_path = __get_ship_layout(user_ship_info, ship_design_info, rooms_designs_data)
+    title = f'{user_info[user.USER_DESCRIPTION_PROPERTY_NAME]}'
+    description = [
+        f'Fleet: {user_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}'
+        f'Trophies: {user_info["Trophies"]}'
+        f'Lvl {ship_design_info["ShipLevel"]} - {ship_design_info["ShipDesignName"]}'
+    ]
+    attachment = File(file_path, filename='layout.png')
+    if as_embed:
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        embed = utils.discord.create_embed(title=title, description=description, colour=colour)
+        output = [embed]
+    else:
+        output = [f'**{title}**'] + description
+    return output, file_path
+
+
+async def __get_ship_layout(user_ship_info: entity.EntityInfo, ship_design_info: entity.EntityInfo, rooms_designs_data: entity.EntitiesData) -> str:
+    user_id = user_ship_info['UserId']
+    interior_sprite_id = ship_design_info['InteriorSpriteId']
+    interior_sprite = await sprites.load_sprite(interior_sprite_id)
+    for ship_room_info in user_ship_info['Rooms']:
+        room_info = rooms_designs_data[ship_room_info[room.ROOM_DESIGN_KEY_NAME]]
+        room_under_construction = False
+        if room_under_construction:
+            room_sprite_id = room_info['ConstructionSpriteId']
+        else:
+            room_sprite_id = room_info['ImageSpriteId']
+        room_sprite = await sprites.load_sprite(room_sprite_id)
+        logo_sprite_id = room_info.get('LogoSpriteId')
+        if entity.entity_property_has_value(logo_sprite_id):
+            logo_sprite = await sprites.load_sprite(logo_sprite_id)
+        else:
+            logo_sprite = None
+        room_short_name = room_info.get('RoomShortName') or None
+        interior_sprite.paste(room_sprite, (int(room_info['Column']) * 25, int(room_info['Row']) * 25))
+    file_path = f'{user_id}_{utils.format.datetime(utils.get_utc_now(), include_tz=False, include_tz_brackets=False)}_layout.png'
+    interior_sprite.save(file_path)
+    return file_path
 
 
 def get_user_search_details(user_info: EntityInfo) -> str:
