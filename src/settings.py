@@ -9,7 +9,7 @@ from typing import List
 BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
 
 
-DATABASE_URL: str = str(os.environ.get('DATABASE_URL'))
+DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode=require'
 
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
@@ -81,4 +81,4 @@ TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, hour
 USE_EMBEDS: bool = True
 
 
-VERSION: str = '1.3.3.1'
+VERSION: str = '1.3.3.2'

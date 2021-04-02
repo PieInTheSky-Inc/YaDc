@@ -14,6 +14,7 @@ from discord import __version__ as discord_version
 from discord.ext.commands import Bot, BucketType, Context, cooldown, is_owner, when_mentioned_or
 import discord.errors as errors
 import discord.ext.commands.errors as command_errors
+import discord.ext.tasks as tasks
 import holidays
 
 import database as db
@@ -67,6 +68,8 @@ BOT = Bot(command_prefix=get_prefix,
 __COMMANDS = []
 COOLDOWN: float = 15.0
 
+INITIALIZED: bool = False
+
 PWD: str = os.getcwd()
 
 RATE: int = 5
@@ -117,32 +120,23 @@ async def on_ready() -> None:
     print(f'Bot version is: {settings.VERSION}')
     schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
+    print(f'Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
     print(f'discord.py version: {discord_version}')
     if settings.FEATURE_AUTODAILY_ENABLED:
-        BOT.loop.create_task(post_dailies_loop())
+        print('Starting auto-daily loop.')
+        post_dailies_loop.start()
 
 
 @BOT.event
 async def on_connect() -> None:
     print('+ on_connect()')
-    await db.init()
-    await server_settings.init(BOT)
-    await server_settings.clean_up_invalid_server_settings(BOT)
-    await login.init()
-    await daily.init()
-
-    await crew.init()
-    await item.init()
-    await room.init()
-    await user.init()
-    global __COMMANDS
-    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
-    print(f'Initialized!')
+    await __initialize()
 
 
 @BOT.event
 async def on_resumed() -> None:
     print('+ on_resumed()')
+    await __initialize()
 
 
 @BOT.event
@@ -240,45 +234,44 @@ async def on_guild_remove(guild: Guild) -> None:
 # ----------                         Tasks                          ---------- #
 # ############################################################################ #
 
+@tasks.loop(minutes=5)
 async def post_dailies_loop() -> None:
-    print(f'Started post dailies loop')
     utc_now = utils.get_utc_now()
-    while utc_now < settings.POST_AUTODAILY_FROM:
-        wait_for = utils.datetime.get_seconds_to_wait(60, utc_now=utc_now)
-        await asyncio.sleep(wait_for)
-        utc_now = utils.get_utc_now()
+    if utc_now < settings.POST_AUTODAILY_FROM:
+        return
 
-    while True:
-        utc_now = utils.get_utc_now()
+    utc_now = utils.get_utc_now()
 
-        daily_info = await daily.get_daily_info()
-        db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
-        has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
+    daily_info = await daily.get_daily_info()
+    db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
+    has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
-        if has_daily_changed:
-            print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
-            autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
-        else:
-            autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
-            if autodaily_settings:
-                print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
-
-        created_output = False
-        posted_count = 0
+    if has_daily_changed:
+        print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
+        autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
+        print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
+    else:
+        autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
         if autodaily_settings:
-            output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
-            if created_output:
-                current_daily_message = '\n'.join(output)
-                current_daily_embed = output_embeds[0]
-                posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
-            print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
+            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
 
-        if has_daily_changed and (created_output or not autodaily_settings):
-            await daily.db_set_daily_info(daily_info, utc_now)
+    created_output = False
+    posted_count = 0
+    if autodaily_settings:
+        output, output_embeds, created_output = await dropship.get_dropship_text(daily_info=daily_info)
+        if created_output:
+            current_daily_message = '\n'.join(output)
+            current_daily_embed = output_embeds[0]
+            posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
+        print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
-        seconds_to_wait = utils.datetime.get_seconds_to_wait(5)
-        await asyncio.sleep(seconds_to_wait)
+    if has_daily_changed and (created_output or not autodaily_settings):
+        await daily.db_set_daily_info(daily_info, utc_now)
+
+
+@post_dailies_loop.before_loop
+async def before_post_dailies_loop() -> None:
+    await BOT.wait_until_ready()
 
 
 async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime) -> int:
@@ -3985,6 +3978,24 @@ def __extract_dash_parameters(full_arg: str, args: Optional[List[str]], *dash_pa
 # ############################################################################ #
 # ----------                      Run the Bot                       ---------- #
 # ############################################################################ #
+
+async def __initialize() -> None:
+    print('Initializing.')
+    await db.init()
+    await server_settings.init(BOT)
+    await server_settings.clean_up_invalid_server_settings(BOT)
+    await login.init()
+    await daily.init()
+
+    await crew.init()
+    await item.init()
+    await room.init()
+    await user.init()
+    global __COMMANDS
+    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
+    INITIALIZED = True
+    print(f'Initialized!')
+
 
 if __name__ == '__main__':
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
