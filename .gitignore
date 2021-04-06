@@ -3,6 +3,7 @@ items-*.txt
 *.swp
 *.db
 *.csv
+sprite_cache/
 
 # files created at runtime
 launch.json
