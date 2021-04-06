@@ -1,0 +1,1 @@
+This font has been created with [bitfontmaker2](https://www.pentacom.jp/pentacom/bitfontmaker2/). Import the contents of [PSSClone_raw.txt](PSSCLone_raw.txt) into the editor, if you wish to edit the font. Read the help on the page to learn how to do this.

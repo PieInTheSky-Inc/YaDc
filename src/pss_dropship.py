@@ -83,12 +83,14 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     parts_text = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
-    expiring_sale_details_text.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
-    expiring_sale_details_text.insert(0, '**Sale expiring today**')
+    if expiring_sale_details_text:
+        expiring_sale_details_text.append(f'_Visit <{daily.LATE_SALES_PORTAL_HYPERLINK}> to purchase this offer._')
+        expiring_sale_details_text.insert(0, '**Sale expiring today**')
 
     expiring_sale_details_embed = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=True)
-    expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
-    expiring_sale_details_embed.insert(0, '**Sale expiring today**')
+    if expiring_sale_details_embed:
+        expiring_sale_details_embed.append(f'_Visit the [Late Sales Portal]({daily.LATE_SALES_PORTAL_HYPERLINK}) to purchase this offer._')
+        expiring_sale_details_embed.insert(0, '**Sale expiring today**')
 
     current_events_details_text, event_sprite_id = await __get_current_events_details_as_text(situations_designs_data, chars_designs_data, collections_designs_data, items_designs_data, missions_designs_data, rooms_designs_data, utc_now)
     if current_events_details_text:
@@ -98,8 +100,10 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
 
     parts_embed = list(parts_text)
 
-    parts_text.append(expiring_sale_details_text)
-    parts_embed.append(expiring_sale_details_embed)
+    if expiring_sale_details_text:
+        parts_text.append(expiring_sale_details_text)
+    if expiring_sale_details_embed:
+        parts_embed.append(expiring_sale_details_embed)
 
     lines = list(daily_msg)
     for part in parts_text:

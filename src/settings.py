@@ -9,7 +9,7 @@ from typing import List
 BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
 
 
-DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode=require'
+DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}'
 
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
@@ -21,7 +21,7 @@ EXCEL_COLUMN_FORMAT_DATETIME: str = 'YYYY-MM-DD hh:MM:ss'
 EXCEL_COLUMN_FORMAT_NUMBER: str = '0'
 
 
-FEATURE_AUTODAILY_ENABLED: int = int(os.environ.get('FEATURE_AUTODAILY_ENABLED', '1'))
+FEATURE_AUTODAILY_ENABLED: int = 0
 
 FLEETS_COMMAND_USERS_RAW: str = os.environ.get('FLEETS_COMMAND_USERS', '[]')
 FLEETS_COMMAND_USERS: List[str] = json.loads(str(FLEETS_COMMAND_USERS_RAW))

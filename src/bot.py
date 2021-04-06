@@ -39,6 +39,7 @@ import pss_research as research
 import pss_room as room
 import pss_ship as ship
 import pss_situation as situation
+import pss_sprites as sprites
 import pss_tournament as tourney
 import pss_top
 import pss_training as training
@@ -149,7 +150,7 @@ async def on_shard_ready() -> None:
     print('+ on_shard_ready()')
 
 
-@BOT.event
+""" @BOT.event
 async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
@@ -203,7 +204,7 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
                 await ctx.send(f'**{error_type}**\n{error_message}', delete_after=retry_after)
         except errors.Forbidden:
-            __log_command_use_error(ctx, err, force_printing=True)
+            __log_command_use_error(ctx, err, force_printing=True) """
 
 
 @BOT.event
@@ -927,7 +928,7 @@ async def cmd_layout(ctx: Context, *, player_name: str):
             as_embed = await server_settings.get_use_embeds(ctx)
             async with ctx.typing():
                 output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-                await utils.discord.post_output_with_files(ctx, output, [file_path])
+                await utils.discord.post_output_with_files(ctx, output, [file_path], output_is_embeds=as_embed)
                 os.remove(file_path)
     else:
         leading_space_note = ''
@@ -3984,6 +3985,7 @@ async def __initialize() -> None:
     await db.init()
     await server_settings.init(BOT)
     await server_settings.clean_up_invalid_server_settings(BOT)
+    await sprites.init()
     await login.init()
     await daily.init()
 
