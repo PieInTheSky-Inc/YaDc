@@ -17,6 +17,11 @@ from typehints import EntitiesData, EntityInfo
 FUNC_HSV_TO_RGB = np.vectorize(colorsys.hsv_to_rgb)
 FUNC_RGB_TO_HSV = np.vectorize(colorsys.rgb_to_hsv)
 
+POWER_BAR_HEIGHT: int = 5
+POWER_BAR_SPACING = 1
+POWER_BAR_WIDTH: int = 3
+POWER_BAR_Y_START: int = 3
+
 PWD: str
 
 SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
@@ -41,6 +46,14 @@ def colorize(image: Image.Image, hue: float) -> Image.Image:
     new_img = Image.fromarray(shift_hue(arr, hue).astype('uint8'), 'RGBA')
 
     return new_img
+
+
+def create_empty_room_sprite(room_width: int, room_height: int) -> Image.Image:
+    return create_empty_sprite(room_width * TILE_SIZE, room_height * TILE_SIZE)
+
+
+def create_empty_sprite(width: int, height: int) -> Image.Image:
+    return Image.new('RGBA', (width, height), (255, 0, 0, 0))
 
 
 async def download_sprite(sprite_id: str) -> str:
