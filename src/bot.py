@@ -150,7 +150,7 @@ async def on_shard_ready() -> None:
     print('+ on_shard_ready()')
 
 
-""" @BOT.event
+@BOT.event
 async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
@@ -204,7 +204,7 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
                 await ctx.send(f'**{error_type}**\n{error_message}', delete_after=retry_after)
         except errors.Forbidden:
-            __log_command_use_error(ctx, err, force_printing=True) """
+            __log_command_use_error(ctx, err, force_printing=True)
 
 
 @BOT.event
