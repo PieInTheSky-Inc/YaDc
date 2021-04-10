@@ -9,7 +9,8 @@ from typing import List
 BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
 
 
-DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode=require'
+DATABASE_SSL_MODE: str = os.environ.get('DATABASE_SSL_MODE', 'require')
+DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MODE}'
 
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
