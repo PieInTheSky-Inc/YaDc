@@ -908,6 +908,9 @@ async def cmd_layout(ctx: Context, *, player_name: str):
       /layout Namith - Offers a list of players having a name starting with 'Namith'. Upon selection prints the current player's ship layout.
     """
     __log_command_use(ctx)
+    start = utils.get_utc_now()
+    end = start + datetime.timedelta(seconds=30)
+    info_message = await ctx.send('```Please wait, while the layout gets created```')
     async with ctx.typing():
         exact_name = utils.discord.get_exact_args(ctx)
         if exact_name:
@@ -928,8 +931,12 @@ async def cmd_layout(ctx: Context, *, player_name: str):
             as_embed = await server_settings.get_use_embeds(ctx)
             async with ctx.typing():
                 output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-                await utils.discord.post_output_with_files(ctx, output, [file_path], output_is_embeds=as_embed)
-                os.remove(file_path)
+                while utils.get_utc_now() < end:
+                    seconds = (end - utils.get_utc_now()).total_seconds()
+                    await asyncio.sleep(seconds)
+                await utils.discord.try_delete_message(info_message)
+            await utils.discord.post_output_with_files(ctx, output, [file_path], output_is_embeds=as_embed)
+            os.remove(file_path)
     else:
         leading_space_note = ''
         if player_name.startswith(' '):
