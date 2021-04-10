@@ -4,6 +4,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 from discord import Embed
 from discord.ext.commands import Context
+from PIL import Image, ImageDraw
 
 import pss_assert
 import pss_core as core
@@ -835,6 +836,198 @@ def __parse_value(value: str, max_decimal_count: int = utils.DEFAULT_FLOAT_PRECI
         return value
     else:
         return None
+
+
+
+
+# ---------- Sprite Helper Functions ----------
+
+
+async def create_room_sprite(room_sprite_id: str, room_decoration_sprite: Image.Image, room_design_info: entity.EntityInfo, brightness_value: float, hue_value: float, saturation_value: float) -> Image.Image:
+    result = await sprites.load_sprite(room_sprite_id)
+    room_sprite_draw: ImageDraw.ImageDraw = ImageDraw.Draw(result)
+    if not room_decoration_sprite:
+        result = sprites.enhance_sprite(result, brightness=brightness_value, hue=hue_value, saturation=saturation_value)
+    else:
+        room_decoration_sprite = sprites.enhance_sprite(room_decoration_sprite, brightness=brightness_value, hue=hue_value, saturation=saturation_value)
+        result.paste(room_decoration_sprite, (0, 0), room_decoration_sprite)
+        logo_sprite_id = room_design_info.get('LogoSpriteId')
+        if entity.entity_property_has_value(logo_sprite_id):
+            logo_sprite = await sprites.load_sprite(logo_sprite_id)
+            result.paste(logo_sprite, (1, 2), logo_sprite)
+        power_bars_count = None
+        max_system_power = room_design_info.get('MaxSystemPower')
+        if entity.entity_property_has_value(max_system_power):
+            power_bars_count = int(max_system_power) or None
+        else:
+            max_power_generated = room_design_info.get('MaxPowerGenerated')
+            if entity.entity_property_has_value(max_power_generated):
+                power_bars_count = int(max_power_generated) or None
+        if power_bars_count:
+            draw_power_bars_on_room_sprite(result, power_bars_count)
+
+        room_short_name = room_design_info.get('RoomShortName')
+        if entity.entity_property_has_value(room_short_name):
+            short_name_x = 12
+            short_name_y = 0
+            room_sprite_draw.text((short_name_x, short_name_y), room_short_name, fill=(255, 255, 255), font=sprites.PIXELATED_FONT)
+    return result
+
+
+def draw_power_bars_on_room_sprite(room_sprite: Image.Image, power_count: int) -> None:
+    room_sprite_draw = ImageDraw.Draw(room_sprite)
+    power_bar_x_start = room_sprite.width - sprites.POWER_BAR_WIDTH - 1
+    power_bar_y_end = sprites.POWER_BAR_Y_START + sprites.POWER_BAR_HEIGHT - 1
+    for _ in range(power_count):
+        power_bar_x_end = power_bar_x_start + sprites.POWER_BAR_WIDTH - 2
+        coordinates = [power_bar_x_start, sprites.POWER_BAR_Y_START, power_bar_x_end, power_bar_y_end]
+        room_sprite_draw.rectangle(coordinates, sprites.POWER_BAR_COLOR, sprites.POWER_BAR_COLOR)
+        power_bar_x_start -= sprites.POWER_BAR_WIDTH + sprites.POWER_BAR_SPACING - 1
+
+
+def fit_door_frame_to_room_height(door_frame_sprite: Image.Image, room_height: int) -> Image.Image:
+    first_row = door_frame_sprite.crop((0, 0, door_frame_sprite.width, 1))
+    top_part = first_row.resize((door_frame_sprite.width, (room_height - 2) * sprites.TILE_SIZE))
+
+    result = sprites.create_empty_sprite(door_frame_sprite.width, door_frame_sprite.height + top_part.height)
+    result.paste(top_part, (0, 0))
+    result.paste(door_frame_sprite, (0, top_part.height), door_frame_sprite)
+    return result
+
+
+async def get_room_decoration_sprite(room_frame_sprite_id: str, door_frame_left_sprite_id: str, door_frame_right_sprite_id: str, room_width: int, room_height: int) -> Image.Image:
+    result = await sprites.load_sprite_from_disk(room_frame_sprite_id, suffix=f'{door_frame_left_sprite_id}_{door_frame_right_sprite_id}_{room_width}x{room_height}')
+    if not result:
+        result = await make_room_decoration_sprite(room_frame_sprite_id, door_frame_left_sprite_id, door_frame_right_sprite_id, room_width, room_height)
+    return result
+
+
+def get_room_sprite_id(room_design_info: entity.EntityInfo, under_construction: bool, has_decoration_sprite: bool, rooms_designs_sprites_ids: Dict[str, str]) -> str:
+    if under_construction:
+        result = room_design_info['ConstructionSpriteId']
+    else:
+        if has_decoration_sprite:
+            result = room_design_info['ImageSpriteId']
+        else:
+            result = rooms_designs_sprites_ids.get(room_design_info[ROOM_DESIGN_KEY_NAME], room_design_info['ImageSpriteId'])
+    return result
+
+
+async def make_door_frame_sprite(door_frame_left_sprite_id: str, door_frame_right_sprite_id: str, room_height: int) -> Image.Image:
+    door_frame_left_sprite = await sprites.load_sprite(door_frame_left_sprite_id)
+    door_frame_right_sprite = await sprites.load_sprite(door_frame_right_sprite_id)
+    width = door_frame_left_sprite.width + door_frame_right_sprite.width - 2
+
+    result = sprites.create_empty_sprite(width, door_frame_left_sprite.height)
+    result.paste(door_frame_right_sprite, (2, 0), door_frame_right_sprite)
+    result.paste(door_frame_left_sprite, (0, 0), door_frame_left_sprite)
+
+    if room_height > 2:
+        result = fit_door_frame_to_room_height(result, room_height)
+    sprites.save_sprite(result, f'door_frame_{door_frame_left_sprite_id}_{door_frame_right_sprite_id}_{room_height}')
+    return result
+
+
+async def make_room_decoration_sprite(room_frame_sprite_id: str, door_frame_left_sprite_id: str, door_frame_right_sprite_id: str, room_width: int, room_height: int) -> Image.Image:
+    if room_width == 3 and room_height == 2:
+        room_frame_sprite = await sprites.load_sprite(room_frame_sprite_id)
+    else: # edit frame sprite
+        room_frame_sprite = await sprites.load_sprite_from_disk(room_frame_sprite_id, suffix=f'{room_width}x{room_height}')
+        if not room_frame_sprite:
+            room_frame_sprite = await make_room_frame_sprite(room_frame_sprite_id, room_width, room_height)
+
+    door_frame_sprite = await sprites.load_sprite_from_disk(door_frame_left_sprite_id, prefix='door_frame', suffix=f'{door_frame_right_sprite_id}_{room_height}')
+    if not door_frame_sprite:
+        door_frame_sprite = await make_door_frame_sprite(door_frame_left_sprite_id, door_frame_right_sprite_id, room_height)
+
+    room_decoration_sprite = room_frame_sprite.copy()
+    door_frame_y = room_frame_sprite.height - door_frame_sprite.height - 1
+    room_decoration_sprite.paste(door_frame_sprite, (1, door_frame_y), door_frame_sprite)
+    room_decoration_sprite.paste(room_frame_sprite, (0, 0), room_frame_sprite)
+
+    sprites.save_sprite(room_decoration_sprite, f'{room_frame_sprite_id}_{door_frame_left_sprite_id}_{door_frame_right_sprite_id}_{room_width}x{room_height}')
+    return room_decoration_sprite
+
+
+async def make_room_frame_sprite(room_frame_sprite_id: str, room_width: int, room_height: int) -> Image.Image:
+    room_frame_sprite = await sprites.load_sprite(room_frame_sprite_id)
+    result = sprites.create_empty_room_sprite(room_width, room_height)
+    from_left = sprites.TILE_SIZE // 2 # 12
+    from_right = sprites.TILE_SIZE - from_left # 13
+
+    upper_left_region_sprite = room_frame_sprite.crop((
+        0,
+        0,
+        from_left,
+        from_left
+    ))
+    upper_right_region_sprite = room_frame_sprite.crop((
+        room_frame_sprite.width - from_right,
+        0,
+        room_frame_sprite.width,
+        from_left
+    ))
+    bottom_left_region_sprite = room_frame_sprite.crop((
+        0,
+        room_frame_sprite.height - from_right,
+        from_left,
+        room_frame_sprite.height
+    ))
+    bottom_right_region_sprite = room_frame_sprite.crop((
+        room_frame_sprite.width - from_right,
+        room_frame_sprite.height - from_right,
+        room_frame_sprite.width,
+        room_frame_sprite.height
+    ))
+
+    top_center_region_sprite = room_frame_sprite.crop((
+        from_left + 1,
+        0,
+        from_left + 1 + sprites.TILE_SIZE,
+        from_left
+    ))
+    bottom_center_region_sprite = room_frame_sprite.crop((
+        from_left + 1,
+        room_frame_sprite.height - from_right,
+        from_left + 1 + sprites.TILE_SIZE,
+        room_frame_sprite.height
+    ))
+    left_center_region_sprite = room_frame_sprite.crop((
+        0,
+        from_left + 1,
+        from_left,
+        from_left + 1 + sprites.TILE_SIZE
+    ))
+    right_center_region_sprite = room_frame_sprite.crop((
+        room_frame_sprite.width - from_right,
+        from_left + 1,
+        room_frame_sprite.width,
+        from_left + 1 + sprites.TILE_SIZE
+    ))
+
+    result.paste(upper_left_region_sprite, (0, 0), upper_left_region_sprite)
+    result.paste(upper_right_region_sprite, (result.width - from_left - 1, 0), upper_right_region_sprite)
+    result.paste(bottom_left_region_sprite, (0, result.height - from_left - 1), bottom_left_region_sprite)
+    result.paste(bottom_right_region_sprite, (result.width - from_left - 1, result.height - from_left - 1), bottom_right_region_sprite)
+    for x in range(1, room_width):
+        result.paste(top_center_region_sprite, (
+            from_left + (x - 1) * sprites.TILE_SIZE,
+            0
+        ), top_center_region_sprite)
+        result.paste(bottom_center_region_sprite, (
+            from_left + (x - 1) * sprites.TILE_SIZE,
+            result.height - from_right
+        ), bottom_center_region_sprite)
+    for y in range(1, room_height):
+        result.paste(left_center_region_sprite, (
+            0,
+            from_left + (y - 1) * sprites.TILE_SIZE
+        ))
+        result.paste(right_center_region_sprite, (
+            result.width - from_right,
+            from_left + (y - 1) * sprites.TILE_SIZE
+        ))
+    return result
 
 
 

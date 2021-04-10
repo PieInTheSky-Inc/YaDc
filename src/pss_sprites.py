@@ -1,9 +1,9 @@
 import aiohttp
 import colorsys
 import os
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFont
 import numpy as np
 
 import pss_core as core
@@ -17,6 +17,10 @@ from typehints import EntitiesData, EntityInfo
 FUNC_HSV_TO_RGB = np.vectorize(colorsys.hsv_to_rgb)
 FUNC_RGB_TO_HSV = np.vectorize(colorsys.rgb_to_hsv)
 
+
+PIXELATED_FONT: ImageFont.ImageFont
+
+POWER_BAR_COLOR = (55, 255, 142)
 POWER_BAR_HEIGHT: int = 5
 POWER_BAR_SPACING = 1
 POWER_BAR_WIDTH: int = 3
@@ -24,8 +28,10 @@ POWER_BAR_Y_START: int = 3
 
 PWD: str
 
+
 SPRITES_BASE_PATH: str = 'FileService/DownloadSprite?spriteId='
 SPRITES_CACHE_PATH: str
+
 
 TILE_SIZE = 25
 
@@ -162,3 +168,5 @@ async def init():
         os.makedirs(settings.SPRITE_CACHE_SUB_PATH)
     global SPRITES_CACHE_PATH
     SPRITES_CACHE_PATH = sprites_cache_path
+    global PIXELATED_FONT
+    PIXELATED_FONT = ImageFont.truetype(os.path.join(PWD, 'fonts', 'PSSClone', 'PSSClone.ttf'), 10)
