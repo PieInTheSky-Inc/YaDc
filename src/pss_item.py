@@ -832,7 +832,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
     ),
     'best': entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
+            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
             entity.EntityDetailProperty('Enhancement value', False, transform_function=__get_enhancement_value),
             entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price)
         ]
