@@ -53,7 +53,7 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
 
 def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
     start = time.perf_counter()
-    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True)
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True, include_division_name=True)
     time1 = time.perf_counter() - start
     print(f'Creating the fleet users lines took {time1:.2f} seconds.')
 
@@ -233,7 +233,7 @@ def __get_description_as_text(fleet_info: EntityInfo, fleet_users_data: Entities
 
 def __get_division_name_and_ranking(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs) -> Optional[str]:
     result = None
-    division_name = get_division_name(fleet_info)
+    division_name = get_division_name(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME))
     if division_name is not None and division_name != '-':
         result = division_name
         ranking = fleet_info.get('Ranking')
@@ -319,12 +319,10 @@ def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs)
 
 # ---------- Helper functions ----------
 
-def get_division_name(fleet_info: EntityInfo) -> str:
+def get_division_name(division_design_id: time.strftime) -> str:
     result = None
-    if fleet_info:
-        division_design_id = fleet_info.get(top.DIVISION_DESIGN_KEY_NAME)
-        if division_design_id is not None and division_design_id != '0':
-            result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
+    if division_design_id is not None and division_design_id != '0':
+        result = lookups.get_lookup_value_or_default(lookups.DIVISION_DESIGN_ID_TO_CHAR, division_design_id, default='-')
     return result
 
 
@@ -364,12 +362,14 @@ def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Any
     return fleet_sheet_data
 
 
-def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, sort_lines: bool = True) -> List[Any]:
+def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, sort_lines: bool = True) -> List[Any]:
     titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
     include_tourney_battle_attempts = max_tourney_battle_attempts is not None
     if include_tourney_battle_attempts:
         titles.append('Tournament attempts left')
         titles.append('Star value')
+    if include_division_name:
+        titles.append('Division')
     if include_player_id:
         titles.append('Player ID')
     if include_fleet_id:
@@ -412,6 +412,8 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
 
             star_value = user.get_star_value_from_user_info(user_info)
             line.append('' if star_value is None else star_value)
+        if include_division_name:
+            line.append(get_division_name(user_info.get('Alliance', {}).get(top.DIVISION_DESIGN_KEY_NAME)))
         if include_player_id:
             line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
@@ -421,7 +423,7 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
     if sort_lines:
         result = sorted(result, key=lambda x: (
             lookups.ALLIANCE_MEMBERSHIP_LOOKUP.index(x[3]),
-            -x[6],
+            -x[7],
             -x[5],
             x[2]
         ))

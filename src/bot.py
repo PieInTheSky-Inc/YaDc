@@ -1199,7 +1199,7 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
         async with ctx.typing():
-            file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.xlsx'
+            file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
             file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
         await utils.discord.reply_with_output_and_files(ctx, [], file_paths)
         for file_path in file_paths:

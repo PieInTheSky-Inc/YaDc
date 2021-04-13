@@ -19,6 +19,7 @@ import pss_lookups as lookups
 import pss_room as room
 import pss_ship as ship
 import pss_sprites as sprites
+import pss_top as top
 import pss_tournament as tourney
 import pss_user as user
 import settings
@@ -185,7 +186,7 @@ def __get_crew_donated_borrowed(user_info: EntityInfo, fleet_info: EntityInfo = 
 
 
 def __get_division_name(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> Optional[str]:
-    result = fleet.get_division_name(fleet_info)
+    result = fleet.get_division_name(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME))
     return result
 
 
