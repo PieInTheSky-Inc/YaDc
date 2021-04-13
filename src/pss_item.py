@@ -6,6 +6,7 @@ from discord.ext.commands import Context
 
 import pss_assert
 import pss_core as core
+import emojis
 import pss_entity as entity
 from pss_exception import Error, NotFound
 import pss_lookups as lookups
@@ -330,8 +331,8 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
     items_ids = __get_item_design_ids_from_name(item_name, items_data)
     items_infos = __filter_destroyed_modules_from_item_infos([items_data[item_id] for item_id in items_ids])
 
-    if not items_ids:
-        raise NotFound(f'Could not find an item named `{item_name}`.')
+    if not items_ids or not items_infos:
+        raise NotFound(f'Could not find an item named `{item_name}` that can be upgraded.')
     else:
         upgrades_infos = []
         found_upgrades_for_data = {}
@@ -344,9 +345,10 @@ async def get_item_upgrades_from_name(ctx: Context, item_name: str, as_embed: bo
             else:
                 no_upgrades_for_data[item_id] = items_data[item_id]
 
+
         if all(item_info is None for item_info in upgrades_infos):
-            item_names = ', '.join(sorted(item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME] for item_info in items_infos))
-            raise Error(f'Found the following items that can\'t be upgraded: {item_names}')
+            item_names = '\n'.join(sorted(f'{emojis.small_orange_diamond}{item_info[ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]}' for item_info in items_infos))
+            raise Error(f'Found the following items that can\'t be upgraded:\n{item_names}')
 
         # Remove double entries
         upgrades_infos = list(dict([(item_info[ITEM_DESIGN_KEY_NAME], item_info) for item_info in upgrades_infos if item_info is not None]).values())

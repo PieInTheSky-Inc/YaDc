@@ -67,3 +67,5 @@ options = [
     option_9,
     option_10
 ]
+
+small_orange_diamond = '🔸'
