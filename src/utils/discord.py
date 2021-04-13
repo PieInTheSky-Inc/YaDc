@@ -196,10 +196,7 @@ async def post_output(ctx: _Context, output: _Union[_List[_Embed], _List[str]], 
 
 async def post_output_to_channel(channel: _Union[_TextChannel, _Member, _User], output: _Union[_List[_Embed], _List[str]], output_is_embeds: bool = False, maximum_characters: int = MAXIMUM_CHARACTERS) -> None:
     if output and channel:
-        if output[-1] == ZERO_WIDTH_SPACE:
-            output = output[:-1]
-        if output[0] == ZERO_WIDTH_SPACE:
-            output = output[1:]
+        output = __prepare_output(output)
 
         if output_is_embeds:
             posts = output
@@ -212,13 +209,11 @@ async def post_output_to_channel(channel: _Union[_TextChannel, _Member, _User], 
                 else:
                     await channel.send(post)
 
+
 async def post_output_with_files(ctx: _Context, output: _Union[_List[_Embed], _List[str]], file_paths: _List[str], output_is_embeds: bool = False, maximum_characters: int = MAXIMUM_CHARACTERS) -> None:
     if output or file_paths:
         if output:
-            if output[-1] == ZERO_WIDTH_SPACE:
-                output = output[:-1]
-            if output[0] == ZERO_WIDTH_SPACE:
-                output = output[1:]
+            output = __prepare_output(output)
 
         if output_is_embeds:
             posts = output
@@ -237,6 +232,84 @@ async def post_output_with_files(ctx: _Context, output: _Union[_List[_Embed], _L
                         await ctx.send(content=post)
             if output_is_embeds and files:
                 await ctx.send(files=files)
+
+
+def __prepare_output(output: _Union[_List[str], _List[_Embed]]) -> _Union[_List[str], _List[_Embed]]:
+    if output[-1] == ZERO_WIDTH_SPACE:
+        output = output[:-1]
+    if output[0] == ZERO_WIDTH_SPACE:
+        output = output[1:]
+    return output
+
+
+async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, mention_author: bool = False) -> _Message:
+    """
+    Returns the last message created or None, of output has not been specified.
+    """
+    result = None
+    if output:
+        output_is_embeds = isinstance(output[0], _Embed)
+        output = __prepare_output(output)
+
+        if output_is_embeds:
+            posts = output
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
+        first_post, *posts = posts
+
+        if output_is_embeds:
+            result = await ctx.reply(embed=first_post, mention_author=mention_author)
+            for post in posts:
+                result = await ctx.send(embed=post)
+        else:
+            result = await ctx.reply(content=first_post, mention_author=mention_author)
+            for post in posts:
+                result = await ctx.send(content=post)
+    return result
+
+
+async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed], _List[str]], file_paths: _List[str], output_is_embeds: bool = False, maximum_characters: int = MAXIMUM_CHARACTERS, mention_author: bool = False) -> None:
+    """
+    Returns the last message created or None, if neither output nor files have been specified.
+    """
+    result = None
+    if output or file_paths:
+        if output:
+            output = __prepare_output(output)
+
+        if output_is_embeds:
+            posts = output
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
+        first_post, *posts = posts
+        if posts:
+            *posts, last_post = posts
+        else:
+            last_post = None
+
+        files = [_File(file_path) for file_path in file_paths]
+
+        if last_post:
+            if output_is_embeds:
+                await ctx.reply(embed=first_post, mention_author=mention_author)
+                for post in posts:
+                    await ctx.send(embed=post)
+                result = await ctx.send(embed=last_post)
+                if files:
+                    result = await ctx.send(files=files)
+            else:
+                await ctx.reply(content=first_post, mention_author=mention_author)
+                for post in posts:
+                    await ctx.send(content=post)
+                result = await ctx.send(content=last_post, files=files)
+        else:
+            if output_is_embeds:
+                result = await ctx.reply(embed=first_post, mention_author=mention_author)
+                if files:
+                    result = await ctx.send(files=files)
+            else:
+                result = await ctx.send(content=first_post, files=files)
+    return result
 
 
 async def try_delete_message(message: _Message) -> bool:

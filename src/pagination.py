@@ -134,7 +134,7 @@ class Paginator():
             if self.__page_count > 1:
                 await self.__message.edit(content=content)
         else:
-            self.__message = await self.__context.send(content)
+            self.__message = await utils.discord.reply_with_output(self.__context, [content])
             if self.__use_emojis:
                 for base_reaction_emoji in self.__base_reaction_emojis:
                     await self.__message.add_reaction(base_reaction_emoji)
