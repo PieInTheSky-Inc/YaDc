@@ -1061,7 +1061,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Room name', False, omit_if_none=False, transform_function=__get_room_name)
     ),
     'description': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Description', False, omit_if_none=False, property_name='RoomDescription'),
+        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='RoomDescription'),
         property_short=entity.NO_PROPERTY
     ),
     'properties': entity.EntityDetailPropertyListCollection(
