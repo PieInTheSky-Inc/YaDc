@@ -799,18 +799,7 @@ def __get_min_ship_lvl_display_name(room_info: EntityInfo, rooms_data: EntitiesD
 
 
 def __get_required_details(requirement_string: str) -> Tuple[str, str, str]:
-    requirement_string = requirement_string.lower()
-    required_type, required_id = requirement_string.split(':')
-
-    if 'x' in required_id:
-        required_id, required_amount = required_id.split('x')
-    elif '>=' in required_id:
-        required_id, required_amount = required_id.split('>=')
-    else:
-        required_amount = '1'
-    required_type = required_type.strip()
-    required_id = required_id.strip()
-    required_amount = required_amount.strip()
+    required_type, required_id, required_amount, required_modifier = utils.parse.entity_string(requirement_string)
     return required_type, required_id, required_amount
 
 
