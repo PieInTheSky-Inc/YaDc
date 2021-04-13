@@ -88,7 +88,7 @@ async def make_ship_layout_sprite(file_name_prefix: str, user_ship_info: entity.
     rooms_decorations_sprites_cache = {}
     for ship_room_info in user_ship_info['Rooms'].values():
         room_design_id = ship_room_info[room.ROOM_DESIGN_KEY_NAME]
-        room_under_construction = 1 if ship_room_info.get('RoomStatus') == 'Upgrading' else 0
+        room_under_construction = 1 if ship_room_info.get('RoomStatus') == 'Upgrading' or entity.entity_property_has_value(ship_room_info.get('ConstructionStartDate')) else 0
 
         room_sprite = rooms_sprites_cache.get(room_design_id, {}).get(room_under_construction)
 

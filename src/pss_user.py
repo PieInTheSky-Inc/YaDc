@@ -120,8 +120,10 @@ async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = sett
     fields.append(('Ship', f'{ship_design_info["ShipDesignName"]} (level {ship_design_info["ShipLevel"]})', None))
 
     if as_embed:
+        miniship_sprite_url = await sprites.get_download_sprite_link(ship_design_info.get('MiniShipSpriteId'))
+        user_pin_sprite_url = await sprites.get_download_sprite_link(user_info.get('IconSpriteId'))
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-        embed = utils.discord.create_basic_embeds_from_fields(title, fields=fields, colour=colour)[0]
+        embed = utils.discord.create_basic_embeds_from_fields(title, fields=fields, colour=colour, thumbnail_url=miniship_sprite_url, icon_url=user_pin_sprite_url)[0]
         output = [embed]
     else:
         output = [f'**{title}**'] + [f'{field[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{field[1]}' for field in fields]

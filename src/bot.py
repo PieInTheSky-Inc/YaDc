@@ -175,9 +175,9 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
             if err.original:
                 error_type = type(err.original).__name__
                 if isinstance(err.original, Error):
-                    error_message = f'`{ctx.message.clean_content}`\n{err.original.msg}'
+                    error_message = f'{err.original.msg}'
                 else:
-                    error_message = f'`{ctx.message.clean_content}`\n{err.original}'
+                    error_message = f'{err.original}'
         else:
             if not isinstance(err, command_errors.MissingRequiredArgument):
                 logging.getLogger().error(err, exc_info=True)
@@ -197,12 +197,12 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                 if retry_after:
                     error_message = f'{ctx.author.mention}\n{error_message}'
                 embed = utils.discord.create_embed(error_type, description=error_message, colour=colour)
-                await ctx.send(embed=embed, delete_after=retry_after)
+                await ctx.reply(embed=embed, delete_after=retry_after, mention_author=False)
             else:
                 error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
                 if retry_after:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
-                await ctx.send(f'**{error_type}**\n{error_message}', delete_after=retry_after)
+                await ctx.reply(f'**{error_type}**\n{error_message}', delete_after=retry_after, mention_author=False)
         except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
@@ -451,7 +451,7 @@ async def cmd_about(ctx: Context):
         colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
 
         embed = utils.discord.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
-    await utils.discord.post_output(ctx, [embed])
+    await utils.discord.reply_with_output(ctx, [embed])
 
 
 @BOT.command(name='invite', brief='Get an invite link')
@@ -490,7 +490,7 @@ async def cmd_invite(ctx: Context):
         notice = f'{ctx.author.mention} Sent invite link via DM.'
         if as_embed:
             notice = utils.discord.create_embed(None, description=notice, colour=colour)
-        await utils.discord.post_output(ctx, [notice])
+        await utils.discord.reply_with_output(ctx, [notice])
 
 
 @BOT.command(name='links', brief='Show links')
@@ -528,7 +528,7 @@ async def cmd_links(ctx: Context):
                 output.append(utils.discord.ZERO_WIDTH_SPACE)
             if output:
                 output = output[:-1]
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='ping', brief='Ping the server')
@@ -584,7 +584,7 @@ async def cmd_support(ctx: Context):
         notice = f'{ctx.author.mention} Sent invite link to bot support server via DM.'
         if as_embed:
             notice = utils.discord.create_embed(None, description=notice, colour=colour)
-        await utils.discord.post_output(ctx, [notice])
+        await utils.discord.reply_with_output(ctx, [notice])
 
 
 
@@ -650,7 +650,7 @@ async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
 
         slot, stat = item.fix_slot_and_stat(slot, stat)
         output = await item.get_best_items(ctx, slot, stat, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='char', aliases=['crew'], brief='Get character stats')
@@ -677,7 +677,7 @@ async def cmd_char(ctx: Context, level: str = None, *, crew_name: str = None):
     async with ctx.typing():
         level, crew_name = utils.get_level_and_name(level, crew_name)
         output = await crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
@@ -703,7 +703,7 @@ async def cmd_craft(ctx: Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='collection', aliases=['coll'], brief='Get collections')
@@ -728,7 +728,7 @@ async def cmd_collection(ctx: Context, *, collection_name: str = None):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='daily', brief='Show the dailies')
@@ -749,9 +749,9 @@ async def cmd_daily(ctx: Context):
         as_embed = await server_settings.get_use_embeds(ctx)
         output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
     if as_embed:
-        await utils.discord.post_output(ctx, output_embed)
+        await utils.discord.reply_with_output(ctx, output_embed)
     else:
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.group(name='event', brief='Get current event info', invoke_without_command=True)
@@ -771,7 +771,7 @@ async def cmd_event(ctx: Context, *, params: str = None):
         async with ctx.typing():
             _, print_all, situation_id = __extract_dash_parameters(params, None, '--all', '--id=')
             output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, as_embed=(await server_settings.get_use_embeds(ctx)))
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_event.command(name='last', aliases=['latest'], brief='Get last event info')
@@ -790,7 +790,7 @@ async def cmd_event_last(ctx: Context):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await situation.get_event_details(ctx, latest_only=True, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
@@ -833,7 +833,7 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
                 else:
                     max_tourney_battle_attempts = None
                 output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
-            await utils.discord.post_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
+            await utils.discord.reply_with_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
     else:
@@ -865,7 +865,7 @@ async def cmd_ingredients(ctx: Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await item.get_ingredients_for_item(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='item', brief='Get item stats')
@@ -889,14 +889,14 @@ async def cmd_item(ctx: Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await item.get_item_details_by_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
-@BOT.command(name='layout', brief='Get a ship layout')
+@BOT.command(name='layout', brief='Get a player\'s ship layout')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_layout(ctx: Context, *, player_name: str):
     """
-    Searches for the given player and returns their current ship layout
+    Searches for the given player and returns their current ship layout. The result will be delivered after 30 seconds.
 
     Usage:
       /layout [player_name]
@@ -910,7 +910,7 @@ async def cmd_layout(ctx: Context, *, player_name: str):
     __log_command_use(ctx)
     start = utils.get_utc_now()
     end = start + datetime.timedelta(seconds=30)
-    info_message = await ctx.send('```Please wait, while the layout gets created```')
+    author_is_owner = await BOT.is_owner(ctx.author)
     async with ctx.typing():
         exact_name = utils.discord.get_exact_args(ctx)
         if exact_name:
@@ -929,13 +929,14 @@ async def cmd_layout(ctx: Context, *, player_name: str):
 
         if user_info:
             as_embed = await server_settings.get_use_embeds(ctx)
+            info_message = await utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
             async with ctx.typing():
                 output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-                while utils.get_utc_now() < end:
+                if not author_is_owner and utils.get_utc_now() < end:
                     seconds = (end - utils.get_utc_now()).total_seconds()
                     await asyncio.sleep(seconds)
                 await utils.discord.try_delete_message(info_message)
-            await utils.discord.post_output_with_files(ctx, output, [file_path], output_is_embeds=as_embed)
+            await utils.discord.reply_with_output_and_files(ctx, output, [file_path], output_is_embeds=as_embed)
             os.remove(file_path)
     else:
         leading_space_note = ''
@@ -981,7 +982,7 @@ async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
         if from_level and to_level and from_level >= to_level:
             raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
         output = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='news', brief='Show the news')
@@ -1009,7 +1010,7 @@ async def cmd_news(ctx: Context, entry_count: str = '5'):
     await utils.discord.try_delete_original_message(ctx)
     async with ctx.typing():
         output = await dropship.get_news(ctx, take=take, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
@@ -1061,7 +1062,7 @@ async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, d
             tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
             if tourney_data:
                 output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
@@ -1114,7 +1115,7 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
         if fleet_name.startswith(' '):
             leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
         raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
@@ -1160,7 +1161,7 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
             async with ctx.typing():
                 as_embed = await server_settings.get_use_embeds(ctx)
                 output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
-            await utils.discord.post_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
+            await utils.discord.reply_with_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
     elif error:
@@ -1200,7 +1201,7 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
         async with ctx.typing():
             file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.xlsx'
             file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
-        await utils.discord.post_output_with_files(ctx, [], file_paths)
+        await utils.discord.reply_with_output_with_files(ctx, [], file_paths)
         for file_path in file_paths:
             os.remove(file_path)
     elif error:
@@ -1263,7 +1264,7 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
         if player_name.startswith(' '):
             leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
         raise NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='player', aliases=['user'], brief='Get infos on a player')
@@ -1303,7 +1304,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
             async with ctx.typing():
                 max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
                 output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
-            await utils.discord.post_output(ctx, output)
+            await utils.discord.reply_with_output(ctx, output)
     else:
         leading_space_note = ''
         if player_name.startswith(' '):
@@ -1332,7 +1333,7 @@ async def cmd_prestige(ctx: Context, *, crew_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
@@ -1359,7 +1360,7 @@ async def cmd_price(ctx: Context, *, item_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await item.get_item_price(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='recipe', brief='Get character recipes')
@@ -1403,9 +1404,9 @@ async def cmd_recipe(ctx: Context, *, name: str):
             item_success = None
 
     if char_success:
-        await utils.discord.post_output(ctx, char_output)
+        await utils.discord.reply_with_output(ctx, char_output)
     elif item_success:
-        await utils.discord.post_output(ctx, item_output)
+        await utils.discord.reply_with_output(ctx, item_output)
     else:
         raise NotFound(f'Could not find a character or an item named `{name}`.')
 
@@ -1431,7 +1432,7 @@ async def cmd_research(ctx: Context, *, research_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='room', brief='Get room infos')
@@ -1457,7 +1458,7 @@ async def cmd_room(ctx: Context, *, room_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.group(name='sales', brief='List expired sales', invoke_without_command=True)
@@ -1525,7 +1526,7 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
         else:
             async with ctx.typing():
                 output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List expired bed room sales')
@@ -1554,7 +1555,7 @@ async def cmd_sales_bed(ctx: Context, *, params: str = None):
         output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
 
     if output:
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
     else:
         raise Error('An unknown error ocurred, please contact the bot\'s author.')
 
@@ -1585,7 +1586,7 @@ async def cmd_sales_droid(ctx: Context, *, params: str = None):
         output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
 
     if output:
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
     else:
         raise Error('An unknown error ocurred, please contact the bot\'s author.')
 
@@ -1619,7 +1620,7 @@ async def cmd_stars(ctx: Context, *, division: str = None):
                 return
             else:
                 output = await pss_top.get_division_stars(ctx, division=division, as_embed=(await server_settings.get_use_embeds(ctx)))
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')
         await ctx.invoke(cmd, month=None, year=None, division=division)
@@ -1669,7 +1670,7 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
                     max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
                     fleet_users_infos = await fleet.get_fleet_users_data_by_fleet_info(fleet_info)
                     output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
-                await utils.discord.post_output(ctx, output)
+                await utils.discord.reply_with_output(ctx, output)
         else:
             raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
     else:
@@ -1707,24 +1708,23 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
             char_output = await crew.get_char_details_by_name(ctx, name, level, as_embed=use_embeds)
             char_success = True
         except (InvalidParameterValueError, Error):
-            char_output = None
+            char_output = []
             char_success = False
         try:
             item_output = await item.get_item_details_by_name(ctx, name, as_embed=use_embeds)
             item_success = True
         except (InvalidParameterValueError, Error):
-            item_output = None
+            item_output = []
             item_success = False
 
-    if char_success:
-        await utils.discord.post_output(ctx, char_output)
+    if char_success or item_success:
+        if use_embeds:
+            output = char_output + item_output
+        else:
+            output = char_output + [utils.discord.ZERO_WIDTH_SPACE] + item_output
 
-    if item_success:
-        if char_success and not use_embeds:
-            await ctx.send(utils.discord.ZERO_WIDTH_SPACE)
-        await utils.discord.post_output(ctx, item_output)
-
-    if not char_success and not item_success:
+        await utils.discord.reply_with_output(ctx, output)
+    else:
         raise NotFound(f'Could not find a character or an item named `{full_name}`.')
 
 
@@ -1768,7 +1768,7 @@ async def cmd_time(ctx: Context):
         else:
             output = [star_date, melbourne_time]
             [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
@@ -1835,7 +1835,7 @@ async def cmd_top_captains(ctx: Context, count: str = '100'):
 
     async with ctx.typing():
         output = await pss_top.get_top_captains(ctx, count, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
@@ -1864,7 +1864,7 @@ async def cmd_top_fleets(ctx: Context, count: str = '100'):
 
     async with ctx.typing():
         output = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.group(name='tournament', aliases=['tourney'], brief='Information on tournament time')
@@ -1908,7 +1908,7 @@ async def cmd_tournament_current(ctx: Context):
         else:
             output = tourney.convert_tourney_embed_to_plain_text(embed)
 
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
@@ -1934,7 +1934,7 @@ async def cmd_tournament_next(ctx: Context):
         else:
             output = tourney.convert_tourney_embed_to_plain_text(embed)
 
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='training', brief='Get training infos')
@@ -1959,7 +1959,7 @@ async def cmd_training(ctx: Context, *, training_name: str):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 
@@ -2471,7 +2471,7 @@ async def cmd_settings(ctx: Context, *args):
             title = f'Server settings for {ctx.guild.name}'
             note = None if not on_reset else 'Successfully reset all bot settings for this server!'
             output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings', invoke_without_command=True)
@@ -2502,7 +2502,7 @@ async def cmd_settings_get_autodaily(ctx: Context, *args):
             title = f'Auto-daily settings for {ctx.guild.name}'
             note = None if not on_reset else 'Successfully reset auto-daily settings for this server!'
             output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings_get_autodaily.command(name='channel', aliases=['ch'], brief='Retrieve auto-daily channel')
@@ -2535,7 +2535,7 @@ async def cmd_settings_get_autodaily_channel(ctx: Context, *args):
         elif on_set:
             note = 'Successfully set auto-daily channel for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings_get_autodaily.command(name='changemode', aliases=['mode'], brief='Retrieve auto-daily mode', hidden=True)
@@ -2568,7 +2568,7 @@ async def cmd_settings_get_autodaily_mode(ctx: Context, *args):
         elif on_set:
             note = 'Successfully set auto-daily mode for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel', hidden=True)
@@ -2601,7 +2601,7 @@ async def cmd_settings_get_botnews(ctx: Context, *args):
         elif on_set:
             note = 'Successfully set bot news channel for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
@@ -2634,7 +2634,7 @@ async def cmd_settings_get_embeds(ctx: Context, *args):
         elif on_set:
             note = 'Successfully toggled embed usage for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
@@ -2667,7 +2667,7 @@ async def cmd_settings_get_pagination(ctx: Context, *args):
         elif on_set:
             note = 'Successfully toggled pagination for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_settings.command(name='prefix', brief='Retrieve prefix settings')
@@ -2722,7 +2722,7 @@ async def cmd_prefix(ctx: Context, *args):
         elif on_set:
             note = 'Successfully set prefix for this server!'
         output = await server_settings.get_pretty_guild_settings(ctx, prefix_settings, title=title, note=note)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 
@@ -3268,7 +3268,7 @@ async def cmd_autodaily_list_all(ctx: Context):
     __log_command_use(ctx)
     async with ctx.typing():
         output = await daily.get_daily_channels(ctx, None, None)
-    await utils.discord.post_output(ctx, output)
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_autodaily.command(name='post', brief='Post a daily message on this server\'s auto-daily channel', hidden=True)
@@ -3285,9 +3285,9 @@ async def cmd_autodaily_post(ctx: Context):
         as_embed = await server_settings.get_use_embeds(ctx)
         output, output_embed, _ = await dropship.get_dropship_text()
         if as_embed:
-            await utils.discord.post_output_to_channel(text_channel, output_embed)
+            await utils.discord.reply_with_output_to_channel(text_channel, output_embed)
         else:
-            await utils.discord.post_output_to_channel(text_channel, output)
+            await utils.discord.reply_with_output_to_channel(text_channel, output)
 
 
 @BOT.group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)
@@ -3334,7 +3334,7 @@ async def cmd_db_select(ctx: Context, *, query: str):
     if result:
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
         result = [str(record) for record in result]
-        await utils.discord.post_output(ctx, result)
+        await utils.discord.reply_with_output(ctx, result)
     else:
         raise Error(f'The query \'{query}\' didn\'t return any results.')
 
@@ -3698,7 +3698,7 @@ async def cmd_sales_import(ctx: Context, *, args: str = None):
             )
             output.extend([json.dumps(sale_info) for sale_info in failed_sales_infos])
         await daily.update_db_sales_info_cache()
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_sales.command(name='parse', brief='Parse and add a past sale.', hidden=True)
@@ -3853,7 +3853,7 @@ async def cmd_test(ctx: Context, action, *, params = None):
         await utils.discord.try_delete_original_message(ctx)
     elif action == 'commands':
         output = [', '.join(sorted(BOT.all_commands.keys()))]
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
     elif action == 'setting':
         setting_name = params.replace(' ', '_').upper()
         result = settings.__dict__.get(setting_name)
@@ -3875,7 +3875,7 @@ async def cmd_test(ctx: Context, action, *, params = None):
                         value = f'"{value}"'
                     result[key] = value
             output = [str(result)]
-        await utils.discord.post_output(ctx, output)
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='updatecache', brief='Updates all caches manually', hidden=True)
