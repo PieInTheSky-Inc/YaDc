@@ -150,7 +150,7 @@ async def on_shard_ready() -> None:
     print('+ on_shard_ready()')
 
 
-@BOT.event
+#@BOT.event
 async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
@@ -833,7 +833,7 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
                 else:
                     max_tourney_battle_attempts = None
                 output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
-            await utils.discord.reply_with_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
+            await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
     else:
@@ -1161,7 +1161,7 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
             async with ctx.typing():
                 as_embed = await server_settings.get_use_embeds(ctx)
                 output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
-            await utils.discord.reply_with_output_with_files(ctx, output, file_paths, output_is_embeds=as_embed)
+            await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
     elif error:
@@ -1201,7 +1201,7 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
         async with ctx.typing():
             file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.xlsx'
             file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
-        await utils.discord.reply_with_output_with_files(ctx, [], file_paths)
+        await utils.discord.reply_with_output_and_files(ctx, [], file_paths)
         for file_path in file_paths:
             os.remove(file_path)
     elif error:
