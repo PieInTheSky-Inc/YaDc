@@ -329,39 +329,6 @@ def __get_build_cost(room_info: EntityInfo, rooms_data: EntitiesData, items_data
         return None
 
 
-async def __get_build_requirement(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
-    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
-        requirement_string = room_info.get('RequirementString')
-        if requirement_string:
-            requirement_string = requirement_string.lower()
-            required_type, required_id = requirement_string.split(':')
-
-            if 'x' in required_id:
-                required_id, required_amount = required_id.split('x')
-            elif '>=' in required_id:
-                required_id, required_amount = required_id.split('>=')
-            else:
-                required_amount = '1'
-
-            required_id = required_id.strip()
-            required_amount = required_amount.strip()
-
-            if required_type == 'item':
-                item_details = item.get_item_details_by_id(required_id, items_data, None)
-                result = f'{required_amount}x ' + ''.join((await item_details.get_details_as_text(entity.EntityDetailsType.MINI)))
-                return result
-            elif required_type == 'research':
-                research_details = research.get_research_details_by_id(required_id, researches_data)
-                result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.MINI))
-                return result
-            else:
-                return requirement_string
-        else:
-            return None
-    else:
-        return None
-
-
 def __get_capacity_per_tick(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)

@@ -33,6 +33,19 @@ __PRESTIGE_TO_BASE_PATH: str = 'CharacterService/PrestigeCharacterTo?languagekey
 
 
 
+# ---------- Classes ----------
+
+class PrestigeError(Error):
+    pass
+
+
+class PrestigeNoResultsError(PrestigeError):
+    pass
+
+
+
+
+
 # ---------- Crew info ----------
 
 def get_char_details_by_id(char_design_id: str, chars_data: EntitiesData, collections_data: EntitiesData, level: int = None) -> entity.entity.EntityDetails:
@@ -111,19 +124,22 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
     else:
         rarity = char_from_info.get('Rarity')
         if rarity in ['Legendary', 'Special']:
-            raise Error(f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged to, due to **{rarity}** rarity.')
+            raise PrestigeError(f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged to, due to **{rarity}** rarity.')
         prestige_from_ids, recipe_count = await __get_prestige_from_ids_and_recipe_count(char_from_info)
         utils.make_dict_value_lists_unique(prestige_from_ids)
         prestige_from_infos = sorted(__prepare_prestige_infos(chars_data, prestige_from_ids), key=lambda prestige_from_info: prestige_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-        prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos)
+        if prestige_from_infos:
+            prestige_from_details_collection = __create_prestige_from_details_collection_from_infos(prestige_from_infos)
 
-        if as_embed:
-            title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
-            thumbnail_url = await sprites.get_download_sprite_link(char_from_info['ProfileSpriteId'])
-            return (await prestige_from_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            if as_embed:
+                title = f'{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige combinations)'
+                thumbnail_url = await sprites.get_download_sprite_link(char_from_info['ProfileSpriteId'])
+                return (await prestige_from_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            else:
+                title = f'**{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige combinations)'
+                return (await prestige_from_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
         else:
-            title = f'**{char_from_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige combinations)'
-            return (await prestige_from_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
+            raise PrestigeNoResultsError(f'There are no prestige recipes using this crew: `{char_from_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)}`')
 
 
 def __create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
@@ -172,19 +188,22 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
     else:
         rarity = char_to_info.get('Rarity')
         if rarity in ['Common', 'Special']:
-            raise Error(f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged, due to **{rarity}** rarity.')
+            raise PrestigeError(f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} can\'t be prestiged into, due to **{rarity}** rarity.')
         prestige_to_ids, recipe_count = await __get_prestige_to_ids_and_recipe_count(char_to_info)
         utils.make_dict_value_lists_unique(prestige_to_ids)
         prestige_to_infos = sorted(__prepare_prestige_infos(chars_data, prestige_to_ids), key=lambda prestige_to_info: prestige_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME])
-        prestige_to_details_collection = __create_prestige_to_details_collection_from_infos(prestige_to_infos)
+        if prestige_to_infos:
+            prestige_to_details_collection = __create_prestige_to_details_collection_from_infos(prestige_to_infos)
 
-        if as_embed:
-            title = f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige recipes)'
-            thumbnail_url = await sprites.get_download_sprite_link(char_to_info['ProfileSpriteId'])
-            return (await prestige_to_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            if as_embed:
+                title = f'{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]} ({recipe_count} prestige recipes)'
+                thumbnail_url = await sprites.get_download_sprite_link(char_to_info['ProfileSpriteId'])
+                return (await prestige_to_details_collection.get_entities_details_as_embed(ctx, custom_title=title, custom_thumbnail_url=thumbnail_url, display_inline=False))
+            else:
+                title = f'**{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige recipes)'
+                return (await prestige_to_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
         else:
-            title = f'**{char_to_info[CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]}** ({recipe_count} prestige recipes)'
-            return (await prestige_to_details_collection.get_entities_details_as_text(custom_title=title, big_set_details_type=entity.EntityDetailsType.LONG))
+            raise PrestigeNoResultsError(f'There are no prestige recipes yielding this crew: `{char_to_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)}`')
 
 
 def __create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:

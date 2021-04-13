@@ -1384,31 +1384,36 @@ async def cmd_recipe(ctx: Context, *, name: str):
       This command will only print recipes for the crew or item with the best matching name.
     """
     __log_command_use(ctx)
+
     async with ctx.typing():
         use_embeds = (await server_settings.get_use_embeds(ctx))
+        char_error = None
+        item_error = None
         try:
             char_output = await crew.get_prestige_to_info(ctx, name, as_embed=use_embeds)
-            char_success = True
-        except (InvalidParameterValueError, Error):
-            char_output = None
-            char_success = False
-        if not char_success:
-            try:
-                item_output = await item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
-                item_success = True
-            except (InvalidParameterValueError, Error):
-                item_output = None
-                item_success = False
-        else:
-            item_output = None
-            item_success = None
+        except crew.PrestigeNoResultsError as e:
+            raise Error(e.msg) from e
+        except Error as e:
+            char_error = e
+            char_output = []
 
-    if char_success:
-        await utils.discord.reply_with_output(ctx, char_output)
-    elif item_success:
-        await utils.discord.reply_with_output(ctx, item_output)
+        try:
+            item_output = await item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
+        except Error as e:
+            item_error = e
+            item_output = []
+
+    if char_error and item_error:
+        if isinstance(char_error, NotFound) and isinstance(item_error, NotFound):
+            raise NotFound(f'Could not find a character or an item named `{name}`.')
+        raise char_error
     else:
-        raise NotFound(f'Could not find a character or an item named `{name}`.')
+        if use_embeds:
+            output = char_output + item_output
+        else:
+            output = char_output + [utils.discord.ZERO_WIDTH_SPACE] + item_output
+
+        await utils.discord.reply_with_output(ctx, output)
 
 
 @BOT.command(name='research', brief='Get research data')
