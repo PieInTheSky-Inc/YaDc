@@ -138,7 +138,8 @@ __DISPLAY_NAMES: Dict[str, Dict[str, str]] = {
     },
     'queue_limit': {
         'default': 'Queue limit',
-        'Council': 'Borrow limit'
+        'Council': 'Borrow limit',
+        'Shield': 'Restore on reload'
     },
     'reload_speed': {
         'default': 'Reload speed'
