@@ -150,7 +150,7 @@ async def on_shard_ready() -> None:
     print('+ on_shard_ready()')
 
 
-#@BOT.event
+@BOT.event
 async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
