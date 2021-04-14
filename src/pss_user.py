@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 from discord.file import File
+from discord.utils import escape_markdown
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 import numpy as np
 
@@ -104,19 +105,15 @@ async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = sett
     ships_designs_data = await ship.ships_designs_retriever.get_data_dict3()
     rooms_designs_data = await room.rooms_designs_retriever.get_data_dict3()
     rooms_designs_sprites_data = await room.rooms_designs_sprites_retriever.get_data_dict3()
-    inspect_ship_path = await __get_inspect_ship_path(user_id)
-    ship_data_raw = await core.get_data_from_path(inspect_ship_path)
-    raw_dict = utils.convert.raw_xml_to_dict(ship_data_raw, preserve_lists=False)
-    user_info: entity.EntityInfo = raw_dict['ShipService']['InspectShip']['User']
-    user_ship_info: entity.EntityInfo = raw_dict['ShipService']['InspectShip']['Ship']
+    user_info, user_ship_info = await ship.get_inspect_ship_for_user(user_id)
     ship_design_info: entity.EntityInfo = ships_designs_data[user_ship_info.get('ShipDesignId')]
     rooms_designs_sprites_ids = {value.get('RoomDesignId'): value.get('SpriteId') for value in rooms_designs_sprites_data.values() if value.get('RaceId') == ship_design_info.get('RaceId')}
     file_path = await ship.make_ship_layout_sprite(str(ctx.message.id), user_ship_info, ship_design_info, rooms_designs_data, rooms_designs_sprites_ids)
-    title = f'{user_info[user.USER_DESCRIPTION_PROPERTY_NAME]}'
+    title = f'{escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])}'
     fields = []
     fleet_name = user_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME)
     if fleet_name:
-        fields.append(('Fleet', fleet_name, None))
+        fields.append(('Fleet', escape_markdown(fleet_name), None))
     fields.append(('Trophies', user_info['Trophy'], None))
     fields.append(('Ship', f'{ship_design_info["ShipDesignName"]} (level {ship_design_info["ShipLevel"]})', None))
 
@@ -370,12 +367,6 @@ async def __get_fleet_info_by_user_info(user_info: EntityInfo) -> EntityInfo:
     return result
 
 
-async def __get_inspect_ship_path(user_id: int) -> str:
-    access_token = await login.DEVICES.get_access_token()
-    result = f'{INSPECT_SHIP_BASE_PATH}?userId={user_id}&accessToken={access_token}'
-    return result
-
-
 def __get_league_from_trophies(trophies: int) -> str:
     result = '-'
     if trophies is not None:
@@ -398,10 +389,7 @@ def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> i
 
 
 async def __get_user_info_by_id(user_id: int) -> EntityInfo:
-    path = await __get_inspect_ship_path(user_id)
-    inspect_ship_info_raw = await core.get_data_from_path(path)
-    inspect_ship_info = utils.convert.raw_xml_to_dict(inspect_ship_info_raw)
-    result = inspect_ship_info['ShipService']['InspectShip']['User']
+    result, _ = await ship.get_inspect_ship_for_user(user_id)
     return result
 
 

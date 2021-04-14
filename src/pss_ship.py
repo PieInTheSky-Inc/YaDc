@@ -1,22 +1,76 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
+from discord import Embed
+from discord.ext.commands.context import Context
+from discord.utils import escape_markdown
 import numpy as np
 from PIL import Image, ImageDraw
 
 import pss_core as core
 import pss_entity as entity
+import pss_fleet as fleet
 import pss_login as login
 import pss_room as room
 import pss_sprites as sprites
+import pss_user as user
+import settings
 from typehints import EntitiesData, EntityInfo
 import utils
 
 
 # ---------- Constants ----------
 
+SHIP_BUILDER_PIXEL_PRESTIGE_BASE_PATH: str = 'http://pixel-prestige.com/ship-builder.php?'
+SHIP_BUILDER_PIXYSHIP_BASE_PATH: str = 'https://pixyship.net/builder?'
+
 SHIP_DESIGN_BASE_PATH: str = 'ShipService/ListAllShipDesigns2?languageKey=en'
 SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ShipDesignName'
 SHIP_DESIGN_KEY_NAME: str = 'ShipDesignId'
+
+
+
+
+
+# ---------- Ship builder links ----------
+
+async def get_ship_builder_links(ctx: Context, user_info: entity.EntityInfo, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+    user_info, user_ship_info = await get_inspect_ship_for_user(user_info[user.USER_KEY_NAME])
+    ship_design_id = user_ship_info[SHIP_DESIGN_KEY_NAME]
+    ships_designs_data = await ships_designs_retriever.get_data_dict3()
+    ship_design_info = ships_designs_data[ship_design_id]
+    rooms = '-'.join([
+        ','.join((ship_room_info['Column'], ship_room_info['Row'], ship_room_info[room.ROOM_DESIGN_KEY_NAME]))
+        for ship_room_info in user_ship_info['Rooms'].values()
+    ])
+    query_params = f'ship={ship_design_id}&rooms={rooms}'
+    pixel_prestige_link = f'{SHIP_BUILDER_PIXEL_PRESTIGE_BASE_PATH}{query_params}'
+    pixyship_link = f'{SHIP_BUILDER_PIXYSHIP_BASE_PATH}{query_params}'
+    ship_builder_links = [
+        ('Pixel Prestige builder', pixel_prestige_link),
+        ('Pixyship builder', pixyship_link)
+    ]
+    fields = []
+    fleet_name = user_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME)
+    if entity.entity_property_has_value(fleet_name):
+        fields.append(('Fleet', escape_markdown(fleet_name), False))
+    fields += [
+        ('Trophies', user_info['Trophy'], None),
+        ('Ship', f'{ship_design_info["ShipDesignName"]} (level {ship_design_info["ShipLevel"]})', None),
+    ]
+    post_title = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+    if as_embed:
+        miniship_sprite_url = await sprites.get_download_sprite_link(ship_design_info.get('MiniShipSpriteId'))
+        user_pin_sprite_url = await sprites.get_download_sprite_link(user_info.get('IconSpriteId'))
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        result = utils.discord.create_basic_embeds_from_fields(post_title, fields=fields, colour=colour, thumbnail_url=miniship_sprite_url, icon_url=user_pin_sprite_url)
+        for title, link in ship_builder_links:
+            result.append(utils.discord.create_embed(post_title, description=f'[{title}]({link})', colour=colour, thumbnail_url=miniship_sprite_url, icon_url=user_pin_sprite_url))
+    else:
+        for title, link in ship_builder_links:
+            fields.append((title, f'<{link}>', None))
+        result = [f'{key}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{value}' for key, value, _ in fields]
+        result.insert(0, f'**Ship builder links for {escape_markdown(post_title)}**')
+    return result
 
 
 
@@ -111,6 +165,7 @@ async def make_ship_layout_sprite(file_name_prefix: str, user_ship_info: entity.
 
     file_path = sprites.save_sprite(interior_sprite, f'{file_name_prefix}_{user_id}_layout')
     return file_path
+
 
 def make_interior_grid_sprite(ship_design_info: entity.EntityInfo, width: int, height: int) -> Image.Image:
     result = sprites.create_empty_sprite(width, height)

@@ -653,6 +653,49 @@ async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
     await utils.discord.reply_with_output(ctx, output)
 
 
+@BOT.command(name='builder', brief='Get ship builder links')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_builder(ctx: Context, *, player_name: str):
+    """
+    Get links to websites offering a ship builder tool with the specific player's ship layout loaded. Currently there'll be links produced for pixelprestige.com and pixyship.net.
+
+    Usage:
+      /builder [player_name]
+
+    Parameters:
+      player_name: Mandatory. The (beginning of the) name of the player to search for.
+
+    Examples:
+      /builder Namith - Returns links to ship builder pages with the layout of the player Namith loaded.
+    """
+    __log_command_use(ctx)
+    async with ctx.typing():
+        exact_name = utils.discord.get_exact_args(ctx)
+        if exact_name:
+            player_name = exact_name
+        if not player_name:
+            raise MissingParameterError('The parameter `player_name` is mandatory.')
+        user_infos = await user.get_users_infos_by_name(player_name)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            async with ctx.typing():
+                output = await ship.get_ship_builder_links(ctx, user_info, as_embed=(await server_settings.get_use_embeds(ctx)))
+            await utils.discord.reply_with_output(ctx, output)
+    else:
+        leading_space_note = ''
+        if player_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
+        raise NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
+
+
 @BOT.command(name='char', aliases=['crew'], brief='Get character stats')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_char(ctx: Context, level: str = None, *, crew_name: str = None):
