@@ -836,6 +836,17 @@ async def cmd_event_last(ctx: Context):
     await utils.discord.reply_with_output(ctx, output)
 
 
+@BOT.command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.')
+async def cmd_flap(ctx: Context):
+    """
+    There's no flip without the flap.
+    """
+    __log_command_use(ctx)
+    await utils.discord.try_delete_original_message(ctx)
+    file_path = os.path.join(PWD, 'data', 'Theres-no-flip-without-the-flap.mp4')
+    await ctx.send(file=File(file_path))
+
+
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_fleet(ctx: Context, *, fleet_name: str):
