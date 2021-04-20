@@ -1,6 +1,6 @@
 aiohttp[speedups]==3.6.2
 asyncio==3.4.3
-asyncpg==0.20.1
+asyncpg==0.21.0
 discord.py==1.5.1
 google-api-python-client==1.8.2
 holidays==0.10.2
