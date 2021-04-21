@@ -836,7 +836,7 @@ async def cmd_event_last(ctx: Context):
     await utils.discord.reply_with_output(ctx, output)
 
 
-@BOT.command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.')
+@BOT.command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.', hidden=True)
 async def cmd_flap(ctx: Context):
     """
     There's no flip without the flap.
