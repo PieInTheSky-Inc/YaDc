@@ -351,7 +351,8 @@ def __get_damage(room_info: EntityInfo, rooms_data: EntitiesData, items_data: En
         max_power = room_info.get('MaxSystemPower')
         volley = entity.get_property_from_entity_info(room_info, 'MissileDesign.Volley')
         volley_delay = entity.get_property_from_entity_info(room_info, 'MissileDesign.VolleyDelay')
-        result = __get_dmg_for_dmg_type(dmg, reload_time, max_power, volley, volley_delay, print_percent)
+        cooldown_time = room_info.get('CooldownTime')
+        result = __get_dmg_for_dmg_type(dmg, reload_time, max_power, volley, volley_delay, cooldown_time, print_percent)
         return result
     else:
         return None
@@ -496,7 +497,9 @@ def __get_reload_time(room_info: EntityInfo, rooms_data: EntitiesData, items_dat
         if entity.entity_property_has_value(reload_time):
             reload_ticks = float(reload_time)
             reload_seconds = reload_ticks / 40.0
-            reload_speed = 60.0 / reload_seconds
+            cooldown_time = room_info.get('CooldownTime')
+            cooldown_seconds = utils.convert.ticks_to_seconds(cooldown_time) if cooldown_time else 0
+            reload_speed = 60.0 / (reload_seconds + cooldown_seconds)
             result = f'{utils.format.number_up_to_decimals(reload_seconds, 3)}s (~ {utils.format.number_up_to_decimals(reload_speed)}/min)'
             return result
         else:
@@ -697,12 +700,14 @@ def __get_allowed_room_short_names(rooms_data: EntitiesData) -> List:
     return result
 
 
-def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: str, volley_delay: str, print_percent: bool) -> Optional[str]:
+def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: str, volley_delay: str, cooldown_time: str, print_percent: bool) -> Optional[str]:
     """Returns base dps and dps per power"""
     if dmg:
         dmg = float(dmg)
         reload_time = int(reload_time)
         reload_seconds = utils.convert.ticks_to_seconds(reload_time)
+        cooldown_time = int(cooldown_time) if cooldown_time else 0
+        reload_seconds += utils.convert.ticks_to_seconds(cooldown_time)
         max_power = int(max_power)
         volley = int(volley)
         if volley_delay:
@@ -725,7 +730,7 @@ def __get_dmg_for_dmg_type(dmg: str, reload_time: str, max_power: str, volley: s
         full_volley_dmg = utils.format.number_up_to_decimals(full_volley_dmg, 2)
         dps = utils.format.number_up_to_decimals(dps, 3)
         dps_per_power = utils.format.number_up_to_decimals(dps_per_power, 3)
-        result = f'{full_volley_dmg}{percent} ({single_volley_dmg}dps: {dps}{percent}, per power: {dps_per_power}{percent})'
+        result = f'{full_volley_dmg}{percent} ({single_volley_dmg}dps: {dps}{percent})'
         return result
     else:
         return None
@@ -1032,6 +1037,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['enhanced_by'], True, entity_property_name='EnhancementType', transform_function=__get_value),
             entity.EntityDetailProperty(__display_name_properties['min_hull_lvl'], True, entity_property_name='MinShipLevel', transform_function=__get_value),
             entity.EntityDetailProperty(__display_name_properties['reload_speed'], True, transform_function=__get_reload_time),
+            entity.EntityDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='CooldownTime', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['shots_fired'], True, transform_function=__get_shots_fired),
             entity.EntityDetailProperty(__display_name_properties['system_dmg'], True, entity_property_name='MissileDesign.SystemDamage', transform_function=__get_damage, print_percent=False),
             entity.EntityDetailProperty(__display_name_properties['shield_dmg'], True, entity_property_name='MissileDesign.ShieldDamage', transform_function=__get_damage, print_percent=False),
@@ -1041,7 +1047,6 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
             entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-            entity.EntityDetailProperty(__display_name_properties['cooldown'], True, entity_property_name='CooldownTime', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
             entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
             entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
