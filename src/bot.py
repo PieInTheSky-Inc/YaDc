@@ -792,9 +792,9 @@ async def cmd_daily(ctx: Context):
         as_embed = await server_settings.get_use_embeds(ctx)
         output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
     if as_embed:
-        await utils.discord.reply_with_output(ctx, output_embed)
+        await utils.discord.post_output(ctx, output_embed)
     else:
-        await utils.discord.reply_with_output(ctx, output)
+        await utils.discord.post_output(ctx, output)
 
 
 @BOT.group(name='event', brief='Get current event info', invoke_without_command=True)
