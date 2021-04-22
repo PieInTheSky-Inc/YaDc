@@ -840,11 +840,16 @@ async def cmd_event_last(ctx: Context):
 async def cmd_flap(ctx: Context):
     """
     There's no flip without the flap.
+
+    Thanks to bloodyredbaron for the idea <3
     """
     __log_command_use(ctx)
     await utils.discord.try_delete_original_message(ctx)
-    file_path = os.path.join(PWD, 'data', 'Theres-no-flip-without-the-flap.mp4')
-    await ctx.send(file=File(file_path))
+    output = [
+        'There\'s no flip without the flap. (bloodyredbaron)',
+        'https://www.youtube.com/watch?v=V4vCQ-5mC_I'
+    ]
+    await utils.discord.post_output(ctx, output)
 
 
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
