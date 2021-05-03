@@ -85,7 +85,7 @@ TOURNEY_DATA_CLIENT: TourneyDataClient = TourneyDataClient(
     settings.GDRIVE_CLIENT_ID,
     settings.GDRIVE_SCOPES,
     settings.GDRIVE_FOLDER_ID,
-    settings.GDRIVE_SERVICE_ACCOUNT_FILE,
+    settings.GDRIVE_CLIENT_SECRETS_FILE, 
     settings.GDRIVE_SETTINGS_FILE,
     settings.TOURNAMENT_DATA_START_DATE
 )
@@ -4071,6 +4071,5 @@ async def __initialize() -> None:
 
 
 if __name__ == '__main__':
-    token = str(os.environ.get('DISCORD_BOT_TOKEN'))
+    token = settings.DISCORD_BOT_TOKEN 
     BOT.run(token)
-

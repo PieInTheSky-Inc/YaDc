@@ -5,6 +5,10 @@ items-*.txt
 *.csv
 sprite_cache/
 
+#Credentials
+service_account_creds.json
+yadc_settings.yaml
+
 # files created at runtime
 launch.json
 client_secrets.json

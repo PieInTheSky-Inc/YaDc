@@ -47,7 +47,7 @@ class Device():
     def __init__(self, device_key: str, checksum: str = None, can_login_until: datetime = None, device_type: str = None) -> None:
         self.__key: str = device_key
         self.__device_type = device_type or DEFAULT_DEVICE_TYPE
-        self.__checksum: str = checksum or __create_device_checksum(self.__key, self.__device_type)
+        self.__checksum: str = checksum or self.__create_device_checksum(self.__key, self.__device_type)
         self.__last_login: datetime = None
         self.__can_login_until: datetime = can_login_until
         self.__access_token: str = None
@@ -113,7 +113,7 @@ class Device():
     async def __login(self) -> None:
         utc_now = utils.get_utc_now()
         if not self.__key:
-            self.__key = __create_device_key()
+            self.__key = self.__create_device_key()
         if not self.__checksum:
             self.__checksum = __create_device_checksum(self.__key, self.__device_type)
 
@@ -155,6 +155,10 @@ class Device():
             self.__can_login_until = min(login_until, next_day)
             self.__can_login_until_changed = True
 
+    def __create_device_checksum(self, device_key: str, device_type: str) -> str:
+        result = hashlib.md5((f'{device_key}{device_type}savysoda').encode('utf-8')).hexdigest()
+        return result
+
 
 
 
@@ -167,7 +171,7 @@ class DeviceCollection():
         self.__fix_position()
         self.__token_lock: Lock = Lock()
         if not self.__devices:
-            self.__devices.append(Device(__create_device_key()))
+            self.__devices.append(Device(self.__create_device_key()))
 
 
     @property
@@ -291,30 +295,25 @@ class DeviceCollection():
 
 
 
-# ---------- Helper functions ----------
+    # ---------- Helper functions ----------
 
-def __create_device_key() -> str:
-    h = '0123456789abcdef'
-    result = ''.join(
-        random.choice(h)
-        + random.choice('26ae')
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-        + random.choice(h)
-    )
-    return result
-
-
-def __create_device_checksum(device_key: str, device_type: str) -> str:
-    result = hashlib.md5((f'{device_key}{device_type}savysoda').encode('utf-8')).hexdigest()
-    return result
+    def __create_device_key(self) -> str:
+        h = '0123456789abcdef'
+        result = ''.join(
+            random.choice(h)
+            + random.choice('26ae')
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+            + random.choice(h)
+        )
+        return result
 
 
 

@@ -1,0 +1,3 @@
+If you wish to use the settings file instead of enviroment variables please create a copy of yadc_settings - template.yaml and rename it yadc_settings.yaml
+
+After edit any fields you wish inside the copy. Dont forget to enter the database url as well as the discord bot token

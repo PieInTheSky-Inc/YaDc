@@ -1,0 +1,70 @@
+# ----- Override Settings -----
+USE_OS_VARIABLES: false                                 #If true the app will pull settings from the system enviroment variables of the same name instead of this settings file. ****If it cannot find this file it will default to TRUE****
+
+# ----- Other Config Files -----
+GDRIVE_SERVICE_ACCOUNT_FILE: creds/service_account_creds.json
+GDRIVE_SETTINGS_FILE: settings/settings.yaml
+
+# ----- Database Settings -----
+DATABASE_SSL_MODE:      prefer
+DATABASE_URL:                                         #Example: postgres://username:password@adress:port/name 
+SETTINGS_TABLE_NAME:    settings                      #Name of settings table in the database
+
+DEFAULT_HYPHEN: "-"
+DEFAULT_PREFIX: /
+
+# ----- PSS Settings -----
+DEFAULT_PRODUCTION_SERVER: api.pixelstarships.com    #PSS API Server adress
+MIN_ENTITY_NAME_LENGTH: 3                              #Filters out junk from the PSS api calls
+LATEST_SETTINGS_BASE_PATH: SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey=
+
+# ----- Excel Settings -----
+EXCEL_COLUMN_FORMAT_DATETIME: YYYY-MM-DD hh:MM:ss
+EXCEL_COLUMN_FORMAT_NUMBER: 0
+
+# ----- gdrive Settings -----
+GDRIVE_FOLDER_ID:                                       #Enter your gdrive folder ID here
+GDRIVE_CLIENT_SECRETS_FILE: creds/client_secrets.json   #Location to store the client secrtes file
+GDRIVE_SCOPES:                                          #You probably wont need to change this
+  - https://www.googleapis.com/auth/drive
+
+
+
+
+
+# ----- Discord Settings -----
+USE_EMBEDS: True                            #True to use discord embeds
+DISCORD_BOT_TOKEN:                          #Generate Token for your bot at https://discord.com/developers/applications
+BASE_INVITE_URL: https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id=
+DEFAULT_USE_EMOJI_PAGINATOR: True
+FEATURE_AUTODAILY_ENABLED: 0
+POST_AUTODAILY_FROM: 7/2/20 00:00:00 UTC          #When to start looking for tournament data format: %d/%m/%y %H:%M:%S %Z
+TOURNAMENT_DATA_START_DATE: 9/10/19 12:00:00 UTC  #When to start looking for tournament data format: %d/%m/%y %H:%M:%S %Z
+
+RAW_COMMAND_USERS_RAW:                      #Location of .json file with list of users fqn
+FLEETS_COMMAND_USERS_RAW:                   #Location of .json file with list of users fqn
+
+IGNORE_SERVER_IDS_FOR_COUNTING:
+      - 110373943822540800
+      - 264445053596991498
+      - 446425626988249089
+      - 450100127256936458
+
+# ----- File Settings -----
+PSS_ABOUT_FILES:
+      src/pss_data/about.json
+      pss_data/about.json
+PSS_LINKS_FILES:
+      src/pss_data/links.json
+      pss_data/links.json
+PSS_RESOURCES_FILES:
+      src/pss_data/resources.json
+      pss_data/resources.json
+SPRITE_CACHE_SUB_PATH:  sprite_cache       #Change this if you need to move sprite cache
+
+# ----- Debug Settings -----
+PRINT_DEBUG:               0                  #
+PRINT_DEBUG_DB:            0                  #
+PRINT_DEBUG_COMMAND:       0                  #
+PRINT_DEBUG_WEB_REQUESTS:  0                  #
+THROW_COMMAND_ERRORS:   0                  #

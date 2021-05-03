@@ -6,12 +6,12 @@ import utils
 
 
 PWD = os.getcwd()
-if '/src' in PWD:
-    PWD = f'{PWD}/pss_data/'
+if (os.path.sep + 'src') in PWD:
+    PWD = os.path.join(os.getcwd(), "pss_data")
 else:
-    PWD = f'{PWD}/src/pss_data/'
+    PWD = os.path.join(os.getcwd(), "src", "pss_data")
 
-ID_NAMES_FILEPATH = f'{PWD}id_names.json'
+ID_NAMES_FILEPATH = os.path.join(PWD, "id_names.json")
 
 ID_NAMES_INFO: Dict[str, str]
 
