@@ -63,6 +63,8 @@ class InvalidParameterValueError(Error):
 class MissingParameterError(Error):
     pass
 
+class Useralert(Error):
+    pass
 
 class NotFound(Error):
     pass

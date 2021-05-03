@@ -26,7 +26,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
-from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError
+from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError, Useralert
 import pss_fleet as fleet
 import pss_gm as gm
 import pss_item as item
@@ -85,7 +85,7 @@ TOURNEY_DATA_CLIENT: TourneyDataClient = TourneyDataClient(
     settings.GDRIVE_CLIENT_ID,
     settings.GDRIVE_SCOPES,
     settings.GDRIVE_FOLDER_ID,
-    settings.GDRIVE_CLIENT_SECRETS_FILE, 
+    settings.GDRIVE_CLIENT_SECRETS_FILE,
     settings.GDRIVE_SETTINGS_FILE,
     settings.TOURNAMENT_DATA_START_DATE
 )
@@ -188,6 +188,8 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                 await ctx.send_help(command)
             except errors.Forbidden:
                 __log_command_use_error(ctx, err, force_printing=True)
+            if not settings.FORWARD_UNHANDELD_ERRORS:
+                return
 
         as_embed = await server_settings.get_use_embeds(ctx)
         try:
@@ -3984,7 +3986,7 @@ async def __assert_settings_command_valid(ctx: Context) -> None:
         if permissions.manage_guild is not True:
             raise command_errors.MissingPermissions(['manage_guild'])
     else:
-        raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds.')
+        raise Useralert('This command cannot be used in DMs or group chats, but only in Discord servers/guilds.')
 
 
 def __log_command_use(ctx: Context):
@@ -4071,5 +4073,5 @@ async def __initialize() -> None:
 
 
 if __name__ == '__main__':
-    token = settings.DISCORD_BOT_TOKEN 
+    token = settings.DISCORD_BOT_TOKEN
     BOT.run(token)

@@ -15,7 +15,7 @@ def _loadSetting(tag, fileLoc, default):
         settings = _loadFileAndCache(fileLoc)
         loaded = str(os.environ.get(tag)) if __useEnv else settings[tag]
         if loaded is None:
-            print("Loaded (Default): " + str(default))
+            #print("Loaded (default) <" + str(tag) + ">: " + str(Default)) #print("Loaded (Default): " + str(default))
             return default
         #print("Loaded <" + str(tag) + ">: " + str(loaded)) #Debug only, dissabled for obvious security ishues
         return loaded
@@ -28,16 +28,20 @@ def _loadFileAndCache(fileLoc):  # Opens the supplied .yaml or .json file and st
     if fileLoc in __cachedSettings:
         return __cachedSettings[fileLoc]
 
-    print("Loading File: " + fileLoc + " ...", end='')
-    if os.path.isfile(fileLoc):
-        print("Found!")
-        with open(fileLoc) as file:
-            if fileLoc.endswith('yaml'):
-                __cachedSettings[fileLoc] = yaml.full_load(file)
-                print("Caching: " + fileLoc)
-            elif fileLoc.endswith('json'):
-                __cachedSettings[fileLoc] = json.load(file)
-                print("Caching: " + fileLoc)
+    print("Loading File: " + fileLoc + " ... ", end='')
+    try:
+        if os.path.isfile(fileLoc):
+            print("Found!")
+            with open(fileLoc) as file:
+                if fileLoc.endswith('yaml'):
+                    __cachedSettings[fileLoc] = yaml.full_load(file)
+                    print("Caching: " + fileLoc)
+                elif fileLoc.endswith('json'):
+                    __cachedSettings[fileLoc] = json.load(file)
+                    print("Caching: " + fileLoc)
+    except:
+        print("Failed!")
+
     return __cachedSettings[fileLoc]
 
 # ----- Init -----
@@ -115,7 +119,8 @@ PRINT_DEBUG: int = int(_loadSetting('PRINT_DEBUG', __yadcSettings, '0'))
 PRINT_DEBUG_DB: int = int(_loadSetting('PRINT_DEBUG_DB', __yadcSettings, '0'))
 PRINT_DEBUG_COMMAND: int = int(_loadSetting('PRINT_DEBUG_COMMAND', __yadcSettings, '0'))
 PRINT_DEBUG_WEB_REQUESTS: int = int(_loadSetting('PRINT_DEBUG_WEB_REQUESTS', __yadcSettings, '0'))
-THROW_COMMAND_ERRORS: int = int(_loadSetting('THROW_COMMAND_ERRORS', __yadcSettings, '0'))
+THROW_COMMAND_ERRORS: bool = bool(_loadSetting('THROW_COMMAND_ERRORS', __yadcSettings, False))
+FORWARD_UNHANDELD_ERRORS: bool = bool(_loadSetting('FORWARD_UNHANDELD_ERRORS', __yadcSettings, True))
 
 # ----- Ref -----
 VERSION: str = '1.3.4.1'
