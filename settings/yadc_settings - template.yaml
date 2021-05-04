@@ -7,7 +7,7 @@ GDRIVE_SETTINGS_FILE: settings/settings.yaml
 
 # ----- Database Settings -----
 DATABASE_SSL_MODE:      prefer
-DATABASE_URL:                                         #Example: postgres://username:password@adress:port/name 
+DATABASE_URL:                                         #Example: postgres://username:password@adress:port/name
 SETTINGS_TABLE_NAME:    settings                      #Name of settings table in the database
 
 DEFAULT_HYPHEN: "-"
@@ -44,7 +44,7 @@ TOURNAMENT_DATA_START_DATE: 9/10/19 12:00:00 UTC  #When to start looking for tou
 RAW_COMMAND_USERS_RAW:                      #Location of .json file with list of users fqn
 FLEETS_COMMAND_USERS_RAW:                   #Location of .json file with list of users fqn
 
-IGNORE_SERVER_IDS_FOR_COUNTING:
+IGNORE_SERVER_IDS_FOR_COUNTING:             #Add any servers you do not want to include in the tally of servers using this bot
       - 110373943822540800
       - 264445053596991498
       - 446425626988249089
@@ -67,4 +67,5 @@ PRINT_DEBUG:               0                  #
 PRINT_DEBUG_DB:            0                  #
 PRINT_DEBUG_COMMAND:       0                  #
 PRINT_DEBUG_WEB_REQUESTS:  0                  #
-THROW_COMMAND_ERRORS:   0                  #
+THROW_COMMAND_ERRORS:      false              #
+FORWARD_UNHANDELD_ERRORS:  false              #
