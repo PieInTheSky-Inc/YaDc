@@ -4071,7 +4071,12 @@ async def __initialize() -> None:
     INITIALIZED = True
     print(f'Initialized!')
 
+def updateSchema():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(db.init_schema())
 
 if __name__ == '__main__':
+    updateSchema()
     token = settings.DISCORD_BOT_TOKEN
     BOT.run(token)

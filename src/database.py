@@ -39,6 +39,8 @@ USING_LOOKUP = {
 # ---------- DB Schema ----------
 
 async def init_schema() -> None:
+    await __init_caches()
+
     success_create_schema = await create_schema()
     if not success_create_schema:
         print('[init_schema] DB initialization failed upon creating the DB schema.')
@@ -71,18 +73,7 @@ async def init_schema() -> None:
     if not (await update_schema('1.3.1.0', update_schema_v_1_3_1_0)):
         return
 
-    success_serversettings = await try_create_table('serversettings', [
-        ('guildid', 'TEXT', True, True),
-        ('dailychannelid', 'TEXT', False, False),
-        ('dailycanpost', 'BOOLEAN', False, False),
-        ('dailylatestmessageid', 'TEXT', False, False),
-        ('usepagination', 'BOOLEAN', False, False),
-        ('prefix', 'TEXT', False, False),
-        ('dailydeleteonchange', 'BOOLEAN', False, False)
-    ])
-    if not success_serversettings:
-        print('[init_schema] DB initialization failed upon creating the table \'serversettings\'.')
-        return
+    await disconnect() #If there were any schema updates, close the connection to refresh the cache
 
     print('[init_schema] DB initialization succeeded')
 
@@ -180,7 +171,7 @@ async def update_schema_v_1_2_9_0() -> bool:
         print(f'[update_schema_v_1_2_9_0] ERROR: Failed to convert and copy data from column \'dailydeleteonchange\' into column \'dailychangemode\'!')
         return False
 
-    query_drop_column = f'ALTER TABLE DROP COLUMN IF EXISTS dailydeleteonchange;'
+    query_drop_column = f'ALTER TABLE serversettings DROP COLUMN IF EXISTS dailydeleteonchange;'
     success_drop_column = await try_execute(query_drop_column)
     if not success_drop_column:
         print(f'[update_schema_v_1_2_9_0] ERROR: Failed to drop column \'dailydeleteonchange\'!')
@@ -334,7 +325,13 @@ async def update_schema_v_1_2_4_0() -> bool:
     if success:
         utc_now = utils.get_utc_now()
         daily_info = await daily.get_daily_info()
-        success = await daily.db_set_daily_info(daily_info, utc_now)
+
+        __settings = {daily.__get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
+        success = await set_settings(__settings)
+        if success:
+            await daily.__update_db_daily_info_cache()
+
+        #success = await daily.db_set_daily_info(daily_info, utc_now) Function has been updated must use old methods
         if success:
             success = await try_set_schema_version('1.2.4.0')
     return success
@@ -411,6 +408,19 @@ async def update_schema_v_1_2_2_0() -> bool:
 
 
 async def create_schema() -> bool:
+    success_serversettings = await try_create_table('serversettings', [
+        ('guildid', 'TEXT', True, True),
+        ('dailychannelid', 'TEXT', False, False),
+        ('dailycanpost', 'BOOLEAN', False, False),
+        ('dailylatestmessageid', 'TEXT', False, False),
+        ('usepagination', 'BOOLEAN', False, False),
+        ('prefix', 'TEXT', False, False),
+        ('dailydeleteonchange', 'BOOLEAN', False, False)
+    ])
+    if not success_serversettings:
+        print('[init_schema] DB initialization failed upon creating the table \'serversettings\'.')
+        return false
+
     column_definitions_settings = [
         ('settingname', 'TEXT', True, True),
         ('modifydate', 'TIMESTAMPTZ', False, True),
@@ -513,6 +523,8 @@ async def fetchall(query: str, args: list = None) -> List[asyncpg.Record]:
                         result = await connection.fetch(query, *args)
                     else:
                         result = await connection.fetch(query)
+        except (asyncpg.exceptions.UndefinedTableError) as pg_error:
+            print("Error<DB>: " + str(pg_error))
         except (asyncpg.exceptions.PostgresError, asyncpg.PostgresError) as pg_error:
             raise pg_error
         except Exception as error:
@@ -567,6 +579,8 @@ async def try_set_schema_version(version: str) -> bool:
     else:
         query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
     success = await try_execute(query, [utc_now, version, 'schema_version'])
+    if success:
+        __settings_cache['schema_version'] = [version, str(utc_now)] #Update settings cache for next update
     return success
 
 
@@ -660,15 +674,18 @@ async def get_settings(setting_names: List[str] = None) -> Dict[str, Tuple[objec
         else:
             records = await fetchall(query)
 
-        for record in records:
-            setting_name = record[0]
-            modify_date = record[1]
-            value = None
-            for field in record[2:]:
-                if field:
-                    value = field
-                    break
-            result[setting_name] = (value, modify_date)
+        try:
+            for record in records:
+                setting_name = record[0]
+                modify_date = record[1]
+                value = None
+                for field in record[2:]:
+                    if field:
+                        value = field
+                        break
+                result[setting_name] = (value, modify_date)
+        except TypeError as error:
+            print("TypeError: " + str(error))
     return result
 
 
@@ -819,4 +836,3 @@ async def __init_caches() -> None:
 async def init() -> None:
     await __init_caches()
     await connect()
-    await init_schema()
