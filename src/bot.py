@@ -657,7 +657,7 @@ async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_builder(ctx: Context, *, player_name: str):
     """
-    Get links to websites offering a ship builder tool with the specific player's ship layout loaded. Currently there'll be links produced for pixelprestige.com and pixyship.net.
+    Get links to websites offering a ship builder tool with the specific player's ship layout loaded. Currently there'll be links produced for pixelprestige.com and pixyship.com.
 
     Usage:
       /builder [player_name]

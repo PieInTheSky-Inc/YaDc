@@ -21,7 +21,7 @@ import utils
 # ---------- Constants ----------
 
 SHIP_BUILDER_PIXEL_PRESTIGE_BASE_PATH: str = 'http://pixel-prestige.com/ship-builder.php?'
-SHIP_BUILDER_PIXYSHIP_BASE_PATH: str = 'https://pixyship.net/builder?'
+SHIP_BUILDER_PIXYSHIP_BASE_PATH: str = 'https://pixyship.com/builder?'
 
 SHIP_DESIGN_BASE_PATH: str = 'ShipService/ListAllShipDesigns2?languageKey=en'
 SHIP_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'ShipDesignName'
