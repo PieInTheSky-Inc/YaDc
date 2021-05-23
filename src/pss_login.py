@@ -13,7 +13,7 @@ import utils
 
 # ---------- Constants & Internals ----------
 
-ACCESS_TOKEN_TIMEOUT: timedelta = timedelta(hours=0)
+ACCESS_TOKEN_TIMEOUT: timedelta = timedelta(minutes=3)
 
 DEFAULT_DEVICE_TYPE: str = 'DeviceTypeMac'
 DEVICES: 'DeviceCollection' = None
