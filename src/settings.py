@@ -14,7 +14,7 @@ DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MOD
 
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
-DEFAULT_PRODUCTION_SERVER: str = 'api.pixelstarships.com'
+DEFAULT_PRODUCTION_SERVER: str = os.environ.get('PSS_PRODUCTION_SERVER', 'api.pixelstarships.com')
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 
