@@ -180,7 +180,7 @@ async def update_schema_v_1_2_9_0() -> bool:
         print(f'[update_schema_v_1_2_9_0] ERROR: Failed to convert and copy data from column \'dailydeleteonchange\' into column \'dailychangemode\'!')
         return False
 
-    query_drop_column = f'ALTER TABLE DROP COLUMN IF EXISTS dailydeleteonchange;'
+    query_drop_column = f'ALTER TABLE serversettings DROP COLUMN IF EXISTS dailydeleteonchange;'
     success_drop_column = await try_execute(query_drop_column)
     if not success_drop_column:
         print(f'[update_schema_v_1_2_9_0] ERROR: Failed to drop column \'dailydeleteonchange\'!')
@@ -545,7 +545,10 @@ async def get_column_names(table_name: str) -> List[str]:
 async def get_schema_version() -> str:
     __log_db_function_enter('get_schema_version')
 
-    result, _ = await get_setting('schema_version')
+    try:
+        result, _ = await get_setting('schema_version')
+    except:
+        result = None
     return result or ''
 
 
@@ -567,6 +570,8 @@ async def try_set_schema_version(version: str) -> bool:
     else:
         query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
     success = await try_execute(query, [utc_now, version, 'schema_version'])
+    if success:
+        __settings_cache['schema_version'] = version
     return success
 
 
@@ -681,7 +686,10 @@ async def get_sales_infos(expiry_date: datetime = None) -> SalesCache:
         query += f' WHERE limitedcatalogexpirydate = $1'
         args.append(expiry_date)
     query += ' ORDER BY limitedcatalogexpirydate DESC'
-    records = await fetchall(query, args)
+    try:
+        records = await fetchall(query, args)
+    except asyncpg.UndefinedTableError:
+        records = None
     if records:
         result = [dict(record) for record in records]
     else:

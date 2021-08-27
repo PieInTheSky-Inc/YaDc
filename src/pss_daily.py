@@ -412,7 +412,7 @@ async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
     if sales_success:
         await update_db_sales_info_cache()
 
-    return settings_success and sales_success
+    return settings_success
 
 
 async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool = None) -> List[str]:

@@ -39,6 +39,8 @@ def compare_versions(version_1: str, version_2: str) -> int:
     -1, if version_1 is higher than version_2
     0, if version_1 is equal to version_2
     1, if version_1 is lower than version_2 """
+    if not version_1:
+        return 1
     version_1 = version_1.strip('v')
     version_2 = version_2.strip('v')
     version_1_split = version_1.split('.')
