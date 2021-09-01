@@ -435,7 +435,7 @@ class TourneyDataClient():
         result = None
         while year > self.from_year or month >= self.from_month:
             result = self.get_data(year, month, initializing=initializing)
-            if result and json.loads(result):
+            if result:
                 break
             month -= 1
             if month == 0:
