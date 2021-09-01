@@ -25,7 +25,7 @@ from typehints import EntitiesData, EntityInfo
 # ---------- Classes ----------
 
 class TourneyData(object):
-    def __init__(self, raw_data: dict) -> None:
+    def __init__(self, data: dict) -> None:
         #data = json.loads(raw_data)
 
         self.__fleets: EntitiesData
