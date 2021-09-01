@@ -25,8 +25,8 @@ from typehints import EntitiesData, EntityInfo
 # ---------- Classes ----------
 
 class TourneyData(object):
-    def __init__(self, raw_data: str) -> None:
-        data = json.loads(raw_data)
+    def __init__(self, raw_data: dict) -> None:
+        #data = json.loads(raw_data)
 
         self.__fleets: EntitiesData
         self.__users: EntitiesData
@@ -545,11 +545,12 @@ class TourneyDataClient():
     def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
         self.__ensure_initialized()
         g_file = self.__get_latest_file(year, month, initializing=initializing)
+        result = None
         if g_file:
             raw_data = g_file.GetContentString()
-            result = TourneyData(raw_data)
-        else:
-            result = None
+            data = json.loads(raw_data)
+            if data:
+                result = TourneyData(data)
         return result
 
 
