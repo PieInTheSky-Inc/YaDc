@@ -105,7 +105,7 @@ class Device():
         async with self.__update_lock:
             if self.__can_login_until_changed:
                 self.__can_login_until_changed = False
-                result = await __db_try_update_device(self)
+                result = await _db_try_update_device(self)
                 return result
             return True
 
@@ -190,7 +190,7 @@ class DeviceCollection():
         for existing_device in self.__devices:
             if existing_device.key == device.key:
                 return
-        await __db_try_store_device(device)
+        await _db_try_store_device(device)
         self.__devices.append(device)
         self.select_device_by_key(device.key)
 
@@ -205,7 +205,7 @@ class DeviceCollection():
             if existing_device.key == device_key:
                 return existing_device
         device = Device(device_key)
-        await __db_try_store_device(device)
+        await _db_try_store_device(device)
         self.__devices.append(device)
         self.__fix_position()
         return device
@@ -226,7 +226,7 @@ class DeviceCollection():
             raise Exception('Cannot remove device. There\'re no devices!')
         for existing_device in self.__devices:
             if existing_device.key == device_key:
-                await __db_try_delete_device(existing_device)
+                await _db_try_delete_device(existing_device)
                 self.__devices = [device for device in self.__devices if device.key != device_key]
                 self.__fix_position()
                 return
@@ -267,7 +267,7 @@ class DeviceCollection():
             if result is None:
                 raise LoginError('Cannot get access token. No device has been able to retrieve one!')
             if current_device is not None and current_can_login_until != current_device.can_login_until:
-                await __db_try_update_device(current_device)
+                await _db_try_update_device(current_device)
             return result
 
 
@@ -322,7 +322,7 @@ def _create_device_checksum(device_key: str, device_type: str) -> str:
 
 # ---------- DB ----------
 
-async def __db_get_device(device_key: str) -> Optional[Device]:
+async def _db_get_device(device_key: str) -> Optional[Device]:
     query = f'SELECT * FROM devices WHERE key = $1'
     rows = await db.fetchall(query, [device_key])
     if rows:
@@ -333,7 +333,7 @@ async def __db_get_device(device_key: str) -> Optional[Device]:
     return result
 
 
-async def __db_get_devices() -> List[Device]:
+async def _db_get_devices() -> List[Device]:
     query = f'SELECT * FROM devices;'
     rows = await db.fetchall(query)
     if rows:
@@ -343,28 +343,28 @@ async def __db_get_devices() -> List[Device]:
     return result
 
 
-async def __db_try_create_device(device: Device) -> bool:
+async def _db_try_create_device(device: Device) -> bool:
     query = f'INSERT INTO devices VALUES ($1, $2, $3)'
     success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
 
 
-async def __db_try_delete_device(device: Device) -> bool:
+async def _db_try_delete_device(device: Device) -> bool:
     query = f'DELETE FROM devices WHERE key = $1'
     success = await db.try_execute(query, [device.key])
     return success
 
 
-async def __db_try_store_device(device: Device) -> bool:
-    current_device: Device = await __db_get_device(device.key)
+async def _db_try_store_device(device: Device) -> bool:
+    current_device: Device = await _db_get_device(device.key)
     if current_device:
-        success = await __db_try_update_device(device)
+        success = await _db_try_update_device(device)
     else:
-        success = await __db_try_create_device(device)
+        success = await _db_try_create_device(device)
     return success
 
 
-async def __db_try_update_device(device: Device) -> bool:
+async def _db_try_update_device(device: Device) -> bool:
     query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
     success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
     return success
@@ -376,6 +376,6 @@ async def __db_try_update_device(device: Device) -> bool:
 # ---------- Initialization ----------
 
 async def init() -> None:
-    __devices = await __db_get_devices()
+    __devices = await _db_get_devices()
     global DEVICES
     DEVICES = DeviceCollection(__devices)
