@@ -51,6 +51,7 @@ LATEST_SETTINGS_BASE_PATH: str = 'SettingService/GetLatestVersion3?deviceType=De
 
 
 MIN_ENTITY_NAME_LENGTH: int = 3
+MOST_RECENT_TOURNAMENT_DATA: bool = bool(int(os.environ.get('MOST_RECENT_TOURNAMENT_DATA', 0)))
 
 
 POST_AUTODAILY_FROM: datetime = datetime(2020, 2, 7, tzinfo=timezone.utc)
