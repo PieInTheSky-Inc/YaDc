@@ -14,7 +14,7 @@ DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MOD
 
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
-DEFAULT_PRODUCTION_SERVER: str = os.environ.get('PSS_PRODUCTION_SERVER', 'api.pixelstarships.com')
+BASE_API_URL: str = 'https://api.pixelstarships.com/'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 
@@ -51,6 +51,7 @@ LATEST_SETTINGS_BASE_PATH: str = 'SettingService/GetLatestVersion3?deviceType=De
 
 
 MIN_ENTITY_NAME_LENGTH: int = 3
+MOST_RECENT_TOURNAMENT_DATA: bool = bool(int(os.environ.get('MOST_RECENT_TOURNAMENT_DATA', 0)))
 
 
 POST_AUTODAILY_FROM: datetime = datetime(2020, 2, 7, tzinfo=timezone.utc)
@@ -58,6 +59,7 @@ PRINT_DEBUG: int = int(os.environ.get('PRINT_DEBUG', '0'))
 PRINT_DEBUG_DB: int = int(os.environ.get('PRINT_DEBUG_DB', '0'))
 PRINT_DEBUG_COMMAND: int = int(os.environ.get('PRINT_DEBUG_COMMAND', '0'))
 PRINT_DEBUG_WEB_REQUESTS: int = int(os.environ.get('PRINT_DEBUG_WEB_REQUESTS', '0'))
+PRODUCTION_SERVER: str = os.environ.get('PSS_PRODUCTION_SERVER')
 
 PSS_ABOUT_FILES: List[str] = ['src/pss_data/about.json', 'pss_data/about.json']
 PSS_LINKS_FILES: List[str] = ['src/pss_data/links.json', 'pss_data/links.json']

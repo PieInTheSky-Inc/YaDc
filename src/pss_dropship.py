@@ -203,7 +203,7 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
 
     shop_type = daily_info['LimitedCatalogType']
     currency_type = daily_info['LimitedCatalogCurrencyType']
-    currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP[currency_type.lower()]
+    currency_emoji = lookups.CURRENCY_EMOJI_LOOKUP.get(currency_type.lower(), currency_type)
     price = daily_info['LimitedCatalogCurrencyAmount']
     can_own_max = daily_info['LimitedCatalogMaxTotal']
 

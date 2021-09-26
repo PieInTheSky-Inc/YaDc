@@ -26,8 +26,6 @@ from typehints import EntitiesData, EntityInfo
 
 class TourneyData(object):
     def __init__(self, data: dict) -> None:
-        #data = json.loads(raw_data)
-
         self.__fleets: EntitiesData
         self.__users: EntitiesData
         self.__meta: Dict[str, object] = data['meta']
@@ -40,11 +38,14 @@ class TourneyData(object):
             self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v4(data['users'], self.__fleets)
         elif self.__meta['schema_version'] == 5:
-            self.__fleets = TourneyData.__create_fleet_data_from_data_v5(data['fleets'], data['users'])
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v4(data['fleets'], data['users']) # No change to prior schema version
             self.__users = TourneyData.__create_user_dict_from_data_v5(data['users'], self.__fleets)
         elif self.__meta['schema_version'] == 6:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v6(data['fleets'], data['users'])
             self.__users = TourneyData.__create_user_dict_from_data_v6(data['users'], self.__fleets)
+        elif self.__meta['schema_version'] == 7:
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users'])
+            self.__users = TourneyData.__create_user_dict_from_data_v6(data['users'], self.__fleets) # No change to prior schema version
         self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
 
@@ -197,11 +198,6 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_fleet_data_from_data_v5(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
-        return TourneyData.__create_fleet_data_from_data_v4(fleets_data, users_data)
-
-
-    @staticmethod
     def __create_fleet_data_from_data_v6(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
         result = {}
         for i, entry in enumerate(fleets_data, 1):
@@ -220,6 +216,29 @@ class TourneyData(object):
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
             result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
         return result
+
+
+    @staticmethod
+    def __create_fleet_data_from_data_v7(fleets_data: List[List[Union[int, str]]], users_data: List[List[Union[int, str]]]) -> EntitiesData:
+        result = {}
+        for i, entry in enumerate(fleets_data, 1):
+            alliance_id = str(entry[0])
+            users = [user_info for user_info in users_data if user_info[2] == entry[0]]
+            result[alliance_id] = {
+                'AllianceId': alliance_id,
+                'AllianceName': entry[1],
+                'Score': str(entry[2]),
+                'DivisionDesignId': str(entry[3]),
+                'Trophy': str(entry[4]),
+                'NumberOfMembers': len(users) if users else str(entry[6]),
+                'ChampionshipScore': str(entry[5]),
+                'NumberOfApprovedMembers': str(entry[7])
+            }
+        ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
+        for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
+            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+        return result
+
 
 
 
@@ -349,11 +368,6 @@ class TourneyData(object):
 
 
     @staticmethod
-    def __create_user_dict_from_data_v6(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
-        return TourneyData.__create_user_dict_from_data_v5(users, fleet_data)
-
-
-    @staticmethod
     def __convert_timestamp_v4(timestamp: int) -> str:
         minutes, seconds = divmod(timestamp, 60)
         hours, minutes = divmod(minutes, 60)
@@ -432,6 +446,11 @@ class TourneyDataClient():
     def get_latest_data(self, initializing: bool = False) -> TourneyData:
         utc_now = utils.get_utc_now()
         year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
+        if settings.MOST_RECENT_TOURNAMENT_DATA:
+            month += 1
+            if month == 13:
+                month = 1
+                year += 1
         result = None
         while year > self.from_year or month >= self.from_month:
             result = self.get_data(year, month, initializing=initializing)
@@ -642,7 +661,10 @@ class TourneyDataClient():
             utc_now = utils.get_utc_now()
 
         if month is None:
-            temp_month = (utc_now.month - 2) % 12 + 1
+            temp_month = utc_now.month - 1
+            if not settings.MOST_RECENT_TOURNAMENT_DATA:
+                temp_month -= 1
+            temp_month = temp_month % 12 + 1
         else:
             temp_month = utils.datetime.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
             temp_month = temp_month or utils.datetime.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
@@ -653,6 +675,6 @@ class TourneyDataClient():
                     raise ValueError(f'Parameter month got an invalid value: {month}')
         if year is None:
             year = utc_now.year
-            if utc_now.month <= temp_month:
+            if utc_now.month + (1 if settings.MOST_RECENT_TOURNAMENT_DATA else 0) <= temp_month:
                 year -= 1
         return temp_month, int(year)

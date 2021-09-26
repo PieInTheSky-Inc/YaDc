@@ -41,11 +41,8 @@ def fix_allowed_value_candidate(candidate: str) -> str:
     return result
 
 
-async def get_base_url(use_default: bool = False) -> str:
-    if use_default is True:
-        production_server = settings.DEFAULT_PRODUCTION_SERVER
-    else:
-        production_server = await __get_production_server()
+async def get_base_url() -> str:
+    production_server = await __get_production_server()
     result = f'https://{production_server}/'
     return result
 
@@ -58,10 +55,10 @@ async def get_data_from_path(path: str) -> str:
     return await __get_data_from_url(url)
 
 
-async def get_latest_settings(language_key: str = 'en', use_default: bool = False) -> EntityInfo:
+async def get_latest_settings(language_key: str = 'en', base_url: str = None) -> EntityInfo:
     if not language_key:
         language_key = 'en'
-    base_url = await get_base_url(use_default=use_default)
+    base_url = base_url or await get_base_url()
     url = f'{base_url}{settings.LATEST_SETTINGS_BASE_PATH}{language_key}'
     raw_text = await __get_data_from_url(url)
     result = utils.convert.xmltree_to_dict3(raw_text)
@@ -205,7 +202,9 @@ async def __get_data_from_url(url: str) -> str:
 
 
 async def __get_production_server(language_key: str = 'en') -> str:
-    latest_settings = await get_latest_settings(language_key=language_key, use_default=True)
+    if settings.PRODUCTION_SERVER:
+        return settings.PRODUCTION_SERVER
+    latest_settings = await get_latest_settings(language_key=language_key, base_url=settings.BASE_API_URL)
     return latest_settings['ProductionServer']
 
 
