@@ -991,9 +991,6 @@ async def cmd_layout(ctx: Context, *, player_name: str):
             info_message = await utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
             async with ctx.typing():
                 output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-                if not author_is_owner and utils.get_utc_now() < end:
-                    seconds = (end - utils.get_utc_now()).total_seconds()
-                    await asyncio.sleep(seconds)
                 await utils.discord.try_delete_message(info_message)
             await utils.discord.reply_with_output_and_files(ctx, output, [file_path], output_is_embeds=as_embed)
             os.remove(file_path)
