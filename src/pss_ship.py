@@ -173,6 +173,11 @@ def make_interior_grid_sprite(ship_design_info: entity.EntityInfo, width: int, h
     ship_mask = ship_design_info['Mask']
     ship_height = int(ship_design_info['Rows'])
     ship_width = int(ship_design_info['Columns'])
+    ship_area = ship_height * ship_width
+    while len(ship_mask) < ship_area:
+        ship_mask += "0" * ship_width
+    if len(ship_mask) > ship_area:
+        ship_height = int(len(ship_mask) / ship_width)
     grid_mask = np.array([int(val) for val in ship_mask]).reshape((ship_height, ship_width))
     grids = np.where(grid_mask)
     for coordinates in list(zip(grids[1], grids[0])):
