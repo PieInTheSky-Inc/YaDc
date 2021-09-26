@@ -968,8 +968,6 @@ async def cmd_layout(ctx: Context, *, player_name: str):
     """
     __log_command_use(ctx)
     start = utils.get_utc_now()
-    end = start + datetime.timedelta(seconds=30)
-    author_is_owner = await BOT.is_owner(ctx.author)
     async with ctx.typing():
         exact_name = utils.discord.get_exact_args(ctx)
         if exact_name:
