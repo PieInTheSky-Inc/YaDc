@@ -2082,7 +2082,7 @@ async def cmd_raw_achievement(ctx: Context, *, achievement_id: str = None):
     await raw.post_raw_data(ctx, achievement.achievements_designs_retriever, 'achievement', achievement_id)
 
 
-@cmd_raw.group(name='ai', brief='Get raw ai data')
+@cmd_raw.group(name='ai', brief='Get raw ai data', invoke_without_command=True)
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_raw_ai(ctx: Context):
     """
