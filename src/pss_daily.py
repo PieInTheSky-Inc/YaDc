@@ -434,8 +434,10 @@ async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool 
     return result
 
 
-async def get_daily_info() -> EntityInfo:
-    latest_settings = await core.get_latest_settings()
+async def get_daily_info(language_key: str = 'en') -> EntityInfo:
+    latest_settings = await core.get_latest_settings(language_key)
+    live_ops_info = await core.get_liveops_info(language_key)
+    latest_settings.update(live_ops_info)
     result = __convert_to_daily_info(latest_settings)
     return result
 
