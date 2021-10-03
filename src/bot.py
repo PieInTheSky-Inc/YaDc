@@ -1816,11 +1816,11 @@ async def cmd_time(ctx: Context):
         holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
 
         first_day_of_next_month = utils.datetime.get_first_of_following_month(utc_now)
-        time_till_next_month = ('Time until next monthly reset', utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+        time_till_next_month = ('Time until next monthly reset', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
 
         while (first_day_of_next_month.month - 1) % 3:
             first_day_of_next_month = utils.datetime.get_first_of_following_month(first_day_of_next_month)
-        time_till_next_prestige_change = ('Time until next prestige recipe changes', utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False))
+        time_till_next_prestige_change = ('Time until next prestige recipe changes', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
 
         fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
         as_embed = await server_settings.get_use_embeds(ctx)
@@ -3907,7 +3907,7 @@ async def cmd_test(ctx: Context, action, *, params = None):
     print(f'+ called command test(ctx: Context, {action}, {params}) by {ctx.author}')
     if action == 'utcnow':
         utc_now = utils.get_utc_now()
-        txt = utils.format.datetime(utc_now)
+        txt = utils.datetime.get_discord_datestamp(utc_now, include_time=True, include_seconds=True)
         await ctx.send(txt)
     elif action == 'init':
         await db.init_schema()

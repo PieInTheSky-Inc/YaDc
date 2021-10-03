@@ -207,7 +207,7 @@ async def get_sales_history(ctx: Context, entity_info: EntityInfo, reverse: bool
         sales_details = []
         for sales_info in sales_infos:
             sold_on_date = sales_info['expiry_date'] - utils.datetime.ONE_DAY
-            sold_on = utils.format.datetime(sold_on_date, include_time=False, include_tz=False)
+            sold_on = utils.datetime.get_discord_datestamp(sold_on_date)
             star_date = utils.datetime.get_star_date(sold_on_date)
             sold_ago = (utc_now - sold_on_date).days
             price = sales_info['original_price']
@@ -240,7 +240,7 @@ async def get_sales_history_for_rooms(ctx: Context, room_type: str, room_type_pr
         for sales_info in sales_infos:
             name = sales_info['name']
             sold_on_date = sales_info['expiry_date'] - utils.datetime.ONE_DAY
-            sold_on = utils.format.datetime(sold_on_date, include_time=False, include_tz=False)
+            sold_on = utils.datetime.get_discord_datestamp(sold_on_date)
             star_date = utils.datetime.get_star_date(sold_on_date)
             sold_ago = (utc_now - sold_on_date).days
             price = sales_info['original_price']

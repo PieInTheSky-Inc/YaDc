@@ -22,8 +22,33 @@ ONE_DAY: _timedelta = _timedelta(days=1)
 ONE_SECOND: _timedelta = _timedelta(seconds=1)
 ONE_WEEK: _timedelta = _timedelta(days=7)
 
+UNIX_START_DATE: _datetime = _datetime(1970, 1, 1, tzinfo=_timezone.utc)
+
 
 # ---------- Functions ----------
+
+def get_discord_datestamp(dt: _datetime, include_time: bool = False, include_seconds: bool = False) -> str:
+    unix_timestamp = get_unix_timestamp(dt)
+    result = f'<t:{unix_timestamp}:d>'
+    if include_time:
+        result += f' {get_discord_timestamp(dt, include_seconds=include_seconds)}'
+    return result
+
+
+def get_discord_timedelta(dt: _datetime) -> str:
+    unix_timestamp = get_unix_timestamp(dt)
+    result = f'<t:{unix_timestamp}:R>'
+    return result
+
+
+def get_discord_timestamp(dt: _datetime, include_seconds: bool = False) -> str:
+    unix_timestamp = get_unix_timestamp(dt)
+    if include_seconds:
+        result = f'<t:{unix_timestamp}:T>'
+    else:
+        result = f'<t:{unix_timestamp}:t>'
+    return result
+
 
 def get_first_of_following_month(utc_now: _datetime) -> _datetime:
     year = utc_now.year
@@ -42,7 +67,7 @@ def get_first_of_next_month(utc_now: _datetime = None) -> _datetime:
 
 
 def get_historic_data_note(dt: _datetime) -> str:
-    if dt is not None:
+    if dt:
         timestamp = _format.datetime(dt)
         result = f'{HISTORIC_DATA_NOTE}: {timestamp}'
         return result
@@ -89,6 +114,11 @@ def get_seconds_to_wait(interval_length: int, utc_now: _datetime = None) -> floa
 def get_star_date(utc_now: _datetime) -> int:
     today = _date(utc_now.year, utc_now.month, utc_now.day)
     return (today - _constants.PSS_START_DATE).days
+
+
+def get_unix_timestamp(dt: _datetime) -> int:
+    result = int((dt - UNIX_START_DATE).total_seconds())
+    return result
 
 
 def get_utc_now() -> _datetime:
