@@ -14,6 +14,8 @@ import utils
 
 # ---------- Constants ----------
 
+LIVEOPS_BASE_PATH: str = 'LiveOpsService/GetTodayLiveOps?deviceType=DeviceTypeAndroid&languageKey='
+
 __RX_PROPERTY_FIX_REPLACE: re.Pattern = re.compile(r'[^a-z0-9]', re.IGNORECASE)
 __RX_ALLOWED_CANDIDATE_FIX_REPLACE: re.Pattern = re.compile(r'(\(.*?\)|[^a-z0-9 ])', re.IGNORECASE)
 
@@ -66,6 +68,12 @@ async def get_latest_settings(language_key: str = 'en', base_url: str = None) ->
     maintenance_message = result.get('MaintenanceMessage')
     if maintenance_message:
         raise MaintenanceError(maintenance_message)
+    return result
+
+
+async def get_liveops_info(language_key: str = 'en') -> EntityInfo:
+    live_ops_info = await get_data_from_path(f'{LIVEOPS_BASE_PATH}{language_key}')
+    result = utils.convert.xmltree_to_dict3(live_ops_info)
     return result
 
 
