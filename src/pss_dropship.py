@@ -26,6 +26,7 @@ import utils
 # ---------- Constants ----------
 
 DROPSHIP_BASE_PATH: str = 'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
+LIVEOPS_BASE_PATH: str = 'LiveOpsService/GetTodayLiveOps?deviceType=DeviceTypeAndroid&languageKey='
 
 
 
@@ -58,6 +59,8 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
     utc_now = utc_now or utils.get_utc_now()
     if not daily_info:
         daily_info = await core.get_latest_settings(language_key=language_key)
+        live_ops_info = await core.get_data_from_path(f'{LIVEOPS_BASE_PATH}{language_key}')
+        daily_info.update(utils.convert.xmltree_to_dict3(live_ops_info))
 
     chars_designs_data = await crew.characters_designs_retriever.get_data_dict3()
     collections_designs_data = await crew.collections_designs_retriever.get_data_dict3()
