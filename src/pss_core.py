@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 import aiohttp
 
 import pss_entity as entity
+from pss_exception import MaintenanceError
 import settings
 from typehints import EntitiesData, EntityInfo
 import utils
@@ -62,6 +63,9 @@ async def get_latest_settings(language_key: str = 'en', base_url: str = None) ->
     url = f'{base_url}{settings.LATEST_SETTINGS_BASE_PATH}{language_key}'
     raw_text = await __get_data_from_url(url)
     result = utils.convert.xmltree_to_dict3(raw_text)
+    maintenance_message = result.get('MaintenanceMessage')
+    if maintenance_message:
+        raise MaintenanceError(maintenance_message)
     return result
 
 

@@ -26,7 +26,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
-from pss_exception import Error, InvalidParameterValueError, MissingParameterError, NotFound, ParameterTypeError
+from pss_exception import Error, InvalidParameterValueError, MaintenanceError, MissingParameterError, NotFound, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
 import pss_item as item
@@ -172,9 +172,12 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
         elif isinstance(err, command_errors.CheckFailure):
             error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
         elif isinstance(err, command_errors.CommandInvokeError):
+            # Check err.original here for custom exceptions
             if err.original:
                 error_type = type(err.original).__name__
                 if isinstance(err.original, Error):
+                    if isinstance(err.original, MaintenanceError):
+                        error_type = 'Pixel Starships is under maintenance'
                     error_message = f'{err.original.msg}'
                 else:
                     error_message = f'{err.original}'

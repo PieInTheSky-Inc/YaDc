@@ -60,6 +60,10 @@ class InvalidParameterValueError(Error):
         return self.msg
 
 
+class MaintenanceError(Error):
+    pass
+
+
 class MissingParameterError(Error):
     pass
 
