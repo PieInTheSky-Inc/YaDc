@@ -97,26 +97,25 @@ def __flatten_raw_entity(entity_info: EntityInfo) -> EntityInfo:
 
 
 async def __post_raw_entity(ctx: Context, retriever: entity.EntityRetriever, entity_name: str, entity_id: str, mode: str, retrieved_at: datetime) -> None:
-    async with ctx.typing():
-        output = []
-        data = await retriever.get_data_dict3()
-        entity_info = data.get(entity_id, None)
-        if entity_info is None:
-            title = [f'Could not find raw **{entity_name}** data for id **{entity_id}**.']
+    output = []
+    data = await retriever.get_data_dict3()
+    entity_info = data.get(entity_id, None)
+    if entity_info is None:
+        title = [f'Could not find raw **{entity_name}** data for id **{entity_id}**.']
+    else:
+        title = [f'Raw **{entity_name}** data for id **{entity_id}**:']
+        if not mode:
+            flat_entity = __flatten_raw_entity(entity_info)
+            for key, value in flat_entity.items():
+                output.append(f'{key} = {value}')
         else:
-            title = [f'Raw **{entity_name}** data for id **{entity_id}**:']
-            if not mode:
-                flat_entity = __flatten_raw_entity(entity_info)
-                for key, value in flat_entity.items():
-                    output.append(f'{key} = {value}')
-            else:
-                result = ''
-                if mode == 'xml':
-                    result = await retriever.get_raw_entity_info_by_id_as_xml(entity_id)
-                elif mode == 'json':
-                    result = await retriever.get_raw_entity_info_by_id_as_json(entity_id, fix_xml_attributes=True)
-                output = result.split('\n')
-        output_len = len(output) + sum([len(row) for row in output])
+            result = ''
+            if mode == 'xml':
+                result = await retriever.get_raw_entity_info_by_id_as_xml(entity_id)
+            elif mode == 'json':
+                result = await retriever.get_raw_entity_info_by_id_as_json(entity_id, fix_xml_attributes=True)
+            output = result.split('\n')
+    output_len = len(output) + sum([len(row) for row in output])
     if output_len > utils.discord.MAXIMUM_CHARACTERS:
         file_path = __create_raw_file('\n'.join(output), mode, f'{entity_name}_design_{entity_id}', retrieved_at)
         await utils.discord.post_output_with_files(ctx, title, [file_path])
@@ -129,27 +128,26 @@ async def __post_raw_entity(ctx: Context, retriever: entity.EntityRetriever, ent
 
 
 async def __post_raw_file(ctx: Context, retriever: entity.EntityRetriever, entity_name: str, mode: str, retrieved_at: datetime) -> None:
-    async with ctx.typing():
-        retrieved_at = retrieved_at or utils.get_utc_now()
-        entity_name = entity_name.replace(' ', '_')
-        file_name_prefix = f'{entity_name}_designs'
-        raw_data = await retriever.get_raw_data()
-        raw_data_dict = utils.convert.raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
-        if mode == 'xml':
-            file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
-        elif mode == 'json':
-            data = json.dumps(raw_data_dict)
-            file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
-        else:
-            start = time.perf_counter()
-            flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
-            time1 = time.perf_counter() - start
-            print(f'Flattening the {entity_name} data took {time1:.2f} seconds.')
+    retrieved_at = retrieved_at or utils.get_utc_now()
+    entity_name = entity_name.replace(' ', '_')
+    file_name_prefix = f'{entity_name}_designs'
+    raw_data = await retriever.get_raw_data()
+    raw_data_dict = utils.convert.raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
+    if mode == 'xml':
+        file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
+    elif mode == 'json':
+        data = json.dumps(raw_data_dict)
+        file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
+    else:
+        start = time.perf_counter()
+        flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
+        time1 = time.perf_counter() - start
+        print(f'Flattening the {entity_name} data took {time1:.2f} seconds.')
 
-            start = time.perf_counter()
-            file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
-            time2 = time.perf_counter() - start
-            print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
+        start = time.perf_counter()
+        file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
+        time2 = time.perf_counter() - start
+        print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
     await utils.discord.post_output_with_files(ctx, [], [file_path])
     os.remove(file_path)
 

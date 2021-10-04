@@ -429,31 +429,30 @@ async def cmd_about(ctx: Context):
       /about - Displays information on this bot and its authors.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
-        user_name = BOT.user.display_name
-        if ctx.guild is None:
-            nick = BOT.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        has_nick = BOT.user.display_name != nick
-        pfp_url = BOT.user.avatar_url
-        about_info = core.read_about_file()
+    guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
+    user_name = BOT.user.display_name
+    if ctx.guild is None:
+        nick = BOT.user.display_name
+    else:
+        nick = ctx.guild.me.display_name
+    has_nick = BOT.user.display_name != nick
+    pfp_url = BOT.user.avatar_url
+    about_info = core.read_about_file()
 
-        title = f'About {nick}'
-        if has_nick:
-            title += f' ({user_name})'
-        description = about_info['description']
-        footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
-        fields = [
-            ('version', f'v{settings.VERSION}', True),
-            ('authors', ', '.join(about_info['authors']), True),
-            ('profile pic by', about_info['pfp'], True),
-            ('support', about_info['support'], False)
-        ]
-        colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
+    title = f'About {nick}'
+    if has_nick:
+        title += f' ({user_name})'
+    description = about_info['description']
+    footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
+    fields = [
+        ('version', f'v{settings.VERSION}', True),
+        ('authors', ', '.join(about_info['authors']), True),
+        ('profile pic by', about_info['pfp'], True),
+        ('support', about_info['support'], False)
+    ]
+    colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
 
-        embed = utils.discord.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
+    embed = utils.discord.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
     await utils.discord.reply_with_output(ctx, [embed])
 
 
@@ -471,23 +470,22 @@ async def cmd_invite(ctx: Context):
     """
     __log_command_use(ctx)
 
-    async with ctx.typing():
-        as_embed = await server_settings.get_use_embeds(ctx)
+    as_embed = await server_settings.get_use_embeds(ctx)
 
-        if ctx.guild is None:
-            nick = BOT.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        title = f'Invite {nick} to your server'
-        invite_url = f'{settings.BASE_INVITE_URL}{BOT.user.id}'
-        colour = None
+    if ctx.guild is None:
+        nick = BOT.user.display_name
+    else:
+        nick = ctx.guild.me.display_name
+    title = f'Invite {nick} to your server'
+    invite_url = f'{settings.BASE_INVITE_URL}{BOT.user.id}'
+    colour = None
 
-        if as_embed:
-            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            description = f'[{title}]({invite_url})'
-            output = utils.discord.create_embed(None, description=description, colour=colour)
-        else:
-            output = f'{title}: {invite_url}'
+    if as_embed:
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        description = f'[{title}]({invite_url})'
+        output = utils.discord.create_embed(None, description=description, colour=colour)
+    else:
+        output = f'{title}: {invite_url}'
     await utils.discord.dm_author(ctx, [output], output_is_embeds=as_embed)
     if utils.discord.is_guild_channel(ctx.channel):
         notice = f'{ctx.author.mention} Sent invite link via DM.'
@@ -509,28 +507,27 @@ async def cmd_links(ctx: Context):
       /links - Shows the links for useful sites regarding Pixel Starships.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        links = core.read_links_file()
-        output = []
-        if (await server_settings.get_use_embeds(ctx)):
-            title = 'Pixel Starships weblinks'
-            colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-            fields = []
-            for field_name, hyperlinks in links.items():
-                field_value = []
-                for (description, hyperlink) in hyperlinks:
-                    field_value.append(f'[{description}]({hyperlink})')
-                fields.append((field_name, '\n'.join(field_value), False))
-            embed = utils.discord.create_embed(title, fields=fields, colour=colour)
-            output.append(embed)
-        else:
-            for category, hyperlinks in links.items():
-                output.append(f'**{category}**')
-                for (description, hyperlink) in hyperlinks:
-                    output.append(f'{description}: <{hyperlink}>')
-                output.append(utils.discord.ZERO_WIDTH_SPACE)
-            if output:
-                output = output[:-1]
+    links = core.read_links_file()
+    output = []
+    if (await server_settings.get_use_embeds(ctx)):
+        title = 'Pixel Starships weblinks'
+        colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
+        fields = []
+        for field_name, hyperlinks in links.items():
+            field_value = []
+            for (description, hyperlink) in hyperlinks:
+                field_value.append(f'[{description}]({hyperlink})')
+            fields.append((field_name, '\n'.join(field_value), False))
+        embed = utils.discord.create_embed(title, fields=fields, colour=colour)
+        output.append(embed)
+    else:
+        for category, hyperlinks in links.items():
+            output.append(f'**{category}**')
+            for (description, hyperlink) in hyperlinks:
+                output.append(f'{description}: <{hyperlink}>')
+            output.append(utils.discord.ZERO_WIDTH_SPACE)
+        if output:
+            output = output[:-1]
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -564,24 +561,23 @@ async def cmd_support(ctx: Context):
     """
     __log_command_use(ctx)
 
-    async with ctx.typing():
-        as_embed = await server_settings.get_use_embeds(ctx)
+    as_embed = await server_settings.get_use_embeds(ctx)
 
-        if ctx.guild is None:
-            nick = BOT.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        about = core.read_about_file()
-        title = f'Join {nick} support server'
-        colour = None
-        guild_invite = about['support']
+    if ctx.guild is None:
+        nick = BOT.user.display_name
+    else:
+        nick = ctx.guild.me.display_name
+    about = core.read_about_file()
+    title = f'Join {nick} support server'
+    colour = None
+    guild_invite = about['support']
 
-        if as_embed:
-            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            description = f'[{title}]({guild_invite})'
-            output = utils.discord.create_embed(None, description=description, colour=colour)
-        else:
-            output = f'{title}: {guild_invite}'
+    if as_embed:
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        description = f'[{title}]({guild_invite})'
+        output = utils.discord.create_embed(None, description=description, colour=colour)
+    else:
+        output = f'{title}: {guild_invite}'
     await utils.discord.dm_author(ctx, [output], output_is_embeds=as_embed)
     if utils.discord.is_guild_channel(ctx.channel):
         notice = f'{ctx.author.mention} Sent invite link to bot support server via DM.'
@@ -626,33 +622,32 @@ async def cmd_best(ctx: Context, slot: str, *, stat: str = None):
       /best storm lance - Prints all equipment items for the same slot and stat as a Storm Lance.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        item_name = slot
-        if stat is not None:
-            item_name += f' {stat}'
-        item_name = item_name.strip().lower()
+    item_name = slot
+    if stat is not None:
+        item_name += f' {stat}'
+    item_name = item_name.strip().lower()
 
-        if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
-            items_details = await item.get_items_details_by_name(item_name)
-            found_matching_items = items_details and len(items_details) > 0
-            items_details = item.filter_items_details_for_equipment(items_details)
+    if item_name not in lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in lookups.STAT_TYPES_LOOKUP:
+        items_details = await item.get_items_details_by_name(item_name)
+        found_matching_items = items_details and len(items_details) > 0
+        items_details = item.filter_items_details_for_equipment(items_details)
+    else:
+        items_details = []
+        found_matching_items = False
+    if items_details:
+        if len(items_details) == 1:
+            item_details = items_details[0]
         else:
-            items_details = []
-            found_matching_items = False
-        if items_details:
-            if len(items_details) == 1:
-                item_details = items_details[0]
-            else:
-                use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-                paginator = pagination.Paginator(ctx, item_name, items_details, item.get_item_search_details, use_pagination)
-                _, item_details = await paginator.wait_for_option_selection()
-            slot, stat = item.get_slot_and_stat_type(item_details)
-        else:
-            if found_matching_items:
-                raise ValueError(f'The item `{item_name}` is not a gear type item!')
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, item_name, items_details, item.get_item_search_details, use_pagination)
+            _, item_details = await paginator.wait_for_option_selection()
+        slot, stat = item.get_slot_and_stat_type(item_details)
+    else:
+        if found_matching_items:
+            raise ValueError(f'The item `{item_name}` is not a gear type item!')
 
-        slot, stat = item.fix_slot_and_stat(slot, stat)
-        output = await item.get_best_items(ctx, slot, stat, as_embed=(await server_settings.get_use_embeds(ctx)))
+    slot, stat = item.fix_slot_and_stat(slot, stat)
+    output = await item.get_best_items(ctx, slot, stat, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -672,13 +667,12 @@ async def cmd_builder(ctx: Context, *, player_name: str):
       /builder Namith - Returns links to ship builder pages with the layout of the player Namith loaded.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        exact_name = utils.discord.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        if not player_name:
-            raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_users_infos_by_name(player_name)
+    exact_name = utils.discord.get_exact_args(ctx)
+    if exact_name:
+        player_name = exact_name
+    if not player_name:
+        raise MissingParameterError('The parameter `player_name` is mandatory.')
+    user_infos = await user.get_users_infos_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -689,8 +683,7 @@ async def cmd_builder(ctx: Context, *, player_name: str):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
-            async with ctx.typing():
-                output = await ship.get_ship_builder_links(ctx, user_info, as_embed=(await server_settings.get_use_embeds(ctx)))
+            output = await ship.get_ship_builder_links(ctx, user_info, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.reply_with_output(ctx, output)
     else:
         leading_space_note = ''
@@ -720,9 +713,8 @@ async def cmd_char(ctx: Context, level: str = None, *, crew_name: str = None):
       This command will only print stats for the crew with the best matching crew_name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        level, crew_name = utils.get_level_and_name(level, crew_name)
-        output = await crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await server_settings.get_use_embeds(ctx)))
+    level, crew_name = utils.get_level_and_name(level, crew_name)
+    output = await crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -747,8 +739,7 @@ async def cmd_craft(ctx: Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -772,8 +763,7 @@ async def cmd_collection(ctx: Context, *, collection_name: str = None):
       This command will only print stats for the collection with the best matching collection_name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -791,9 +781,8 @@ async def cmd_daily(ctx: Context):
     """
     __log_command_use(ctx)
     await utils.discord.try_delete_original_message(ctx)
-    async with ctx.typing():
-        as_embed = await server_settings.get_use_embeds(ctx)
-        output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
+    as_embed = await server_settings.get_use_embeds(ctx)
+    output, output_embed, _ = await dropship.get_dropship_text(ctx.bot, ctx.guild)
     if as_embed:
         await utils.discord.post_output(ctx, output_embed)
     else:
@@ -814,9 +803,8 @@ async def cmd_event(ctx: Context, *, params: str = None):
     """
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            _, print_all, situation_id = __extract_dash_parameters(params, None, '--all', '--id=')
-            output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, as_embed=(await server_settings.get_use_embeds(ctx)))
+        _, print_all, situation_id = __extract_dash_parameters(params, None, '--all', '--id=')
+        output = await situation.get_event_details(ctx, situation_id=situation_id, all_events=print_all, as_embed=(await server_settings.get_use_embeds(ctx)))
         await utils.discord.reply_with_output(ctx, output)
 
 
@@ -834,8 +822,7 @@ async def cmd_event_last(ctx: Context):
       /event last - Prints the information described above.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await situation.get_event_details(ctx, latest_only=True, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await situation.get_event_details(ctx, latest_only=True, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -872,12 +859,11 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
       /fleet HYDRA - Offers a list of fleets having a name starting with 'HYDRA'. Upon selection prints fleet details and posts the spreadsheet.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        is_tourney_running = tourney.is_tourney_running()
-        exact_name = utils.discord.get_exact_args(ctx)
-        if exact_name:
-            fleet_name = exact_name
-        fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+    is_tourney_running = tourney.is_tourney_running()
+    exact_name = utils.discord.get_exact_args(ctx)
+    if exact_name:
+        fleet_name = exact_name
+    fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -888,13 +874,12 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            async with ctx.typing():
-                as_embed = await server_settings.get_use_embeds(ctx)
-                if is_tourney_running:
-                    max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
-                else:
-                    max_tourney_battle_attempts = None
-                output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
+            as_embed = await server_settings.get_use_embeds(ctx)
+            if is_tourney_running:
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+            else:
+                max_tourney_battle_attempts = None
+            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
             await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -925,8 +910,7 @@ async def cmd_ingredients(ctx: Context, *, item_name: str):
       This command will only print crafting costs for the item with the best matching item name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await item.get_ingredients_for_item(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await item.get_ingredients_for_item(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -949,8 +933,7 @@ async def cmd_item(ctx: Context, *, item_name: str):
       This command will print information for all items matching the specified name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await item.get_item_details_by_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await item.get_item_details_by_name(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -971,13 +954,12 @@ async def cmd_layout(ctx: Context, *, player_name: str):
     """
     __log_command_use(ctx)
     start = utils.get_utc_now()
-    async with ctx.typing():
-        exact_name = utils.discord.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        if not player_name:
-            raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_users_infos_by_name(player_name)
+    exact_name = utils.discord.get_exact_args(ctx)
+    if exact_name:
+        player_name = exact_name
+    if not player_name:
+        raise MissingParameterError('The parameter `player_name` is mandatory.')
+    user_infos = await user.get_users_infos_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -990,9 +972,8 @@ async def cmd_layout(ctx: Context, *, player_name: str):
         if user_info:
             as_embed = await server_settings.get_use_embeds(ctx)
             info_message = await utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
-            async with ctx.typing():
-                output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-                await utils.discord.try_delete_message(info_message)
+            output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
+            await utils.discord.try_delete_message(info_message)
             await utils.discord.reply_with_output_and_files(ctx, output, [file_path], output_is_embeds=as_embed)
             os.remove(file_path)
     else:
@@ -1020,25 +1001,24 @@ async def cmd_level(ctx: Context, from_level: str, to_level: str = None):
       /level 35 - Prints exp and gas requirements from level 1 to 35
       /level 25 35 - Prints exp and gas requirements from level 25 to 35"""
     __log_command_use(ctx)
-    async with ctx.typing():
-        if from_level and not to_level:
-            to_level = from_level
-            from_level = None
+    if from_level and not to_level:
+        to_level = from_level
+        from_level = None
 
-        if to_level:
-            try:
-                to_level = int(to_level)
-            except:
-                raise ParameterTypeError('Parameter `to_level` must be a natural number from 2 to 40.')
-        if from_level:
-            try:
-                from_level = int(from_level)
-            except:
-                raise ParameterTypeError('Parameter `from_level` must be a natural number from 1 to 39.')
+    if to_level:
+        try:
+            to_level = int(to_level)
+        except:
+            raise ParameterTypeError('Parameter `to_level` must be a natural number from 2 to 40.')
+    if from_level:
+        try:
+            from_level = int(from_level)
+        except:
+            raise ParameterTypeError('Parameter `from_level` must be a natural number from 1 to 39.')
 
-        if from_level and to_level and from_level >= to_level:
-            raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
-        output = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await server_settings.get_use_embeds(ctx)))
+    if from_level and to_level and from_level >= to_level:
+        raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
+    output = crew.get_level_costs(ctx, from_level, to_level, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1065,8 +1045,7 @@ async def cmd_news(ctx: Context, entry_count: str = '5'):
     except (TypeError, ValueError) as ex:
         raise ParameterTypeError(f'The parameter `entry_count` must be an integer.') from ex
     await utils.discord.try_delete_original_message(ctx)
-    async with ctx.typing():
-        output = await dropship.get_news(ctx, take=take, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await dropship.get_news(ctx, take=take, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1102,23 +1081,22 @@ async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, d
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = utils.get_utc_now()
-        output = []
+    utc_now = utils.get_utc_now()
+    output = []
 
-        (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+    (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+    if year is not None and month is None:
+        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        if not pss_top.is_valid_division_letter(division):
-            subcommand = BOT.get_command('past stars fleet')
-            await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
-            return
-        else:
-            month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-            if tourney_data:
-                output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
+    if not pss_top.is_valid_division_letter(division):
+        subcommand = BOT.get_command('past stars fleet')
+        await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
+        return
+    else:
+        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        if tourney_data:
+            output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1136,23 +1114,22 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = []
-        error = None
-        utc_now = utils.get_utc_now()
-        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not fleet_name:
-            raise MissingParameterError('The parameter `fleet_name` is mandatory.')
+    output = []
+    error = None
+    utc_now = utils.get_utc_now()
+    (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+    if year is not None and month is None:
+        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+    if not fleet_name:
+        raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
 
-        if tourney_data is None:
-            fleet_infos = []
-        else:
-            fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+    if tourney_data is None:
+        fleet_infos = []
+    else:
+        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1163,8 +1140,7 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            async with ctx.typing():
-                output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
+            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
     elif error:
         raise Error(str(error))
     else:
@@ -1189,22 +1165,21 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        error = None
-        utc_now = utils.get_utc_now()
-        (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not fleet_name:
-            raise MissingParameterError('The parameter `fleet_name` is mandatory.')
+    error = None
+    utc_now = utils.get_utc_now()
+    (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+    if year is not None and month is None:
+        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+    if not fleet_name:
+        raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
 
-        if tourney_data is None:
-            fleet_infos = []
-        else:
-            fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+    if tourney_data is None:
+        fleet_infos = []
+    else:
+        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
     if fleet_infos:
         if len(fleet_infos) == 1:
@@ -1215,9 +1190,8 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            async with ctx.typing():
-                as_embed = await server_settings.get_use_embeds(ctx)
-                output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
+            as_embed = await server_settings.get_use_embeds(ctx)
+            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
             await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
@@ -1244,20 +1218,18 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        error = None
-        utc_now = utils.get_utc_now()
-        (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+    error = None
+    utc_now = utils.get_utc_now()
+    (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+    if year is not None and month is None:
+        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
-        async with ctx.typing():
-            file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
-            file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+        file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
+        file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
         await utils.discord.reply_with_output_and_files(ctx, [], file_paths)
         for file_path in file_paths:
             os.remove(file_path)
@@ -1281,27 +1253,26 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
     If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = []
-        error = None
-        utc_now = utils.get_utc_now()
-        (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not player_name:
-            raise MissingParameterError('The parameter `player_name` is mandatory.')
+    output = []
+    error = None
+    utc_now = utils.get_utc_now()
+    (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
+    if year is not None and month is None:
+        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+    if not player_name:
+        raise MissingParameterError('The parameter `player_name` is mandatory.')
 
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        try:
-            tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
-        except ValueError as err:
-            error = str(err)
-            tourney_data = None
+    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+    try:
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    except ValueError as err:
+        error = str(err)
+        tourney_data = None
 
-        if tourney_data is None:
-            user_infos = []
-        else:
-            user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+    if tourney_data is None:
+        user_infos = []
+    else:
+        user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -1312,8 +1283,7 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
-            async with ctx.typing():
-                output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
+            output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
     elif error:
         raise Error(str(error))
     else:
@@ -1341,13 +1311,12 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
       /player Namith - Offers a list of players having a name starting with 'Namith'. Upon selection prints player details.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        exact_name = utils.discord.get_exact_args(ctx)
-        if exact_name:
-            player_name = exact_name
-        if not player_name:
-            raise MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await user.get_users_infos_by_name(player_name)
+    exact_name = utils.discord.get_exact_args(ctx)
+    if exact_name:
+        player_name = exact_name
+    if not player_name:
+        raise MissingParameterError('The parameter `player_name` is mandatory.')
+    user_infos = await user.get_users_infos_by_name(player_name)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -1358,9 +1327,8 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
-            async with ctx.typing():
-                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
-                output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
+            max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+            output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.reply_with_output(ctx, output)
     else:
         leading_space_note = ''
@@ -1388,8 +1356,7 @@ async def cmd_prestige(ctx: Context, *, crew_name: str):
       This command will only print recipes for the crew with the best matching crew name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await crew.get_prestige_from_info(ctx, crew_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1415,8 +1382,7 @@ async def cmd_price(ctx: Context, *, item_name: str):
       This command will print prices for all items matching the specified item_name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await item.get_item_price(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await item.get_item_price(ctx, item_name, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1442,23 +1408,22 @@ async def cmd_recipe(ctx: Context, *, name: str):
     """
     __log_command_use(ctx)
 
-    async with ctx.typing():
-        use_embeds = (await server_settings.get_use_embeds(ctx))
-        char_error = None
-        item_error = None
-        try:
-            char_output = await crew.get_prestige_to_info(ctx, name, as_embed=use_embeds)
-        except crew.PrestigeNoResultsError as e:
-            raise Error(e.msg) from e
-        except Error as e:
-            char_error = e
-            char_output = []
+    use_embeds = (await server_settings.get_use_embeds(ctx))
+    char_error = None
+    item_error = None
+    try:
+        char_output = await crew.get_prestige_to_info(ctx, name, as_embed=use_embeds)
+    except crew.PrestigeNoResultsError as e:
+        raise Error(e.msg) from e
+    except Error as e:
+        char_error = e
+        char_output = []
 
-        try:
-            item_output = await item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
-        except Error as e:
-            item_error = e
-            item_output = []
+    try:
+        item_output = await item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
+    except Error as e:
+        item_error = e
+        item_output = []
 
     if char_error and item_error:
         if isinstance(char_error, NotFound) and isinstance(item_error, NotFound):
@@ -1492,8 +1457,7 @@ async def cmd_research(ctx: Context, *, research_name: str):
       This command will print information for all researches matching the specified name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await research.get_research_infos_by_name(research_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1518,8 +1482,7 @@ async def cmd_room(ctx: Context, *, room_name: str):
       /room mst 3 - Searches for the lvl 3 room having the short room code 'mst'.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1548,26 +1511,25 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
         object_name, reverse_output = __extract_dash_parameters(object_name, None, '--reverse')
 
         if object_name:
-            async with ctx.typing():
-                entities_infos = []
-                characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
-                for entity_info in characters_designs_infos:
-                    entity_info['entity_type'] = 'Character'
-                    entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
-                    entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                    entities_infos.append(entity_info)
-                items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
-                for entity_info in items_designs_infos:
-                    entity_info['entity_type'] = 'Item'
-                    entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
-                    entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                    entities_infos.append(entity_info)
-                rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
-                for entity_info in rooms_designs_infos:
-                    entity_info['entity_type'] = 'Room'
-                    entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
-                    entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-                    entities_infos.append(entity_info)
+            entities_infos = []
+            characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in characters_designs_infos:
+                entity_info['entity_type'] = 'Character'
+                entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
+            items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in items_designs_infos:
+                entity_info['entity_type'] = 'Item'
+                entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
+            rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(object_name)
+            for entity_info in rooms_designs_infos:
+                entity_info['entity_type'] = 'Room'
+                entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+                entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+                entities_infos.append(entity_info)
 
             if entities_infos:
                 if len(entities_infos) == 1:
@@ -1579,15 +1541,13 @@ async def cmd_sales(ctx: Context, *, object_name: str = None):
                     _, entity_info = await paginator.wait_for_option_selection()
 
                 if entity_info:
-                    async with ctx.typing():
-                        output = await daily.get_sales_history(ctx, entity_info, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+                    output = await daily.get_sales_history(ctx, entity_info, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
                 else:
                     output = []
             else:
                 raise NotFound(f'Could not find an object with the name `{object_name}`.')
         else:
-            async with ctx.typing():
-                output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+            output = await daily.get_sales_details(ctx, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
         await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1611,10 +1571,9 @@ async def cmd_sales_bed(ctx: Context, *, params: str = None):
     __log_command_use(ctx)
     _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
 
-    async with ctx.typing():
-        room_type = 'Bedroom'
-        room_type_pretty = 'bed room'
-        output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+    room_type = 'Bedroom'
+    room_type_pretty = 'bed room'
+    output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
 
     if output:
         await utils.discord.reply_with_output(ctx, output)
@@ -1642,10 +1601,9 @@ async def cmd_sales_droid(ctx: Context, *, params: str = None):
     __log_command_use(ctx)
     _, reverse_output = __extract_dash_parameters(params, None, '--reverse')
 
-    async with ctx.typing():
-        room_type = 'Android'
-        room_type_pretty = 'droid room'
-        output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
+    room_type = 'Android'
+    room_type_pretty = 'droid room'
+    output = await daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, reverse=reverse_output, as_embed=(await server_settings.get_use_embeds(ctx)))
 
     if output:
         await utils.discord.reply_with_output(ctx, output)
@@ -1675,13 +1633,12 @@ async def cmd_stars(ctx: Context, *, division: str = None):
     """
     __log_command_use(ctx)
     if tourney.is_tourney_running():
-        async with ctx.typing():
-            if not pss_top.is_valid_division_letter(division):
-                subcommand = BOT.get_command('stars fleet')
-                await ctx.invoke(subcommand, fleet_name=division)
-                return
-            else:
-                output = await pss_top.get_division_stars(ctx, division=division, as_embed=(await server_settings.get_use_embeds(ctx)))
+        if not pss_top.is_valid_division_letter(division):
+            subcommand = BOT.get_command('stars fleet')
+            await ctx.invoke(subcommand, fleet_name=division)
+            return
+        else:
+            output = await pss_top.get_division_stars(ctx, division=division, as_embed=(await server_settings.get_use_embeds(ctx)))
         await utils.discord.reply_with_output(ctx, output)
     else:
         cmd = BOT.get_command('past stars')
@@ -1709,15 +1666,14 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
     """
     __log_command_use(ctx)
     if tourney.is_tourney_running():
-        async with ctx.typing():
-            exact_name = utils.discord.get_exact_args(ctx)
-            if exact_name:
-                fleet_name = exact_name
-            if not fleet_name:
-                raise MissingParameterError('The parameter `fleet_name` is mandatory.')
+        exact_name = utils.discord.get_exact_args(ctx)
+        if exact_name:
+            fleet_name = exact_name
+        if not fleet_name:
+            raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-            fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
+        fleet_infos = await fleet.get_fleet_infos_by_name(fleet_name)
+        fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[pss_top.DIVISION_DESIGN_KEY_NAME] != '0']
 
         if fleet_infos:
             if len(fleet_infos) == 1:
@@ -1728,10 +1684,9 @@ async def cmd_stars_fleet(ctx: Context, *, fleet_name: str = None):
                 _, fleet_info = await paginator.wait_for_option_selection()
 
             if fleet_info:
-                async with ctx.typing():
-                    max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
-                    fleet_users_infos = await fleet.get_fleet_users_data_by_fleet_info(fleet_info)
-                    output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
+                max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
+                fleet_users_infos = await fleet.get_fleet_users_data_by_fleet_info(fleet_info)
+                output = await fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
                 await utils.discord.reply_with_output(ctx, output)
         else:
             raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
@@ -1762,22 +1717,21 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
       This command will print information for all items matching the specified name.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        full_name = ' '.join([x for x in [level, name] if x])
-        level, name = utils.get_level_and_name(level, name)
-        use_embeds = (await server_settings.get_use_embeds(ctx))
-        try:
-            char_output = await crew.get_char_details_by_name(ctx, name, level, as_embed=use_embeds)
-            char_success = True
-        except (InvalidParameterValueError, Error):
-            char_output = []
-            char_success = False
-        try:
-            item_output = await item.get_item_details_by_name(ctx, name, as_embed=use_embeds)
-            item_success = True
-        except (InvalidParameterValueError, Error):
-            item_output = []
-            item_success = False
+    full_name = ' '.join([x for x in [level, name] if x])
+    level, name = utils.get_level_and_name(level, name)
+    use_embeds = (await server_settings.get_use_embeds(ctx))
+    try:
+        char_output = await crew.get_char_details_by_name(ctx, name, level, as_embed=use_embeds)
+        char_success = True
+    except (InvalidParameterValueError, Error):
+        char_output = []
+        char_success = False
+    try:
+        item_output = await item.get_item_details_by_name(ctx, name, as_embed=use_embeds)
+        item_success = True
+    except (InvalidParameterValueError, Error):
+        item_output = []
+        item_success = False
 
     if char_success or item_success:
         if use_embeds:
@@ -1803,33 +1757,32 @@ async def cmd_time(ctx: Context):
       /time - Prints PSS stardate, day & time in Melbourne and public holidays.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = utils.get_utc_now()
-        star_date = f'Star date {utils.datetime.get_star_date(utc_now)}'
+    utc_now = utils.get_utc_now()
+    star_date = f'Star date {utils.datetime.get_star_date(utc_now)}'
 
-        mel_tz = pytz.timezone('Australia/Melbourne')
-        mel_time = utc_now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
-        melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
+    mel_tz = pytz.timezone('Australia/Melbourne')
+    mel_time = utc_now.replace(tzinfo=datetime.timezone.utc).astimezone(mel_tz)
+    melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
 
-        aus_holidays = holidays.Australia(years=utc_now.year, prov='ACT')
-        mel_date = datetime.date(mel_time.year, mel_time.month, mel_time.day)
-        holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
+    aus_holidays = holidays.Australia(years=utc_now.year, prov='ACT')
+    mel_date = datetime.date(mel_time.year, mel_time.month, mel_time.day)
+    holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
 
-        first_day_of_next_month = utils.datetime.get_first_of_following_month(utc_now)
-        time_till_next_month = ('Time until next monthly reset', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
+    first_day_of_next_month = utils.datetime.get_first_of_following_month(utc_now)
+    time_till_next_month = ('Time until next monthly reset', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
 
-        while (first_day_of_next_month.month - 1) % 3:
-            first_day_of_next_month = utils.datetime.get_first_of_following_month(first_day_of_next_month)
-        time_till_next_prestige_change = ('Time until next prestige recipe changes', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
+    while (first_day_of_next_month.month - 1) % 3:
+        first_day_of_next_month = utils.datetime.get_first_of_following_month(first_day_of_next_month)
+    time_till_next_prestige_change = ('Time until next prestige recipe changes', f'{utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
 
-        fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
-        as_embed = await server_settings.get_use_embeds(ctx)
-        if as_embed:
-            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            output = [utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
-        else:
-            output = [star_date, melbourne_time]
-            [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
+    fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
+    as_embed = await server_settings.get_use_embeds(ctx)
+    if as_embed:
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        output = [utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
+    else:
+        output = [star_date, melbourne_time]
+        [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1895,8 +1848,7 @@ async def cmd_top_captains(ctx: Context, count: str = '100'):
     except:
         raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
 
-    async with ctx.typing():
-        output = await pss_top.get_top_captains(ctx, count, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await pss_top.get_top_captains(ctx, count, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1924,8 +1876,7 @@ async def cmd_top_fleets(ctx: Context, count: str = '100'):
     except:
         raise ParameterTypeError('Parameter `count` must be a natural number from 1 to 100.')
 
-    async with ctx.typing():
-        output = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await pss_top.get_top_fleets(ctx, take=count, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -1960,15 +1911,14 @@ async def cmd_tournament_current(ctx: Context):
       /tournament current - Displays information about the starting time of this month's tournament.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = utils.get_utc_now()
-        start_of_tourney = tourney.get_current_tourney_start()
-        embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await server_settings.get_use_embeds(ctx)):
-            output = [embed]
-        else:
-            output = tourney.convert_tourney_embed_to_plain_text(embed)
+    utc_now = utils.get_utc_now()
+    start_of_tourney = tourney.get_current_tourney_start()
+    embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
+    embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
+    if (await server_settings.get_use_embeds(ctx)):
+        output = [embed]
+    else:
+        output = tourney.convert_tourney_embed_to_plain_text(embed)
 
     await utils.discord.reply_with_output(ctx, output)
 
@@ -1986,15 +1936,14 @@ async def cmd_tournament_next(ctx: Context):
       /tournament next - Displays information about the starting time of next month's tournament.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        utc_now = utils.get_utc_now()
-        start_of_tourney = tourney.get_next_tourney_start()
-        embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await server_settings.get_use_embeds(ctx)):
-            output = [embed]
-        else:
-            output = tourney.convert_tourney_embed_to_plain_text(embed)
+    utc_now = utils.get_utc_now()
+    start_of_tourney = tourney.get_next_tourney_start()
+    embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
+    embed = tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
+    if (await server_settings.get_use_embeds(ctx)):
+        output = [embed]
+    else:
+        output = tourney.convert_tourney_embed_to_plain_text(embed)
 
     await utils.discord.reply_with_output(ctx, output)
 
@@ -2019,8 +1968,7 @@ async def cmd_training(ctx: Context, *, training_name: str):
       The highest yield will always be displayed on the far left.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+    output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2527,12 +2475,11 @@ async def cmd_settings(ctx: Context, *args):
         await __assert_settings_command_valid(ctx)
 
         _, on_reset = __extract_dash_parameters(ctx.message.content, args, '--on_reset')
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            full_settings = guild_settings.get_full_settings()
-            title = f'Server settings for {ctx.guild.name}'
-            note = None if not on_reset else 'Successfully reset all bot settings for this server!'
-            output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        full_settings = guild_settings.get_full_settings()
+        title = f'Server settings for {ctx.guild.name}'
+        note = None if not on_reset else 'Successfully reset all bot settings for this server!'
+        output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
         await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2558,12 +2505,11 @@ async def cmd_settings_get_autodaily(ctx: Context, *args):
         await __assert_settings_command_valid(ctx)
 
         _, on_reset = __extract_dash_parameters(ctx.message.content, args, '--on_reset')
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            full_autodaily_settings = guild_settings.autodaily.get_full_settings()
-            title = f'Auto-daily settings for {ctx.guild.name}'
-            note = None if not on_reset else 'Successfully reset auto-daily settings for this server!'
-            output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        full_autodaily_settings = guild_settings.autodaily.get_full_settings()
+        title = f'Auto-daily settings for {ctx.guild.name}'
+        note = None if not on_reset else 'Successfully reset auto-daily settings for this server!'
+        output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
         await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2586,17 +2532,16 @@ async def cmd_settings_get_autodaily_channel(ctx: Context, *args):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
-        full_autodaily_settings = guild_settings.autodaily.get_channel_setting()
-        title = f'Auto-daily settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset auto-daily channel for this server!'
-        elif on_set:
-            note = 'Successfully set auto-daily channel for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
+    full_autodaily_settings = guild_settings.autodaily.get_channel_setting()
+    title = f'Auto-daily settings for {ctx.guild.name}'
+    note = None
+    if on_reset:
+        note = 'Successfully reset auto-daily channel for this server!'
+    elif on_set:
+        note = 'Successfully set auto-daily channel for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2619,17 +2564,16 @@ async def cmd_settings_get_autodaily_mode(ctx: Context, *args):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
-        full_autodaily_settings = guild_settings.autodaily.get_changemode_setting()
-        title = f'Auto-daily settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset auto-daily mode for this server!'
-        elif on_set:
-            note = 'Successfully set auto-daily mode for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    guild_settings = await GUILD_SETTINGS.get(ctx.bot, ctx.guild.id)
+    full_autodaily_settings = guild_settings.autodaily.get_changemode_setting()
+    title = f'Auto-daily settings for {ctx.guild.name}'
+    note = None
+    if on_reset:
+        note = 'Successfully reset auto-daily mode for this server!'
+    elif on_set:
+        note = 'Successfully set auto-daily mode for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, full_autodaily_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2652,17 +2596,16 @@ async def cmd_settings_get_botnews(ctx: Context, *args):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        full_settings = guild_settings.get_bot_news_channel_setting()
-        title = f'Server settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset bot news channel for this server!'
-        elif on_set:
-            note = 'Successfully set bot news channel for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    full_settings = guild_settings.get_bot_news_channel_setting()
+    title = f'Server settings for {ctx.guild.name}'
+    note = None
+    if on_reset:
+        note = 'Successfully reset bot news channel for this server!'
+    elif on_set:
+        note = 'Successfully set bot news channel for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2685,17 +2628,16 @@ async def cmd_settings_get_embeds(ctx: Context, *args):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        full_settings = guild_settings.get_use_embeds_setting()
-        title = f'Server settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset embed usage for this server!'
-        elif on_set:
-            note = 'Successfully toggled embed usage for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    full_settings = guild_settings.get_use_embeds_setting()
+    title = f'Server settings for {ctx.guild.name}'
+    note = None
+    if on_reset:
+        note = 'Successfully reset embed usage for this server!'
+    elif on_set:
+        note = 'Successfully toggled embed usage for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2718,17 +2660,16 @@ async def cmd_settings_get_pagination(ctx: Context, *args):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        full_settings = guild_settings.get_pagination_setting()
-        title = f'Server settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset pagination for this server!'
-        elif on_set:
-            note = 'Successfully toggled pagination for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    full_settings = guild_settings.get_pagination_setting()
+    title = f'Server settings for {ctx.guild.name}'
+    note = None
+    if on_reset:
+        note = 'Successfully reset pagination for this server!'
+    elif on_set:
+        note = 'Successfully toggled pagination for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2769,21 +2710,20 @@ async def cmd_prefix(ctx: Context, *args):
     """
     __log_command_use(ctx)
 
-    async with ctx.typing():
-        _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        if utils.discord.is_guild_channel(ctx.channel):
-            title = f'Server settings for {ctx.guild.name}'
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            prefix_settings = guild_settings.get_prefix_setting()
-        else:
-            title = 'Bot settings'
-            prefix_settings = {'prefix': settings.DEFAULT_PREFIX}
-        note = None
-        if on_reset:
-            note = 'Successfully reset prefix for this server!'
-        elif on_set:
-            note = 'Successfully set prefix for this server!'
-        output = await server_settings.get_pretty_guild_settings(ctx, prefix_settings, title=title, note=note)
+    _, on_reset, on_set = __extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
+    if utils.discord.is_guild_channel(ctx.channel):
+        title = f'Server settings for {ctx.guild.name}'
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        prefix_settings = guild_settings.get_prefix_setting()
+    else:
+        title = 'Bot settings'
+        prefix_settings = {'prefix': settings.DEFAULT_PREFIX}
+    note = None
+    if on_reset:
+        note = 'Successfully reset prefix for this server!'
+    elif on_set:
+        note = 'Successfully set prefix for this server!'
+    output = await server_settings.get_pretty_guild_settings(ctx, prefix_settings, title=title, note=note)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -2842,9 +2782,8 @@ async def cmd_settings_reset_autodaily(ctx: Context):
         __log_command_use(ctx)
         await __assert_settings_command_valid(ctx)
 
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset()
+        autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        success = await autodaily_settings.reset()
         if success:
             await ctx.invoke(BOT.get_command(f'settings autodaily'), '--on_reset')
         else:
@@ -2872,14 +2811,13 @@ async def cmd_settings_reset_autodaily_channel(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_channel()
-            if success:
-                await ctx.invoke(BOT.get_command(f'settings autodaily channel'), '--on_reset')
-            else:
-                raise Error('An error ocurred while trying to remove the auto-daily channel setting for this server.\n'
-                            + 'Please try again or contact the bot\'s author.')
+        autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        success = await autodaily_settings.reset_channel()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings autodaily channel'), '--on_reset')
+        else:
+            raise Error('An error ocurred while trying to remove the auto-daily channel setting for this server.\n'
+                        + 'Please try again or contact the bot\'s author.')
 
 
 @cmd_settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
@@ -2902,14 +2840,13 @@ async def cmd_settings_reset_autodaily_mode(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_daily_delete_on_change()
-            if success:
-                await ctx.invoke(BOT.get_command(f'settings autodaily mode'), '--on_reset')
-            else:
-                raise Error('An error ocurred while trying to remove the auto-daily notification settings for this server.\n'
-                            + 'Please try again or contact the bot\'s author.')
+        autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+        success = await autodaily_settings.reset_daily_delete_on_change()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings autodaily mode'), '--on_reset')
+        else:
+            raise Error('An error ocurred while trying to remove the auto-daily notification settings for this server.\n'
+                        + 'Please try again or contact the bot\'s author.')
 
 
 @cmd_settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
@@ -2932,14 +2869,13 @@ async def cmd_settings_reset_bot_news_channel(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            success = await guild_settings.reset_bot_news_channel()
-            if success:
-                await ctx.invoke(BOT.get_command(f'settings botnews'), '--on_reset')
-            else:
-                raise Error('An error ocurred while trying to remove the bot news channel setting for this server.\n'
-                            + 'Please try again or contact the bot\'s author.')
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.reset_bot_news_channel()
+        if success:
+            await ctx.invoke(BOT.get_command(f'settings botnews'), '--on_reset')
+        else:
+            raise Error('An error ocurred while trying to remove the bot news channel setting for this server.\n'
+                        + 'Please try again or contact the bot\'s author.')
 
 
 @cmd_settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
@@ -2962,9 +2898,8 @@ async def cmd_settings_reset_embeds(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            success = await guild_settings.reset_use_embeds()
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.reset_use_embeds()
         if success:
             await ctx.invoke(BOT.get_command(f'settings embed'), '--on_reset')
         else:
@@ -2992,9 +2927,8 @@ async def cmd_settings_reset_pagination(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            success = await guild_settings.reset_use_pagination()
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.reset_use_pagination()
         if success:
             await ctx.invoke(BOT.get_command(f'settings pagination'), '--on_reset')
         else:
@@ -3021,9 +2955,8 @@ async def cmd_settings_reset_prefix(ctx: Context):
     await __assert_settings_command_valid(ctx)
 
     if utils.discord.is_guild_channel(ctx.channel):
-        async with ctx.typing():
-            guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-            success = await guild_settings.reset_prefix()
+        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+        success = await guild_settings.reset_prefix()
         if success:
             await ctx.invoke(BOT.get_command(f'settings prefix'), '--on_reset')
         else:
@@ -3096,18 +3029,17 @@ async def cmd_settings_set_autodaily_channel(ctx: Context, text_channel: TextCha
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-        if not text_channel:
-            text_channel = ctx.channel
+    autodaily_settings: server_settings.AutoDailySettings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+    if not text_channel:
+        text_channel = ctx.channel
 
-        permissions = text_channel.permissions_for(ctx.me)
-        if permissions.read_messages is not True:
-            raise Error('I don\'t have access to that channel.')
-        if permissions.read_message_history is not True:
-            raise Error('I don\'t have access to the messages history in that channel.')
-        if permissions.send_messages is not True:
-            raise Error('I don\'t have permission to post in that channel.')
+    permissions = text_channel.permissions_for(ctx.me)
+    if permissions.read_messages is not True:
+        raise Error('I don\'t have access to that channel.')
+    if permissions.read_message_history is not True:
+        raise Error('I don\'t have access to the messages history in that channel.')
+    if permissions.send_messages is not True:
+        raise Error('I don\'t have permission to post in that channel.')
 
         success = await autodaily_settings.set_channel(text_channel)
     if success:
@@ -3135,9 +3067,8 @@ async def cmd_settings_set_autodaily_mode(ctx: Context):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
-        success = await autodaily_settings.toggle_change_mode()
+    autodaily_settings = (await GUILD_SETTINGS.get(BOT, ctx.guild.id)).autodaily
+    success = await autodaily_settings.toggle_change_mode()
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily changemode'), '--on_set')
     else:
@@ -3166,20 +3097,19 @@ async def cmd_settings_set_bot_news_channel(ctx: Context, text_channel: TextChan
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        if text_channel is None:
-            text_channel = ctx.channel
+    if text_channel is None:
+        text_channel = ctx.channel
 
-        permissions = text_channel.permissions_for(ctx.me)
-        if permissions.read_messages is not True:
-            raise Error('I don\'t have access to that channel.')
-        if permissions.read_message_history is not True:
-            raise Error('I don\'t have access to the messages history in that channel.')
-        if permissions.send_messages is not True:
-            raise Error('I don\'t have permission to post in that channel.')
+    permissions = text_channel.permissions_for(ctx.me)
+    if permissions.read_messages is not True:
+        raise Error('I don\'t have access to that channel.')
+    if permissions.read_message_history is not True:
+        raise Error('I don\'t have access to the messages history in that channel.')
+    if permissions.send_messages is not True:
+        raise Error('I don\'t have permission to post in that channel.')
 
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        success = await guild_settings.set_bot_news_channel(text_channel)
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    success = await guild_settings.set_bot_news_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings botnews'), '--on_set')
     else:
@@ -3212,9 +3142,8 @@ async def cmd_settings_set_embeds(ctx: Context, switch: str = None):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        success = await guild_settings.set_use_embeds(switch)
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    success = await guild_settings.set_use_embeds(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings embed'), '--on_set')
     else:
@@ -3247,9 +3176,8 @@ async def cmd_settings_set_pagination(ctx: Context, switch: str = None):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        success = await guild_settings.set_use_pagination(switch)
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    success = await guild_settings.set_use_pagination(switch)
     if success:
         await ctx.invoke(BOT.get_command('settings pagination'), '--on_set')
     else:
@@ -3277,10 +3205,9 @@ async def cmd_settings_set_prefix(ctx: Context, prefix: str):
     __log_command_use(ctx)
     await __assert_settings_command_valid(ctx)
 
-    async with ctx.typing():
-        prefix = prefix.lstrip()
-        guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
-        success = await guild_settings.set_prefix(prefix)
+    prefix = prefix.lstrip()
+    guild_settings = await GUILD_SETTINGS.get(BOT, ctx.guild.id)
+    success = await guild_settings.set_prefix(prefix)
     if success:
         await ctx.invoke(BOT.get_command('settings prefix'), '--on_set')
     else:
@@ -3328,8 +3255,7 @@ async def cmd_autodaily_list_all(ctx: Context):
     Lists all auto-daily channels currently configured across all guilds.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        output = await daily.get_daily_channels(ctx, None, None)
+    output = await daily.get_daily_channels(ctx, None, None)
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -3369,8 +3295,7 @@ async def cmd_db_query(ctx: Context, *, query: str):
     Starts a database query and returns a success message.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        success = await db.try_execute(query)
+    success = await db.try_execute(query)
     if not success:
         await ctx.send(f'The query \'{query}\' failed.')
     else:
@@ -3384,15 +3309,14 @@ async def cmd_db_select(ctx: Context, *, query: str):
     Selects from a database and returns the results.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        if not query.lower().startswith('select '):
-            query = f'SELECT {query}'
-        try:
-            result = await db.fetchall(query)
-            error = None
-        except Exception as error:
-            result = []
-            raise Error(f'The query \'{query}\' failed.')
+    if not query.lower().startswith('select '):
+        query = f'SELECT {query}'
+    try:
+        result = await db.fetchall(query)
+        error = None
+    except Exception as error:
+        result = []
+        raise Error(f'The query \'{query}\' failed.')
     if result:
         await ctx.send(f'The query \'{query}\' has been executed successfully.')
         result = [str(record) for record in result]
@@ -3412,22 +3336,21 @@ async def cmd_debug(ctx: Context, *, args: str = None):
 async def cmd_debug_autodaily(ctx: Context):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            utc_now = utils.get_utc_now()
-            result = await server_settings.get_autodaily_settings()
-            json_base = []
-            for autodaily_settings in result:
-                json_base.append({
-                    'guild_id': autodaily_settings.guild_id or '-',
-                    'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode or '-',
-                    'message_id': autodaily_settings.latest_message_id or '-',
-                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
-                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
-                })
-            file_name = f'autodaily_settings_all_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
-            with open(file_name, 'w') as fp:
-                json.dump(json_base, fp, indent=4)
+        utc_now = utils.get_utc_now()
+        result = await server_settings.get_autodaily_settings()
+        json_base = []
+        for autodaily_settings in result:
+            json_base.append({
+                'guild_id': autodaily_settings.guild_id or '-',
+                'channel_id': autodaily_settings.channel_id or '-',
+                'change_mode': autodaily_settings.change_mode or '-',
+                'message_id': autodaily_settings.latest_message_id or '-',
+                'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+            })
+        file_name = f'autodaily_settings_all_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+        with open(file_name, 'w') as fp:
+            json.dump(json_base, fp, indent=4)
         await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
@@ -3437,26 +3360,25 @@ async def cmd_debug_autodaily(ctx: Context):
 async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            _, legacy = __extract_dash_parameters(args, None, '--legacy')
-            utc_now = utils.get_utc_now()
-            if legacy:
-                result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now, no_post_yet=True)
-            else:
-                result = await server_settings.get_autodaily_settings(no_post_yet=True)
-            json_base = []
-            for autodaily_settings in result:
-                json_base.append({
-                    'guild_id': autodaily_settings.guild_id or '-',
-                    'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode or '-',
-                    'message_id': autodaily_settings.latest_message_id or '-',
-                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
-                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
-                })
-            file_name = f'autodaily_settings_nopost_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
-            with open(file_name, 'w') as fp:
-                json.dump(json_base, fp, indent=4)
+        _, legacy = __extract_dash_parameters(args, None, '--legacy')
+        utc_now = utils.get_utc_now()
+        if legacy:
+            result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now, no_post_yet=True)
+        else:
+            result = await server_settings.get_autodaily_settings(no_post_yet=True)
+        json_base = []
+        for autodaily_settings in result:
+            json_base.append({
+                'guild_id': autodaily_settings.guild_id or '-',
+                'channel_id': autodaily_settings.channel_id or '-',
+                'change_mode': autodaily_settings.change_mode or '-',
+                'message_id': autodaily_settings.latest_message_id or '-',
+                'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+            })
+        file_name = f'autodaily_settings_nopost_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+        with open(file_name, 'w') as fp:
+            json.dump(json_base, fp, indent=4)
         await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
@@ -3466,26 +3388,25 @@ async def cmd_debug_autodaily_nopost(ctx: Context, *, args: str = None):
 async def cmd_debug_autodaily_changed(ctx: Context, *, args: str = None):
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            _, legacy = __extract_dash_parameters(args, None, '--legacy')
-            utc_now = utils.get_utc_now()
-            if legacy:
-                result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now)
-            else:
-                result = await server_settings.get_autodaily_settings(utc_now=utc_now)
-            json_base = []
-            for autodaily_settings in result:
-                json_base.append({
-                    'guild_id': autodaily_settings.guild_id or '-',
-                    'channel_id': autodaily_settings.channel_id or '-',
-                    'change_mode': autodaily_settings.change_mode or '-',
-                    'message_id': autodaily_settings.latest_message_id or '-',
-                    'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
-                    'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
-                })
-            file_name = f'autodaily_settings_changed_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
-            with open(file_name, 'w') as fp:
-                json.dump(json_base, fp, indent=4)
+        _, legacy = __extract_dash_parameters(args, None, '--legacy')
+        utc_now = utils.get_utc_now()
+        if legacy:
+            result = await server_settings.get_autodaily_settings_legacy(ctx.bot, utc_now)
+        else:
+            result = await server_settings.get_autodaily_settings(utc_now=utc_now)
+        json_base = []
+        for autodaily_settings in result:
+            json_base.append({
+                'guild_id': autodaily_settings.guild_id or '-',
+                'channel_id': autodaily_settings.channel_id or '-',
+                'change_mode': autodaily_settings.change_mode or '-',
+                'message_id': autodaily_settings.latest_message_id or '-',
+                'created_at': utils.format.datetime(autodaily_settings.latest_message_created_at) if autodaily_settings.latest_message_created_at else '-',
+                'modified_at': utils.format.datetime(autodaily_settings.latest_message_modified_at) if autodaily_settings.latest_message_modified_at else '-'
+            })
+        file_name = f'autodaily_settings_changed_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+        with open(file_name, 'w') as fp:
+            json.dump(json_base, fp, indent=4)
         await ctx.send(f'Retrieved {len(result)} auto-daily settings.', file=File(file_name))
         os.remove(file_name)
 
@@ -3498,17 +3419,16 @@ async def cmd_device(ctx: Context):
     """
     __log_command_use(ctx)
     if ctx.invoked_subcommand is None:
-        async with ctx.typing():
-            output = []
-            for device in login.DEVICES.devices:
-                output.append(utils.discord.ZERO_WIDTH_SPACE)
-                if device.can_login_until:
-                    login_until = utils.format.datetime(device.can_login_until)
-                else:
-                    login_until = '-'
-                output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
-            output = output[1:]
-            posts = utils.discord.create_posts_from_lines(output, utils.discord.MAXIMUM_CHARACTERS)
+        output = []
+        for device in login.DEVICES.devices:
+            output.append(utils.discord.ZERO_WIDTH_SPACE)
+            if device.can_login_until:
+                login_until = utils.format.datetime(device.can_login_until)
+            else:
+                login_until = '-'
+            output.append(f'Key: {device.key}\nChecksum: {device.checksum}\nCan login until: {login_until}')
+        output = output[1:]
+        posts = utils.discord.create_posts_from_lines(output, utils.discord.MAXIMUM_CHARACTERS)
         for post in posts:
             await ctx.send(post)
 
@@ -3520,12 +3440,11 @@ async def cmd_device_add(ctx: Context, device_key: str):
     Attempts to store a device with the given device_key in the DB.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            device = await login.DEVICES.add_device_by_key(device_key)
-            await ctx.send(f'Added device with device key \'{device.key}\'.')
-        except Exception as err:
-            raise Error(f'Could not add device with device key\'{device_key}\':```{err}```')
+    try:
+        device = await login.DEVICES.add_device_by_key(device_key)
+        await ctx.send(f'Added device with device key \'{device.key}\'.')
+    except Exception as err:
+        raise Error(f'Could not add device with device key\'{device_key}\':```{err}```')
 
 
 @cmd_device.command(name='create', brief='create & store random device', hidden=True)
@@ -3535,14 +3454,13 @@ async def cmd_device_create(ctx: Context):
     Creates a new random device_key and attempts to store the new device in the DB.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        device = await login.DEVICES.create_device()
-        try:
-            await device.get_access_token()
-            await ctx.send(f'Created and stored device with key \'{device.key}\'.')
-        except Exception as err:
-            await login.DEVICES.remove_device(device)
-            raise Error(f'Failed to create and store device:```{err}```')
+    device = await login.DEVICES.create_device()
+    try:
+        await device.get_access_token()
+        await ctx.send(f'Created and stored device with key \'{device.key}\'.')
+    except Exception as err:
+        await login.DEVICES.remove_device(device)
+        raise Error(f'Failed to create and store device:```{err}```')
 
 
 @cmd_device.command(name='login', brief='login to a device', hidden=True)
@@ -3552,14 +3470,13 @@ async def cmd_device_login(ctx: Context):
     Attempts to remove a device with the given device_key from the DB.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            access_token = await login.DEVICES.get_access_token()
-            device = login.DEVICES.current
-            await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
-        except Exception as err:
-            device = login.DEVICES.current
-            raise Error(f'Could not log in with device \'{device.key}\':```{err}``')
+    try:
+        access_token = await login.DEVICES.get_access_token()
+        device = login.DEVICES.current
+        await ctx.send(f'Logged in with device \'{device.key}\'.\nObtained access token: {access_token}')
+    except Exception as err:
+        device = login.DEVICES.current
+        raise Error(f'Could not log in with device \'{device.key}\':```{err}``')
 
 
 @cmd_device.command(name='remove', aliases=['delete', 'yeet'], brief='remove device', hidden=True)
@@ -3569,12 +3486,11 @@ async def cmd_device_remove(ctx: Context, device_key: str):
     Attempts to remove a device with the given device_key from the DB.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            await login.DEVICES.remove_device_by_key(device_key)
-            await ctx.send(f'Removed device with device key: \'{device_key}\'.')
-        except Exception as err:
-            raise Error(f'Could not remove device with device key \'{device_key}\':```{err}```')
+    try:
+        await login.DEVICES.remove_device_by_key(device_key)
+        await ctx.send(f'Removed device with device key: \'{device_key}\'.')
+    except Exception as err:
+        raise Error(f'Could not remove device with device key \'{device_key}\':```{err}```')
 
 
 @cmd_device.command(name='select', brief='select a device', hidden=True)
@@ -3584,8 +3500,7 @@ async def cmd_device_select(ctx: Context, device_key: str):
     Attempts to select a device with the given device_key from the DB.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        device = login.DEVICES.select_device_by_key(device_key)
+    device = login.DEVICES.select_device_by_key(device_key)
     await ctx.send(f'Selected device \'{device.key}\'.')
 
 
@@ -3605,64 +3520,63 @@ async def cmd_sales_add(ctx: Context, sold_on: str, price: int, currency: str, m
     Add a past sale to the database.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        if price <= 0:
-            error_msg = '\n'.join([
-                f'Parameter `price` received an invalid value: {price}'
-                f'The value must be greater than 0.'
-            ])
-            raise ValueError(error_msg)
+    if price <= 0:
+        error_msg = '\n'.join([
+            f'Parameter `price` received an invalid value: {price}'
+            f'The value must be greater than 0.'
+        ])
+        raise ValueError(error_msg)
 
-        if max_amount <= 0:
-            error_msg = '\n'.join([
-                f'Parameter `max_amount` received an invalid value: {max_amount}'
-                f'The value must be greater than 0.'
-            ])
-            raise ValueError(error_msg)
+    if max_amount <= 0:
+        error_msg = '\n'.join([
+            f'Parameter `max_amount` received an invalid value: {max_amount}'
+            f'The value must be greater than 0.'
+        ])
+        raise ValueError(error_msg)
 
-        currency_lower = currency.lower()
-        if currency_lower.startswith('min'):
-            currency_type = 'Mineral'
-        elif currency_lower.startswith('gas'):
-            currency_type = 'Gas'
-        elif 'bux' in currency_lower:
-            currency_type = 'Starbux'
-        else:
-            error_msg = '\n'.join([
-                f'Parameter `currency` received wrong value: {currency}'
-                'Valid values are: Bux, Gas, Min, Mineral, Mins, Minerals, Starbux'
-            ])
-            raise ValueError(error_msg)
+    currency_lower = currency.lower()
+    if currency_lower.startswith('min'):
+        currency_type = 'Mineral'
+    elif currency_lower.startswith('gas'):
+        currency_type = 'Gas'
+    elif 'bux' in currency_lower:
+        currency_type = 'Starbux'
+    else:
+        error_msg = '\n'.join([
+            f'Parameter `currency` received wrong value: {currency}'
+            'Valid values are: Bux, Gas, Min, Mineral, Mins, Minerals, Starbux'
+        ])
+        raise ValueError(error_msg)
 
-        try:
-            expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
-        except Exception as ex:
-            error_msg = '\n'.join((
-                f'Parameter `sold_on` received an invalid value: {sold_on}',
-                f'Values must be dates in format: yyyy-MM-dd'
-            ))
-            raise ValueError(error_msg) from ex
+    try:
+        expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
+    except Exception as ex:
+        error_msg = '\n'.join((
+            f'Parameter `sold_on` received an invalid value: {sold_on}',
+            f'Values must be dates in format: yyyy-MM-dd'
+        ))
+        raise ValueError(error_msg) from ex
 
 
-        entities_infos = []
-        characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in characters_designs_infos:
-            entity_info['entity_type'] = 'Character'
-            entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
-        items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in items_designs_infos:
-            entity_info['entity_type'] = 'Item'
-            entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
-        rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in rooms_designs_infos:
-            entity_info['entity_type'] = 'Room'
-            entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
+    entities_infos = []
+    characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in characters_designs_infos:
+        entity_info['entity_type'] = 'Character'
+        entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
+    items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in items_designs_infos:
+        entity_info['entity_type'] = 'Item'
+        entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
+    rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in rooms_designs_infos:
+        entity_info['entity_type'] = 'Room'
+        entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
 
     entity_info = None
     entity_id = None
@@ -3678,9 +3592,8 @@ async def cmd_sales_add(ctx: Context, sold_on: str, price: int, currency: str, m
         entity_type = entity_info['entity_type']
 
     if entity_id:
-        async with ctx.typing():
-            entity_id = int(entity_id)
-            success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+        entity_id = int(entity_id)
+        success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
         if success:
             await ctx.send(f'Successfully added {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
         else:
@@ -3694,12 +3607,11 @@ async def cmd_sales_export(ctx: Context):
     Export sales history to json.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        sales_infos = await daily.get_sales_infos()
-        utc_now = utils.get_utc_now()
-        file_name = f'sales_history_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
-        with open(file_name, 'w') as fp:
-            json.dump(sales_infos, fp, indent=4, cls=daily.SaleInfoEncoder)
+    sales_infos = await daily.get_sales_infos()
+    utc_now = utils.get_utc_now()
+    file_name = f'sales_history_{utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
+    with open(file_name, 'w') as fp:
+        json.dump(sales_infos, fp, indent=4, cls=daily.SaleInfoEncoder)
     await ctx.send(file=File(file_name))
     os.remove(file_name)
 
@@ -3716,51 +3628,50 @@ async def cmd_sales_import(ctx: Context, *, args: str = None):
     if len(ctx.message.attachments) > 1:
         raise Error('Too many files provided.')
 
-    async with ctx.typing():
-        _, overwrite, overwrite_all = __extract_dash_parameters(args, None, '--overwrite', '--overwriteall')
-        if overwrite and overwrite_all:
-            raise ValueError('You may only specify one of the parameters: `--overwrite`, `--overwriteall`')
+    _, overwrite, overwrite_all = __extract_dash_parameters(args, None, '--overwrite', '--overwriteall')
+    if overwrite and overwrite_all:
+        raise ValueError('You may only specify one of the parameters: `--overwrite`, `--overwriteall`')
 
-        attachment = ctx.message.attachments[0]
-        file_contents = (await attachment.read()).decode('utf-8')
-        if not file_contents:
-            raise Error('The file provided must not be empty.')
+    attachment = ctx.message.attachments[0]
+    file_contents = (await attachment.read()).decode('utf-8')
+    if not file_contents:
+        raise Error('The file provided must not be empty.')
 
-        sales_infos = json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook).decode(file_contents)
-        #sales_infos = json.loads(file_contents, cls=json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook))
-        if not sales_infos:
-            raise Error('The data provided must not be empty.')
-        sales_infos = sorted(sales_infos, key=lambda x: x['limitedcatalogexpirydate'])
+    sales_infos = json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook).decode(file_contents)
+    #sales_infos = json.loads(file_contents, cls=json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook))
+    if not sales_infos:
+        raise Error('The data provided must not be empty.')
+    sales_infos = sorted(sales_infos, key=lambda x: x['limitedcatalogexpirydate'])
 
-        if overwrite_all:
-            await daily.clear_sales()
+    if overwrite_all:
+        await daily.clear_sales()
 
-        failed_sales_infos = []
-        for sale_info in sales_infos:
-            success = await daily.__db_add_sale(
-                sale_info.get('limitedcatalogargument'),
-                sale_info.get('limitedcatalogcurrencyamount'),
-                sale_info.get('limitedcatalogcurrencytype'),
-                sale_info.get('limitedcatalogtype'),
-                sale_info.get('limitedcatalogexpirydate'),
-                sale_info.get('limitedcatalogmaxtotal'),
-                overwrite=overwrite
-            )
-            if not success:
-                failed_sales_infos.append(sale_info)
+    failed_sales_infos = []
+    for sale_info in sales_infos:
+        success = await daily.__db_add_sale(
+            sale_info.get('limitedcatalogargument'),
+            sale_info.get('limitedcatalogcurrencyamount'),
+            sale_info.get('limitedcatalogcurrencytype'),
+            sale_info.get('limitedcatalogtype'),
+            sale_info.get('limitedcatalogexpirydate'),
+            sale_info.get('limitedcatalogmaxtotal'),
+            overwrite=overwrite
+        )
+        if not success:
+            failed_sales_infos.append(sale_info)
 
-        if len(failed_sales_infos) == len(sales_infos):
-            raise Error('Could not import any sales info from the specified file.')
-        output = [
-            f'Successfully imported file {attachment.filename}.'
-        ]
-        if failed_sales_infos:
-            output.append(
-                f'Failed to import the following sales infos:'
-            )
-            output.extend([json.dumps(sale_info) for sale_info in failed_sales_infos])
-        await daily.update_db_sales_info_cache()
-        await utils.discord.reply_with_output(ctx, output)
+    if len(failed_sales_infos) == len(sales_infos):
+        raise Error('Could not import any sales info from the specified file.')
+    output = [
+        f'Successfully imported file {attachment.filename}.'
+    ]
+    if failed_sales_infos:
+        output.append(
+            f'Failed to import the following sales infos:'
+        )
+        output.extend([json.dumps(sale_info) for sale_info in failed_sales_infos])
+    await daily.update_db_sales_info_cache()
+    await utils.discord.reply_with_output(ctx, output)
 
 
 @cmd_sales.command(name='parse', brief='Parse and add a past sale.', hidden=True)
@@ -3770,70 +3681,69 @@ async def cmd_sales_parse(ctx: Context, sold_on: str, *, sale_text: str):
     Parse a sale from the daily news and add it to the database.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        try:
-            expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
-        except Exception as ex:
-            error_msg = '\n'.join((
-                f'Parameter `sold_on` received an invalid value: {sold_on}',
-                f'Values must be dates in format: yyyy-MM-dd'
-            ))
-            raise ValueError(error_msg) from ex
+    try:
+        expires_at = utils.parse.formatted_datetime(sold_on, include_time=False, include_tz=False, include_tz_brackets=False) + utils.datetime.ONE_DAY
+    except Exception as ex:
+        error_msg = '\n'.join((
+            f'Parameter `sold_on` received an invalid value: {sold_on}',
+            f'Values must be dates in format: yyyy-MM-dd'
+        ))
+        raise ValueError(error_msg) from ex
 
-        rx_entity_name = r'(.*?)(?= [\(\[])'
-        rx_number = r'(\d+)'
-        rx_currency = r'<:.+?:\d+>'
+    rx_entity_name = r'(.*?)(?= [\(\[])'
+    rx_number = r'(\d+)'
+    rx_currency = r'<:.+?:\d+>'
 
-        sale_text_lines = sale_text.split('\n')
-        entity_name_match = re.search(rx_entity_name, sale_text_lines[0])
-        if entity_name_match:
-            entity_name = entity_name_match.group(0)
-        else:
-            raise Error(f'Could not extract the entity name from: {sale_text_lines[0]}')
+    sale_text_lines = sale_text.split('\n')
+    entity_name_match = re.search(rx_entity_name, sale_text_lines[0])
+    if entity_name_match:
+        entity_name = entity_name_match.group(0)
+    else:
+        raise Error(f'Could not extract the entity name from: {sale_text_lines[0]}')
 
-        price_match = re.search(rx_number, sale_text_lines[1])
-        if price_match:
-            price = int(price_match.group(0))
-        else:
-            raise Error(f'Could not extract the price from: {sale_text_lines[1]}')
+    price_match = re.search(rx_number, sale_text_lines[1])
+    if price_match:
+        price = int(price_match.group(0))
+    else:
+        raise Error(f'Could not extract the price from: {sale_text_lines[1]}')
 
-        currency_match = re.search(rx_currency, sale_text_lines[1])
-        if currency_match:
-            currency = currency_match.group(0).lower()
-        else:
-            raise Error(f'Could not extract the currency from: {sale_text_lines[1]}')
+    currency_match = re.search(rx_currency, sale_text_lines[1])
+    if currency_match:
+        currency = currency_match.group(0).lower()
+    else:
+        raise Error(f'Could not extract the currency from: {sale_text_lines[1]}')
 
-        currency_type = lookups.CURRENCY_EMOJI_LOOKUP_REVERSE.get(currency)
-        if currency_type:
-            currency_type = currency_type.capitalize()
-        else:
-            raise Error(f'Could not convert currency emoji to currency type: {currency}')
+    currency_type = lookups.CURRENCY_EMOJI_LOOKUP_REVERSE.get(currency)
+    if currency_type:
+        currency_type = currency_type.capitalize()
+    else:
+        raise Error(f'Could not convert currency emoji to currency type: {currency}')
 
-        max_amount_match = re.search(rx_number, sale_text_lines[2])
-        if max_amount_match:
-            max_amount = int(max_amount_match.group(0))
-        else:
-            raise Error(f'Could not extract the currency from: {sale_text_lines[2]}')
+    max_amount_match = re.search(rx_number, sale_text_lines[2])
+    if max_amount_match:
+        max_amount = int(max_amount_match.group(0))
+    else:
+        raise Error(f'Could not extract the currency from: {sale_text_lines[2]}')
 
-        entities_infos = []
-        characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in characters_designs_infos:
-            entity_info['entity_type'] = 'Character'
-            entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
-        items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in items_designs_infos:
-            entity_info['entity_type'] = 'Item'
-            entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
-        rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
-        for entity_info in rooms_designs_infos:
-            entity_info['entity_type'] = 'Room'
-            entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
-            entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
-            entities_infos.append(entity_info)
+    entities_infos = []
+    characters_designs_infos = await crew.characters_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in characters_designs_infos:
+        entity_info['entity_type'] = 'Character'
+        entity_info['entity_id'] = entity_info[crew.CHARACTER_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
+    items_designs_infos = await item.items_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in items_designs_infos:
+        entity_info['entity_type'] = 'Item'
+        entity_info['entity_id'] = entity_info[item.ITEM_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
+    rooms_designs_infos = await room.rooms_designs_retriever.get_entities_infos_by_name(entity_name)
+    for entity_info in rooms_designs_infos:
+        entity_info['entity_type'] = 'Room'
+        entity_info['entity_id'] = entity_info[room.ROOM_DESIGN_KEY_NAME]
+        entity_info['entity_name'] = entity_info[room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+        entities_infos.append(entity_info)
 
     entity_info = None
     entity_id = None
@@ -3849,9 +3759,8 @@ async def cmd_sales_parse(ctx: Context, sold_on: str, *, sale_text: str):
         entity_type = entity_info['entity_type']
 
     if entity_id:
-        async with ctx.typing():
-            entity_id = int(entity_id)
-            success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+        entity_id = int(entity_id)
+        success = await daily.add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
         if success:
             await ctx.send(f'Successfully added {entity_type} \'{entity_name}\' sold on {sold_on} for {price} {currency_type} to database.')
         else:
@@ -3880,23 +3789,22 @@ async def cmd_send_bot_news(ctx: Context, *, news: str = None):
     if not news:
         return
 
-    async with ctx.typing():
-        _, for_testing, title, content = __extract_dash_parameters(news, None, '--test', '--title=', '--content=')
-        if not title:
-            raise ValueError('You need to specify a title!')
-        avatar_url = BOT.user.avatar_url
-        if not for_testing:
-            for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
-                embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
-                embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
-                embed.set_thumbnail(url=avatar_url)
-                try:
-                    await bot_news_channel.send(embed=embed)
-                except errors.Forbidden:
-                    pass
-        embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
-        embed.set_thumbnail(url=avatar_url)
+    _, for_testing, title, content = __extract_dash_parameters(news, None, '--test', '--title=', '--content=')
+    if not title:
+        raise ValueError('You need to specify a title!')
+    avatar_url = BOT.user.avatar_url
+    if not for_testing:
+        for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
+            embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
+            embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
+            embed.set_thumbnail(url=avatar_url)
+            try:
+                await bot_news_channel.send(embed=embed)
+            except errors.Forbidden:
+                pass
+    embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
+    embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
+    embed.set_thumbnail(url=avatar_url)
     await ctx.send(embed=embed)
 
 
@@ -3947,20 +3855,19 @@ async def cmd_updatecache(ctx: Context):
     This command is to be used to update all caches manually.
     """
     __log_command_use(ctx)
-    async with ctx.typing():
-        await crew.characters_designs_retriever.update_cache()
-        await crew.collections_designs_retriever.update_cache()
-        prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
-        for prestige_to_cache in prestige_to_caches:
-            await prestige_to_cache.update_data()
-        prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
-        for prestige_from_cache in prestige_from_caches:
-            await prestige_from_cache.update_data()
-        await item.items_designs_retriever.update_cache()
-        await research.researches_designs_retriever.update_cache()
-        await room.rooms_designs_retriever.update_cache()
-        await training.trainings_designs_retriever.update_cache()
-        await daily.update_db_sales_info_cache()
+    await crew.characters_designs_retriever.update_cache()
+    await crew.collections_designs_retriever.update_cache()
+    prestige_to_caches = list(crew.__prestige_to_cache_dict.values())
+    for prestige_to_cache in prestige_to_caches:
+        await prestige_to_cache.update_data()
+    prestige_from_caches = list(crew.__prestige_from_cache_dict.values())
+    for prestige_from_cache in prestige_from_caches:
+        await prestige_from_cache.update_data()
+    await item.items_designs_retriever.update_cache()
+    await research.researches_designs_retriever.update_cache()
+    await room.rooms_designs_retriever.update_cache()
+    await training.trainings_designs_retriever.update_cache()
+    await daily.update_db_sales_info_cache()
     await ctx.send('Updated all caches successfully!')
 
 
