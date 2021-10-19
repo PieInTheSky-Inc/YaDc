@@ -3041,7 +3041,7 @@ async def cmd_settings_set_autodaily_channel(ctx: Context, text_channel: TextCha
     if permissions.send_messages is not True:
         raise Error('I don\'t have permission to post in that channel.')
 
-        success = await autodaily_settings.set_channel(text_channel)
+    success = await autodaily_settings.set_channel(text_channel)
     if success:
         await ctx.invoke(BOT.get_command('settings autodaily channel'), '--on_set')
     else:
