@@ -197,7 +197,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         for division_design_id, division_text in divisions_texts:
             if as_embed:
-                division_title = __get_division_title(division_design_id, divisions_designs_infos, False, retrieved_date)
+                division_title = get_division_title(division_design_id, divisions_designs_infos, False, retrieved_date)
                 thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
                 embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
                 for i, embed_body in enumerate(embed_bodies):
@@ -205,7 +205,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
                     embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     result.append(embed)
             else:
-                division_title = __get_division_title(division_design_id, divisions_designs_infos, True, retrieved_date)
+                division_title = get_division_title(division_design_id, divisions_designs_infos, True, retrieved_date)
                 result.append(division_title)
                 result.extend(division_text)
                 result.append(utils.discord.ZERO_WIDTH_SPACE)
@@ -246,10 +246,14 @@ def __get_division_stars_as_text(fleet_infos: List[EntityInfo]) -> List[str]:
     return lines
 
 
-def __get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool, retrieved_date: datetime) -> str:
+def get_division_title(division_design_id: str, divisions_designs_infos: EntitiesData, include_markdown: bool, retrieved_date: datetime) -> str:
     title = divisions_designs_infos[division_design_id][DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]
     if retrieved_date:
-        title = f'{title} - {calendar.month_abbr[retrieved_date.month]} {retrieved_date.year}'
+        is_monthly_data = (retrieved_date + utils.datetime.ONE_DAY).month != retrieved_date.month
+        if is_monthly_data:
+            title = f'{title} - {calendar.month_abbr[retrieved_date.month]} {retrieved_date.year}'
+        else:
+            title = f'{title} - {calendar.month_abbr[retrieved_date.month]} {retrieved_date.day}, {retrieved_date.year}'
     if include_markdown:
         return f'__**{title}**__'
     else:

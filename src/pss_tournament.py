@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
+from typing_extensions import ParamSpecKwargs
 
 from discord import Colour, Embed
 
@@ -61,6 +62,15 @@ def get_start_string(currently_running: bool ) -> str:
         return 'started'
     else:
         return 'starts'
+
+
+def get_tourney_day(utc_now: datetime) -> Optional[int]:
+    result = None
+    current_tourney_start = get_current_tourney_start(utc_now)
+    if is_tourney_running(current_tourney_start, utc_now):
+        time_since_tourney_start = utc_now - current_tourney_start
+        return time_since_tourney_start.days
+    return result
 
 
 def get_tourney_start_as_embed(start_date: datetime, utc_now: datetime, colour: Colour = None) -> Embed:

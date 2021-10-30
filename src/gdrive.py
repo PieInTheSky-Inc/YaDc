@@ -5,7 +5,7 @@ import os
 import random
 from threading import Lock
 import time
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 import urllib.parse
 import yaml
 
@@ -16,6 +16,7 @@ import pydrive.files
 
 import pss_fleet as fleet
 import pss_lookups as lookups
+import pss_tournament as tourney
 import pss_user as user
 import settings
 import utils
@@ -55,6 +56,13 @@ class TourneyData(object):
         Number of seconds it took to collect the data.
         """
         return self.__meta['duration']
+
+    @property
+    def day(self) -> int:
+        """
+        Short for data_date.day
+        """
+        return self.__data_date.day
 
     @property
     def fleet_ids(self) -> List[str]:
@@ -399,7 +407,7 @@ class TourneyDataClient():
         self.__write_requested: bool = False
         self.__reader_count: int = 0
 
-        self.__cache: Dict[int, Dict[int, TourneyData]] = {}
+        self.__cache: Dict[int, Dict[int, Dict[int, TourneyData]]] = {}
 
         self.__initialized = False
         self.__initialize()
@@ -422,7 +430,7 @@ class TourneyDataClient():
         return max(self.__cache.keys())
 
 
-    def get_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
+    def get_data(self, year: int, month: int, day: Optional[int] = None, initializing: bool = False) -> TourneyData:
         if year < self.from_year:
             raise ValueError(f'There\'s no data from {year}. Earliest data available is from {calendar.month_name[self.from_month]} {self.from_year}.')
         if year == self.from_year:
@@ -432,20 +440,29 @@ class TourneyDataClient():
             if year > self.to_year or (year == self.to_year and month > self.to_month):
                 utc_now = utils.get_utc_now()
                 if utc_now.year == year and utc_now.month == month:
-                    raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+                    if day is None:
+                        raise ValueError(f'There\'s no data from {calendar.month_name[month]} {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_year}.')
+                    elif day >= utc_now.day:
+                        raise ValueError(f'There\'s no data from {calendar.month_name[month]} {day}, {year}. Most recent data available is from {calendar.month_name[self.to_month]} {self.to_day}, {self.to_year}.')
 
-        result = self.__read_data(year, month)
+        result = self.__read_data(year, month, day)
 
         if result is None:
-            result = self.__retrieve_data(year, month, initializing=initializing)
+            result = self.__retrieve_data(year, month, day, initializing=initializing)
             self.__cache_data(result)
 
         return result
 
 
-    def get_latest_data(self, initializing: bool = False) -> TourneyData:
+    def get_latest_daily_data(self, initializing: bool = False) -> TourneyData:
         utc_now = utils.get_utc_now()
-        year, month = TourneyDataClient.__get_tourney_year_and_month(utc_now)
+        result = self.get_data(utc_now.year, utc_now.month, utc_now.day - 1, initializing=initializing)
+        return result
+
+
+    def get_latest_monthly_data(self, initializing: bool = False) -> TourneyData:
+        utc_now = utils.get_utc_now()
+        year, month = TourneyDataClient.__get_last_tourney_year_and_month(utc_now)
         if settings.MOST_RECENT_TOURNAMENT_DATA:
             month += 1
             if month == 13:
@@ -482,7 +499,7 @@ class TourneyDataClient():
                 if not can_write:
                     time.sleep(random.random())
                 with self.__WRITE_LOCK:
-                    self.__cache.setdefault(tourney_data.year, {})[tourney_data.month] = tourney_data
+                    self.__cache.setdefault(tourney_data.year, {}).setdefault(tourney_data.month, {})[tourney_data.day] = tourney_data
                     self.__write_requested = False
                 return True
             return False
@@ -503,8 +520,9 @@ class TourneyDataClient():
         return None
 
 
-    def __get_latest_file(self, year: int, month: int, day: int = None, initializing: bool = False) -> pydrive.files.GoogleDriveFile:
-        self.__ensure_initialized()
+    def __get_latest_file(self, year: int, month: int, day: Optional[int] = None, initializing: bool = False) -> pydrive.files.GoogleDriveFile:
+        if not initializing:
+            self.__ensure_initialized()
         file_name_part: str = f'{year:04d}{month:02d}'
         if day is not None:
             file_name_part += f'{day:02d}'
@@ -534,11 +552,12 @@ class TourneyDataClient():
         credentials = pydrive.auth.ServiceAccountCredentials.from_json_keyfile_name(self._service_account_file_path, self._scopes)
         self.__gauth.credentials = credentials
         self.__drive: pydrive.drive.GoogleDrive = pydrive.drive.GoogleDrive(self.__gauth)
-        self.get_latest_data(initializing=True)
+        self.get_latest_monthly_data(initializing=True)
+        self.get_latest_daily_data(initializing=True)
         self.__initialized = True
 
 
-    def __read_data(self, year: int, month: int) -> TourneyData:
+    def __read_data(self, year: int, month: int, day: Optional[int] = None) -> TourneyData:
         can_read = False
         while not can_read:
             can_read = not self.__get_write_requested()
@@ -546,7 +565,14 @@ class TourneyDataClient():
                 time.sleep(random.random())
 
         self.__add_reader()
-        result = self.__cache.get(year, {}).get(month, None)
+        result = self.__cache.get(year, {}).get(month, {})
+        if result:
+            if day is None:
+                result = result.get(tuple(result.keys())[-1], None)
+            else:
+                result = result.get(day, None)
+        else:
+            result = None
         self.__remove_reader()
         return result
 
@@ -561,9 +587,10 @@ class TourneyDataClient():
             self.__write_requested = True
 
 
-    def __retrieve_data(self, year: int, month: int, initializing: bool = False) -> TourneyData:
-        self.__ensure_initialized()
-        g_file = self.__get_latest_file(year, month, initializing=initializing)
+    def __retrieve_data(self, year: int, month: int, day: Optional[int] = False, initializing: bool = False) -> TourneyData:
+        if not initializing:
+            self.__ensure_initialized()
+        g_file = self.__get_latest_file(year, month, day, initializing=initializing)
         result = None
         if g_file:
             raw_data = g_file.GetContentString()
@@ -623,7 +650,7 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def __get_tourney_year_and_month(dt: datetime) -> Tuple[int, int]:
+    def __get_last_tourney_year_and_month(dt: datetime) -> Tuple[int, int]:
         dt = TourneyDataClient.__fix_filename_datetime(dt)
         return dt.year, dt.month
 

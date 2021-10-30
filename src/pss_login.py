@@ -56,7 +56,7 @@ class Device():
         self.__user: dict = None
         self.__token_lock: Lock = Lock()
         self.__update_lock: Lock = Lock()
-        self.__login_path: str = f'UserService/DeviceLogin8?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
+        self.__login_path: str = f'UserService/DeviceLogin11?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
         self.__can_login_until_changed: bool = False
 
 
@@ -137,6 +137,9 @@ class Device():
             self.__access_token = result['UserService']['UserLogin']['accessToken']
             self.__set_can_login_until(utc_now)
         else:
+            error_message = result.get('UserLogin', {}).get('errorMessage')
+            if error_message:
+                raise LoginError(error_message)
             self.__access_token = None
         self.__set_access_token_expiry()
 
@@ -257,7 +260,6 @@ class DeviceCollection():
                 try:
                     tried_devices_count += 1
                     result = await current_device.get_access_token()
-                    break
                 except DeviceInUseError:
                     await self.remove_device(current_device)
                 except Exception as err:

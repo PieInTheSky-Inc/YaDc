@@ -259,8 +259,15 @@ def __get_pvp_defense_stats(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 def __get_star_value(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> Optional[str]:
     result = None
-    if is_in_tourney_fleet:
-        result = str(get_star_value_from_user_info(user_info))
+    if is_in_tourney_fleet and tourney.is_tourney_running(retrieved_at):
+        star_value, source = get_star_value_from_user_info(user_info, retrieved_at)
+        if star_value is not None:
+            if source < 0:
+                result = f'{star_value} (based on trophies)'
+            elif source > 0:
+                result = f'{star_value} (based on yesterday\'s stars)'
+            else:
+                result = str(star_value)
     return result
 
 
@@ -309,7 +316,7 @@ def __get_user_type(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
     result = None
-    user_name = user_info.get('Name')
+    user_name = user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
     if user_name is not None:
         result = user_name
         current_user_name = user_info.get('CurrentName')
@@ -323,18 +330,26 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 # ---------- Helper functions ----------
 
-def get_star_value_from_user_info(user_info: EntityInfo) -> Optional[int]:
+def get_star_value_from_user_info(user_info: EntityInfo, retrieved_at: datetime, star_count: Union[int, str]) -> Tuple[Optional[int], Optional[int]]:
+    """
+    Returns: (star_value: `int`, source: `int`)
+
+    `source` is:
+       -1, if the star value has been calculated from the trophies
+       1, if the star value has been calculated from the stars
+       0, else
+    """
     result = None
+    source = None
     trophies = user_info.get('Trophy')
     if trophies:
         trophies = int(trophies)
-        stars = user_info.get('AllianceScore')
-        if stars:
-            stars = int(stars)
-        else:
-            stars = 0
-        result = math.floor(max(trophies/1000, stars*0.15))
-    return result
+        stars = int(star_count if star_count is not None else user_info.get('YesterdayAllianceScore', 0))
+        from_trophies = math.floor(trophies / 1000)
+        from_stars = math.floor(stars * 0.15)
+        result = max(from_trophies, from_stars)
+        source = -1 if from_trophies > from_stars else 0 if from_trophies == from_stars else 1
+    return result, source
 
 
 def __calculate_win_rate(wins: int, losses: int, draws: int) -> float:

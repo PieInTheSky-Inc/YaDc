@@ -18,6 +18,7 @@ import discord.ext.tasks as tasks
 import holidays
 
 import database as db
+import emojis
 from gdrive import TourneyDataClient
 import pagination
 import pss_achievement as achievement
@@ -876,6 +877,9 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
         if fleet_info:
             as_embed = await server_settings.get_use_embeds(ctx)
             if is_tourney_running:
+                yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+                if False and yesterday_tourney_data:
+                    pass
                 max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
             else:
                 max_tourney_battle_attempts = None
@@ -1115,7 +1119,6 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
     """
     __log_command_use(ctx)
     output = []
-    error = None
     utc_now = utils.get_utc_now()
     (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
     if year is not None and month is None:
@@ -1141,8 +1144,6 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
 
         if fleet_info:
             output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
-    elif error:
-        raise Error(str(error))
     else:
         leading_space_note = ''
         if fleet_name.startswith(' '):
@@ -1327,6 +1328,11 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
+            if tourney.is_tourney_running():
+                yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+                if yesterday_tourney_data:
+                    yesterday_user_info = yesterday_tourney_data.users.get(user_info[user.USER_KEY_NAME], {})
+                    user_info['YesterdayAllianceScore'] = yesterday_user_info['AllianceScore']
             max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
             output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.reply_with_output(ctx, output)
@@ -1744,6 +1750,112 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
         raise NotFound(f'Could not find a character or an item named `{full_name}`.')
 
 
+@BOT.command(name='targets', brief='Get top tournament targets')
+@cooldown(rate=RATE, per=COOLDOWN * 2, type=BucketType.user)
+async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, max_trophies: int = None) -> None:
+    """
+    Prints a list of highest value tournament targets with a minimum star value and a maximum trophy count.
+
+    Usage:
+      /targets [division] <mininum star value> <maximum trophy count>
+
+    Parameters:
+      division:       Mandatory. The letter of the tournament division.
+      min_star_value: Optional. The minimum star value to be considered.
+      max_trophies:   Optional. The maximum trophy count to be considered.
+
+    Examples:
+      /targets a - Prints the top 100 players in division A by highest star value
+      /targets a 5 - Prints up to the top 100 players in division A with a star value of at least 5
+      /targets a 3000 - Prints up to the top 100 players in division A with max 3k trophies
+      /targets a 5 3000 - Prints up to the top 100 players in division A with a star value of at least 5 and max 3k trophies
+    """
+    __log_command_use(ctx)
+    if not tourney.is_tourney_running():
+        raise Error('There\'s no tournament running currently.')
+
+    division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
+    if not division_design_id:
+        raise ValueError('The specified division is not valid.')
+
+    if min_star_value is None:
+        if max_trophies is not None and max_trophies < 1000:
+            min_star_value, max_trophies = max_trophies, None
+    else:
+        if max_trophies is None:
+            if min_star_value >= 1000:
+                min_star_value, max_trophies = None, min_star_value
+        else:
+            if min_star_value > max_trophies and min_star_value >= 1000:
+                min_star_value, max_trophies = max_trophies, min_star_value
+
+    if min_star_value is not None and min_star_value < 0:
+        raise ValueError('The minimum star count must not be negative.')
+
+    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    if yesterday_tourney_data:
+        yesterday_user_infos = []
+        for yesterday_user_info in yesterday_tourney_data.users.values():
+            if division_design_id == yesterday_user_info.get('Alliance', {}).get('DivisionDesignId') and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
+                star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, yesterday_tourney_data.retrieved_at, star_count=yesterday_user_info.get('AllianceScore'))
+                if not min_star_value or star_value >= min_star_value:
+                    yesterday_user_info['StarValue'] = star_value or 0
+                    yesterday_user_infos.append(yesterday_user_info)
+        yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0))), reverse=True)
+        if not yesterday_user_infos:
+            error_text = f'No ships in division {division.upper()} match the criteria.'
+            if min_star_value:
+                error_text += f'\nMinimum star value: {min_star_value}'
+            if max_trophies:
+                error_text += f'\nMaximum Trophy count: {max_trophies}'
+            raise Error(error_text)
+
+        if len(yesterday_user_infos) > 100:
+            yesterday_user_infos = yesterday_user_infos[:100]
+
+        output = []
+        footer = '\n\n'.join((
+            f'Properties displayed: Star value {emojis.star} Trophies {emojis.trophy} Player name (Fleet name)',
+            utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
+        ))
+        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+        as_embed = await server_settings.get_use_embeds(ctx)
+        divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
+        division_text = []
+        for i, user_info in enumerate(yesterday_user_infos, 1):
+            star_value = user_info.get('StarValue', 0)
+            stars = int(user_info.get('AllianceScore', 0))
+            user_name = pss_top.escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+            fleet_name = pss_top.escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
+            trophies = int(user_info.get('Trophy', 0))
+            division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} {emojis.trophy} {user_name} ({fleet_name})')
+
+        if max_trophies or min_star_value:
+            division_text.insert(0, '_ _')
+            if max_trophies:
+                division_text.insert(0, f'Maximum Trophy count: {max_trophies}')
+            if min_star_value:
+                division_text.insert(0, f'Minimum star value: {min_star_value}')
+
+        if as_embed:
+            division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
+            thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
+            embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+            for i, embed_body in enumerate(embed_bodies):
+                thumbnail_url = thumbnail_url if i == 0 else None
+                embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                output.append(embed)
+        else:
+            division_title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
+            output.append(division_title)
+            output.extend(division_text)
+            output.append(utils.discord.ZERO_WIDTH_SPACE)
+
+        await utils.discord.post_output(ctx, output)
+    else:
+        raise Error('Could not retrieve yesterday\'s tournament data.')
+
+
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_time(ctx: Context):
@@ -1969,6 +2081,174 @@ async def cmd_training(ctx: Context, *, training_name: str):
     """
     __log_command_use(ctx)
     output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
+    await utils.discord.reply_with_output(ctx, output)
+
+
+@BOT.group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_yesterday(ctx: Context) -> None:
+    """
+    Get yesterday's final tournament standings.
+
+    Usage:
+      Use one of the subcommands.
+    """
+    if ctx.invoked_subcommand is None:
+        await ctx.send_help('yesterday')
+
+
+@cmd_yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_yesterday_fleet(ctx: Context, *, fleet_name: str = None):
+    """
+    Get yesterday's tournament fleet data.
+
+    Parameters:
+      fleet_name: Mandatory. The fleet for which the data should be displayed.
+    """
+    __log_command_use(ctx)
+    utc_now = utils.get_utc_now()
+    tourney_day = tourney.get_tourney_day(utc_now)
+    if tourney_day is None:
+        raise Error('There\'s no tournament running currently.')
+    if not tourney_day:
+        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+    output = []
+
+    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    if yesterday_tourney_data is None:
+        fleet_infos = []
+    else:
+        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            as_embed = await server_settings.get_use_embeds(ctx)
+            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_tourney_data.users, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
+            await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
+            for file_path in file_paths:
+                os.remove(file_path)
+    else:
+        leading_space_note = ''
+        if fleet_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in current tournament.{leading_space_note}')
+
+
+@cmd_yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_yesterday_player(ctx: Context, *, player_name: str = None):
+    """
+    Get historic tournament player data.
+
+    Parameters:
+      player_name: Mandatory. The player for which the data should be displayed.
+    """
+    __log_command_use(ctx)
+    utc_now = utils.get_utc_now()
+    tourney_day = tourney.get_tourney_day(utc_now)
+    if tourney_day is None:
+        raise Error('There\'s no tournament running currently.')
+    if not tourney_day:
+        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+    output = []
+
+    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    if yesterday_tourney_data is None:
+        user_infos = []
+    else:
+        user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, yesterday_tourney_data.users)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
+            _, user_info = await paginator.wait_for_option_selection()
+
+        if user_info:
+            output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
+    else:
+        leading_space_note = ''
+        if player_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a player named `{player_name}` participating in the current tournament.{leading_space_note}')
+    await utils.discord.reply_with_output(ctx, output)
+
+
+@cmd_yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_yesterday_stars(ctx: Context, *, division: str = None):
+    """
+    Get yesterday's final tournament division standings.
+    """
+    __log_command_use(ctx)
+    utc_now = utils.get_utc_now()
+    tourney_day = tourney.get_tourney_day(utc_now)
+    if tourney_day is None:
+        raise Error('There\'s no tournament running currently.')
+    if not tourney_day:
+        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+    output = []
+
+    if not pss_top.is_valid_division_letter(division):
+        subcommand = BOT.get_command('yesterday stars fleet')
+        await ctx.invoke(subcommand, fleet_name=division)
+        return
+    else:
+        yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+        if yesterday_tourney_data:
+            output = await pss_top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
+    await utils.discord.reply_with_output(ctx, output)
+
+
+@cmd_yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
+@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
+async def cmd_yesterday_stars_fleet(ctx: Context, *, fleet_name: str = None):
+    """
+    Get yesterday's final tournament fleet standings.
+
+    Parameters:
+      fleet_name: Mandatory. The fleet for which the data should be displayed.
+    """
+    __log_command_use(ctx)
+    utc_now = utils.get_utc_now()
+    tourney_day = tourney.get_tourney_day(utc_now)
+    if tourney_day is None:
+        raise Error('There\'s no tournament running currently.')
+    if not tourney_day:
+        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+    output = []
+
+    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    if yesterday_tourney_data is None:
+        fleet_infos = []
+    else:
+        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
+
+    if fleet_infos:
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
+            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            _, fleet_info = await paginator.wait_for_option_selection()
+
+        if fleet_info:
+            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
+    else:
+        leading_space_note = ''
+        if fleet_name.startswith(' '):
+            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.{leading_space_note}')
     await utils.discord.reply_with_output(ctx, output)
 
 
