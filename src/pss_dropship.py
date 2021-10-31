@@ -79,7 +79,7 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(daily_info)
         print(e)
-        return [], False
+        return [], [], False
 
     parts_text = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
 
