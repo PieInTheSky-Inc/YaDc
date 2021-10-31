@@ -330,7 +330,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 # ---------- Helper functions ----------
 
-def get_star_value_from_user_info(user_info: EntityInfo, retrieved_at: datetime, star_count: Union[int, str]) -> Tuple[Optional[int], Optional[int]]:
+def get_star_value_from_user_info(user_info: EntityInfo, retrieved_at: datetime, star_count: Union[int, str] = None) -> Tuple[Optional[int], Optional[int]]:
     """
     Returns: (star_value: `int`, source: `int`)
 
