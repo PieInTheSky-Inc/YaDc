@@ -204,9 +204,16 @@ def __fix_property_value(property_value: str) -> str:
 
 
 async def __get_data_from_url(url: str) -> str:
+    if settings.PRINT_DEBUG_WEB_REQUESTS:
+        print(f'[WebRequest] Attempting to get data from url: {url}')
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             data = await response.text(encoding='utf-8')
+            if settings.PRINT_DEBUG_WEB_REQUESTS:
+                log_data = data or ''
+                if log_data and len(log_data) > 100:
+                    log_data = log_data[:100]
+                print(f'[WebRequest] Returned data: {log_data}')
     return data
 
 

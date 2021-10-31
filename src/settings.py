@@ -6,6 +6,9 @@ from typing import List
 
 # ---------- Settings ----------
 
+ACCESS_TOKEN: str = os.environ.get('PSS_ACCESS_TOKEN')
+
+
 BASE_API_URL: str = 'https://api.pixelstarships.com/'
 BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
 
@@ -16,6 +19,8 @@ DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MOD
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
+
+DEVICE_LOGIN_CHECKSUM_KEY: str = os.environ.get('PSS_DEVICE_LOGIN_CHECKSUM_KEY')
 
 
 EXCEL_COLUMN_FORMAT_DATETIME: str = 'YYYY-MM-DD hh:MM:ss'

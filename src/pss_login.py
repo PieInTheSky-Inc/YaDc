@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import hashlib
+import json
 import random
 from typing import List, Optional
 
@@ -8,12 +9,15 @@ from asyncio import Lock
 
 import database as db
 import pss_core as core
+import settings
 import utils
 
 
 # ---------- Constants & Internals ----------
 
 ACCESS_TOKEN_TIMEOUT: timedelta = timedelta(minutes=3)
+
+DEVICE_LOGIN_PATH: str = 'UserService/DeviceLogin11'
 
 DEFAULT_DEVICE_TYPE: str = 'DeviceTypeMac'
 DEVICES: 'DeviceCollection' = None
@@ -44,10 +48,10 @@ class DeviceInUseError(LoginError):
 # ---------- Classes ----------
 
 class Device():
-    def __init__(self, device_key: str, checksum: str = None, can_login_until: datetime = None, device_type: str = None) -> None:
+    def __init__(self, device_key: str, can_login_until: datetime = None, device_type: str = None) -> None:
         self.__key: str = device_key
+        self.__checksum: str = None
         self.__device_type = device_type or DEFAULT_DEVICE_TYPE
-        self.__checksum: str = checksum or _create_device_checksum(self.__key, self.__device_type)
         self.__last_login: datetime = None
         self.__can_login_until: datetime = can_login_until
         self.__access_token: str = None
@@ -56,7 +60,6 @@ class Device():
         self.__user: dict = None
         self.__token_lock: Lock = Lock()
         self.__update_lock: Lock = Lock()
-        self.__login_path: str = f'UserService/DeviceLogin11?deviceKey={self.__key}&isJailBroken=false&checksum={self.__checksum}&deviceType=DeviceTypeMac&languageKey=en&advertisingkey=%22%22'
         self.__can_login_until_changed: bool = False
 
 
@@ -111,18 +114,30 @@ class Device():
 
 
     async def __login(self) -> None:
-        utc_now = utils.get_utc_now()
-        if not self.__key:
-            self.__key = _create_device_key()
-        if not self.__checksum:
-            self.__checksum = _create_device_checksum(self.__key, self.__device_type)
-
         base_url = await core.get_base_url()
-        url = f'{base_url}{self.__login_path}'
+        url = f'{base_url}{DEVICE_LOGIN_PATH}'
         utc_now = utils.get_utc_now()
+        client_datetime = utils.format.pss_datetime(utc_now)
+        query_params = {
+            'advertisingKey': '""',
+            'checksum': _create_device_checksum(self.__key, self.__device_type, client_datetime),
+            'clientDateTime': client_datetime,
+            'deviceKey': self.__key,
+            'deviceType': self.__device_type,
+            'isJailBroken': 'false',
+            'languageKey': 'en',
+        }
+        if settings.PRINT_DEBUG_WEB_REQUESTS:
+            print(f'[WebRequest] Attempting to get data from url: {url}')
+            print(f'[WebRequest]   with parameters: {json.dumps(query_params, separators=(",", ":"))}')
         async with aiohttp.ClientSession() as session:
-            async with session.post(url) as response:
+            async with session.post(url, params=query_params) as response:
                 data = await response.text(encoding='utf-8')
+                if settings.PRINT_DEBUG_WEB_REQUESTS:
+                    log_data = data or ''
+                    if log_data and len(log_data) > 100:
+                        log_data = log_data[:100]
+                    print(f'[WebRequest] Returned data: {log_data}')
 
         result = utils.convert.raw_xml_to_dict(data)
         self.__last_login = utc_now
@@ -314,8 +329,8 @@ def _create_device_key() -> str:
     return result
 
 
-def _create_device_checksum(device_key: str, device_type: str) -> str:
-    result = hashlib.md5((f'{device_key}{device_type}savysoda').encode('utf-8')).hexdigest()
+def _create_device_checksum(device_key: str, device_type: str, client_datetime: str) -> str:
+    result = hashlib.md5(f'{device_key}{client_datetime}{device_type}{settings.DEVICE_LOGIN_CHECKSUM_KEY}savysoda'.encode('utf-8')).hexdigest()
     return result
 
 
@@ -325,7 +340,7 @@ def _create_device_checksum(device_key: str, device_type: str) -> str:
 # ---------- DB ----------
 
 async def _db_get_device(device_key: str) -> Optional[Device]:
-    query = f'SELECT * FROM devices WHERE key = $1'
+    query = f'SELECT key FROM devices WHERE key = $1'
     rows = await db.fetchall(query, [device_key])
     if rows:
         row = rows[0]
@@ -336,7 +351,7 @@ async def _db_get_device(device_key: str) -> Optional[Device]:
 
 
 async def _db_get_devices() -> List[Device]:
-    query = f'SELECT * FROM devices;'
+    query = f'SELECT key FROM devices;'
     rows = await db.fetchall(query)
     if rows:
         result = [Device(*row) for row in rows]
@@ -367,8 +382,8 @@ async def _db_try_store_device(device: Device) -> bool:
 
 
 async def _db_try_update_device(device: Device) -> bool:
-    query = f'UPDATE devices SET (key, checksum, loginuntil) = ($1, $2, $3) WHERE key = $1'
-    success = await db.try_execute(query, [device.key, device.checksum, device.can_login_until])
+    query = f'UPDATE devices SET (key, loginuntil) = ($1, $3) WHERE key = $1'
+    success = await db.try_execute(query, [device.key, device.can_login_until])
     return success
 
 
