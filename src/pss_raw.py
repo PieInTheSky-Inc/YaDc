@@ -148,8 +148,12 @@ async def __post_raw_file(ctx: Context, retriever: entity.EntityRetriever, entit
         file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
         time2 = time.perf_counter() - start
         print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
-    await utils.discord.post_output_with_files(ctx, [], [file_path])
-    os.remove(file_path)
+    file_paths = []
+    if file_path:
+        file_paths.append(file_path)
+    await utils.discord.post_output_with_files(ctx, [], file_paths)
+    if file_path:
+        os.remove(file_path)
 
 
 def __should_include_raw_field(field: Any) -> bool:

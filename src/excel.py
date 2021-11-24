@@ -90,26 +90,30 @@ def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrie
 def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: Optional[datetime] = None, file_name: Optional[str] = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = utils.get_utc_now()
-    save_to = file_name or get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
+    if flattened_data:
+        save_to = file_name or get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.XL, consider_tourney=False)
 
-    wb = openpyxl.Workbook(write_only=True)
-    ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()
-    df = pandas.DataFrame(flattened_data)
-    for (columnName, columnData) in df.iteritems():
-        if 'datetime64' in columnData.dtype.name:
-            df[columnName] = df[columnName].dt.tz_convert(None)
+        wb = openpyxl.Workbook(write_only=True)
+        ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()
+        df = pandas.DataFrame(flattened_data)
+        for (columnName, columnData) in df.iteritems():
+            if 'datetime64' in columnData.dtype.name:
+                df[columnName] = df[columnName].dt.tz_convert(None)
 
-    for row in openpyxl.utils.dataframe.dataframe_to_rows(df, index=False, header=True):
-        ws.append(row)
+        for row in openpyxl.utils.dataframe.dataframe_to_rows(df, index=False, header=True):
+            if row:
+                ws.append(row)
 
-    table = openpyxl.worksheet.table.Table(displayName='tbl', ref=__get_ref_for_df(df))
-    table.tableStyleInfo = __BASE_TABLE_STYLE
-    table._initialise_columns()
-    for cell, col in zip(df.columns, table.tableColumns):
-        col.name = str(cell)
-    ws.add_table(table)
+        table = openpyxl.worksheet.table.Table(displayName='tbl', ref=__get_ref_for_df(df))
+        table.tableStyleInfo = __BASE_TABLE_STYLE
+        table._initialise_columns()
+        for cell, col in zip(df.columns, table.tableColumns):
+            col.name = str(cell)
+        ws.add_table(table)
 
-    wb.save(save_to)
+        wb.save(save_to)
+    else:
+        save_to = None
     return save_to
 
 

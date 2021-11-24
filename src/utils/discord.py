@@ -287,7 +287,7 @@ async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed
         else:
             last_post = None
 
-        files = [_File(file_path) for file_path in file_paths]
+        files = [_File(file_path) for file_path in file_paths] or None
 
         if last_post:
             if output_is_embeds:
