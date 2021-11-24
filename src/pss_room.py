@@ -423,6 +423,8 @@ def __get_max_storage_and_type(room_info: EntityInfo, rooms_data: EntitiesData, 
         room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
         if entity.entity_property_has_value(capacity) and ((not entity.entity_property_has_value(manufacture_capacity) or not entity.entity_property_has_value(manufacture_rate)) or (room_type and room_type == 'Recycling')):
             value = __parse_value(capacity)
+            if value and room_type and room_type == 'Medical':
+                value = str(int(value) / 100)
         elif entity.entity_property_has_value(manufacture_capacity) and entity.entity_property_has_value(manufacture_rate):
             value = __parse_value(manufacture_capacity)
         else:
