@@ -1806,7 +1806,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             alliance_division_design_id = current_division_design_id or yesterday_division_design_id
             division_matches = division_design_id == alliance_division_design_id
             if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
-                star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, yesterday_tourney_data.retrieved_at, star_count=yesterday_user_info.get('AllianceScore'))
+                star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=yesterday_user_info.get('AllianceScore'))
                 if not min_star_value or star_value >= min_star_value:
                     yesterday_user_info['StarValue'] = star_value or 0
                     yesterday_user_infos.append(yesterday_user_info)

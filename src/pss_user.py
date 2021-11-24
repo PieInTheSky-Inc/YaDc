@@ -260,7 +260,7 @@ def __get_pvp_defense_stats(user_info: EntityInfo, **kwargs) -> Optional[str]:
 def __get_star_value(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> Optional[str]:
     result = None
     if is_in_tourney_fleet and tourney.is_tourney_running(retrieved_at):
-        star_value, source = get_star_value_from_user_info(user_info, retrieved_at)
+        star_value, source = get_star_value_from_user_info(user_info)
         if star_value is not None:
             if source < 0:
                 result = f'{star_value} (based on trophies)'
@@ -330,7 +330,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 # ---------- Helper functions ----------
 
-def get_star_value_from_user_info(user_info: EntityInfo, retrieved_at: datetime, star_count: Union[int, str] = None) -> Tuple[Optional[int], Optional[int]]:
+def get_star_value_from_user_info(user_info: EntityInfo, star_count: Union[int, str] = None) -> Tuple[Optional[int], Optional[int]]:
     """
     Returns: (star_value: `int`, source: `int`)
 
