@@ -171,8 +171,7 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
         division = None
 
     if fleet_data is None or retrieved_date is None:
-        data = await core.get_data_from_path(STARS_BASE_PATH)
-        fleet_infos = utils.convert.xmltree_to_dict3(data)
+        fleet_infos = await get_alliances_with_division()
     else:
         fleet_infos = fleet_data
 
@@ -264,6 +263,12 @@ def get_division_title(division_design_id: str, divisions_designs_infos: Entitie
 
 
 # ---------- Helper functions ----------
+
+async def get_alliances_with_division() -> EntitiesData:
+    data = await core.get_data_from_path(STARS_BASE_PATH)
+    fleet_infos = utils.convert.xmltree_to_dict3(data)
+    return fleet_infos
+
 
 def is_valid_division_letter(div_letter: str) -> bool:
     if div_letter is None:

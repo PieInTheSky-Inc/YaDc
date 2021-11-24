@@ -1793,14 +1793,24 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
         raise ValueError('The minimum star count must not be negative.')
 
     yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    yesterday_data_is_tourney_data = tourney.is_tourney_running(utc_now=yesterday_tourney_data.retrieved_at)
+    current_alliance_data = {}
+    if not yesterday_data_is_tourney_data:
+        current_alliance_data = await pss_top.get_alliances_with_division()
+
     if yesterday_tourney_data:
         yesterday_user_infos = []
         for yesterday_user_info in yesterday_tourney_data.users.values():
-            if division_design_id == yesterday_user_info.get('Alliance', {}).get('DivisionDesignId') and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
+            current_division_design_id = current_alliance_data.get(yesterday_user_info.get('AllianceId'), {}).get('DivisionDesignId')
+            yesterday_division_design_id = yesterday_user_info.get('Alliance', {}).get('DivisionDesignId', '0')
+            alliance_division_design_id = current_division_design_id or yesterday_division_design_id
+            division_matches = division_design_id == alliance_division_design_id
+            if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
                 star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, yesterday_tourney_data.retrieved_at, star_count=yesterday_user_info.get('AllianceScore'))
                 if not min_star_value or star_value >= min_star_value:
                     yesterday_user_info['StarValue'] = star_value or 0
                     yesterday_user_infos.append(yesterday_user_info)
+
         yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0))), reverse=True)
         if not yesterday_user_infos:
             error_text = f'No ships in division {division.upper()} match the criteria.'
