@@ -1897,11 +1897,11 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
       /targets top a 5 5 3000 - Prints up to the top 5 players per fleet in division A with a star value of at least 5 and max 3k trophies
 
     Notes:
-      The parameter 'count' will default depending on the division:
+      The parameter 'count' is constrained depending on the division:
         Division A: max 20
         Division B: max 15
-        Division C: max 10
-        Division D: max 5
+        Division C: max 5
+        Division D: max 3
     """
     __log_command_use(ctx)
     if not tourney.is_tourney_running():
@@ -1972,11 +1972,13 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
         as_embed = await server_settings.get_use_embeds(ctx)
         divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
         output_lines = []
-        for current_fleet_info in sorted(current_fleet_data.values(), key=lambda fleet_info: int(fleet_info.get('Score', 0)), reverse=True):
+        current_fleet_infos = sorted(current_fleet_data.values(), key=lambda fleet_info: int(fleet_info.get('Score', 0)), reverse=True)
+        current_fleet_infos = [current_fleet_info for current_fleet_info in current_fleet_infos if current_fleet_info.get(pss_top.DIVISION_DESIGN_KEY_NAME) == division_design_id]
+        for fleet_rank, current_fleet_info in enumerate(current_fleet_infos, 1):
             fleet_id = current_fleet_info[fleet.FLEET_KEY_NAME]
             if fleet_id in yesterday_fleet_users_infos:
-                output_lines.append(f'**{current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
-                for i, yesterday_user_info in enumerate(yesterday_fleet_users_infos[fleet_id], 1):
+                output_lines.append(f'**{fleet_rank}. {current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
+                for user_rank, yesterday_user_info in enumerate(yesterday_fleet_users_infos[fleet_id], 1):
                     user_id = yesterday_user_info[user.USER_KEY_NAME]
                     star_value = yesterday_user_info.get('StarValue', 0)
                     stars = int(yesterday_user_info.get('AllianceScore', 0))
@@ -1984,7 +1986,11 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
                     trophies = int(yesterday_user_info.get('Trophy', 0))
                     highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
                     last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
-                    output_lines.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}')
+                    line = f'**{user_rank}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}'
+                    if user_rank > 1:
+                        output_lines.append(line)
+                    else:
+                        output_lines[-1] += f'\n{line}'
                 output_lines.append('')
 
         if count or max_trophies or min_star_value:
@@ -2003,8 +2009,8 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
             division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet'
             thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
             embed_bodies = utils.discord.create_posts_from_lines(output_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
-            for i, embed_body in enumerate(embed_bodies):
-                thumbnail_url = thumbnail_url if i == 0 else None
+            for user_rank, embed_body in enumerate(embed_bodies):
+                thumbnail_url = thumbnail_url if user_rank == 0 else None
                 embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                 output.append(embed)
         else:
