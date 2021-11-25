@@ -20,6 +20,21 @@ __SEPARATORS_AMOUNT_MODIFICATION_LOOKUP: Dict[str, int] = {
 
 # ---------- Functions ----------
 
+def camel_case(s: str) -> List[str]:
+    """
+    https://www.geeksforgeeks.org/python-split-camelcase-string-to-individual-strings/
+    """
+    words = [[s[0]]]
+
+    for c in s[1:]:
+        if words[-1][-1].islower() and c.isupper():
+            words.append(list(c))
+        else:
+            words[-1].append(c)
+
+    return [''.join(word) for word in words]
+
+
 def entity_string(entity_str: str, default_amount: str = '1', default_type: str = None) -> Tuple[str, str, int, str]:
     """
     Parses an entity string (e.g. from ingredients) and returns:

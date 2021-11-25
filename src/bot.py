@@ -193,6 +193,7 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
             except errors.Forbidden:
                 __log_command_use_error(ctx, err, force_printing=True)
 
+        title = ' '.join(utils.parse.camel_case(error_type))
         as_embed = await server_settings.get_use_embeds(ctx)
         try:
 
@@ -200,13 +201,13 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                 colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
                 if retry_after:
                     error_message = f'{ctx.author.mention}\n{error_message}'
-                embed = utils.discord.create_embed(error_type, description=error_message, colour=colour)
+                embed = utils.discord.create_embed(title, description=error_message, colour=colour)
                 await ctx.reply(embed=embed, delete_after=retry_after, mention_author=False)
             else:
                 error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
                 if retry_after:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
-                await ctx.reply(f'**{error_type}**\n{error_message}', delete_after=retry_after, mention_author=False)
+                await ctx.reply(f'**{title}**\n{error_message}', delete_after=retry_after, mention_author=False)
         except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
