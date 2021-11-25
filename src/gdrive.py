@@ -593,8 +593,8 @@ class TourneyDataClient():
         self.__gauth.credentials = credentials
         self.__drive: pydrive.drive.GoogleDrive = pydrive.drive.GoogleDrive(self.__gauth)
         self.get_latest_monthly_data(initializing=True)
-        self.get_latest_daily_data(initializing=True)
-        day_before_yesterday = utils.get_utc_now() - utils.datetime.ONE_DAY - utils.datetime.ONE_DAY
+        yesterday_data = self.get_latest_daily_data(initializing=True)
+        day_before_yesterday = yesterday_data.retrieved_at - utils.datetime.ONE_DAY
         self.get_data(day_before_yesterday.year, day_before_yesterday.month, day_before_yesterday.day, initializing=True)
         self.__initialized = True
 
