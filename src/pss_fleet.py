@@ -293,8 +293,11 @@ def __get_stars(fleet_info: EntityInfo, fleet_users_data: EntitiesData, max_tour
     if stars is not None and stars != '0':
         result = stars
         if max_tourney_battle_attempts is not None and fleet_users_data and retrieved_at:
-            attempts_left = sum([max_tourney_battle_attempts - user.__get_tourney_battle_attempts(user_info, retrieved_at) for user_info in fleet_users_data.values()])
-            result += f' ({attempts_left} attempts left)'
+            try:
+                attempts_left = sum([max_tourney_battle_attempts - user.__get_tourney_battle_attempts(user_info, retrieved_at) for user_info in fleet_users_data.values()])
+                result += f' ({attempts_left} attempts left)'
+            except TypeError:
+                pass
     return result
 
 
@@ -412,7 +415,9 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
                 attempts_left = max_tourney_battle_attempts - attempts
             line.append('' if attempts_left is None else attempts_left)
 
-            star_value, _ = user.get_star_value_from_user_info(user_info)
+            star_value = user_info.get('StarValue')
+            if star_value is None:
+                star_value, _ = user.get_star_value_from_user_info(user_info)
             line.append('' if star_value is None else star_value)
         if include_division_name:
             line.append(get_division_name(user_info.get('Alliance', {}).get(top.DIVISION_DESIGN_KEY_NAME)))

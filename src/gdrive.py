@@ -495,8 +495,8 @@ class TourneyDataClient():
 
 
     def get_latest_daily_data(self, initializing: bool = False) -> TourneyData:
-        utc_now = utils.get_utc_now()
-        result = self.get_data(utc_now.year, utc_now.month, utc_now.day - 1, initializing=initializing)
+        yesterday = utils.get_utc_now() - utils.datetime.ONE_DAY
+        result = self.get_data(yesterday.year, yesterday.month, yesterday.day, initializing=initializing)
         return result
 
 
@@ -517,6 +517,12 @@ class TourneyDataClient():
             if month == 0:
                 year -= 1
                 month = 12
+        return result
+
+
+    def get_second_latest_daily_data(self, initializing: bool = False) -> TourneyData:
+        yesterday = utils.get_utc_now() - utils.datetime.ONE_DAY - utils.datetime.ONE_DAY
+        result = self.get_data(yesterday.year, yesterday.month, yesterday.day, initializing=initializing)
         return result
 
 
@@ -594,6 +600,7 @@ class TourneyDataClient():
         self.__drive: pydrive.drive.GoogleDrive = pydrive.drive.GoogleDrive(self.__gauth)
         self.get_latest_monthly_data(initializing=True)
         self.get_latest_daily_data(initializing=True)
+        self.get_second_latest_daily_data(initializing=True)
         self.__initialized = True
 
 
