@@ -2282,21 +2282,29 @@ async def cmd_yesterday_fleet(ctx: Context, *, fleet_name: str = None):
 
     yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
     if yesterday_tourney_data is None:
-        fleet_infos = []
+        yesterday_fleet_infos = []
     else:
-        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
+        yesterday_fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
 
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
+    if yesterday_fleet_infos:
+        if len(yesterday_fleet_infos) == 1:
+            fleet_info = yesterday_fleet_infos[0]
         else:
             use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
+            paginator = pagination.Paginator(ctx, fleet_name, yesterday_fleet_infos, fleet.get_fleet_search_details, use_pagination)
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
+            fleet_id = fleet_info[fleet.FLEET_KEY_NAME]
+            day_before_tourney_data = TOURNEY_DATA_CLIENT.get_second_latest_daily_data()
+            yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[fleet.FLEET_KEY_NAME] == fleet_id}
+            day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[fleet.FLEET_KEY_NAME] == fleet_id}
+            for yesterday_user_info in yesterday_users_data.values():
+                day_before_user_info = day_before_users_data.get(yesterday_user_info[user.USER_KEY_NAME], {})
+                day_before_star_count = day_before_user_info.get('AllianceScore', 0)
+                yesterday_user_info['StarValue'], _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
             as_embed = await server_settings.get_use_embeds(ctx)
-            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_tourney_data.users, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
+            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_tourney_data.users, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
             await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)

@@ -260,14 +260,18 @@ def __get_pvp_defense_stats(user_info: EntityInfo, **kwargs) -> Optional[str]:
 def __get_star_value(user_info: EntityInfo, max_tourney_battle_attempts: int = None, retrieved_at: datetime = None, is_in_tourney_fleet: bool = None, **kwargs) -> Optional[str]:
     result = None
     if is_in_tourney_fleet and tourney.is_tourney_running(retrieved_at):
-        star_value, source = get_star_value_from_user_info(user_info)
-        if star_value is not None:
-            if source < 0:
-                result = f'{star_value} (based on trophies)'
-            elif source > 0:
-                result = f'{star_value} (based on yesterday\'s stars)'
-            else:
-                result = str(star_value)
+        star_value = user_info.get('StarValue')
+        if star_value is None:
+            star_value, source = get_star_value_from_user_info(user_info)
+            if star_value is not None:
+                if source < 0:
+                    result = f'{star_value} (based on trophies)'
+                elif source > 0:
+                    result = f'{star_value} (based on yesterday\'s stars)'
+                else:
+                    result = str(star_value)
+        else:
+            result = str(star_value)
     return result
 
 
