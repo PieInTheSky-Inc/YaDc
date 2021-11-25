@@ -1825,7 +1825,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
 
         output = []
         footer = '\n\n'.join((
-            f'Properties displayed: Star value {emojis.star} Trophies {emojis.trophy} Player name (Fleet name)',
+            f'Properties displayed: Star value {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)',
             utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
         ))
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
@@ -1838,7 +1838,8 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             user_name = pss_top.escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
             fleet_name = pss_top.escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
             trophies = int(user_info.get('Trophy', 0))
-            division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} {emojis.trophy} {user_name} ({fleet_name})')
+            max_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
+            division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({max_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
 
         if max_trophies or min_star_value:
             division_text.insert(0, '_ _')
