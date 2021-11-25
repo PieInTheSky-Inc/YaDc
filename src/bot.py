@@ -1781,14 +1781,14 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             raise ValueError('The specified division is not valid.')
 
         if min_star_value is None:
-            if max_trophies is not None and max_trophies < 1000:
+            if max_trophies is not None and max_trophies < 100:
                 min_star_value, max_trophies = max_trophies, None
         else:
             if max_trophies is None:
-                if min_star_value >= 1000:
+                if min_star_value >= 100:
                     min_star_value, max_trophies = None, min_star_value
             else:
-                if min_star_value > max_trophies and min_star_value >= 1000:
+                if min_star_value > max_trophies and min_star_value >= 100:
                     min_star_value, max_trophies = max_trophies, min_star_value
 
         if min_star_value is not None and min_star_value < 0:
@@ -1921,14 +1921,14 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
         count = max_count
 
     if min_star_value is None:
-        if max_trophies is not None and max_trophies < 1000:
+        if max_trophies is not None and max_trophies < 100:
             min_star_value, max_trophies = max_trophies, None
     else:
         if max_trophies is None:
-            if min_star_value >= 1000:
+            if min_star_value >= 100:
                 min_star_value, max_trophies = None, min_star_value
         else:
-            if min_star_value > max_trophies and min_star_value >= 1000:
+            if min_star_value > max_trophies and min_star_value >= 100:
                 min_star_value, max_trophies = max_trophies, min_star_value
 
     if min_star_value is not None and min_star_value < 0:
