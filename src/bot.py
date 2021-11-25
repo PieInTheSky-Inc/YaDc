@@ -1750,7 +1750,7 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
         raise NotFound(f'Could not find a character or an item named `{full_name}`.')
 
 
-@BOT.command(name='targets', brief='Get top tournament targets')
+@BOT.group(name='targets', brief='Get top tournament targets', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN * 2, type=BucketType.user)
 async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, max_trophies: int = None) -> None:
     """
@@ -1770,6 +1770,135 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
       /targets a 3000 - Prints up to the top 100 players in division A with max 3k trophies
       /targets a 5 3000 - Prints up to the top 100 players in division A with a star value of at least 5 and max 3k trophies
     """
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
+        if not tourney.is_tourney_running():
+            raise Error('There\'s no tournament running currently.')
+
+        division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
+        if not division_design_id:
+            raise ValueError('The specified division is not valid.')
+
+        if min_star_value is None:
+            if max_trophies is not None and max_trophies < 1000:
+                min_star_value, max_trophies = max_trophies, None
+        else:
+            if max_trophies is None:
+                if min_star_value >= 1000:
+                    min_star_value, max_trophies = None, min_star_value
+            else:
+                if min_star_value > max_trophies and min_star_value >= 1000:
+                    min_star_value, max_trophies = max_trophies, min_star_value
+
+        if min_star_value is not None and min_star_value < 0:
+            raise ValueError('The minimum star count must not be negative.')
+
+        yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+        yesterday_data_is_tourney_data = tourney.is_tourney_running(utc_now=yesterday_tourney_data.retrieved_at)
+        current_fleet_data = {}
+        if not yesterday_data_is_tourney_data:
+            current_fleet_data = await pss_top.get_alliances_with_division()
+
+        if yesterday_tourney_data:
+            yesterday_user_infos = []
+            for yesterday_user_info in yesterday_tourney_data.users.values():
+                current_division_design_id = current_fleet_data.get(yesterday_user_info.get(fleet.FLEET_KEY_NAME), {}).get(pss_top.DIVISION_DESIGN_KEY_NAME)
+                yesterday_division_design_id = yesterday_user_info.get('Alliance', {}).get(pss_top.DIVISION_DESIGN_KEY_NAME, '0')
+                alliance_division_design_id = current_division_design_id or yesterday_division_design_id
+                division_matches = division_design_id == alliance_division_design_id
+                if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
+                    star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=yesterday_user_info.get('AllianceScore'))
+                    if not min_star_value or star_value >= min_star_value:
+                        yesterday_user_info['StarValue'] = star_value or 0
+                        yesterday_user_infos.append(yesterday_user_info)
+
+            yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0)), int(user_info.get('Trophy', 0))), reverse=True)
+            if not yesterday_user_infos:
+                error_text = f'No ships in division {division.upper()} match the criteria.'
+                if min_star_value:
+                    error_text += f'\nMinimum star value: {min_star_value}'
+                if max_trophies:
+                    error_text += f'\nMaximum Trophy count: {max_trophies}'
+                raise Error(error_text)
+
+            if len(yesterday_user_infos) > 100:
+                yesterday_user_infos = yesterday_user_infos[:100]
+
+            output = []
+            footer = f'Properties displayed: Star value (Current star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
+            historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            as_embed = await server_settings.get_use_embeds(ctx)
+            divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
+            division_text = []
+            for i, user_info in enumerate(yesterday_user_infos, 1):
+                star_value = user_info.get('StarValue', 0)
+                stars = int(user_info.get('AllianceScore', 0))
+                user_name = pss_top.escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+                fleet_name = pss_top.escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
+                trophies = int(user_info.get('Trophy', 0))
+                max_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
+                division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({max_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
+
+            if max_trophies or min_star_value:
+                division_text.insert(0, '_ _')
+                if max_trophies:
+                    division_text.insert(0, f'Maximum Trophy count: {max_trophies}')
+                if min_star_value:
+                    division_text.insert(0, f'Minimum star value: {min_star_value}')
+
+            if as_embed:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
+                division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
+                thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
+                embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                for i, embed_body in enumerate(embed_bodies):
+                    thumbnail_url = thumbnail_url if i == 0 else None
+                    embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                    output.append(embed)
+            else:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
+                division_title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
+                output.append(division_title)
+                output.extend(division_text)
+                output.append(utils.discord.ZERO_WIDTH_SPACE)
+
+            await utils.discord.post_output(ctx, output)
+        else:
+            raise Error('Could not retrieve yesterday\'s tournament data.')
+
+
+@cmd_targets.command(name='top', brief='Get top tournament targets')
+@cooldown(rate=RATE, per=COOLDOWN * 2, type=BucketType.user)
+async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_value: int = None, max_trophies: int = None) -> None:
+    """
+    Prints a list of the highest value tournament targets of all fleets in a specific division with a minimum star value and a maximum trophy count.
+
+    Usage:
+      /targets top [division] <count> <mininum star value> <maximum trophy count>
+
+    Parameters:
+      division:       Mandatory. The letter of the tournament division.
+      count:          Optional. The number of members to display per fleet. See below for defaults.
+      min_star_value: Optional. The minimum star value to be considered.
+      max_trophies:   Optional. The maximum trophy count to be considered.
+
+    Examples:
+      /targets top a - Prints the top 100 players per fleet in division A by highest star value
+      /targets top a 5 - Prints up to the top 5 players per fleet in division A by highest star value
+      /targets top a 5 5 - Prints up to the top 5 players per fleet in division A with a star value of at least 5
+      /targets top a 5 3000 - Prints up to the top 5 players per fleet in division A with max 3k trophies
+      /targets top a 5 5 3000 - Prints up to the top 5 players per fleet in division A with a star value of at least 5 and max 3k trophies
+
+    Notes:
+      The parameter 'count' will default depending on the division:
+        Division A: max 20
+        Division B: max 15
+        Division C: max 10
+        Division D: max 5
+    """
     __log_command_use(ctx)
     if not tourney.is_tourney_running():
         raise Error('There\'s no tournament running currently.')
@@ -1777,6 +1906,15 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
     division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
     if not division_design_id:
         raise ValueError('The specified division is not valid.')
+
+    max_count = lookups.DIVISION_MAX_COUNT_TARGETS_TOP[division_design_id]
+    if count:
+        if count < 0:
+            raise ValueError('The member count must not be a negative number.')
+        elif count > max_count:
+            raise ValueError(f'The maximum member count to be displayed for division {division.upper()} is {max_count}.')
+    else:
+        count = max_count
 
     if min_star_value is None:
         if max_trophies is not None and max_trophies < 1000:
@@ -1793,17 +1931,12 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
         raise ValueError('The minimum star count must not be negative.')
 
     yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-    yesterday_data_is_tourney_data = tourney.is_tourney_running(utc_now=yesterday_tourney_data.retrieved_at)
-    current_alliance_data = {}
-    if not yesterday_data_is_tourney_data:
-        current_alliance_data = await pss_top.get_alliances_with_division()
+    current_fleet_data = await pss_top.get_alliances_with_division()
 
     if yesterday_tourney_data:
         yesterday_user_infos = []
         for yesterday_user_info in yesterday_tourney_data.users.values():
-            current_division_design_id = current_alliance_data.get(yesterday_user_info.get('AllianceId'), {}).get('DivisionDesignId')
-            yesterday_division_design_id = yesterday_user_info.get('Alliance', {}).get('DivisionDesignId', '0')
-            alliance_division_design_id = current_division_design_id or yesterday_division_design_id
+            alliance_division_design_id = current_fleet_data.get(yesterday_user_info.get(fleet.FLEET_KEY_NAME), {}).get(pss_top.DIVISION_DESIGN_KEY_NAME, '0')
             division_matches = division_design_id == alliance_division_design_id
             if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
                 star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=yesterday_user_info.get('AllianceScore'))
@@ -1811,7 +1944,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
                     yesterday_user_info['StarValue'] = star_value or 0
                     yesterday_user_infos.append(yesterday_user_info)
 
-        yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0))), reverse=True)
+        yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0)), int(user_info.get('Trophy', 0))), reverse=True)
         if not yesterday_user_infos:
             error_text = f'No ships in division {division.upper()} match the criteria.'
             if min_star_value:
@@ -1820,51 +1953,65 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
                 error_text += f'\nMaximum Trophy count: {max_trophies}'
             raise Error(error_text)
 
-        if len(yesterday_user_infos) > 100:
-            yesterday_user_infos = yesterday_user_infos[:100]
+        yesterday_fleet_users_infos = {}
+        for user_info in yesterday_user_infos:
+            yesterday_fleet_users_infos.setdefault(user_info[fleet.FLEET_KEY_NAME], []).append(user_info)
 
-        output = []
-        footer = '\n\n'.join((
-            f'Properties displayed: Star value {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)',
-            utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
-        ))
+        for fleet_id, fleet_users_infos in yesterday_fleet_users_infos.items():
+            if count < len(fleet_users_infos):
+                yesterday_fleet_users_infos[fleet_id] = fleet_users_infos[:count]
+
+        footer = f'Properties displayed: Star value (Current star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
+        historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         as_embed = await server_settings.get_use_embeds(ctx)
         divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
-        division_text = []
-        for i, user_info in enumerate(yesterday_user_infos, 1):
-            star_value = user_info.get('StarValue', 0)
-            stars = int(user_info.get('AllianceScore', 0))
-            user_name = pss_top.escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
-            fleet_name = pss_top.escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
-            trophies = int(user_info.get('Trophy', 0))
-            max_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
-            division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({max_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
+        output_lines = []
+        for current_fleet_info in sorted(current_fleet_data.values(), key=lambda fleet_info: int(fleet_info.get('Score', 0)), reverse=True):
+            fleet_id = current_fleet_info[fleet.FLEET_KEY_NAME]
+            if fleet_id in yesterday_fleet_users_infos:
+                output_lines.append(f'**{current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
+                for i, yesterday_user_info in enumerate(yesterday_fleet_users_infos[fleet_id], 1):
+                    star_value = yesterday_user_info.get('StarValue', 0)
+                    stars = int(yesterday_user_info.get('AllianceScore', 0))
+                    user_name = pss_top.escape_markdown(yesterday_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+                    trophies = int(yesterday_user_info.get('Trophy', 0))
+                    highest_trophy = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
+                    output_lines.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({highest_trophy}) {emojis.trophy} {user_name}')
+                output_lines.append('')
 
-        if max_trophies or min_star_value:
-            division_text.insert(0, '_ _')
+        if count or max_trophies or min_star_value:
+            output_lines.insert(0, '_ _')
             if max_trophies:
-                division_text.insert(0, f'Maximum Trophy count: {max_trophies}')
+                output_lines.insert(0, f'Maximum Trophy count: {max_trophies}')
             if min_star_value:
-                division_text.insert(0, f'Minimum star value: {min_star_value}')
+                output_lines.insert(0, f'Minimum star value: {min_star_value}')
+            if count:
+                output_lines.insert(0, f'Top {count} members')
 
+        output = []
         if as_embed:
-            division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
+            if historic_data_note:
+                footer += f'\n\n{historic_data_note}'
+            division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet'
             thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
-            embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+            embed_bodies = utils.discord.create_posts_from_lines(output_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
             for i, embed_body in enumerate(embed_bodies):
                 thumbnail_url = thumbnail_url if i == 0 else None
                 embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                 output.append(embed)
         else:
-            division_title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
+            if historic_data_note:
+                footer += f'\n{historic_data_note}'
+            division_title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet**__'
             output.append(division_title)
-            output.extend(division_text)
+            output.extend(output_lines)
             output.append(utils.discord.ZERO_WIDTH_SPACE)
 
         await utils.discord.post_output(ctx, output)
     else:
         raise Error('Could not retrieve yesterday\'s tournament data.')
+
 
 
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
