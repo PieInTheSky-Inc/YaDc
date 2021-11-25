@@ -1795,6 +1795,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             raise ValueError('The minimum star count must not be negative.')
 
         yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+        last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
         yesterday_data_is_tourney_data = tourney.is_tourney_running(utc_now=yesterday_tourney_data.retrieved_at)
         current_fleet_data = {}
         if not yesterday_data_is_tourney_data:
@@ -1826,20 +1827,22 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
                 yesterday_user_infos = yesterday_user_infos[:100]
 
             output = []
-            footer = f'Properties displayed: Star value (Current star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
+            footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
             historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             as_embed = await server_settings.get_use_embeds(ctx)
             divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
             division_text = []
-            for i, user_info in enumerate(yesterday_user_infos, 1):
-                star_value = user_info.get('StarValue', 0)
-                stars = int(user_info.get('AllianceScore', 0))
-                user_name = pss_top.escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
-                fleet_name = pss_top.escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
-                trophies = int(user_info.get('Trophy', 0))
-                max_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
-                division_text.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({max_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
+            for i, yesterday_user_info in enumerate(yesterday_user_infos, 1):
+                user_id = yesterday_user_info[user.USER_KEY_NAME]
+                star_value = yesterday_user_info.get('StarValue', 0)
+                stars = int(yesterday_user_info.get('AllianceScore', 0))
+                user_name = pss_top.escape_markdown(yesterday_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+                fleet_name = pss_top.escape_markdown(yesterday_user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
+                trophies = int(yesterday_user_info.get('Trophy', 0))
+                highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
+                last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
+                division_text.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
 
             if max_trophies or min_star_value:
                 division_text.insert(0, '_ _')
@@ -1932,6 +1935,7 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
         raise ValueError('The minimum star count must not be negative.')
 
     yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
+    last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
     current_fleet_data = await pss_top.get_alliances_with_division()
 
     if yesterday_tourney_data:
@@ -1962,7 +1966,7 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
             if count < len(fleet_users_infos):
                 yesterday_fleet_users_infos[fleet_id] = fleet_users_infos[:count]
 
-        footer = f'Properties displayed: Star value (Current star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
+        footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
         historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         as_embed = await server_settings.get_use_embeds(ctx)
@@ -1973,12 +1977,14 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
             if fleet_id in yesterday_fleet_users_infos:
                 output_lines.append(f'**{current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
                 for i, yesterday_user_info in enumerate(yesterday_fleet_users_infos[fleet_id], 1):
+                    user_id = yesterday_user_info[user.USER_KEY_NAME]
                     star_value = yesterday_user_info.get('StarValue', 0)
                     stars = int(yesterday_user_info.get('AllianceScore', 0))
                     user_name = pss_top.escape_markdown(yesterday_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
                     trophies = int(yesterday_user_info.get('Trophy', 0))
-                    highest_trophy = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
-                    output_lines.append(f'**{i}.** {star_value} ({stars}) {emojis.star} {trophies} ({highest_trophy}) {emojis.trophy} {user_name}')
+                    highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
+                    last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
+                    output_lines.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}')
                 output_lines.append('')
 
         if count or max_trophies or min_star_value:
