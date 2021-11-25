@@ -193,10 +193,13 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
             divisions_texts.append((division_design_id, __get_division_stars_as_text(fleet_infos)))
 
         result = []
-        footer = utils.datetime.get_historic_data_note(retrieved_date)
+        footer = f'Properties displayed: Rank. Stars (Difference to next) Fleet name (Total trophies {emojis.trophy}, Member count {emojis.members})'
+        historic_data_note = utils.datetime.get_historic_data_note(retrieved_date)
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         for division_design_id, division_text in divisions_texts:
             if as_embed:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
                 division_title = __get_division_title(division_design_id, divisions_designs_infos, False, retrieved_date)
                 thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
                 embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
@@ -205,6 +208,8 @@ async def get_division_stars(ctx: Context, division: str = None, fleet_data: dic
                     embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     result.append(embed)
             else:
+                if historic_data_note:
+                    footer += f'\n{historic_data_note}'
                 division_title = __get_division_title(division_design_id, divisions_designs_infos, True, retrieved_date)
                 result.append(division_title)
                 result.extend(division_text)
