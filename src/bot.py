@@ -1823,8 +1823,12 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
                     error_text += f'\nMaximum Trophy count: {max_trophies}'
                 raise Error(error_text)
 
-            if len(yesterday_user_infos) > 100:
+            yesterday_user_infos_count = len(yesterday_user_infos)
+            if yesterday_user_infos_count >= 100:
                 yesterday_user_infos = yesterday_user_infos[:100]
+                count_display_text = f'Displaying the first 100 of {yesterday_user_infos_count} matching targets.'
+            else:
+                count_display_text = None
 
             output = []
             footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
@@ -1832,7 +1836,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             as_embed = await server_settings.get_use_embeds(ctx)
             divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
-            division_text = []
+            output_lines = []
             for i, yesterday_user_info in enumerate(yesterday_user_infos, 1):
                 user_id = yesterday_user_info[user.USER_KEY_NAME]
                 star_value = yesterday_user_info.get('StarValue', 0)
@@ -1842,31 +1846,33 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
                 trophies = int(yesterday_user_info.get('Trophy', 0))
                 highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
                 last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
-                division_text.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
+                output_lines.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
 
-            if max_trophies or min_star_value:
-                division_text.insert(0, '_ _')
+            if max_trophies or min_star_value or count_display_text:
+                output_lines.insert(0, '_ _')
                 if max_trophies:
-                    division_text.insert(0, f'Maximum Trophy count: {max_trophies}')
+                    output_lines.insert(0, f'Maximum Trophy count: {max_trophies}')
                 if min_star_value:
-                    division_text.insert(0, f'Minimum star value: {min_star_value}')
+                    output_lines.insert(0, f'Minimum star value: {min_star_value}')
+                if count_display_text:
+                    output_lines.insert(0, count_display_text)
 
             if as_embed:
                 if historic_data_note:
                     footer += f'\n\n{historic_data_note}'
-                division_title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
+                title = f'{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
                 thumbnail_url = await sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
-                embed_bodies = utils.discord.create_posts_from_lines(division_text, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                embed_bodies = utils.discord.create_posts_from_lines(output_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
                 for i, embed_body in enumerate(embed_bodies):
                     thumbnail_url = thumbnail_url if i == 0 else None
-                    embed = utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                    embed = utils.discord.create_embed(title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
                     output.append(embed)
             else:
                 if historic_data_note:
                     footer += f'\n\n{historic_data_note}'
-                division_title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
-                output.append(division_title)
-                output.extend(division_text)
+                title = f'__**{divisions_designs_infos[division_design_id][pss_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
+                output.append(title)
+                output.extend(output_lines)
                 output.append(utils.discord.ZERO_WIDTH_SPACE)
 
             await utils.discord.post_output(ctx, output)
