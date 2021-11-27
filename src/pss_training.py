@@ -101,6 +101,7 @@ def __get_required_research(training_info: EntityInfo, trainings_data: EntitiesD
 
 def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, **kwargs) -> Optional[str]:
     add_line_breaks = kwargs.get('add_line_breaks', False)
+    min_guaranteed_stat = int(training_info.get('MinimumGuarantee', 0))
     chances = []
     max_chance_value = 0
     result = []
@@ -110,10 +111,17 @@ def __get_stat_chances(training_info: EntityInfo, trainings_data: EntitiesData, 
             chances.append(stat_chance)
 
     if chances:
-        chance_values = [stat_chance[2] for stat_chance in chances]
-        max_chance_value = max(chance_values)
-        result = [__get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] == max_chance_value]
-        result.extend([__get_stat_chance_as_text(*stat_chance) for stat_chance in chances if stat_chance[2] != max_chance_value])
+        max_chance_value = max(stat_chance[2] for stat_chance in chances)
+        sorted_chances = []
+        for stat_emoji, operator, stat_chance, stat_unit, min_stat in chances:
+            if stat_chance == max_chance_value:
+                if min_guaranteed_stat:
+                    operator = '-'
+                    min_stat = min_guaranteed_stat
+                sorted_chances.insert(0, (stat_emoji, operator, stat_chance, stat_unit, min_stat))
+            else:
+                sorted_chances.append((stat_emoji, operator, stat_chance, stat_unit, min_stat))
+        result = [__get_stat_chance_as_text(*stat_chance) for stat_chance in sorted_chances]
 
     xp_stat_chance = __get_stat_chance('Xp', training_info, guaranteed=True)
     result.append(__get_stat_chance_as_text(*xp_stat_chance))
@@ -211,7 +219,7 @@ def __get_room_names(training_room_type: int) -> Tuple[Optional[str], Optional[s
     return lookups.TRAINING_RANK_ROOM_LOOKUP.get(training_room_type, (None, None))
 
 
-def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool = False) -> Optional[Tuple[str, str, str, str]]:
+def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: bool = False) -> Optional[Tuple[str, str, str, str, int]]:
     if stat_name and training_info:
         chance_name = f'{stat_name}Chance'
         if chance_name in training_info.keys():
@@ -220,12 +228,13 @@ def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: boo
                 stat_emoji = lookups.STAT_EMOJI_LOOKUP[stat_name]
                 stat_unit = lookups.STAT_UNITS_LOOKUP[stat_name]
                 operator = '' if guaranteed else '\u2264'
-                return (stat_emoji, operator, stat_chance, stat_unit)
+                return (stat_emoji, operator, stat_chance, stat_unit, 0)
     return None
 
 
-def __get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str) -> str:
-    return f'{stat_emoji} {operator}{stat_chance}{stat_unit}'
+def __get_stat_chance_as_text(stat_emoji: str, operator: str, stat_chance: str, stat_unit: str, min_guarantee: int = 0) -> str:
+    min_stat = min_guarantee or ''
+    return f'{stat_emoji} {min_stat}{operator}{stat_chance}{stat_unit}'
 
 
 
