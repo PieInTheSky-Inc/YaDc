@@ -281,7 +281,12 @@ STAT_TYPES_LOOKUP: Dict[str, str] = {
 }
 
 
-STAT_UNITS_LOOKUP: Dict[str, str] = {
+STAT_UNITS_ENHANCEMENT_MODIFIER_LOOKUP: Dict[str, str] = {
+    'Ability': '%',
+}
+
+
+STAT_UNITS_TRAINING_MODIFIER_LOOKUP: Dict[str, str] = {
     'Ability': '%',
     'Attack': '%',
     'Engine': '%',
