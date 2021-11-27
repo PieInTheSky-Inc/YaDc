@@ -657,7 +657,7 @@ class EntityDetailsCollection():
                 full_embed_length = len(title) + len(footer)
                 for i, field in enumerate(fields, 1):
                     full_embed_length += len(field[0]) + len(field[1])
-                    if i == len(fields) or full_embed_length + len(fields[i][0]) + len(fields[i][1]) > 6000:
+                    if i == 25 or i == len(fields) or full_embed_length + len(fields[i][0]) + len(fields[i][1]) > 6000:
                         break
                 if i == len(fields):
                     embed = utils.discord.create_embed(title, colour=colour, fields=fields[:i], footer=footer, thumbnail_url=custom_thumbnail_url)
