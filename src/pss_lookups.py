@@ -186,6 +186,10 @@ ITEM_SUB_TYPES_TO_GET_PARENTS_FOR: List[str] = [
 ]
 
 
+MODULE_TYPE_TO_STAT_LOOKUP: Dict[str, str] = {
+    'Turret': 'Attack'
+}
+
 
 PROGRESSION_TYPES: Dict[str, float] = {
     'Linear': 1.0,
@@ -288,7 +292,12 @@ STAT_TYPES_LOOKUP: Dict[str, str] = {
 }
 
 
-STAT_UNITS_LOOKUP: Dict[str, str] = {
+STAT_UNITS_ENHANCEMENT_MODIFIER_LOOKUP: Dict[str, str] = {
+    'Ability': '%',
+}
+
+
+STAT_UNITS_TRAINING_MODIFIER_LOOKUP: Dict[str, str] = {
     'Ability': '%',
     'Attack': '%',
     'Engine': '%',
