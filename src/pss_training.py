@@ -226,7 +226,7 @@ def __get_stat_chance(stat_name: str, training_info: EntityInfo, guaranteed: boo
             stat_chance = int(training_info[chance_name])
             if stat_chance > 0:
                 stat_emoji = lookups.STAT_EMOJI_LOOKUP[stat_name]
-                stat_unit = lookups.STAT_UNITS_LOOKUP[stat_name]
+                stat_unit = lookups.STAT_UNITS_TRAINING_MODIFIER_LOOKUP[stat_name]
                 operator = '' if guaranteed else '\u2264'
                 return (stat_emoji, operator, stat_chance, stat_unit, 0)
     return None

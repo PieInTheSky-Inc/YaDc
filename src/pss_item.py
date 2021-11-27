@@ -457,13 +457,9 @@ def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings
 
 
 def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
-    bonus_type = item_info['EnhancementType']
-    bonus_value = item_info['EnhancementValue']
-    if bonus_type.lower() == 'none':
-        result = None
-    else:
-        result = f'{bonus_type} +{bonus_value}'
-    return result
+    enhancements = __get_all_enhancements(item_info)
+    result = ', '.join(f'{__get_pretty_enhancement(*enhancement)}' for enhancement in enhancements)
+    return result or None
 
 
 def __get_item_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
@@ -647,6 +643,23 @@ def __fix_item_name(item_name: str) -> str:
     return result
 
 
+def __get_all_enhancements(item_info: EntityInfo) -> List[Tuple[str, float]]:
+    result = []
+    bonus_type = entity.get_property_from_entity_info(item_info, 'EnhancementType')
+    if bonus_type:
+        bonus_value = entity.get_property_from_entity_info(item_info, 'EnhancementValue')
+        if bonus_value:
+            result.append((str(bonus_type), float(bonus_value)))
+
+    module_type = entity.get_property_from_entity_info(item_info, 'ModuleType')
+    if module_type and module_type in lookups.MODULE_TYPE_TO_STAT_LOOKUP:
+        module_stat = lookups.MODULE_TYPE_TO_STAT_LOOKUP.get(module_type)
+        module_argument = entity.get_property_from_entity_info(item_info, 'ModuleArgument')
+        if module_argument:
+            result.append((module_stat, float(module_argument) / 10))
+    return result
+
+
 def __get_allowed_item_names(items_data: EntitiesData, not_allowed_item_names: List[str]) -> List[str]:
     result = []
     for item_design_data in items_data.values():
@@ -707,6 +720,12 @@ def __get_item_infos_by_name(item_name: str, items_data: EntitiesData, return_be
         if get_best_match:
             result = [result[0]]
 
+    return result
+
+
+def __get_pretty_enhancement(enhancement_type: str, enhancement_value: float) -> str:
+    modifier = lookups.STAT_UNITS_ENHANCEMENT_MODIFIER_LOOKUP.get(enhancement_type) or ''
+    result = f'{enhancement_type} +{enhancement_value}{modifier}'
     return result
 
 
