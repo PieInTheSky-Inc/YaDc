@@ -652,12 +652,11 @@ def __get_all_enhancements(item_info: EntityInfo) -> List[Tuple[str, float]]:
             result.append((str(bonus_type), float(bonus_value)))
 
     module_type = entity.get_property_from_entity_info(item_info, 'ModuleType')
-    if module_type and module_type.lower() == 'turret':
+    if module_type and module_type in lookups.MODULE_TYPE_TO_STAT_LOOKUP:
         module_stat = lookups.MODULE_TYPE_TO_STAT_LOOKUP.get(module_type)
-        if module_stat:
-            module_argument = entity.get_property_from_entity_info(item_info, 'ModuleArgument')
-            if module_argument:
-                result.append((module_stat, float(module_argument) / 10))
+        module_argument = entity.get_property_from_entity_info(item_info, 'ModuleArgument')
+        if module_argument:
+            result.append((module_stat, float(module_argument) / 10))
     return result
 
 
