@@ -819,14 +819,16 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Slot', True, transform_function=__get_item_slot),
             entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, embed_only=True, for_embed=True),
             entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, text_only=True),
-            entity.EntityDetailProperty('Market price', True, transform_function=__get_pretty_market_price)
+            entity.EntityDetailProperty('Market price', True, transform_function=__get_pretty_market_price),
+            entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
         ],
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
             entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
             entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
             entity.EntityDetailProperty('Can sell', False, transform_function=__get_can_sell, text_only=True),
-            entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price, embed_only=True)
+            entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price, embed_only=True),
+            entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
         ],
         properties_mini=[]
     ),
