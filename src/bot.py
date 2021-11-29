@@ -2316,7 +2316,7 @@ async def cmd_yesterday_fleet(ctx: Context, *, fleet_name: str = None):
                 day_before_star_count = day_before_user_info.get('AllianceScore', 0)
                 yesterday_user_info['StarValue'], _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
             as_embed = await server_settings.get_use_embeds(ctx)
-            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_tourney_data.users, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
+            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
             await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
             for file_path in file_paths:
                 os.remove(file_path)
