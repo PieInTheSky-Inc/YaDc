@@ -158,9 +158,8 @@ async def __get_situation_requirements(situation_info: EntityInfo, situations_da
     requirements = utils.parse.requirement_string(requirement_str)
     result = None
     if len(requirements) > 1 and all(entity_type == 'shiplevel' for entity_type, _, _, _ in requirements):
-        min_level = min(entity_amount for _, _, entity_amount, _ in requirements)
-        max_level = max(entity_amount for _, _, entity_amount, _ in requirements)
-        result = f'Ship level {min_level} to {max_level} (inclusive)'
+        levels = [entity_amount for _, _, entity_amount, _ in requirements]
+        result = f'Ship level {min(levels)} to {max(levels)} (inclusive)'
     else:
         results = []
         for entity_type, entity_id, entity_amount, entity_amount_modifier in requirements:
