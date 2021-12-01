@@ -175,7 +175,7 @@ async def __get_situation_requirements(situation_info: EntityInfo, situations_da
                 details = f'Ship level {entity_amount}{resources.get_resource(resource_key)}'
 
             if entity_details:
-                details = "".join(await entity_details.get_details_as_text(entity.EntityDetailsType.MINI, for_embed=for_embed))
+                details = ''.join(await entity_details.get_details_as_text(entity.EntityDetailsType.MINI, for_embed=for_embed))
             if details:
                 results.append(details)
         result = utils.format.get_and_list(results, emphasis='**') or None
