@@ -27,6 +27,7 @@ import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
+from pss_entity import EntitiesData, EntityInfo
 from pss_exception import Error, InvalidParameterValueError, MaintenanceError, MissingParameterError, NotFound, ParameterTypeError
 import pss_fleet as fleet
 import pss_gm as gm
@@ -1753,7 +1754,7 @@ async def cmd_stats(ctx: Context, level: str = None, *, name: str = None):
 
 @BOT.group(name='targets', brief='Get top tournament targets', invoke_without_command=True)
 @cooldown(rate=RATE, per=COOLDOWN * 2, type=BucketType.user)
-async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, max_trophies: int = None) -> None:
+async def cmd_targets(ctx: Context, division: str, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
     """
     Prints a list of highest value tournament targets with a minimum star value and a maximum trophy count.
 
@@ -1762,66 +1763,38 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
 
     Parameters:
       division:       Mandatory. The letter of the tournament division.
-      min_star_value: Optional. The minimum star value to be considered.
-      max_trophies:   Optional. The maximum trophy count to be considered.
+      star_value:     Optional. The minimum (and maximum) star value to be considered. Accepts a range.
+      trophies:       Optional. The (minimum and) maximum trophy count to be considered. Accepts a range.
+      max_trophies:   Optional. The highest trophy count a player ever had for them to be considered.
 
     Examples:
       /targets a - Prints the top 100 players in division A by highest star value
       /targets a 5 - Prints up to the top 100 players in division A with a star value of at least 5
-      /targets a 3000 - Prints up to the top 100 players in division A with max 3k trophies
-      /targets a 5 3000 - Prints up to the top 100 players in division A with a star value of at least 5 and max 3k trophies
+      /targets a 5 3000 - Prints up to the top 100 players in division A with a star value of at least 5 and max 3k trophies currently
+      /targets a 5 3000 5000 - Prints up to the top 100 players in division A with a star value of at least 5, max 3k trophies currently and with a highest trophy count of 5k
+      /targets a 5-10 3000-4000 - Prints up to the top 100 players in division A with a star value of 5 to 10 and 3k to 4k trophies currently
+      /targets a 5-10 3000-4000 5000 - Prints up to the top 100 players in division A with a star value of 5 to 10 and 3k to 4k trophies currently and with a highest trophy count of 5k
     """
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
-        if not tourney.is_tourney_running():
-            raise Error('There\'s no tournament running currently.')
+        #if not tourney.is_tourney_running():
+        #    raise Error('There\'s no tournament running currently.')
 
         division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
         if not division_design_id:
             raise ValueError('The specified division is not valid.')
 
-        if min_star_value is None:
-            if max_trophies is not None and max_trophies < 100:
-                min_star_value, max_trophies = max_trophies, None
-        else:
-            if max_trophies is None:
-                if min_star_value >= 100:
-                    min_star_value, max_trophies = None, min_star_value
-            else:
-                if min_star_value > max_trophies and min_star_value >= 100:
-                    min_star_value, max_trophies = max_trophies, min_star_value
-
-        if min_star_value is not None and min_star_value < 0:
-            raise ValueError('The minimum star count must not be negative.')
+        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = pss_top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
         yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
         last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
-        yesterday_data_is_tourney_data = tourney.is_tourney_running(utc_now=yesterday_tourney_data.retrieved_at)
-        current_fleet_data = {}
-        if not yesterday_data_is_tourney_data:
-            current_fleet_data = await pss_top.get_alliances_with_division()
+        current_fleet_data = await pss_top.get_alliances_with_division()
 
         if yesterday_tourney_data:
-            yesterday_user_infos = []
-            for yesterday_user_info in yesterday_tourney_data.users.values():
-                current_division_design_id = current_fleet_data.get(yesterday_user_info.get(fleet.FLEET_KEY_NAME), {}).get(pss_top.DIVISION_DESIGN_KEY_NAME)
-                yesterday_division_design_id = yesterday_user_info.get('Alliance', {}).get(pss_top.DIVISION_DESIGN_KEY_NAME, '0')
-                alliance_division_design_id = current_division_design_id or yesterday_division_design_id
-                division_matches = division_design_id == alliance_division_design_id
-                if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
-                    star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=yesterday_user_info.get('AllianceScore'))
-                    if not min_star_value or star_value >= min_star_value:
-                        yesterday_user_info['StarValue'] = star_value or 0
-                        yesterday_user_infos.append(yesterday_user_info)
-
-            yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0)), int(user_info.get('Trophy', 0))), reverse=True)
+            yesterday_user_infos = pss_top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
             if not yesterday_user_infos:
-                error_text = f'No ships in division {division.upper()} match the criteria.'
-                if min_star_value:
-                    error_text += f'\nMinimum star value: {min_star_value}'
-                if max_trophies:
-                    error_text += f'\nMaximum Trophy count: {max_trophies}'
-                raise Error(error_text)
+                error_lines = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
+                raise Error('\n'.join(error_lines))
 
             yesterday_user_infos_count = len(yesterday_user_infos)
             if yesterday_user_infos_count >= 100:
@@ -1836,24 +1809,12 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             as_embed = await server_settings.get_use_embeds(ctx)
             divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
-            output_lines = []
-            for i, yesterday_user_info in enumerate(yesterday_user_infos, 1):
-                user_id = yesterday_user_info[user.USER_KEY_NAME]
-                star_value = yesterday_user_info.get('StarValue', 0)
-                stars = int(yesterday_user_info.get('AllianceScore', 0))
-                user_name = pss_top.escape_markdown(yesterday_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
-                fleet_name = pss_top.escape_markdown(yesterday_user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
-                trophies = int(yesterday_user_info.get('Trophy', 0))
-                highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
-                last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
-                output_lines.append(f'**{i}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})')
+            output_lines = pss_top.make_target_output_lines(yesterday_user_infos)
 
-            if max_trophies or min_star_value or count_display_text:
+            if criteria_lines or count_display_text:
                 output_lines.insert(0, '_ _')
-                if max_trophies:
-                    output_lines.insert(0, f'Maximum Trophy count: {max_trophies}')
-                if min_star_value:
-                    output_lines.insert(0, f'Minimum star value: {min_star_value}')
+                for criteria_line in reversed(criteria_lines):
+                    output_lines.insert(0, criteria_line)
                 if count_display_text:
                     output_lines.insert(0, count_display_text)
 
@@ -1882,7 +1843,7 @@ async def cmd_targets(ctx: Context, division: str, min_star_value: int = None, m
 
 @cmd_targets.command(name='top', brief='Get top tournament targets')
 @cooldown(rate=RATE, per=COOLDOWN * 2, type=BucketType.user)
-async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_value: int = None, max_trophies: int = None) -> None:
+async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
     """
     Prints a list of the highest value tournament targets of all fleets in a specific division with a minimum star value and a maximum trophy count.
 
@@ -1892,15 +1853,18 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
     Parameters:
       division:       Mandatory. The letter of the tournament division.
       count:          Optional. The number of members to display per fleet. See below for defaults.
-      min_star_value: Optional. The minimum star value to be considered.
-      max_trophies:   Optional. The maximum trophy count to be considered.
+      star_value:     Optional. The minimum (and maximum) star value to be considered. Accepts a range.
+      trophies:       Optional. The (minimum and) maximum trophy count to be considered. Accepts a range.
+      max_trophies:   Optional. The highest trophy count a player ever had for them to be considered.
 
     Examples:
-      /targets top a - Prints the top 100 players per fleet in division A by highest star value
+      /targets top a - Prints the top 20 players per fleet in division A by highest star value
       /targets top a 5 - Prints up to the top 5 players per fleet in division A by highest star value
-      /targets top a 5 5 - Prints up to the top 5 players per fleet in division A with a star value of at least 5
-      /targets top a 5 3000 - Prints up to the top 5 players per fleet in division A with max 3k trophies
-      /targets top a 5 5 3000 - Prints up to the top 5 players per fleet in division A with a star value of at least 5 and max 3k trophies
+      /targets top a 5 4 - Prints up to the top 5 players per fleet in division A with a star value of at least 4
+      /targets top a 5 4 3000 - Prints up to the top 5 players per fleet in division A with a star value of at least 4 and max 3k trophies currently
+      /targets top a 5 4 3000 5000 - Prints up to the top 5 players per fleet in division A with a star value of at least 4, max 3k trophies currently and with a highest trophy count of 5k
+      /targets top a 5 4-10 3000-4000 - Prints up to the top 5 players per fleet in division A with a star value of 4 to 10 and 3k to 4k trophies currently
+      /targets top a 5 4-10 3000-4000 5000 - Prints up to the top 5 players per fleet in division A with a star value of 4 to 10 and 3k to 4k trophies currently and with a highest trophy count of 5k
 
     Notes:
       The parameter 'count' is constrained depending on the division:
@@ -1910,8 +1874,8 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
         Division D: max 3
     """
     __log_command_use(ctx)
-    if not tourney.is_tourney_running():
-        raise Error('There\'s no tournament running currently.')
+    #if not tourney.is_tourney_running():
+    #    raise Error('There\'s no tournament running currently.')
 
     division_design_id = lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
     if not division_design_id:
@@ -1926,43 +1890,17 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
     else:
         count = max_count
 
-    if min_star_value is None:
-        if max_trophies is not None and max_trophies < 100:
-            min_star_value, max_trophies = max_trophies, None
-    else:
-        if max_trophies is None:
-            if min_star_value >= 100:
-                min_star_value, max_trophies = None, min_star_value
-        else:
-            if min_star_value > max_trophies and min_star_value >= 100:
-                min_star_value, max_trophies = max_trophies, min_star_value
-
-    if min_star_value is not None and min_star_value < 0:
-        raise ValueError('The minimum star count must not be negative.')
+    criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = pss_top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
     yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
     last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
     current_fleet_data = await pss_top.get_alliances_with_division()
 
     if yesterday_tourney_data:
-        yesterday_user_infos = []
-        for yesterday_user_info in yesterday_tourney_data.users.values():
-            alliance_division_design_id = current_fleet_data.get(yesterday_user_info.get(fleet.FLEET_KEY_NAME), {}).get(pss_top.DIVISION_DESIGN_KEY_NAME, '0')
-            division_matches = division_design_id == alliance_division_design_id
-            if division_matches and (not max_trophies or max_trophies >= int(yesterday_user_info.get('Trophy', 0))):
-                star_value, _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=yesterday_user_info.get('AllianceScore'))
-                if not min_star_value or star_value >= min_star_value:
-                    yesterday_user_info['StarValue'] = star_value or 0
-                    yesterday_user_infos.append(yesterday_user_info)
-
-        yesterday_user_infos = sorted(yesterday_user_infos, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0)), int(user_info.get('Trophy', 0))), reverse=True)
+        yesterday_user_infos = pss_top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
         if not yesterday_user_infos:
-            error_text = f'No ships in division {division.upper()} match the criteria.'
-            if min_star_value:
-                error_text += f'\nMinimum star value: {min_star_value}'
-            if max_trophies:
-                error_text += f'\nMaximum Trophy count: {max_trophies}'
-            raise Error(error_text)
+            error_text = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
+            raise Error('\n'.join(error_text))
 
         yesterday_fleet_users_infos = {}
         for user_info in yesterday_user_infos:
@@ -1984,27 +1922,13 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
             fleet_id = current_fleet_info[fleet.FLEET_KEY_NAME]
             if fleet_id in yesterday_fleet_users_infos:
                 output_lines.append(f'**{fleet_rank}. {current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
-                for user_rank, yesterday_user_info in enumerate(yesterday_fleet_users_infos[fleet_id], 1):
-                    user_id = yesterday_user_info[user.USER_KEY_NAME]
-                    star_value = yesterday_user_info.get('StarValue', 0)
-                    stars = int(yesterday_user_info.get('AllianceScore', 0))
-                    user_name = pss_top.escape_markdown(yesterday_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
-                    trophies = int(yesterday_user_info.get('Trophy', 0))
-                    highest_trophies = int(yesterday_user_info.get('HighestTrophy', 0)) or '-'
-                    last_month_stars = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
-                    line = f'**{user_rank}.** {star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}'
-                    if user_rank > 1:
-                        output_lines.append(line)
-                    else:
-                        output_lines[-1] += f'\n{line}'
+                output_lines.extend(pss_top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id]))
                 output_lines.append('')
 
-        if count or max_trophies or min_star_value:
+        if criteria_lines or count:
             output_lines.insert(0, '_ _')
-            if max_trophies:
-                output_lines.insert(0, f'Maximum Trophy count: {max_trophies}')
-            if min_star_value:
-                output_lines.insert(0, f'Minimum star value: {min_star_value}')
+            for criteria_line in reversed(criteria_lines):
+                output_lines.insert(0, criteria_line)
             if count:
                 output_lines.insert(0, f'Top {count} members')
 
@@ -2030,7 +1954,6 @@ async def cmd_targets(ctx: Context, division: str, count: int = None, min_star_v
         await utils.discord.post_output(ctx, output)
     else:
         raise Error('Could not retrieve yesterday\'s tournament data.')
-
 
 
 @BOT.command(name='time', brief='Get PSS stardate & Melbourne time')
