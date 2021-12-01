@@ -503,6 +503,24 @@ def __get_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data:
     return result
 
 
+def __get_requirements(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
+    requirement_string = entity.get_property_from_entity_info(item_info, 'RequirementString')
+    result = None
+    if requirement_string:
+        results = []
+        requirements = utils.parse.requirement_string(requirement_string)
+        for entity_type, _, entity_amount, entity_amount_modifier in requirements:
+            details = None
+            if entity_type == 'shiplevel':
+                resource_key = f'AMOUNTMODIFIER{entity_amount_modifier}'
+                details = f'Ship level {entity_amount}{resources.get_resource(resource_key)}'
+
+            if details:
+                results.append(details)
+        result = utils.format.get_and_list(results, emphasis='**') or None
+    return result
+
+
 def __get_title_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     value = kwargs.get('entity_property')
     if value:
@@ -754,7 +772,7 @@ def __create_base_details_from_info(item_info: EntityInfo, items_data: EntitiesD
 
 def __create_base_details_collection_from_infos(items_infos: List[EntityInfo], items_data: EntitiesData, trainings_data: EntitiesData) -> entity.EntityDetailsCollection:
     base_details = __create_base_details_list_from_infos(items_infos, items_data, trainings_data)
-    result = entity.EntityDetailsCollection(base_details, big_set_threshold=2)
+    result = entity.EntityDetailsCollection(base_details, big_set_threshold=3)
     return result
 
 
@@ -840,6 +858,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, text_only=True),
             entity.EntityDetailProperty('Market price', True, transform_function=__get_pretty_market_price),
             entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
+            entity.EntityDetailProperty('Requirements', True, entity_property_name='RequirementString', transform_function=__get_requirements),
         ],
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),

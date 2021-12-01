@@ -50,6 +50,12 @@ def entity_string(entity_str: str, default_amount: str = '1', default_type: str 
     entity_type = entity_type.strip() if entity_type else default_type
     entity_id = entity_id.strip() if entity_id else None
     entity_amount = int(entity_amount.strip()) if entity_amount else None
+    if entity_type == entity_str:
+        try:
+            int(entity_id)
+        except:
+            entity_type = entity_id
+            entity_id = None
 
     return (entity_type, entity_id, entity_amount, entity_amount_modifier)
 
@@ -80,7 +86,14 @@ def pss_datetime(pss_datetime: str) -> _datetime:
     return result
 
 
-def requirement_string(requirement_str: str) -> List[Tuple[str, str, str]]:
+def requirement_string(requirement_str: str) -> List[Tuple[str, str, int, str]]:
+    """
+    Parses an entity string (e.g. from ingredients) and returns a list of:
+    - Entity type
+    - Entity id
+    - Entity amount
+    - Amount modifier
+    """
     entities_strs = requirement_str.split('&&')
     result = [entity_string(entity_str.strip()) for entity_str in entities_strs]
     return result
