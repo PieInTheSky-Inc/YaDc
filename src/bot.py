@@ -1804,12 +1804,11 @@ async def cmd_targets(ctx: Context, division: str, star_value: str = None, troph
                 count_display_text = None
 
             output = []
-            footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
-            historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             as_embed = await server_settings.get_use_embeds(ctx)
             divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
-            output_lines = pss_top.make_target_output_lines(yesterday_user_infos)
+            footer, output_lines = pss_top.make_target_output_lines(yesterday_user_infos)
+            historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
 
             if criteria_lines or count_display_text:
                 output_lines.insert(0, '_ _')
@@ -1910,7 +1909,6 @@ async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_v
             if count < len(fleet_users_infos):
                 yesterday_fleet_users_infos[fleet_id] = fleet_users_infos[:count]
 
-        footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
         historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
         as_embed = await server_settings.get_use_embeds(ctx)
@@ -1922,7 +1920,8 @@ async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_v
             fleet_id = current_fleet_info[fleet.FLEET_KEY_NAME]
             if fleet_id in yesterday_fleet_users_infos:
                 output_lines.append(f'**{fleet_rank}. {current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
-                output_lines.extend(pss_top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id]))
+                footer, text_lines = pss_top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id])
+                output_lines.extend(text_lines)
                 output_lines.append('')
 
         if criteria_lines or count:

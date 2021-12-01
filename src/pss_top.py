@@ -348,6 +348,7 @@ def is_valid_division_letter(div_letter: str) -> bool:
 
 
 def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
+    footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
     result = []
     for user_rank, user_info in enumerate(user_infos, 1):
         player_star_value = user_info.get('StarValue', 0)
@@ -361,7 +362,7 @@ def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
             result.append(line)
         else:
             result[-1] += f'\n{line}'
-    return result
+    return footer, result
 
 
 def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
