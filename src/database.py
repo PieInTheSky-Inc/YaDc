@@ -469,20 +469,19 @@ async def create_schema() -> bool:
 async def connect() -> bool:
     __log_db_function_enter('connect')
 
-    with __CONNECTION_POOL_LOCK:
-        global CONNECTION_POOL
-        if is_connected(CONNECTION_POOL) is False:
-            __log_db('Connection pool is not connected')
-            try:
-                __log_db('Creating connection pool')
-                CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
-                return True
-            except Exception as error:
-                error_name = error.__class__.__name__
-                print(f'[connect] {error_name} occurred while establishing connection: {error}')
-                return False
-        else:
+    global CONNECTION_POOL
+    if is_connected(CONNECTION_POOL) is False:
+        __log_db('Connection pool is not connected')
+        try:
+            __log_db('Creating connection pool')
+            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
             return True
+        except Exception as error:
+            error_name = error.__class__.__name__
+            print(f'[connect] {error_name} occurred while establishing connection: {error}')
+            return False
+    else:
+        return True
 
 
 async def disconnect() -> None:
