@@ -471,9 +471,9 @@ async def connect() -> bool:
 
     global CONNECTION_POOL
     if is_connected(CONNECTION_POOL) is False:
-        __log_db('Connection pool is not connected')
+        __log_db('[connect] Connection pool is not connected')
         try:
-            __log_db('Creating connection pool')
+            __log_db('[connect] Creating connection pool')
             CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
             return True
         except Exception as error:
@@ -481,6 +481,7 @@ async def connect() -> bool:
             print(f'[connect] {error_name} occurred while establishing connection: {error}')
             return False
     else:
+        __log_db('[connect] Is Connected')
         return True
 
 
