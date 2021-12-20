@@ -474,7 +474,7 @@ async def connect() -> bool:
         __log_db('[connect] Connection pool is not connected')
         try:
             __log_db('[connect] Creating connection pool')
-            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
+            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL, min_size=1, max_size=5)
             return True
         except Exception as error:
             error_name = error.__class__.__name__
