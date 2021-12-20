@@ -261,7 +261,8 @@ class DeviceCollection():
         raise Exception(f'Could not find device with key \'{device_key}\'')
 
 
-    async def get_access_token(self) -> str:
+    async def get_access_token(self, use_gpat: bool = False) -> str:
+        return settings.ACCESS_TOKEN
         async with self.__token_lock:
             if self.count == 0:
                 raise Exception('Cannot get access token. There\'re no devices!')

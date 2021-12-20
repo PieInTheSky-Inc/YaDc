@@ -975,12 +975,16 @@ async def cmd_layout(ctx: Context, *, player_name: str):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
-            as_embed = await server_settings.get_use_embeds(ctx)
-            info_message = await utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
-            output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
-            await utils.discord.try_delete_message(info_message)
-            await utils.discord.reply_with_output_and_files(ctx, output, [file_path], output_is_embeds=as_embed)
-            os.remove(file_path)
+            _, user_ship_info = await ship.get_inspect_ship_for_user(user_info[user.USER_KEY_NAME])
+            if user_ship_info:
+                as_embed = await server_settings.get_use_embeds(ctx)
+                info_message = await utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
+                output, file_path = await user.get_user_ship_layout(ctx, user_info[user.USER_KEY_NAME], as_embed=as_embed)
+                await utils.discord.try_delete_message(info_message)
+                await utils.discord.reply_with_output_and_files(ctx, output, [file_path], output_is_embeds=as_embed)
+                os.remove(file_path)
+            else:
+                raise Error('Could not get the player\'s ship data.')
     else:
         leading_space_note = ''
         if player_name.startswith(' '):

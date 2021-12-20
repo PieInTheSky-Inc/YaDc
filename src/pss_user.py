@@ -57,9 +57,10 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
     if past_fleet_infos:
         ship_info = {}
         fleet_info = past_fleet_infos.get(user_info.get(fleet.FLEET_KEY_NAME))
-        current_user_info = await __get_user_info_by_id(user_id)
-        if current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME) != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
-            user_info['CurrentName'] = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
+        current_user_info = await __get_user_info_by_id(user_id) or {}
+        current_user_name = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
+        if current_user_name and current_user_name != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
+            user_info['CurrentName'] = current_user_name
     else:
         _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         fleet_info = await __get_fleet_info_by_user_info(user_info)
@@ -88,11 +89,12 @@ async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data
         for user_info in user_infos_current.values():
             user_id = user_info[user.USER_KEY_NAME]
             if user_id in users_data:
-                user_info = await __get_user_info_by_id(user_id)
+                current_user_info = await __get_user_info_by_id(user_id) or {}
+                current_user_name = current_user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME)
                 if user_id not in result:
                     result[user_id] = users_data[user_id]
-                if result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                    result[user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+                if current_user_name and current_user_name != result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME]:
+                    result[user_id]['CurrentName'] = current_user_name
     else:
         for tournament_user_id, tournament_user_info in result.items():
             user_info = await __get_user_info_by_id(tournament_user_id)
