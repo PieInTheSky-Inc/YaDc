@@ -303,7 +303,7 @@ def __parse_ingredients_tree(ingredients_str: str, items_data: EntitiesData, inc
         return []
 
     # Ingredients format is: [<id>x<amount>][|<id>x<amount>]*
-    ingredients_dict = __get_ingredients_dict(ingredients_str)
+    ingredients_dict = get_ingredients_dict(ingredients_str)
     result = []
 
     for item_id, item_amount in ingredients_dict.items():
@@ -380,7 +380,7 @@ def __get_upgrades_for(item_id: str, items_data: EntitiesData) -> List[Optional[
     # iterate through item_design_data and return every item_design containing the item id in question in property 'Ingredients'
     result = []
     for item_info in items_data.values():
-        ingredient_item_ids = list(__get_ingredients_dict(item_info['Ingredients']).keys())
+        ingredient_item_ids = list(get_ingredients_dict(item_info['Ingredients']).keys())
         if item_id in ingredient_item_ids:
             result.append(item_info)
     if not result:
@@ -445,7 +445,7 @@ async def __get_image_url(item_info: EntityInfo, items_data: EntitiesData, train
 
 
 def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
-    ingredients = __get_ingredients_dict(item_info.get('Ingredients'))
+    ingredients = get_ingredients_dict(item_info.get('Ingredients'))
     result = []
     for item_id, amount in ingredients.items():
         item_name = items_data[item_id].get(ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME)
@@ -457,7 +457,7 @@ def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings
 
 
 def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
-    enhancements = __get_all_enhancements(item_info)
+    enhancements = get_all_enhancements(item_info)
     result = ', '.join(f'{__get_pretty_enhancement(*enhancement)}' for enhancement in enhancements)
     return result or None
 
@@ -541,7 +541,7 @@ async def __get_training_mini_details(item_info: EntityInfo, items_data: Entitie
         return None
 
 
-def __get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
+def get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     item_sub_type = item_info.get('ItemSubType')
     if entity.entity_property_has_value(item_sub_type) and 'Equipment' not in item_sub_type:
         result = item_sub_type.replace('Equipment', '')
@@ -661,7 +661,7 @@ def __fix_item_name(item_name: str) -> str:
     return result
 
 
-def __get_all_enhancements(item_info: EntityInfo) -> List[Tuple[str, float]]:
+def get_all_enhancements(item_info: EntityInfo) -> List[Tuple[str, float]]:
     result = []
     bonus_type = entity.get_property_from_entity_info(item_info, 'EnhancementType')
     if bonus_type:
@@ -705,7 +705,7 @@ def __get_allowed_item_names(items_data: EntitiesData, not_allowed_item_names: L
     return result
 
 
-def __get_ingredients_dict(ingredients: str) -> Dict[str, str]:
+def get_ingredients_dict(ingredients: str) -> Dict[str, str]:
     result = {}
     if entity.entity_property_has_value(ingredients):
         result = dict([ingredient.split('x') for ingredient in ingredients.split('|')])
@@ -851,7 +851,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
     'base': entity.EntityDetailPropertyListCollection(
         [
             entity.EntityDetailProperty('Rarity', True, entity_property_name='Rarity'),
-            entity.EntityDetailProperty('Type', True, transform_function=__get_type),
+            entity.EntityDetailProperty('Type', True, transform_function=get_type),
             entity.EntityDetailProperty('Bonus', True, transform_function=__get_item_bonus_type_and_value),
             entity.EntityDetailProperty('Slot', True, transform_function=__get_item_slot),
             entity.EntityDetailProperty('Stat gain chances', True, transform_function=__get_training_mini_details, embed_only=True, for_embed=True),

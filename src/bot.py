@@ -6,7 +6,7 @@ import os
 import pytz
 import re
 import sys
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import asyncio
 from discord import Activity, ActivityType, Embed, File, Guild, Message, TextChannel
@@ -78,18 +78,20 @@ RATE: int = 5
 RAW_COOLDOWN: float = 10.0
 RAW_RATE: int = 5
 
-TOURNEY_DATA_CLIENT: TourneyDataClient = TourneyDataClient(
-    settings.GDRIVE_PROJECT_ID,
-    settings.GDRIVE_PRIVATE_KEY_ID,
-    settings.GDRIVE_PRIVATE_KEY,
-    settings.GDRIVE_CLIENT_EMAIL,
-    settings.GDRIVE_CLIENT_ID,
-    settings.GDRIVE_SCOPES,
-    settings.GDRIVE_FOLDER_ID,
-    settings.GDRIVE_SERVICE_ACCOUNT_FILE,
-    settings.GDRIVE_SETTINGS_FILE,
-    settings.TOURNAMENT_DATA_START_DATE
-)
+TOURNEY_DATA_CLIENT: TourneyDataClient = None
+if settings.FEATURE_TOURNEYDATA_ENABLED:
+    TOURNEY_DATA_CLIENT = TourneyDataClient(
+        settings.GDRIVE_PROJECT_ID,
+        settings.GDRIVE_PRIVATE_KEY_ID,
+        settings.GDRIVE_PRIVATE_KEY,
+        settings.GDRIVE_CLIENT_EMAIL,
+        settings.GDRIVE_CLIENT_ID,
+        settings.GDRIVE_SCOPES,
+        settings.GDRIVE_FOLDER_ID,
+        settings.GDRIVE_SERVICE_ACCOUNT_FILE,
+        settings.GDRIVE_SETTINGS_FILE,
+        settings.TOURNAMENT_DATA_START_DATE
+    )
 
 logging.basicConfig(
     level=logging.INFO,
@@ -2908,6 +2910,105 @@ async def cmd_raw_training(ctx: Context, *, training_id: str = None):
     """
     __log_command_use(ctx)
     await raw.post_raw_data(ctx, training.trainings_designs_retriever, 'training', training_id)
+
+
+
+
+
+
+
+
+
+
+# ############################################################################ #
+# ----------                     Wiki commands                      ---------- #
+# ############################################################################ #
+
+@BOT.group(name='wiki', brief='Get transformed data for the wiki', invoke_without_command=True, hidden=True)
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki(ctx: Context):
+    """
+    Transform data to be used in the wiki.
+    """
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
+
+        if ctx.author.id not in settings.RAW_COMMAND_USERS:
+            raise Error('You are not allowed to use this command.')
+
+        await ctx.send_help('wiki')
+    pass
+
+
+@cmd_wiki.command(name='itemdata', brief='Get transformed item data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_itemdata(ctx: Context):
+    """
+    Transform ItemDesigns data to be used in: https://pixelstarships.fandom.com/wiki/Module:Data
+    """
+    __log_command_use(ctx)
+
+    if ctx.author.id not in settings.RAW_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
+    item_data = await item.items_designs_retriever.get_data_dict3()
+    retrieved_at = utils.get_utc_now()
+    items_list: Dict[int, Dict] = {}
+    result = []
+    for item_id, item_info in item_data.items():
+        if item_info.get('ItemType') != 'Equipment':
+            continue
+
+        bonus: List[Tuple[str, float]] = item.get_all_enhancements(item_info)
+        ingredients: Dict[str, str] = item.get_ingredients_dict(item_info.get('Ingredients'))
+        category = item.get_type(item_info, None)
+        item_properties = {
+            'name': item_info.get(item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME, ''),
+            'description': item_info.get('ItemDesignDescription', ''),
+            'rarity': item_info.get('Rarity', ''),
+            'category': category,
+            'useRecipes': f'',
+            'item1ItemId': f'',
+            'item1Quantity': f'',
+            'item2ItemId': f'',
+            'item2Quantity': f'',
+            'item3ItemId': f'',
+            'item3Quantity': f'',
+            'item4ItemId': f'',
+            'item4Quantity': f'',
+        }
+
+        for i, (bonus_value, bonus_type) in enumerate(bonus, 1):
+            item_properties[f'bonus{i}Value'] = bonus_value
+            item_properties[f'bonus{i}Type'] = bonus_type
+        for i, (ingredient_item_id, ingredient_count) in enumerate(ingredients.items(), 1):
+            item_properties[f'item{i}ItemId'] = ingredient_item_id
+            item_properties[f'item{i}Quantity'] = ingredient_count
+            items_list.setdefault(int(ingredient_item_id), {}).setdefault('inRecipes', []).append(item_id)
+
+        items_list[int(item_id)] = item_properties
+
+    items_list = {key: value for key, value in items_list.items() if 'name' in value.keys()}
+
+    for item_id in sorted(items_list.keys()):
+        item_properties = items_list[item_id]
+        if 'inRecipes' in item_properties.keys():
+            parents = sorted(item_properties['inRecipes'], key=lambda x: int(x))
+            item_properties['useRecipes'] = f'{"|".join(parents)}'
+            item_properties.pop('inRecipes')
+        result.append(f'itemList["{item_id}"] = {{')
+        for property_key, property_value in item_properties.items():
+            result.append(f'\t{property_key} = "{property_value}"')
+        result.append('}')
+
+    if result:
+        file_path = raw.create_raw_file('\n'.join(result), 'lua', 'itemList', retrieved_at)
+        await utils.discord.post_output_with_files(ctx, [], [file_path])
+
+        if file_path:
+            os.remove(file_path)
+    else:
+        raise Error('An unexpected error occured. Please contact the bot\'s author.')
 
 
 

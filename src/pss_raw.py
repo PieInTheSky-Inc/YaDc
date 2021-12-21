@@ -44,7 +44,7 @@ async def post_raw_data(ctx: Context, retriever: entity.EntityRetriever, entity_
 
 # ---------- Helper functions ----------
 
-def __create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
+def create_raw_file(content: str, file_type: str, file_name_prefix: str, retrieved_at: datetime) -> str:
     if not file_type:
         file_type = 'txt'
     timestamp = retrieved_at.strftime('%Y%m%d-%H%M%S')
@@ -117,7 +117,7 @@ async def __post_raw_entity(ctx: Context, retriever: entity.EntityRetriever, ent
             output = result.split('\n')
     output_len = len(output) + sum([len(row) for row in output])
     if output_len > utils.discord.MAXIMUM_CHARACTERS:
-        file_path = __create_raw_file('\n'.join(output), mode, f'{entity_name}_design_{entity_id}', retrieved_at)
+        file_path = create_raw_file('\n'.join(output), mode, f'{entity_name}_design_{entity_id}', retrieved_at)
         await utils.discord.post_output_with_files(ctx, title, [file_path])
         os.remove(file_path)
     else:
@@ -134,20 +134,20 @@ async def __post_raw_file(ctx: Context, retriever: entity.EntityRetriever, entit
     raw_data = await retriever.get_raw_data()
     raw_data_dict = utils.convert.raw_xml_to_dict(raw_data, fix_attributes=True, preserve_lists=True)
     if mode == 'xml':
-        file_path = __create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
+        file_path = create_raw_file(raw_data, mode, file_name_prefix, retrieved_at)
     elif mode == 'json':
         data = json.dumps(raw_data_dict)
-        file_path = __create_raw_file(data, mode, file_name_prefix, retrieved_at)
+        file_path = create_raw_file(data, mode, file_name_prefix, retrieved_at)
     else:
         start = time.perf_counter()
         flattened_data = __flatten_raw_dict_for_excel(raw_data_dict)
         time1 = time.perf_counter() - start
-        print(f'Flattening the {entity_name} data took {time1:.2f} seconds.')
+        utils.dbg_prnt(f'Flattening the {entity_name} data took {time1:.2f} seconds.')
 
         start = time.perf_counter()
         file_path = excel.create_xl_from_raw_data_dict(flattened_data, file_name_prefix, retrieved_at)
         time2 = time.perf_counter() - start
-        print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
+        utils.dbg_prnt(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
     file_paths = []
     if file_path:
         file_paths.append(file_path)
