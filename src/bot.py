@@ -1337,7 +1337,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
                 yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
                 if yesterday_tourney_data:
                     yesterday_user_info = yesterday_tourney_data.users.get(user_info[user.USER_KEY_NAME], {})
-                    user_info['YesterdayAllianceScore'] = yesterday_user_info['AllianceScore']
+                    user_info['YesterdayAllianceScore'] = yesterday_user_info.get('AllianceScore', '0')
             max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
             output = await user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
             await utils.discord.reply_with_output(ctx, output)
