@@ -185,10 +185,10 @@ def get_room_details_by_id(room_design_id: str, rooms_data: EntitiesData, items_
 
 
 async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    pss_assert.valid_entity_name(room_name, allowed_values=__allowed_room_names)
+    pss_assert.valid_entity_name(room_name, allowed_values=ALLOWED_ROOM_NAMES)
 
     rooms_data = await rooms_designs_retriever.get_data_dict3()
-    rooms_designs_infos = _get_room_infos_by_name(room_name, rooms_data)
+    rooms_designs_infos = get_room_infos_by_name(room_name, rooms_data)
 
     if not rooms_designs_infos:
         raise NotFound(f'Could not find a room named **{room_name}**.')
@@ -226,7 +226,7 @@ async def get_room_details_by_name(room_name: str, ctx: Context = None, as_embed
         return result
 
 
-def _get_room_infos_by_name(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo]:
+def get_room_infos_by_name(room_name: str, rooms_data: EntitiesData) -> List[EntityInfo]:
     room_name_reverse = room_name[::-1]
     numbers_in_room_name = RX_NUMBER.findall(room_name_reverse)
     if numbers_in_room_name:
@@ -677,8 +677,29 @@ def __is_allowed_room_type(room_info: EntityInfo, allowed_room_types: Iterable, 
 
 # ---------- Helper functions ----------
 
+def get_room_info_progression(room_info: EntityInfo, rooms_data: EntitiesData) -> List[EntityInfo]:
+    root_room_info = get_root_room_info(room_info, rooms_data)
+    result = sorted([room_info for room_info in rooms_data.values() if room_info['RootRoomDesignId'] == root_room_info[ROOM_DESIGN_KEY_NAME] and not entity.entity_property_has_value(room_info['RequirementString'])], key=lambda x: x[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME])
+    return result
+
+
 def get_room_search_details(room_info: EntityInfo) -> str:
     result = room_info[ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    return result
+
+
+def get_rooms_per_level(room_design_id: str, rooms_purchases_data: EntitiesData, max_level: int = 12) -> Dict[int, int]:
+    result = {i: 0 for i in range(1, max_level + 1)}
+    new_rooms_per_level = {int(value['Level']): int(value['Quantity']) for value in rooms_purchases_data.values() if value.get('RoomDesignId') == room_design_id}
+    total_room_count = 0
+    for level in result.keys():
+        total_room_count += new_rooms_per_level.get(level, 0)
+        result[level] = total_room_count
+    return result
+
+
+def get_root_room_info(room_info: EntityInfo, rooms_data: EntitiesData) -> EntityInfo:
+    result = rooms_data[room_info['RootRoomDesignId']]
     return result
 
 
@@ -1018,7 +1039,7 @@ rooms_designs_sprites_retriever: entity.EntityRetriever = entity.EntityRetriever
     None,
     cache_name='RoomDesignSprites'
 )
-__allowed_room_names: List[str]
+ALLOWED_ROOM_NAMES: List[str]
 __display_name_properties: Dict[str, entity.EntityDetailProperty]  = __create_display_name_properties(__DISPLAY_NAMES)
 __properties: entity.EntityDetailsCreationPropertiesCollection = {
     'title': entity.EntityDetailPropertyCollection(
@@ -1076,6 +1097,6 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
 
 
 async def init() -> None:
-    global __allowed_room_names
+    global ALLOWED_ROOM_NAMES
     rooms_data = await rooms_designs_retriever.get_data_dict3()
-    __allowed_room_names = sorted(__get_allowed_room_short_names(rooms_data))
+    ALLOWED_ROOM_NAMES = sorted(__get_allowed_room_short_names(rooms_data))

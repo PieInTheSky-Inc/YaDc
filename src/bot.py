@@ -23,6 +23,7 @@ from gdrive import TourneyDataClient
 import pagination
 import pss_achievement as achievement
 import pss_ai as ai
+import pss_assert
 import pss_core as core
 import pss_crew as crew
 import pss_daily as daily
@@ -45,6 +46,7 @@ import pss_tournament as tourney
 import pss_top
 import pss_training as training
 import pss_user as user
+import pss_wiki as wiki
 import server_settings
 from server_settings import AutoDailySettings, GUILD_SETTINGS
 import settings
@@ -3009,6 +3011,40 @@ async def cmd_wiki_itemdata(ctx: Context):
             os.remove(file_path)
     else:
         raise Error('An unexpected error occured. Please contact the bot\'s author.')
+
+
+@cmd_wiki.command(name='roomstats', brief='Get transformed room data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_roomstats(ctx: Context, *, room_name_or_id: str):
+    """
+    Transform RoomDesigns data to be used in the wiki. Returns multiple files:
+    - Room details table(s)
+    - Rearm table for weapon platforms
+    - All room sprites
+    """
+    __log_command_use(ctx)
+
+    if ctx.author.id not in settings.RAW_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
+    rooms_data = await room.rooms_designs_retriever.get_data_dict3()
+    rooms_purchase_data = await room.rooms_designs_purchases_retriever.get_data_dict3()
+    rooms_sprites_data = await room.rooms_designs_sprites_retriever.get_data_dict3()
+    retrieved_at = utils.get_utc_now()
+
+    room_design_id = None
+    try:
+        room_design_id = int(room_name_or_id)
+    except:
+        pss_assert.valid_entity_name(room_name_or_id, allowed_values=room.ALLOWED_ROOM_NAMES)
+        rooms_designs_infos = room.get_room_infos_by_name(room_name_or_id, rooms_data)
+
+    rooms_per_level = room.get_rooms_per_level(room_name_or_id, rooms_purchase_data)
+    rooms_table = wiki.make_rooms_purchase_table(rooms_per_level)
+
+    rooms_progression = room.get_room_info_progression()
+
+    pass
 
 
 
