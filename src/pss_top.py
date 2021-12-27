@@ -1,6 +1,6 @@
 import calendar
 from datetime import datetime
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from discord import Colour, Embed
 from discord.ext.commands import Context
@@ -270,10 +270,73 @@ def get_division_title(division_design_id: str, divisions_designs_infos: Entitie
 
 # ---------- Helper functions ----------
 
+def filter_targets(user_infos: List[EntityInfo], division_design_id: str, last_month_user_data: EntitiesData, current_fleet_data: EntitiesData = {}, min_star_value: int = None, max_star_value: int = None, min_trophies_value: int = None, max_trophies_value: int = None, max_highest_trophies: int = None) -> List[EntityInfo]:
+    result = []
+    for user_info in user_infos:
+        current_division_design_id = current_fleet_data.get(user_info.get(fleet.FLEET_KEY_NAME), {}).get(DIVISION_DESIGN_KEY_NAME)
+        user_division_design_id = user_info.get('Alliance', {}).get(DIVISION_DESIGN_KEY_NAME, '0')
+        alliance_division_design_id = current_division_design_id or user_division_design_id
+        trophies = int(user_info.get('Trophy', 0))
+        highest_trophies = int(user_info.get('HighestTrophy', 0))
+        division_matches = division_design_id == alliance_division_design_id
+        if division_matches and (not min_trophies_value or trophies >= min_trophies_value) and (not max_trophies_value or trophies <= max_trophies_value) and (not max_highest_trophies or highest_trophies <= max_highest_trophies):
+            star_value, _ = user.get_star_value_from_user_info(user_info, star_count=user_info.get('AllianceScore'))
+            if (not min_star_value or star_value >= min_star_value) and (not max_star_value or star_value <= max_star_value):
+                user_id = user_info[user.USER_KEY_NAME]
+                user_info['StarValue'] = star_value or 0
+                user_info['LastMonthStarValue'] = last_month_user_data.get(user_id, {}).get('AllianceScore') or '-'
+                result.append(user_info)
+
+    result = sorted(result, key=lambda user_info: (user_info.get('StarValue', 0), int(user_info.get('AllianceScore', 0)), int(user_info.get('Trophy', 0))), reverse=True)
+    return result
+
+
 async def get_alliances_with_division() -> EntitiesData:
     data = await core.get_data_from_path(STARS_BASE_PATH)
     fleet_infos = utils.convert.xmltree_to_dict3(data)
     return fleet_infos
+
+
+def get_targets_parameters(star_value: str = None, trophies: str = None, highest_trophies: int = None) -> Tuple[List[str], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
+    star_values = [int(value) for value in (star_value or '').split('-') if value]
+    trophies_values = [int(value) for value in (trophies or '').split('-') if value]
+
+    criteria_lines = []
+
+    if star_values and len(star_values) > 2:
+        raise ValueError('Only 1 minimum and 1 maximum star value may be specified.')
+
+    min_star_value, max_star_value = None, None
+    if star_values:
+        min_star_value = min(star_values)
+        if len(star_values) > 1:
+            max_star_value = max(star_values)
+            criteria_lines.append(f'Star value: {min_star_value} - {max_star_value}')
+        else:
+            max_star_value = None
+            criteria_lines.append(f'Minimum star value: {min_star_value}')
+
+    if trophies_values and len(trophies_values) > 2:
+        raise ValueError('Only 1 minimum and 1 maximum trophy count may be specified.')
+
+    min_trophies_value, max_trophies_value = None, None
+    if trophies_values:
+        max_trophies_value = max(trophies_values)
+        if len(trophies_values) > 1:
+            min_trophies_value = min(trophies_values)
+            criteria_lines.append(f'Trophy count: {min_trophies_value} - {max_trophies_value}')
+        else:
+            min_trophies_value = None
+            criteria_lines.append(f'Maximum trophy count: {max_trophies_value}')
+
+    if highest_trophies is not None:
+        if highest_trophies < 0:
+            raise ValueError('The highest trophy count must not be negative.')
+        elif any(value > highest_trophies for value in trophies_values):
+            raise ValueError('The highest trophy count for a player must not be lower than any current trophy count value.')
+        criteria_lines.append(f'Maximum highest trophy count: {highest_trophies}')
+
+    return criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, highest_trophies
 
 
 def is_valid_division_letter(div_letter: str) -> bool:
@@ -282,6 +345,24 @@ def is_valid_division_letter(div_letter: str) -> bool:
     else:
         result = div_letter.lower() in [letter.lower() for letter in ALLOWED_DIVISION_LETTERS]
     return result
+
+
+def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
+    footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
+    result = []
+    for user_rank, user_info in enumerate(user_infos, 1):
+        player_star_value = user_info.get('StarValue', 0)
+        stars = int(user_info.get('AllianceScore', 0))
+        user_name = escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+        trophies = int(user_info.get('Trophy', 0))
+        highest_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
+        last_month_stars = user_info.get('LastMonthStarValue', '-')
+        line = f'**{user_rank}.** {player_star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}'
+        if user_rank > 1 or not result:
+            result.append(line)
+        else:
+            result[-1] += f'\n{line}'
+    return footer, result
 
 
 def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
