@@ -1,4 +1,5 @@
 from datetime import datetime
+from threading import Lock as _Lock
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import asyncpg
@@ -20,6 +21,7 @@ ColumnDefinition = Tuple[str, str, bool, bool]
 # ---------- Constants ----------
 
 CONNECTION_POOL: asyncpg.pool.Pool = None
+__CONNECTION_POOL_LOCK: _Lock = _Lock()
 
 
 
@@ -469,14 +471,17 @@ async def connect() -> bool:
 
     global CONNECTION_POOL
     if is_connected(CONNECTION_POOL) is False:
+        __log_db('[connect] Connection pool is not connected')
         try:
-            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL)
+            __log_db('[connect] Creating connection pool')
+            CONNECTION_POOL = await asyncpg.create_pool(dsn=settings.DATABASE_URL, min_size=1, max_size=5)
             return True
         except Exception as error:
             error_name = error.__class__.__name__
             print(f'[connect] {error_name} occurred while establishing connection: {error}')
             return False
     else:
+        __log_db('[connect] Is Connected')
         return True
 
 
@@ -809,6 +814,11 @@ def __log_db_function_enter(function_name: str, **kwargs) -> None:
     if settings.PRINT_DEBUG_DB:
         params = ', '.join([f'{k}={v}' for k, v in kwargs.items()])
         print(f'+ {function_name}({params})')
+
+
+def __log_db(message: str) -> None:
+    if settings.PRINT_DEBUG_DB:
+        print(message)
 
 
 
