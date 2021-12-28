@@ -1874,7 +1874,7 @@ async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_v
     Notes:
       The parameter 'count' is constrained depending on the division:
         Division A: max 20
-        Division B: max 15
+        Division B: max 14
         Division C: max 5
         Division D: max 3
     """
