@@ -78,7 +78,7 @@ DIVISION_DESIGN_ID_TO_CHAR: Dict[str, str] = dict([(value, key) for key, value i
 
 DIVISION_MAX_COUNT_TARGETS_TOP: Dict[str, int] = {
     '1': 20,
-    '2': 15,
+    '2': 14,
     '3': 5,
     '4': 3,
 }

@@ -347,8 +347,10 @@ def is_valid_division_letter(div_letter: str) -> bool:
     return result
 
 
-def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
-    footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name (Fleet name)'
+def make_target_output_lines(user_infos: List[EntityInfo], include_fleet_name: bool = True) -> List[str]:
+    footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
+    if include_fleet_name:
+        footer += ' (Fleet name)'
     result = []
     for user_rank, user_info in enumerate(user_infos, 1):
         player_star_value = user_info.get('StarValue', 0)
@@ -358,7 +360,9 @@ def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
         trophies = int(user_info.get('Trophy', 0))
         highest_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
         last_month_stars = user_info.get('LastMonthStarValue', '-')
-        line = f'**{user_rank}.** {player_star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})'
+        line = f'**{user_rank}.** {player_star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}'
+        if include_fleet_name:
+            line += f' ({fleet_name})'
         if user_rank > 1 or not result:
             result.append(line)
         else:

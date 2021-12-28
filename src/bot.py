@@ -1813,7 +1813,7 @@ async def cmd_targets(ctx: Context, division: str, star_value: str = None, troph
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             as_embed = await server_settings.get_use_embeds(ctx)
             divisions_designs_infos = await pss_top.divisions_designs_retriever.get_data_dict3()
-            footer, output_lines = pss_top.make_target_output_lines(yesterday_user_infos)
+            footer, output_lines = pss_top.make_target_output_lines(yesterday_user_infos, )
             historic_data_note = utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
 
             if criteria_lines or count_display_text:
@@ -1925,9 +1925,11 @@ async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_v
         for fleet_rank, current_fleet_info in enumerate(current_fleet_infos, 1):
             fleet_id = current_fleet_info[fleet.FLEET_KEY_NAME]
             if fleet_id in yesterday_fleet_users_infos:
-                output_lines.append(f'**{fleet_rank}. {current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**')
-                footer, text_lines = pss_top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id])
-                output_lines.extend(text_lines)
+                fleet_title_lines = [f'**{fleet_rank}. {current_fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**']
+                footer, text_lines = pss_top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id], include_fleet_name=False)
+                fleet_title_lines[0] += f'\n{text_lines[0]}'
+                output_lines.extend(fleet_title_lines)
+                output_lines.extend(text_lines[1:])
                 output_lines.append('')
 
         if criteria_lines or count:
