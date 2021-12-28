@@ -354,10 +354,11 @@ def make_target_output_lines(user_infos: List[EntityInfo]) -> List[str]:
         player_star_value = user_info.get('StarValue', 0)
         stars = int(user_info.get('AllianceScore', 0))
         user_name = escape_markdown(user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''))
+        fleet_name = escape_markdown(user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))
         trophies = int(user_info.get('Trophy', 0))
         highest_trophies = int(user_info.get('HighestTrophy', 0)) or '-'
         last_month_stars = user_info.get('LastMonthStarValue', '-')
-        line = f'**{user_rank}.** {player_star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name}'
+        line = f'**{user_rank}.** {player_star_value} ({stars}, {last_month_stars}) {emojis.star} {trophies} ({highest_trophies}) {emojis.trophy} {user_name} ({fleet_name})'
         if user_rank > 1 or not result:
             result.append(line)
         else:
