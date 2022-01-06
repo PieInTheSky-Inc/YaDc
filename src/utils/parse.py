@@ -35,6 +35,19 @@ def camel_case(s: str) -> List[str]:
     return [''.join(word) for word in words]
 
 
+def entity_multi_string(multi_str: str, separator: str) -> List[Tuple[str, str, int, str]]:
+    """
+    Parses an entity string (e.g. from ingredients) and returns a list of:
+    - Entity type
+    - Entity id
+    - Entity amount
+    - Amount modifier
+    """
+    entities_strs = multi_str.split(separator)
+    result = [entity_string(entity_str.strip()) for entity_str in entities_strs]
+    return result
+
+
 def entity_string(entity_str: str, default_amount: str = '1', default_type: str = None) -> Tuple[str, str, int, str]:
     """
     Parses an entity string (e.g. from ingredients) and returns:
@@ -109,6 +122,4 @@ def requirement_string(requirement_str: str) -> List[Tuple[str, str, int, str]]:
     - Entity amount
     - Amount modifier
     """
-    entities_strs = requirement_str.split('&&')
-    result = [entity_string(entity_str.strip()) for entity_str in entities_strs]
-    return result
+    return entity_multi_string(requirement_str, '&&')

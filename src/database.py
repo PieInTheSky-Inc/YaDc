@@ -99,11 +99,11 @@ async def update_schema(version: str, update_function: Callable) -> bool:
 async def update_schema_v_1_3_1_0() -> bool:
     schema_version = await get_schema_version()
     if schema_version:
-        compare_1300 = utils.compare_versions(schema_version, '1.3.1.0')
-        compare_1290 = utils.compare_versions(schema_version, '1.3.0.0')
-        if compare_1300 <= 0:
+        compare_1310 = utils.compare_versions(schema_version, '1.3.1.0')
+        compare_1300 = utils.compare_versions(schema_version, '1.3.0.0')
+        if compare_1310 <= 0:
             return True
-        elif compare_1290 > 0:
+        elif compare_1300 > 0:
             return False
 
     print(f'[update_schema_v_1_3_1_0] Updating database schema from v1.3.0.0 to v1.3.1.0')
@@ -334,11 +334,7 @@ async def update_schema_v_1_2_4_0() -> bool:
     query = '\n'.join(query_lines)
     success = await try_execute(query)
     if success:
-        utc_now = utils.get_utc_now()
-        daily_info = await daily.get_daily_info()
-        success = await daily.db_set_daily_info(daily_info, utc_now)
-        if success:
-            success = await try_set_schema_version('1.2.4.0')
+        success = await try_set_schema_version('1.2.4.0')
     return success
 
 
