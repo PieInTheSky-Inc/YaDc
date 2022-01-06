@@ -248,7 +248,7 @@ async def post_dailies_loop() -> None:
 
     utc_now = utils.get_utc_now()
 
-    daily_info = await daily.get_daily_info()
+    daily_info = await daily.get_daily_info(utc_now)
     db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
     has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
