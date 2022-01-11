@@ -58,7 +58,7 @@ def compare_dropship_messages(message: Message, dropship_text: str, dropship_emb
 async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: dict = None, utc_now: datetime = None, language_key: str = 'en') -> Tuple[List[str], List[Embed], bool]:
     utc_now = utc_now or utils.get_utc_now()
     if not daily_info:
-        daily_info = await daily.get_daily_info(utc_now, language_key)
+        daily_info = await daily.get_daily_info(language_key)
 
     chars_designs_data = await crew.characters_designs_retriever.get_data_dict3()
     collections_designs_data = await crew.collections_designs_retriever.get_data_dict3()
@@ -240,26 +240,35 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
 
 
 async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
-    result = [f'{emojis.pss_sale} **Daily Deal**']
+    # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
+    result = [f'{emojis.pss_sale} **Sale**']
 
-    reward_string = daily_info['DealRewardString']
-    deal_info = utils.parse.entity_multi_string(reward_string, '|')
-    for entity_type, entity_id_or_amount, _, _ in deal_info:
-        if entity_type == 'character':
-            char_details = crew.get_char_details_by_id(entity_id_or_amount, chars_data, collections_data)
-            result.append(''.join(await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)))
-        elif entity_type == 'item':
-            item_details = item.get_item_details_by_id(entity_id_or_amount, items_data, trainings_data)
-            result.append(''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)))
-        elif entity_type == 'room':
-            room_details = room.get_room_details_by_id(entity_id_or_amount, rooms_data, None, None, None)
-            result.append(''.join(await room_details.get_details_as_text(entity.EntityDetailsType.SHORT)))
-        elif entity_type == 'bonus':
-            result.append(f'{entity_id_or_amount} % bonus starbux')
-        elif entity_type == 'starbux':
-            result.append(f'{entity_id_or_amount} {emojis.pss_bux}')
-        elif entity_type == 'purchasepoints':
-            result.append(f'{entity_id_or_amount} {emojis.pss_dove}')
+    sale_items = utils.convert.iap_options_mask(int(daily_info['SaleItemMask']))
+    sale_quantity = daily_info['SaleQuantity']
+    result.append(f'Buy a {sale_items} _of Starbux_ and get:')
+
+    sale_type = daily_info['SaleType']
+    sale_argument = daily_info['SaleArgument']
+    if sale_type == 'Character':
+        char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data)
+        entity_details = ''.join(await char_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+    elif sale_type == 'Item':
+        item_details = item.get_item_details_by_id(sale_argument, items_data, trainings_data)
+        entity_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+    elif sale_type == 'Room':
+        room_details = room.get_room_details_by_id(sale_argument, rooms_data, None, None, None)
+        entity_details = ''.join(await room_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+    elif sale_type == 'Bonus':
+        entity_details = f'{sale_argument} % bonus starbux'
+    else: # Print debugging info
+        sale_title = daily_info['SaleTitle']
+        debug_details = []
+        debug_details.append(f'Sale Type: {sale_type}')
+        debug_details.append(f'Sale Argument: {sale_argument}')
+        debug_details.append(f'Sale Title: {sale_title}')
+        entity_details = '\n'.join(debug_details)
+
+    result.append(f'{sale_quantity} x {entity_details}')
 
     return result
 
