@@ -59,7 +59,7 @@ MIN_ENTITY_NAME_LENGTH: int = 3
 MOST_RECENT_TOURNAMENT_DATA: bool = bool(int(os.environ.get('MOST_RECENT_TOURNAMENT_DATA', 0)))
 
 
-POST_AUTODAILY_FROM: datetime = datetime(2020, 2, 7, tzinfo=timezone.utc)
+POST_AUTODAILY_FROM: datetime = datetime(2022, 1, 12, tzinfo=timezone.utc)
 PRINT_DEBUG: int = int(os.environ.get('PRINT_DEBUG', '0'))
 PRINT_DEBUG_DB: int = int(os.environ.get('PRINT_DEBUG_DB', '0'))
 PRINT_DEBUG_COMMAND: int = int(os.environ.get('PRINT_DEBUG_COMMAND', '0'))
