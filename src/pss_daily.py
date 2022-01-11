@@ -14,7 +14,6 @@ from pss_exception import Error
 import pss_item as item
 import pss_crew as crew
 import pss_lookups as lookups
-import pss_promo as promo
 import pss_research as research
 import pss_room as room
 import pss_training as training
@@ -43,8 +42,10 @@ DAILY_INFO_FIELDS: List[str] = [
     'LimitedCatalogType',
     'News',
     'NewsSpriteId',
-    'DealPromotionDesignId',
-    'DealRewardString',
+    'SaleArgument',
+    'SaleItemMask',
+    'SaleQuantity',
+    'SaleType'
 ]
 
 DAILY_INFO_FIELDS_TO_CHECK: List[str] = [
@@ -53,8 +54,10 @@ DAILY_INFO_FIELDS_TO_CHECK: List[str] = [
     'LimitedCatalogCurrencyType',
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
-    'DealPromotionDesignId',
-    'DealRewardString',
+    'SaleArgument',
+    'SaleItemMask',
+    'SaleQuantity',
+    'SaleType'
 ]
 
 DB_DAILY_INFO_COLUMN_NAMES: Dict[str, str] = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
@@ -431,22 +434,10 @@ async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool 
     return result
 
 
-async def get_daily_info(utc_now: datetime, language_key: str = 'en') -> EntityInfo:
+async def get_daily_info(language_key: str = 'en') -> EntityInfo:
     latest_settings = await core.get_latest_settings(language_key)
     live_ops_info = await core.get_liveops_info(language_key)
-    promotions_data = await promo.promotion_designs_retriever.get_data_dict3()
-    daily_deal = None
-    for promotion_info in promotions_data.values():
-        if promotion_info.get('PromotionType') == 'DailyDealOffer':
-            from_date = utils.parse.pss_datetime(promotion_info.get('FromDate'))
-            if from_date and utc_now >= from_date:
-                to_date = utils.parse.pss_datetime(promotion_info.get('ToDate'))
-                if to_date and utc_now < to_date:
-                    daily_deal = promotion_info
-                    break
     latest_settings.update(live_ops_info)
-    latest_settings['DealPromotionDesignId'] = daily_deal[promo.PROMOTION_DESIGN_KEY_NAME]
-    latest_settings['DealRewardString'] = daily_deal['RewardString']
     result = __convert_to_daily_info(latest_settings)
     return result
 
