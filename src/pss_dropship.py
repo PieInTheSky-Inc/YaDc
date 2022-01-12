@@ -243,11 +243,14 @@ async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
     result = [f'{emojis.pss_sale} **Sale**']
 
+    sale_type = daily_info['SaleType']
+    if not entity.entity_property_has_value(sale_type):
+        return []
+
     sale_items = utils.convert.iap_options_mask(int(daily_info['SaleItemMask']))
     sale_quantity = daily_info['SaleQuantity']
     result.append(f'Buy a {sale_items} _of Starbux_ and get:')
 
-    sale_type = daily_info['SaleType']
     sale_argument = daily_info['SaleArgument']
     if sale_type == 'Character':
         char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data)
