@@ -5,6 +5,10 @@ items-*.txt
 *.csv
 sprite_cache/
 
+# Visual Studio Code
+.vscode/
+.VsCodeCounter/
+
 # files created at runtime
 launch.json
 client_secrets.json
