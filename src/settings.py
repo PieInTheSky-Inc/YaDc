@@ -91,4 +91,4 @@ USE_EMBEDS: bool = True
 USE_ACCESS_TOKEN: int = int(os.environ.get('USE_ACCESS_TOKEN', 0))
 
 
-VERSION: str = '1.3.6.7'
+VERSION: str = '1.3.6.8'
