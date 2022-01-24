@@ -50,29 +50,36 @@ async def get_top_fleets(ctx: Context, take: int = 100, as_embed: bool = setting
         title = f'Top {take} fleets'
         prepared_data = __prepare_top_fleets(data)
         body_lines = __create_body_lines_top_fleets(prepared_data, tourney_running, fleets_divisions_max_ranks)
+        if tourney_running:
+            footer = f'Properties displayed: Ranking. Fleet name (Trophy count {emojis.trophy} Member count {emojis.members} Star count {emojis.star})'
+        else:
+            footer = f'Properties displayed: Ranking. Fleet name (Trophy count {emojis.trophy} Member count {emojis.members})'
 
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            return __create_top_embeds(title, body_lines, colour)
+            return __create_top_embeds(title, body_lines, colour, footer)
         else:
-            result = [f'**{title}**']
-            result.extend(body_lines)
+            result = [
+                f'**{title}**',
+                *body_lines,
+                footer,
+            ]
             return result
     else:
         raise Error(f'An unknown error occured while retrieving the top fleets. Please contact the bot\'s author!')
 
 
-def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]], tourney_running: bool, fleets_divisions_max_ranks: List[int]) -> List[str]:
+def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str, str]], tourney_running: bool, fleets_divisions_max_ranks: List[int]) -> List[str]:
     if tourney_running:
         result = [
-            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} - {stars} {emojis.star})'
-            for position, fleet_name, trophies, stars
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} {number_of_approved_members} {emojis.members} {stars} {emojis.star})'
+            for position, fleet_name, trophies, stars, number_of_approved_members
             in prepared_data
         ]
     else:
         result = [
-            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy})'
-            for position, fleet_name, trophies, _
+            f'**{position}.** {fleet_name} ({trophies} {emojis.trophy} {number_of_approved_members} {emojis.members})'
+            for position, fleet_name, trophies, _, number_of_approved_members
             in prepared_data
         ]
     for rank in sorted(fleets_divisions_max_ranks, reverse=True):
@@ -81,13 +88,26 @@ def __create_body_lines_top_fleets(prepared_data: List[Tuple[int, str, str, str]
     return result
 
 
-def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple]:
+def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple[int, str, str, str, str]]:
+    """
+    Returns:
+    List[
+        Tuple[
+            fleet rank (int),
+            fleet name (str),
+            fleet trophies (str),
+            fleet stars (str),
+            number of approved members (str)
+        ]
+    ]
+    """
     result = [
         (
             position,
             escape_markdown(fleet_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
             fleet_info['Trophy'],
-            fleet_info['Score']
+            fleet_info['Score'],
+            fleet_info['NumberOfApprovedMembers']
         ) for position, fleet_info in enumerate(fleets_data.values(), start=1)
     ]
     return result
@@ -370,11 +390,11 @@ def make_target_output_lines(user_infos: List[EntityInfo], include_fleet_name: b
     return footer, result
 
 
-def __create_top_embeds(title: str, body_lines: List[str], colour: Colour) -> List[Embed]:
+def __create_top_embeds(title: str, body_lines: List[str], colour: Colour, footer: str) -> List[Embed]:
     bodies = utils.discord.create_posts_from_lines(body_lines, utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
     result = []
     for body in bodies:
-        result.append(utils.discord.create_embed(title, description=body, colour=colour))
+        result.append(utils.discord.create_embed(title, description=body, colour=colour, footer=footer))
     return result
 
 
