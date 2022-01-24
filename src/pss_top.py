@@ -126,12 +126,16 @@ async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = setti
         title = f'Top {take} captains'
         prepared_data = __prepare_top_captains(data, skip, take)
         body_lines = __create_body_lines_top_captains(prepared_data)
+        footer = f'Properties displayed: Ranking. Player name (Fleet name) - Trophies {emojis.trophy}'
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            result = __create_top_embeds(title, body_lines, colour)
+            result = __create_top_embeds(title, body_lines, colour, footer)
         else:
-            result = [f'**{title}**']
-            result.extend(body_lines)
+            result = [
+                f'**{title}**',
+                *body_lines,
+                footer,
+            ]
         return result
     else:
         raise Error(f'An unknown error occured while retrieving the top captains. Please contact the bot\'s author!')
