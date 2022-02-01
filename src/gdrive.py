@@ -615,7 +615,7 @@ class TourneyDataClient():
         result = self.__cache.get(year, {}).get(month, {})
         if result:
             if day is None:
-                result = result.get(tuple(result.keys())[-1], None)
+                result = result.get(max(result.keys()), None)
             else:
                 result = result.get(day, None)
         else:
