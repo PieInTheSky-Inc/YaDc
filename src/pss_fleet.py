@@ -171,6 +171,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
     fleet_users_infos_count = len(fleet_users_infos)
 
     title = f'{fleet_name} member stars (division {division})'
+    display_attempts = False
     lines = []
     for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
@@ -184,10 +185,11 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         attempts_left = ''
         attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at or utc_now)
         if attempts is not None and max_tourney_battle_attempts:
+            display_attempts = True
             attempts_left = f'{max_tourney_battle_attempts - attempts}, '
         lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({attempts_left}{user_rank})')
 
-    properties_attempts = '' if retrieved_at else 'Attempts left today, '
+    properties_attempts = 'Attempts left, ' if display_attempts else ''
     properties_text = f'Properties displayed: Rank. Stars (Difference to next) Player name ({properties_attempts}Fleet rank)'
     if retrieved_at is not None:
         footer_text = utils.datetime.get_historic_data_note(retrieved_at)
@@ -211,13 +213,13 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         return lines
 
 
-async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, max_tourney_battle_attempts: Optional[int] = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, None, retrieved_at=retrieved_date, as_embed=as_embed)
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, retrieved_at=retrieved_date, as_embed=as_embed)
 
 
 
