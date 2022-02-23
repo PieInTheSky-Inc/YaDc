@@ -83,6 +83,13 @@ class TourneyData(object):
         return dict({key: dict(value) for key, value in self.__fleets.items()})
 
     @property
+    def max_tournament_battle_attempts(self) -> Optional[int]:
+        """
+        The maximum number of tournament battle attempts for a day.
+        """
+        return self.__meta.get('max_tournament_battle_attempts')
+
+    @property
     def month(self) -> int:
         """
         Short for data_date.month
