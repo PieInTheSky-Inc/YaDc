@@ -36,7 +36,7 @@ class TourneyData(object):
         if self.__meta['schema_version'] >= 9:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
             self.__users = TourneyData.__create_user_dict_from_data_v9(data['users'], self.__fleets)
-        if self.__meta['schema_version'] >= 8:
+        elif self.__meta['schema_version'] >= 8:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
             self.__users = TourneyData.__create_user_dict_from_data_v8(data['users'], self.__fleets)
         elif self.__meta['schema_version'] >= 7:
@@ -87,7 +87,10 @@ class TourneyData(object):
         """
         The maximum number of tournament battle attempts for a day.
         """
-        return self.__meta.get('max_tournament_battle_attempts')
+        result = self.__meta.get('max_tournament_battle_attempts')
+        if result:
+            return int(result)
+        return None
 
     @property
     def month(self) -> int:
