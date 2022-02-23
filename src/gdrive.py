@@ -33,6 +33,9 @@ class TourneyData(object):
 
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
+        if self.__meta['schema_version'] >= 9:
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
+            self.__users = TourneyData.__create_user_dict_from_data_v9(data['users'], self.__fleets)
         if self.__meta['schema_version'] >= 8:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
             self.__users = TourneyData.__create_user_dict_from_data_v8(data['users'], self.__fleets)
@@ -405,6 +408,43 @@ class TourneyData(object):
                 'PVPDefenceDraws': str(user[16]),
                 'ChampionshipScore': str(user[17]),
                 'HighestTrophy': str(user[18]),
+                'Alliance': {}
+            }
+            if fleet_id and fleet_id != '0':
+                fleet_info = fleet_data.get(fleet_id, {})
+                for key, value in fleet_info.items():
+                    result[user_id]['Alliance'][key] = value
+
+        return result
+
+
+    @staticmethod
+    def __create_user_dict_from_data_v9(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+        result = {}
+        for user in users:
+            fleet_id = str(user[2])
+            user_id = str(user[0])
+            result[user_id] = {
+                'Id': user_id,
+                'AllianceId': fleet_id,
+                'Trophy': str(user[3]),
+                'AllianceScore': str(user[4]),
+                'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
+                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]) if user[6] else None,
+                'LastLoginDate': TourneyData.__convert_timestamp_v4(user[7]),
+                'Name': user[1],
+                'LastHeartBeatDate': TourneyData.__convert_timestamp_v4(user[8]),
+                'CrewDonated': str(user[9]),
+                'CrewReceived': str(user[10]),
+                'PVPAttackWins': str(user[11]),
+                'PVPAttackLosses': str(user[12]),
+                'PVPAttackDraws': str(user[13]),
+                'PVPDefenceWins': str(user[14]),
+                'PVPDefenceLosses': str(user[15]),
+                'PVPDefenceDraws': str(user[16]),
+                'ChampionshipScore': str(user[17]),
+                'HighestTrophy': str(user[18]),
+                'TournamentBonusScore': str(user[19]),
                 'Alliance': {}
             }
             if fleet_id and fleet_id != '0':
