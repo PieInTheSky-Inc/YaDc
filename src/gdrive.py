@@ -27,8 +27,8 @@ from typehints import EntitiesData, EntityInfo
 
 class TourneyData(object):
     def __init__(self, data: dict) -> None:
-        self.__fleets: EntitiesData
-        self.__users: EntitiesData
+        self.__fleets: EntitiesData = None
+        self.__users: EntitiesData = None
         self.__meta: Dict[str, object] = data['meta']
 
         if not self.__meta.get('schema_version', None):

@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Optional
-from typing_extensions import ParamSpecKwargs
 
 from discord import Colour, Embed
 
