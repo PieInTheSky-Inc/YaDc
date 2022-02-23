@@ -1151,7 +1151,7 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
             _, fleet_info = await paginator.wait_for_option_selection()
 
         if fleet_info:
-            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
+            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, tourney_data.max_tournament_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
     else:
         leading_space_note = ''
         if fleet_name.startswith(' '):
