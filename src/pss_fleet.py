@@ -53,7 +53,7 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
 
 def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
     start = time.perf_counter()
-    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True, include_division_name=True)
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True, include_division_name=True, include_pvp_stats=True)
     time1 = time.perf_counter() - start
     print(f'Creating the fleet users lines took {time1:.2f} seconds.')
 
@@ -369,7 +369,7 @@ def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Any
     return fleet_sheet_data
 
 
-def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, sort_lines: bool = True) -> List[Any]:
+def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, include_pvp_stats: bool = False, sort_lines: bool = True) -> List[Any]:
     titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
     include_tourney_battle_attempts = max_tourney_battle_attempts is not None
     if include_tourney_battle_attempts:
@@ -381,7 +381,15 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
         titles.append('Player ID')
     if include_fleet_id:
         titles.append('Fleet ID')
-    tourney_running = tourney.is_tourney_running(retrieved_at)
+    if include_pvp_stats:
+        titles.extend((
+            'PvP wins',
+            'PvP losses',
+            'PvP draws',
+            'Defense wins',
+            'Defense losses',
+            'Defense draws',
+        ))
 
     result = []
     for user_info in fleet_users_data.values():
@@ -427,6 +435,15 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
+        if include_pvp_stats:
+            line.extend((
+                user_info.get('PVPAttackWins', ''),
+                user_info.get('PVPAttackLosses', ''),
+                user_info.get('PVPAttackDraws', ''),
+                user_info.get('PVPDefenceWins', ''),
+                user_info.get('PVPDefenceLosses', ''),
+                user_info.get('PVPDefenceDraws', ''),
+            ))
         result.append(line)
 
     if sort_lines:
