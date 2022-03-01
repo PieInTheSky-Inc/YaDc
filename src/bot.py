@@ -1105,8 +1105,8 @@ async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, d
         await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
         return
     else:
-        month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
         if tourney_data:
             output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
     await utils.discord.reply_with_output(ctx, output)
@@ -1134,8 +1134,8 @@ async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None
     if not fleet_name:
         raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
 
     if tourney_data is None:
         fleet_infos = []
@@ -1182,8 +1182,8 @@ async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, f
     if not fleet_name:
         raise MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
 
     if tourney_data is None:
         fleet_infos = []
@@ -1233,8 +1233,8 @@ async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
     if year is not None and month is None:
         raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
+    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
 
     if tourney_data and tourney_data.fleets and tourney_data.users:
         file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
@@ -1271,9 +1271,9 @@ async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, 
     if not player_name:
         raise MissingParameterError('The parameter `player_name` is mandatory.')
 
-    month, year = TourneyDataClient.retrieve_past_month_year(month, year, utc_now)
+    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
     try:
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month)
+        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
     except ValueError as err:
         error = str(err)
         tourney_data = None

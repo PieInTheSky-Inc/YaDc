@@ -780,7 +780,7 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
+    def retrieve_past_day_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
         if not utc_now:
             utc_now = utils.get_utc_now()
 
@@ -801,4 +801,6 @@ class TourneyDataClient():
             year = utc_now.year
             if utc_now.month + (1 if settings.MOST_RECENT_TOURNAMENT_DATA else 0) <= temp_month:
                 year -= 1
-        return temp_month, int(year)
+        year = int(year)
+        _, day = calendar.monthrange(year, temp_month)
+        return day, temp_month, int(year)
