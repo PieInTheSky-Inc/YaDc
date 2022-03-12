@@ -8,7 +8,7 @@ holidays==0.10.5.2
 jellyfish==0.8.2
 openpyxl==3.0.7
 pandas==1.2.3
-pillow==8.3.2
+pillow==9.0.1
 pip
 psycopg2==2.8.6
 git+https://github.com/googledrive/PyDrive.git#egg=PyDrive
