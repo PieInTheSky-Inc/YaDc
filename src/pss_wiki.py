@@ -1,3 +1,6 @@
+import os as _os
+
+from discord import File as _File
 from discord.ext.commands import Context as _Context
 
 from pss_exception import Error as _Error
@@ -32,6 +35,12 @@ async def create_data_lua_file(entity_retriever: _EntityRetriever, entity_name: 
     with open(file_path, 'w') as fp:
         fp.write(data)
     return file_path
+
+
+async def send_data_lua_file(ctx: _Context, entity_retriever: _EntityRetriever, entity_name: str) -> None:
+    file_path = await create_data_lua_file(entity_retriever, entity_name)
+    await ctx.send(file=_File(file_path))
+    _os.remove(file_path)
 
 
 async def assert_allowed(ctx: _Context) -> None:

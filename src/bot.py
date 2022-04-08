@@ -2860,7 +2860,6 @@ async def cmd_wiki(ctx: Context):
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
         await wiki.assert_allowed(ctx)
-
         await ctx.send_help('wiki')
 
 
@@ -2952,10 +2951,7 @@ async def cmd_wiki_data_achievements(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(achievement.achievements_designs_retriever, 'achievement')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, achievement.achievements_designs_retriever, 'achievement')
 
 
 @cmd_wiki_data.group(name='ai', brief='Get transformed ai data', invoke_without_command=True)
@@ -2977,10 +2973,7 @@ async def cmd_wiki_data_ai_actions(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(ai.action_types_designs_retriever, 'aiaction')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, ai.action_types_designs_retriever, 'aiaction')
 
 
 @cmd_wiki_data_ai.command(name='conditions', brief='Get transformed ai conditions data')
@@ -2991,10 +2984,7 @@ async def cmd_wiki_data_ai_conditions(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(ai.condition_types_designs_retriever, 'aicondition')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, ai.condition_types_designs_retriever, 'aicondition')
 
 
 @cmd_wiki_data.command(name='collections', brief='Get transformed collections data')
@@ -3005,10 +2995,7 @@ async def cmd_wiki_data_collections(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(crew.collections_designs_retriever, 'collection')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, crew.collections_designs_retriever, 'collection')
 
 
 @cmd_wiki_data.command(name='crafts', brief='Get transformed crafts data')
@@ -3019,10 +3006,7 @@ async def cmd_wiki_data_crafts(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(craft.crafts_designs_retriever, 'craft')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, craft.crafts_designs_retriever, 'craft')
 
 
 @cmd_wiki_data.command(name='crews', brief='Get transformed crews data')
@@ -3033,10 +3017,7 @@ async def cmd_wiki_data_crews(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(crew.characters_designs_retriever, 'crew')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, crew.characters_designs_retriever, 'crew')
 
 
 @cmd_wiki_data.command(name='items', brief='Get transformed items data')
@@ -3047,10 +3028,7 @@ async def cmd_wiki_data_items(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(item.items_designs_retriever, 'item')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, item.items_designs_retriever, 'item')
 
 
 @cmd_wiki_data.command(name='missiles', brief='Get transformed missiles data')
@@ -3061,10 +3039,7 @@ async def cmd_wiki_data_missiles(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(room.missiles_designs_retriever, 'missile')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, room.missiles_designs_retriever, 'missile')
 
 
 @cmd_wiki_data.command(name='researches', brief='Get transformed researches data')
@@ -3075,10 +3050,7 @@ async def cmd_wiki_data_researches(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(research.researches_designs_retriever, 'research')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, research.researches_designs_retriever, 'research')
 
 
 @cmd_wiki_data.group(name='rooms', aliases=['room'], brief='Get transformed rooms data')
@@ -3090,10 +3062,7 @@ async def cmd_wiki_data_rooms(ctx: Context):
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
         await wiki.assert_allowed(ctx)
-
-        file_path = await wiki.create_data_lua_file(room.rooms_designs_retriever, 'room')
-        await ctx.send(file=File(file_path))
-        os.remove(file_path)
+        await wiki.send_data_lua_file(ctx, room.rooms_designs_retriever, 'room')
 
 
 @cmd_wiki_data_rooms.command(name='sprites', brief='Get transformed room sprites data')
@@ -3104,10 +3073,7 @@ async def cmd_wiki_data_rooms_sprites(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(room.rooms_designs_sprites_retriever, 'roomsprite')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, room.rooms_designs_sprites_retriever, 'roomsprite')
 
 
 @cmd_wiki_data_rooms.command(name='purchases', brief='Get transformed rooms purchase data')
@@ -3118,10 +3084,7 @@ async def cmd_wiki_data_rooms_purchases(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(room.rooms_designs_purchases_retriever, 'roompurchase')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, room.rooms_designs_purchases_retriever, 'roompurchase')
 
 
 @cmd_wiki_data.command(name='ships', brief='Get transformed ships data')
@@ -3132,10 +3095,7 @@ async def cmd_wiki_data_ships(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(ship.ships_designs_retriever, 'ship')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, ship.ships_designs_retriever, 'ship')
 
 
 @cmd_wiki_data.command(name='trainings', brief='Get transformed trainings data')
@@ -3146,10 +3106,7 @@ async def cmd_wiki_data_trainings(ctx: Context):
     """
     __log_command_use(ctx)
     await wiki.assert_allowed(ctx)
-
-    file_path = await wiki.create_data_lua_file(training.trainings_designs_retriever, 'training')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+    await wiki.send_data_lua_file(ctx, training.trainings_designs_retriever, 'training')
 
 
 
