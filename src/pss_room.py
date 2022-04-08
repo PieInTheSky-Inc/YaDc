@@ -1033,6 +1033,12 @@ async def make_room_frame_sprite(room_frame_sprite_id: str, room_width: int, roo
 
 # ---------- Initilization ----------
 
+missiles_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
+    MISSILE_DESIGN_BASE_PATH,
+    MISSILE_DESIGN_KEY_NAME,
+    MISSILE_DESIGN_DESCRIPTION_PROPERTY_NAME,
+    cache_name='MissileDesignSprites'
+)
 rooms_designs_retriever: entity.EntityRetriever = entity.EntityRetriever(
     ROOM_DESIGN_BASE_PATH,
     ROOM_DESIGN_KEY_NAME,

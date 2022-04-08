@@ -25,6 +25,7 @@ import pss_achievement as achievement
 import pss_ai as ai
 import pss_assert
 import pss_core as core
+import pss_craft as craft
 import pss_crew as crew
 import pss_daily as daily
 import pss_dropship as dropship
@@ -2937,38 +2938,206 @@ async def cmd_wiki_itemdata(ctx: Context):
         raise Error('An unexpected error occured. Please contact the bot\'s author.')
 
 
-@cmd_wiki.command(name='roomstats', brief='Get transformed room data')
+@cmd_wiki.group(name='data', brief='Get transformed data', invoke_without_command=True)
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
-async def cmd_wiki_roomstats(ctx: Context, *, room_name_or_id: str):
+async def cmd_wiki_data(ctx: Context):
     """
-    Transform RoomDesigns data to be used in the wiki. Returns multiple files:
-    - Room details table(s)
-    - Rearm table for weapon platforms
-    - All room sprites
+    Polls the API and returns a string that can be inserted directly into the wiki's data Modules.
+    """
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
+
+
+@cmd_wiki_data.command(name='achievements', brief='Get transformed achievements data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_achievements(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Achievement_Data
     """
     __log_command_use(ctx)
 
-    if ctx.author.id not in settings.RAW_COMMAND_USERS:
-        raise Error('You are not allowed to use this command.')
+    file_path = await wiki.create_data_lua_file(achievement.achievements_designs_retriever, 'achievement')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
 
-    rooms_data = await room.rooms_designs_retriever.get_data_dict3()
-    rooms_purchase_data = await room.rooms_designs_purchases_retriever.get_data_dict3()
-    rooms_sprites_data = await room.rooms_designs_sprites_retriever.get_data_dict3()
-    retrieved_at = utils.get_utc_now()
 
-    room_design_id = None
-    try:
-        room_design_id = int(room_name_or_id)
-    except:
-        pss_assert.valid_entity_name(room_name_or_id, allowed_values=room.ALLOWED_ROOM_NAMES)
-        rooms_designs_infos = room.get_room_infos_by_name(room_name_or_id, rooms_data)
+@cmd_wiki_data.group(name='ai', brief='Get transformed ai data', invoke_without_command=True)
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_ai(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into an ai data Module.
+    """
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
 
-    rooms_per_level = room.get_rooms_per_level(room_name_or_id, rooms_purchase_data)
-    rooms_table = wiki.make_rooms_purchase_table(rooms_per_level)
 
-    rooms_progression = room.get_room_info_progression()
+@cmd_wiki_data_ai.command(name='actions', brief='Get transformed ai actions data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_ai_actions(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Ai_Actions_Data
+    """
+    __log_command_use(ctx)
 
-    pass
+    file_path = await wiki.create_data_lua_file(ai.action_types_designs_retriever, 'aiaction')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data_ai.command(name='conditions', brief='Get transformed ai conditions data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_ai_actions(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Ai_Conditions_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(ai.condition_types_designs_retriever, 'aicondition')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='collections', brief='Get transformed collections data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_collections(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Collection_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(crew.collections_designs_retriever, 'collection')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='crafts', brief='Get transformed crafts data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_crafts(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Craft_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(craft.crafts_designs_retriever, 'craft')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='crews', brief='Get transformed crews data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_crews(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Crew_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(crew.characters_designs_retriever, 'crew')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='items', brief='Get transformed items data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_items(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Item_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(item.items_designs_retriever, 'item')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='missiles', brief='Get transformed missiles data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_missiles(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Missile_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(room.missiles_designs_retriever, 'missile')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='researches', brief='Get transformed researches data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_researches(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Research_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(research.researches_designs_retriever, 'research')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.group(name='rooms', aliases=['room'], brief='Get transformed rooms data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_rooms(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Room_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(room.rooms_designs_retriever, 'room')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='sprites', brief='Get transformed room sprites data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_rooms_sprites(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Room_Sprite_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(room.rooms_designs_sprites_retriever, 'roomsprite')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='purchases', brief='Get transformed rooms purchase data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_rooms_purchases(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Room_Purchase_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(room.rooms_designs_purchases_retriever, 'roompurchase')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='ships', brief='Get transformed ships data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_ships(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Ship_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(ship.ships_designs_retriever, 'ship')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
+
+
+@cmd_wiki_data.command(name='trainings', brief='Get transformed trainings data')
+@cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
+async def cmd_wiki_data_trainings(ctx: Context):
+    """
+    Polls the API and returns a string that can be inserted directly into Module:Training_Data
+    """
+    __log_command_use(ctx)
+
+    file_path = await wiki.create_data_lua_file(training.trainings_designs_retriever, 'training')
+    await ctx.send(file=File(file_path))
+    os.remove(file_path)
 
 
 
