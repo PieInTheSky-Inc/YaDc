@@ -2947,6 +2947,9 @@ async def cmd_wiki_data(ctx: Context):
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
 
+        if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+            raise Error('You are not allowed to use this command.')
+
 
 @cmd_wiki_data.command(name='achievements', brief='Get transformed achievements data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
@@ -2955,6 +2958,9 @@ async def cmd_wiki_data_achievements(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Achievement_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(achievement.achievements_designs_retriever, 'achievement')
     await ctx.send(file=File(file_path))
@@ -2970,6 +2976,9 @@ async def cmd_wiki_data_ai(ctx: Context):
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
 
+        if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+            raise Error('You are not allowed to use this command.')
+
 
 @cmd_wiki_data_ai.command(name='actions', brief='Get transformed ai actions data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
@@ -2978,6 +2987,9 @@ async def cmd_wiki_data_ai_actions(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Ai_Actions_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(ai.action_types_designs_retriever, 'aiaction')
     await ctx.send(file=File(file_path))
@@ -2992,6 +3004,9 @@ async def cmd_wiki_data_ai_actions(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(ai.condition_types_designs_retriever, 'aicondition')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
@@ -3004,6 +3019,9 @@ async def cmd_wiki_data_collections(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Collection_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(crew.collections_designs_retriever, 'collection')
     await ctx.send(file=File(file_path))
@@ -3018,6 +3036,9 @@ async def cmd_wiki_data_crafts(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(craft.crafts_designs_retriever, 'craft')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
@@ -3030,6 +3051,9 @@ async def cmd_wiki_data_crews(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Crew_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(crew.characters_designs_retriever, 'crew')
     await ctx.send(file=File(file_path))
@@ -3044,6 +3068,9 @@ async def cmd_wiki_data_items(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(item.items_designs_retriever, 'item')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
@@ -3056,6 +3083,9 @@ async def cmd_wiki_data_missiles(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Missile_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(room.missiles_designs_retriever, 'missile')
     await ctx.send(file=File(file_path))
@@ -3070,6 +3100,9 @@ async def cmd_wiki_data_researches(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(research.researches_designs_retriever, 'research')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
@@ -3081,14 +3114,18 @@ async def cmd_wiki_data_rooms(ctx: Context):
     """
     Polls the API and returns a string that can be inserted directly into Module:Room_Data
     """
-    __log_command_use(ctx)
+    if ctx.invoked_subcommand is None:
+        __log_command_use(ctx)
 
-    file_path = await wiki.create_data_lua_file(room.rooms_designs_retriever, 'room')
-    await ctx.send(file=File(file_path))
-    os.remove(file_path)
+        if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+            raise Error('You are not allowed to use this command.')
+
+        file_path = await wiki.create_data_lua_file(room.rooms_designs_retriever, 'room')
+        await ctx.send(file=File(file_path))
+        os.remove(file_path)
 
 
-@cmd_wiki_data.command(name='sprites', brief='Get transformed room sprites data')
+@cmd_wiki_data_rooms.command(name='sprites', brief='Get transformed room sprites data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_rooms_sprites(ctx: Context):
     """
@@ -3096,18 +3133,24 @@ async def cmd_wiki_data_rooms_sprites(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(room.rooms_designs_sprites_retriever, 'roomsprite')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
 
 
-@cmd_wiki_data.command(name='purchases', brief='Get transformed rooms purchase data')
+@cmd_wiki_data_rooms.command(name='purchases', brief='Get transformed rooms purchase data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_rooms_purchases(ctx: Context):
     """
     Polls the API and returns a string that can be inserted directly into Module:Room_Purchase_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(room.rooms_designs_purchases_retriever, 'roompurchase')
     await ctx.send(file=File(file_path))
@@ -3122,6 +3165,9 @@ async def cmd_wiki_data_ships(ctx: Context):
     """
     __log_command_use(ctx)
 
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
+
     file_path = await wiki.create_data_lua_file(ship.ships_designs_retriever, 'ship')
     await ctx.send(file=File(file_path))
     os.remove(file_path)
@@ -3134,6 +3180,9 @@ async def cmd_wiki_data_trainings(ctx: Context):
     Polls the API and returns a string that can be inserted directly into Module:Training_Data
     """
     __log_command_use(ctx)
+
+    if ctx.guild.id not in settings.WIKI_COMMAND_GUILDS and ctx.author.id not in settings.WIKI_COMMAND_USERS:
+        raise Error('You are not allowed to use this command.')
 
     file_path = await wiki.create_data_lua_file(training.trainings_designs_retriever, 'training')
     await ctx.send(file=File(file_path))
