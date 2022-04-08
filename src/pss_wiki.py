@@ -1,4 +1,8 @@
+from discord.ext.commands import Context as _Context
+
+from pss_exception import Error as _Error
 from pss_entity import EntityRetriever as _EntityRetriever
+import settings as _settings
 import utils as _utils
 
 
@@ -28,3 +32,10 @@ async def create_data_lua_file(entity_retriever: _EntityRetriever, entity_name: 
     with open(file_path, 'w') as fp:
         fp.write(data)
     return file_path
+
+
+async def assert_allowed(ctx: _Context) -> None:
+    if not (await ctx.bot.is_owner(ctx.author)):
+        if ctx.guild.id not in _settings.WIKI_COMMAND_GUILDS:
+            if ctx.author.id not in _settings.WIKI_COMMAND_USERS:
+                raise _Error('You are not allowed to use this command.')
