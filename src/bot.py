@@ -2859,12 +2859,9 @@ async def cmd_wiki(ctx: Context):
     """
     if ctx.invoked_subcommand is None:
         __log_command_use(ctx)
-
-        if ctx.author.id not in settings.RAW_COMMAND_USERS:
-            raise Error('You are not allowed to use this command.')
+        await wiki.assert_allowed(ctx)
 
         await ctx.send_help('wiki')
-    pass
 
 
 @cmd_wiki.command(name='itemdata', brief='Get transformed item data')
@@ -2874,9 +2871,7 @@ async def cmd_wiki_itemdata(ctx: Context):
     Transform ItemDesigns data to be used in: https://pixelstarships.fandom.com/wiki/Module:Data
     """
     __log_command_use(ctx)
-
-    if ctx.author.id not in settings.RAW_COMMAND_USERS:
-        raise Error('You are not allowed to use this command.')
+    await wiki.assert_allowed(ctx)
 
     item_data = await item.items_designs_retriever.get_data_dict3()
     retrieved_at = utils.get_utc_now()
@@ -2990,7 +2985,7 @@ async def cmd_wiki_data_ai_actions(ctx: Context):
 
 @cmd_wiki_data_ai.command(name='conditions', brief='Get transformed ai conditions data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
-async def cmd_wiki_data_ai_actions(ctx: Context):
+async def cmd_wiki_data_ai_conditions(ctx: Context):
     """
     Polls the API and returns a string that can be inserted directly into Module:Ai_Conditions_Data
     """
