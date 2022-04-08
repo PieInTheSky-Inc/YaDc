@@ -4,6 +4,8 @@ items-*.txt
 *.db
 *.csv
 sprite_cache/
+bin/
+pyvenv.cfg
 
 # Visual Studio Code
 .vscode/
