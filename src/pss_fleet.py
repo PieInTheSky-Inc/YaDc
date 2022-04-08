@@ -53,7 +53,7 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
 
 def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: datetime, file_name: str) -> str:
     start = time.perf_counter()
-    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True, include_division_name=True)
+    fleet_sheet_contents = __get_fleet_sheet_lines(fleet_users_data, retrieved_at, include_player_id=True, include_fleet_id=True, include_division_name=True, include_pvp_stats=True)
     time1 = time.perf_counter() - start
     print(f'Creating the fleet users lines took {time1:.2f} seconds.')
 
@@ -171,6 +171,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
     fleet_users_infos_count = len(fleet_users_infos)
 
     title = f'{fleet_name} member stars (division {division})'
+    display_attempts = False
     lines = []
     for i, user_info in enumerate(fleet_users_infos, 1):
         stars = user_info['AllianceScore']
@@ -184,10 +185,11 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         attempts_left = ''
         attempts = user.__get_tourney_battle_attempts(user_info, retrieved_at or utc_now)
         if attempts is not None and max_tourney_battle_attempts:
+            display_attempts = True
             attempts_left = f'{max_tourney_battle_attempts - attempts}, '
         lines.append(f'**{i}.** {stars} (+{difference}) {emojis.star} {user_name} ({attempts_left}{user_rank})')
 
-    properties_attempts = '' if retrieved_at else 'Attempts left today, '
+    properties_attempts = 'Attempts left, ' if display_attempts else ''
     properties_text = f'Properties displayed: Rank. Stars (Difference to next) Player name ({properties_attempts}Fleet rank)'
     if retrieved_at is not None:
         footer_text = utils.datetime.get_historic_data_note(retrieved_at)
@@ -211,13 +213,13 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
         return lines
 
 
-async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo, fleet_data: EntitiesData, user_data: EntitiesData, retrieved_date: datetime, max_tourney_battle_attempts: Optional[int] = None, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
         fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
-    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, None, retrieved_at=retrieved_date, as_embed=as_embed)
+    return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, retrieved_at=retrieved_date, as_embed=as_embed)
 
 
 
@@ -367,7 +369,7 @@ def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Any
     return fleet_sheet_data
 
 
-def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, sort_lines: bool = True) -> List[Any]:
+def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, include_pvp_stats: bool = False, sort_lines: bool = True) -> List[Any]:
     titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
     include_tourney_battle_attempts = max_tourney_battle_attempts is not None
     if include_tourney_battle_attempts:
@@ -379,7 +381,15 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
         titles.append('Player ID')
     if include_fleet_id:
         titles.append('Fleet ID')
-    tourney_running = tourney.is_tourney_running(retrieved_at)
+    if include_pvp_stats:
+        titles.extend((
+            'PvP wins',
+            'PvP losses',
+            'PvP draws',
+            'Defense wins',
+            'Defense losses',
+            'Defense draws',
+        ))
 
     result = []
     for user_info in fleet_users_data.values():
@@ -425,6 +435,15 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             line.append(user_info.get(USER_KEY_NAME, ''))
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
+        if include_pvp_stats:
+            line.extend((
+                user_info.get('PVPAttackWins', ''),
+                user_info.get('PVPAttackLosses', ''),
+                user_info.get('PVPAttackDraws', ''),
+                user_info.get('PVPDefenceWins', ''),
+                user_info.get('PVPDefenceLosses', ''),
+                user_info.get('PVPDefenceDraws', ''),
+            ))
         result.append(line)
 
     if sort_lines:

@@ -138,7 +138,8 @@ __DISPLAY_NAMES: Dict[str, Dict[str, str]] = {
     },
     'queue_limit': {
         'default': 'Queue limit',
-        'Council': 'Borrow limit',
+        'Council': 'Donation limit',
+        'Printer': 'Bux per day',
         'Shield': 'Restore on reload'
     },
     'reload_speed': {
@@ -478,6 +479,18 @@ def __get_queue_limit(room_info: EntityInfo, rooms_data: EntitiesData, items_dat
         return None
 
 
+def __get_queue_limit_float(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
+        manufacture_capacity = room_info.get('ManufactureCapacity')
+        manufacture_rate = room_info.get('ManufactureRate')
+        if entity.entity_property_has_value(manufacture_capacity) and not entity.entity_property_has_value(manufacture_rate):
+            return __parse_value(str(float(manufacture_capacity) / 100.0))
+        else:
+            return None
+    else:
+        return None
+
+
 async def __get_random_exterior_sprite_url(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
     room_design_id = room_info.get(ROOM_DESIGN_KEY_NAME)
     if entity.entity_property_has_value(room_design_id):
@@ -810,9 +823,9 @@ def __get_short_name(room_info: EntityInfo) -> str:
 def __parse_value(value: str, max_decimal_count: int = utils.DEFAULT_FLOAT_PRECISION) -> Optional[str]:
     if value and value.lower() != 'none':
         try:
-            i = float(value)
-            if i:
-                return utils.format.get_reduced_number_compact(i, max_decimal_count=max_decimal_count)
+            f = float(value)
+            if f:
+                return utils.format.get_reduced_number_compact(f, max_decimal_count=max_decimal_count)
             else:
                 return None
         except:
@@ -1070,7 +1083,8 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
             entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Printer']),
+            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit_float, forbidden_room_types=['Printer', 'Council']),
+            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, allowed_room_types=['Printer', 'Council']),
             entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
             entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
             entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, entity_property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),

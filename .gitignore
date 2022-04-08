@@ -4,6 +4,12 @@ items-*.txt
 *.db
 *.csv
 sprite_cache/
+bin/
+pyvenv.cfg
+
+# Visual Studio Code
+.vscode/
+.VsCodeCounter/
 
 # files created at runtime
 launch.json

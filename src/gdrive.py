@@ -27,13 +27,16 @@ from typehints import EntitiesData, EntityInfo
 
 class TourneyData(object):
     def __init__(self, data: dict) -> None:
-        self.__fleets: EntitiesData
-        self.__users: EntitiesData
+        self.__fleets: EntitiesData = None
+        self.__users: EntitiesData = None
         self.__meta: Dict[str, object] = data['meta']
 
         if not self.__meta.get('schema_version', None):
             self.__meta['schema_version'] = 3
-        if self.__meta['schema_version'] >= 8:
+        if self.__meta['schema_version'] >= 9:
+            self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
+            self.__users = TourneyData.__create_user_dict_from_data_v9(data['users'], self.__fleets)
+        elif self.__meta['schema_version'] >= 8:
             self.__fleets = TourneyData.__create_fleet_data_from_data_v7(data['fleets'], data['users']) # No change to prior schema version
             self.__users = TourneyData.__create_user_dict_from_data_v8(data['users'], self.__fleets)
         elif self.__meta['schema_version'] >= 7:
@@ -78,6 +81,16 @@ class TourneyData(object):
         Copy of fleet data
         """
         return dict({key: dict(value) for key, value in self.__fleets.items()})
+
+    @property
+    def max_tournament_battle_attempts(self) -> Optional[int]:
+        """
+        The maximum number of tournament battle attempts for a day.
+        """
+        result = self.__meta.get('max_tournament_battle_attempts')
+        if result:
+            return int(result)
+        return None
 
     @property
     def month(self) -> int:
@@ -416,6 +429,43 @@ class TourneyData(object):
 
 
     @staticmethod
+    def __create_user_dict_from_data_v9(users: List[List[Union[int, str]]], fleet_data: EntitiesData) -> EntitiesData:
+        result = {}
+        for user in users:
+            fleet_id = str(user[2])
+            user_id = str(user[0])
+            result[user_id] = {
+                'Id': user_id,
+                'AllianceId': fleet_id,
+                'Trophy': str(user[3]),
+                'AllianceScore': str(user[4]),
+                'AllianceMembership': lookups.ALLIANCE_MEMBERSHIP_LOOKUP[user[5]],
+                'AllianceJoinDate': TourneyData.__convert_timestamp_v4(user[6]) if user[6] else None,
+                'LastLoginDate': TourneyData.__convert_timestamp_v4(user[7]),
+                'Name': user[1],
+                'LastHeartBeatDate': TourneyData.__convert_timestamp_v4(user[8]),
+                'CrewDonated': str(user[9]),
+                'CrewReceived': str(user[10]),
+                'PVPAttackWins': str(user[11]),
+                'PVPAttackLosses': str(user[12]),
+                'PVPAttackDraws': str(user[13]),
+                'PVPDefenceWins': str(user[14]),
+                'PVPDefenceLosses': str(user[15]),
+                'PVPDefenceDraws': str(user[16]),
+                'ChampionshipScore': str(user[17]),
+                'HighestTrophy': str(user[18]),
+                'TournamentBonusScore': str(user[19]),
+                'Alliance': {}
+            }
+            if fleet_id and fleet_id != '0':
+                fleet_info = fleet_data.get(fleet_id, {})
+                for key, value in fleet_info.items():
+                    result[user_id]['Alliance'][key] = value
+
+        return result
+
+
+    @staticmethod
     def __convert_timestamp_v4(timestamp: int) -> str:
         minutes, seconds = divmod(timestamp, 60)
         hours, minutes = divmod(minutes, 60)
@@ -615,7 +665,7 @@ class TourneyDataClient():
         result = self.__cache.get(year, {}).get(month, {})
         if result:
             if day is None:
-                result = result.get(tuple(result.keys())[-1], None)
+                result = result.get(max(result.keys()), None)
             else:
                 result = result.get(day, None)
         else:
@@ -730,7 +780,7 @@ class TourneyDataClient():
 
 
     @staticmethod
-    def retrieve_past_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
+    def retrieve_past_day_month_year(month: str, year: str, utc_now: datetime) -> Tuple[int, int]:
         if not utc_now:
             utc_now = utils.get_utc_now()
 
@@ -751,4 +801,6 @@ class TourneyDataClient():
             year = utc_now.year
             if utc_now.month + (1 if settings.MOST_RECENT_TOURNAMENT_DATA else 0) <= temp_month:
                 year -= 1
-        return temp_month, int(year)
+        year = int(year)
+        _, day = calendar.monthrange(year, temp_month)
+        return day, temp_month, int(year)
