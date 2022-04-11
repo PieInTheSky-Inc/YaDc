@@ -13,7 +13,11 @@ async def get_data_lua(entity_retriever: _EntityRetriever) -> str:
     entities_data = await entity_retriever.get_data_dict3()
     entities = []
     for entity_id, entity_info in entities_data.items():
-        entity_properties = ','.join(f'{property_name}="{property_value}"' for property_name, property_value in entity_info.items())
+        properties = []
+        for property_name, property_value in entity_info.items():
+            property_value = str(property_value).replace('"', '\\"') if property_value else ''
+            properties.append(f'{property_name}="{property_value}"')
+        entity_properties = ','.join(properties)
         entity_str = f'["{entity_id}"]={{{entity_properties}}}'
         entities.append(entity_str)
     lines = [
