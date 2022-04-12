@@ -2943,7 +2943,7 @@ async def cmd_wiki_data(ctx: Context):
         await wiki.assert_allowed(ctx)
 
 
-@cmd_wiki_data.command(name='achievements', brief='Get transformed achievements data')
+@cmd_wiki_data.command(name='achievements', aliases=['achievement'], brief='Get transformed achievements data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_achievements(ctx: Context):
     """
@@ -2965,7 +2965,7 @@ async def cmd_wiki_data_ai(ctx: Context):
         await wiki.assert_allowed(ctx)
 
 
-@cmd_wiki_data_ai.command(name='actions', brief='Get transformed ai actions data')
+@cmd_wiki_data_ai.command(name='actions', aliases=['action'], brief='Get transformed ai actions data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_ai_actions(ctx: Context):
     """
@@ -2976,7 +2976,7 @@ async def cmd_wiki_data_ai_actions(ctx: Context):
     await wiki.send_data_lua_file(ctx, ai.action_types_designs_retriever, 'aiaction')
 
 
-@cmd_wiki_data_ai.command(name='conditions', brief='Get transformed ai conditions data')
+@cmd_wiki_data_ai.command(name='conditions', aliases=['condition'], brief='Get transformed ai conditions data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_ai_conditions(ctx: Context):
     """
@@ -2987,7 +2987,7 @@ async def cmd_wiki_data_ai_conditions(ctx: Context):
     await wiki.send_data_lua_file(ctx, ai.condition_types_designs_retriever, 'aicondition')
 
 
-@cmd_wiki_data.command(name='collections', brief='Get transformed collections data')
+@cmd_wiki_data.command(name='collections', aliases=['collection'], brief='Get transformed collections data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_collections(ctx: Context):
     """
@@ -2998,7 +2998,7 @@ async def cmd_wiki_data_collections(ctx: Context):
     await wiki.send_data_lua_file(ctx, crew.collections_designs_retriever, 'collection')
 
 
-@cmd_wiki_data.command(name='crafts', brief='Get transformed crafts data')
+@cmd_wiki_data.command(name='crafts', aliases=['craft'], brief='Get transformed crafts data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_crafts(ctx: Context):
     """
@@ -3009,7 +3009,7 @@ async def cmd_wiki_data_crafts(ctx: Context):
     await wiki.send_data_lua_file(ctx, craft.crafts_designs_retriever, 'craft')
 
 
-@cmd_wiki_data.command(name='crews', brief='Get transformed crews data')
+@cmd_wiki_data.command(name='crews', aliases=['crew'], brief='Get transformed crews data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_crews(ctx: Context):
     """
@@ -3020,7 +3020,7 @@ async def cmd_wiki_data_crews(ctx: Context):
     await wiki.send_data_lua_file(ctx, crew.characters_designs_retriever, 'crew')
 
 
-@cmd_wiki_data.command(name='items', brief='Get transformed items data')
+@cmd_wiki_data.command(name='items', aliases=['item'], brief='Get transformed items data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_items(ctx: Context):
     """
@@ -3031,7 +3031,7 @@ async def cmd_wiki_data_items(ctx: Context):
     await wiki.send_data_lua_file(ctx, item.items_designs_retriever, 'item')
 
 
-@cmd_wiki_data.command(name='missiles', brief='Get transformed missiles data')
+@cmd_wiki_data.command(name='missiles', aliases=['missile'], brief='Get transformed missiles data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_missiles(ctx: Context):
     """
@@ -3042,7 +3042,7 @@ async def cmd_wiki_data_missiles(ctx: Context):
     await wiki.send_data_lua_file(ctx, room.missiles_designs_retriever, 'missile')
 
 
-@cmd_wiki_data.command(name='researches', brief='Get transformed researches data')
+@cmd_wiki_data.command(name='researches', aliases=['research'], brief='Get transformed researches data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_researches(ctx: Context):
     """
@@ -3065,7 +3065,7 @@ async def cmd_wiki_data_rooms(ctx: Context):
         await wiki.send_data_lua_file(ctx, room.rooms_designs_retriever, 'room')
 
 
-@cmd_wiki_data_rooms.command(name='sprites', brief='Get transformed room sprites data')
+@cmd_wiki_data_rooms.command(name='sprites', aliases=['sprite'], brief='Get transformed room sprites data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_rooms_sprites(ctx: Context):
     """
@@ -3076,7 +3076,7 @@ async def cmd_wiki_data_rooms_sprites(ctx: Context):
     await wiki.send_data_lua_file(ctx, room.rooms_designs_sprites_retriever, 'roomsprite')
 
 
-@cmd_wiki_data_rooms.command(name='purchases', brief='Get transformed rooms purchase data')
+@cmd_wiki_data_rooms.command(name='purchases', aliases=['purchase'], brief='Get transformed rooms purchase data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_rooms_purchases(ctx: Context):
     """
@@ -3087,7 +3087,7 @@ async def cmd_wiki_data_rooms_purchases(ctx: Context):
     await wiki.send_data_lua_file(ctx, room.rooms_designs_purchases_retriever, 'roompurchase')
 
 
-@cmd_wiki_data.command(name='ships', brief='Get transformed ships data')
+@cmd_wiki_data.command(name='ships', aliases=['ship'], brief='Get transformed ships data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_ships(ctx: Context):
     """
@@ -3098,7 +3098,7 @@ async def cmd_wiki_data_ships(ctx: Context):
     await wiki.send_data_lua_file(ctx, ship.ships_designs_retriever, 'ship')
 
 
-@cmd_wiki_data.command(name='trainings', brief='Get transformed trainings data')
+@cmd_wiki_data.command(name='trainings', aliases=['training'], brief='Get transformed trainings data')
 @cooldown(rate=RAW_RATE, per=RAW_COOLDOWN, type=BucketType.user)
 async def cmd_wiki_data_trainings(ctx: Context):
     """
