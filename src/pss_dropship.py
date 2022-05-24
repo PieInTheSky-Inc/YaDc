@@ -263,8 +263,11 @@ async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
         entity_details = ''.join(await room_details.get_details_as_text(entity.EntityDetailsType.SHORT))
     elif sale_type == 'Bonus':
         entity_details = f'{sale_argument} % bonus starbux'
+    #elif sale_type == 'FleetGift':
+    #    sale_rewards = utils.parse.requirement_string(daily_info.get('SaleRewardType'))
+    #    for entity_type, _, entity_amount, entity_amount_modifier in sale_rewards:
     else: # Print debugging info
-        sale_title = daily_info['SaleTitle']
+        sale_title = daily_info.get('SaleTitle')
         debug_details = []
         debug_details.append(f'Sale Type: {sale_type}')
         debug_details.append(f'Sale Argument: {sale_argument}')

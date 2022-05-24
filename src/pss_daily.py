@@ -45,7 +45,9 @@ DAILY_INFO_FIELDS: List[str] = [
     'SaleArgument',
     'SaleItemMask',
     'SaleQuantity',
-    'SaleType'
+    'SaleType',
+    'SaleRewardString',
+    'SaleTitle'
 ]
 
 DAILY_INFO_FIELDS_TO_CHECK: List[str] = [
