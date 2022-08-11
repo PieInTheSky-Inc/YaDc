@@ -295,7 +295,7 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
 
     @_command_group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_yesterday(self, ctx: _Context) -> None:
+    async def yesterday(self, ctx: _Context) -> None:
         """
         Get yesterday's final tournament standings.
 
@@ -306,9 +306,9 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
             await ctx.send_help('yesterday')
 
 
-    @cmd_yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
+    @yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_yesterday_fleet(self, ctx: _Context, *, fleet_name: str = None):
+    async def yesterday_fleet(self, ctx: _Context, *, fleet_name: str = None):
         """
         Get yesterday's tournament fleet data.
 
@@ -359,9 +359,9 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
             raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in current tournament.{leading_space_note}')
 
 
-    @cmd_yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
+    @yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_yesterday_player(self, ctx: _Context, *, player_name: str = None):
+    async def yesterday_player(self, ctx: _Context, *, player_name: str = None):
         """
         Get historic tournament player data.
 
@@ -401,9 +401,9 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
+    @yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_yesterday_stars(self, ctx: _Context, *, division: str = None):
+    async def yesterday_stars(self, ctx: _Context, *, division: str = None):
         """
         Get yesterday's final tournament division standings.
         """
@@ -427,9 +427,9 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
+    @yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_yesterday_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
+    async def yesterday_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
         """
         Get yesterday's final tournament fleet standings.
 
@@ -559,7 +559,7 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
 
     @targets.command(name='top', brief='Get top tournament targets')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN * 2, type=_BucketType.user)
-    async def cmd_targets_top(self, ctx: _Context, division: str, count: int = None, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
+    async def targets_top(self, ctx: _Context, division: str, count: int = None, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
         """
         Prints a list of the highest value tournament targets of all fleets in a specific division with a minimum star value and a maximum trophy count.
 
