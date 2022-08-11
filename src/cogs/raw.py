@@ -26,6 +26,10 @@ from .. import pss_training as _training
 
 
 class RawDataCog(_RawCogBase, name='Raw Data'):
+    """
+    This module offers commands to obtain raw game data.
+    """
+
     @_command_group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
     @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw(self, ctx: _Context):

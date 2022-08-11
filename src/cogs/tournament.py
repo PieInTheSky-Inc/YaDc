@@ -27,7 +27,7 @@ from .. import utils as _utils
 
 class TournamentCog(_CogBase, name='Tournament'):
     """
-    This extension offers commands to get information about fleets and players from past tournaments.
+    This module offers commands to get information about fleets and players from past tournaments.
     """
     def __init__(self, bot: _Bot) -> None:
         super().__init__(bot)

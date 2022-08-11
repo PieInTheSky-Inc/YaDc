@@ -39,6 +39,10 @@ from .. import utils as _utils
 
 
 class CurrentDataCog(_CogBase, name='Current PSS Data'):
+    """
+    This module offers commands to get current game data.
+    """
+
     @_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def cmd_best(self, ctx: _Context, slot: str, *, stat: str = None):

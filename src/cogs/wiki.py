@@ -27,6 +27,10 @@ from .. import utils as _utils
 
 
 class WikiCog(_RawCogBase, name='Wiki data'):
+    """
+    This module offers commands to transform raw game data into data that can be used by fandom wiki Data Modules.
+    """
+
     @_command_group(name='wiki', brief='Get transformed data for the wiki', invoke_without_command=True, hidden=True)
     @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def wiki(self, ctx: _Context):

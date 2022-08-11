@@ -20,7 +20,7 @@ from .. import utils as _utils
 
 class GeneralCog(_CogBase, name='General'):
     """
-    This extension offers commands
+    This module offers commands to obtain information about the bot itself.
     """
 
     @_command(name='about', aliases=['info'], brief='Display info on this bot')
