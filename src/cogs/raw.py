@@ -9,9 +9,7 @@ from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
-from . import BaseCog as _BaseCog
-from .. import pss_raw as _raw
-
+from .base import RawCogBase as _RawCogBase
 from .. import pss_achievement as _achievement
 from .. import pss_ai as _ai
 from .. import pss_crew as _crew
@@ -19,6 +17,7 @@ from .. import pss_gm as _gm
 from .. import pss_item as _item
 from .. import pss_mission as _mission
 from .. import pss_promo as _promo
+from .. import pss_raw as _raw
 from .. import pss_research as _research
 from .. import pss_room as _room
 from .. import pss_ship as _ship
@@ -26,12 +25,9 @@ from .. import pss_situation as _situation
 from .. import pss_training as _training
 
 
-class RawDataCog(_BaseCog, name='Get raw game data'):
-    RATE = 5
-    COOLDOWN = 10.0
-
+class RawDataCog(_RawCogBase, name='Raw Data'):
     @_command_group(name='raw', brief='Get raw data from the PSS API', invoke_without_command=True, hidden=True)
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw(self, ctx: _Context):
         """
         Get raw data from the Pixel Starships API.
@@ -56,7 +52,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='achievement', aliases=['achievements'], brief='Get raw achievement data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_achievement(self, ctx: _Context, *, achievement_id: str = None):
         """
         Get raw achievement design data from the PSS API.
@@ -80,7 +76,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.group(name='ai', brief='Get raw ai data', invoke_without_command=True)
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_ai(self, ctx: _Context):
         """
         Get raw ai design data from the PSS API.
@@ -104,7 +100,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw_ai.command(name='action', aliases=['actions'], brief='Get raw ai action data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_ai_action(self, ctx: _Context, ai_action_id: int = None):
         """
         Get raw ai action design data from the PSS API.
@@ -128,7 +124,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw_ai.command(name='condition', aliases=['conditions'], brief='Get raw ai condition data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_ai_condition(self, ctx: _Context, ai_condition_id: int = None):
         """
         Get raw ai condition design data from the PSS API.
@@ -152,7 +148,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='char', aliases=['crew', 'chars', 'crews'], brief='Get raw crew data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_char(self, ctx: _Context, *, char_id: str = None):
         """
         Get raw character design data from the PSS API.
@@ -176,7 +172,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='collection', aliases=['coll', 'collections'], brief='Get raw collection data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_collection(self, ctx: _Context, *, collection_id: str = None):
         """
         Get raw collection design data from the PSS API.
@@ -200,7 +196,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='event', aliases=['events'], brief='Get raw event data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_event(self, ctx: _Context, *, situation_id: str = None):
         """
         Get raw event design data (actually situation design data) from the PSS API.
@@ -224,7 +220,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.group(name='gm', aliases=['galaxymap', 'galaxy'], brief='Get raw gm data', invoke_without_command=True)
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_gm(self, ctx: _Context):
         """
         Get raw gm design data from the PSS API.
@@ -248,7 +244,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw_gm.command(name='system', aliases=['systems', 'star', 'stars'], brief='Get raw gm system data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_gm_system(self, ctx: _Context, *, star_system_id: str = None):
         """
         Get raw star system design data from the PSS API.
@@ -272,7 +268,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw_gm.command(name='path', aliases=['paths', 'link', 'links'], brief='Get raw gm path data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_gm_link(self, ctx: _Context, *, star_system_link_id: str = None):
         """
         Get raw star system link design data from the PSS API.
@@ -296,7 +292,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='item', aliases=['items'], brief='Get raw item data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_item(self, ctx: _Context, *, item_id: str = None):
         """
         Get raw item design data from the PSS API.
@@ -320,7 +316,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='mission', aliases=['missions'], brief='Get raw mission data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_mission(self, ctx: _Context, *, mission_id: str = None):
         """
         Get raw mission design data from the PSS API.
@@ -344,7 +340,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='promotion', aliases=['promo', 'promotions', 'promos'], brief='Get raw promotion data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_promotion(self, ctx: _Context, *, promo_id: str = None):
         """
         Get raw promotion design data from the PSS API.
@@ -368,7 +364,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='research', aliases=['researches'], brief='Get raw research data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_research(self, ctx: _Context, *, research_id: str = None):
         """
         Get raw research design data from the PSS API.
@@ -392,7 +388,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.group(name='room', aliases=['rooms'], brief='Get raw room data', invoke_without_command=True)
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_room(self, ctx: _Context, *, room_id: str = None):
         """
         Get raw room design data from the PSS API.
@@ -416,7 +412,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw_room.command(name='purchase', aliases=['purchases'], brief='Get raw room purchase data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_room_purchase(self, ctx: _Context, *, room_purchase_id: str = None):
         """
         Get raw room purchase design data from the PSS API.
@@ -440,7 +436,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='ship', aliases=['ships', 'hull', 'hulls'], brief='Get raw ship data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_ship(self, ctx: _Context, *, ship_id: str = None):
         """
         Get raw ship design data from the PSS API.
@@ -464,7 +460,7 @@ class RawDataCog(_BaseCog, name='Get raw game data'):
 
 
     @raw.command(name='training', aliases=['trainings'], brief='Get raw training data')
-    @_cooldown(rate=RATE, per=COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
     async def raw_training(self, ctx: _Context, *, training_id: str = None):
         """
         Get raw training design data from the PSS API.

@@ -7,7 +7,7 @@ from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
-from . import BaseCog as _BaseCog
+from .base import CogBase as _CogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
@@ -25,7 +25,7 @@ from .. import utils as _utils
 
 
 
-class TournamentCog(_BaseCog, name='Tournament'):
+class TournamentCog(_CogBase, name='Tournament'):
     """
     This extension offers commands to get information about fleets and players from past tournaments.
     """
@@ -51,7 +51,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @_command_group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past(self, ctx: _Context, month: str = None, year: str = None):
         """
         Get historic tournament data.
@@ -69,7 +69,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_stars(self, ctx: _Context, month: str = None, year: str = None, *, division: str = None):
         """
         Get historic tournament division stars data.
@@ -102,7 +102,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_stars_fleet(self, ctx: _Context, month: str = None, year: str = None, *, fleet_name: str = None):
         """
         Get historic tournament fleet stars data.
@@ -150,7 +150,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_fleet(self, ctx: _Context, month: str = None, year: str = None, *, fleet_name: str = None):
         """
         Get historic tournament fleet data.
@@ -203,7 +203,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_fleets(self, ctx: _Context, month: str = None, year: str = None):
         """
         Get historic tournament fleet data.
@@ -238,7 +238,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @past.command(name='player', aliases=['user'], brief='Get historic player data')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_player(self, ctx: _Context, month: str = None, year: str = None, *, player_name: str = None):
         """
         Get historic tournament player data.
@@ -293,7 +293,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @_command_group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday(self, ctx: _Context) -> None:
         """
         Get yesterday's final tournament standings.
@@ -306,7 +306,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday_fleet(self, ctx: _Context, *, fleet_name: str = None):
         """
         Get yesterday's tournament fleet data.
@@ -359,7 +359,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday_player(self, ctx: _Context, *, player_name: str = None):
         """
         Get historic tournament player data.
@@ -401,7 +401,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday_stars(self, ctx: _Context, *, division: str = None):
         """
         Get yesterday's final tournament division standings.
@@ -427,7 +427,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
         """
         Get yesterday's final tournament fleet standings.
@@ -469,7 +469,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @_command_group(name='targets', brief='Get top tournament targets', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN * 2, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
     async def targets(self, ctx: _Context, division: str, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
         """
         Prints a list of highest value tournament targets with a minimum star value and a maximum trophy count.
@@ -557,7 +557,7 @@ class TournamentCog(_BaseCog, name='Tournament'):
 
 
     @targets.command(name='top', brief='Get top tournament targets')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN * 2, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
     async def targets_top(self, ctx: _Context, division: str, count: int = None, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
         """
         Prints a list of the highest value tournament targets of all fleets in a specific division with a minimum star value and a maximum trophy count.

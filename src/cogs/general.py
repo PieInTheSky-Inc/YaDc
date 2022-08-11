@@ -9,7 +9,7 @@ from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
-from . import BaseCog as _BaseCog
+from .base import CogBase as _CogBase
 from .. import settings as _settings
 from .. import server_settings as _server_settings
 from .. import utils as _utils
@@ -18,13 +18,13 @@ from .. import utils as _utils
 
 
 
-class GeneralCog(_BaseCog, name='General'):
+class GeneralCog(_CogBase, name='General'):
     """
     This extension offers commands
     """
 
     @_command(name='about', aliases=['info'], brief='Display info on this bot')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def about(self, ctx: _Context):
         """
         Displays information about this bot and its authors.
@@ -81,7 +81,7 @@ class GeneralCog(_BaseCog, name='General'):
 
 
     @_command(name='invite', brief='Get an invite link')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def invite(self, ctx: _Context):
         """
         Produces an invite link for this bot and sends it via DM.
@@ -119,7 +119,7 @@ class GeneralCog(_BaseCog, name='General'):
 
 
     @_command(name='links', brief='Show links')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def links(self, ctx: _Context):
         """
         Shows the links for useful sites regarding Pixel Starships.

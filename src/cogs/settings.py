@@ -10,7 +10,7 @@ from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 import discord.ext.commands.errors as _command_errors
 
-from . import BaseCog as _BaseCog
+from .base import CogBase as _CogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
@@ -28,9 +28,9 @@ from .. import utils as _utils
 
 
 
-class SettingsCog(_BaseCog, name='Settings'):
+class SettingsCog(_CogBase, name='Settings'):
     @_command_group(name='settings', brief='Display or change server settings', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings(self, ctx: _Context, *args):
         """
         Retrieve settings for this Discord server/guild.
@@ -60,7 +60,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.group(name='autodaily', aliases=['daily'], brief='Retrieve auto-daily settings', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_autodaily(self, ctx: _Context, *args):
         """
         Retrieve the auto-daily setting for this server.
@@ -90,7 +90,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_get_autodaily.command(name='channel', aliases=['ch'], brief='Retrieve auto-daily channel')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_autodaily_channel(self, ctx: _Context, *args):
         """
         Retrieve the auto-daily setting for this server.
@@ -122,7 +122,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_get_autodaily.command(name='changemode', aliases=['mode'], brief='Retrieve auto-daily mode', hidden=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_autodaily_mode(self, ctx: _Context, *args):
         """
         Retrieve the auto-daily setting for this server.
@@ -154,7 +154,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel', hidden=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_botnews(self, ctx: _Context, *args):
         """
         Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
@@ -186,7 +186,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_embeds(self, ctx: _Context, *args):
         """
         Retrieve the embed setting for this server. It determines, whether the bot output on this server will be served in embeds or in plain text.
@@ -218,7 +218,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.command(name='pagination', aliases=['pages'], brief='Retrieve pagination settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_pagination(self, ctx: _Context, *args):
         """
         Retrieve the pagination setting for this server. For information on what pagination is and what it does, use this command: /help pagination
@@ -250,7 +250,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.command(name='prefix', brief='Retrieve prefix settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_prefix(self, ctx: _Context, *args):
         """
         Retrieve the prefix setting for this server.
@@ -271,7 +271,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @_command(name='prefix', brief='Retrieve prefix settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def prefix(self, ctx: _Context, *args):
         """
         Retrieve the prefix setting for this server.
@@ -307,7 +307,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.group(name='reset', brief='Reset server settings', invoke_without_command=True)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset(self, ctx: _Context):
         """
         Reset settings for this server.
@@ -334,7 +334,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily(self, ctx: _Context):
         """
         Reset the auto-daily settings for this server.
@@ -363,7 +363,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset_autodaily.command(name='channel', aliases=['ch'], brief='Reset auto-daily channel')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily_channel(self, ctx: _Context):
         """
         Reset the auto-daily channel settings for this server.
@@ -392,7 +392,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily_mode(self, ctx: _Context):
         """
         Reset the auto-daily change mode settings for this server.
@@ -421,7 +421,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_bot_news_channel(self, ctx: _Context):
         """
         Reset the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
@@ -450,7 +450,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_embeds(self, ctx: _Context):
         """
         Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
@@ -479,7 +479,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_pagination(self, ctx: _Context):
         """
         Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -508,7 +508,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_reset.command(name='prefix', brief='Reset prefix settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_prefix(self, ctx: _Context):
         """
         Reset the prefix settings for this server to '/'.
@@ -539,7 +539,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings.group(name='set', brief='Change server settings', invoke_without_command=False)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set(self, ctx: _Context):
         """
         Set settings for this server.
@@ -559,7 +559,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set.group(name='autodaily', aliases=['daily'], brief='Change auto-daily settings', invoke_without_command=False)
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily(self, ctx: _Context):
         """
         Set auto-daily settings for this server.
@@ -573,7 +573,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily_channel(self, ctx: _Context, text_channel: _TextChannel = None):
         """
         Set the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
@@ -615,7 +615,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily repost mode')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily_mode(self, ctx: _Context):
         """
         Set the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
@@ -642,7 +642,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_bot_news_channel(self, ctx: _Context, text_channel: _TextChannel = None):
         """
         Set the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
@@ -683,7 +683,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_embeds(self, ctx: _Context, switch: str = None):
         """
         Set or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
@@ -717,7 +717,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_pagination(self, ctx: _Context, switch: str = None):
         """
         Set or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -751,7 +751,7 @@ class SettingsCog(_BaseCog, name='Settings'):
 
 
     @settings_set.command(name='prefix', brief='Set prefix')
-    @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_prefix(self, ctx: _Context, prefix: str):
         """
         Set the prefix for this server. The default is '/'.

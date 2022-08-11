@@ -12,7 +12,7 @@ from .. import settings as _settings
 
 
 
-class BaseCog(_Cog):
+class CogBase(_Cog):
     COOLDOWN: float = 15.0
     RATE: int = 5
 
@@ -77,3 +77,11 @@ class BaseCog(_Cog):
             print(f'Invoked command had an error: {ctx.message.content}')
             if err:
                 print(str(err))
+
+
+
+
+
+class RawCogBase(CogBase):
+    COOLDOWN: float = 10.0
+    RATE: int = 5
