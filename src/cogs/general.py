@@ -25,7 +25,7 @@ class GeneralCog(_BaseCog, name='General'):
 
     @_command(name='about', aliases=['info'], brief='Display info on this bot')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_about(self, ctx: _Context):
+    async def about(self, ctx: _Context):
         """
         Displays information about this bot and its authors.
 
@@ -64,9 +64,25 @@ class GeneralCog(_BaseCog, name='General'):
         await _utils.discord.reply_with_output(ctx, [embed])
 
 
+    @_command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.', hidden=True)
+    async def flap(self, ctx: _Context):
+        """
+        There's no flip without the flap.
+
+        Thanks to bloodyredbaron for the idea <3
+        """
+        self._log_command_use(ctx)
+        await _utils.discord.try_delete_original_message(ctx)
+        output = [
+            'There\'s no flip without the flap. ~ bloodyredbaron',
+            'https://www.youtube.com/watch?v=V4vCQ-5mC_I'
+        ]
+        await _utils.discord.post_output(ctx, output)
+
+
     @_command(name='invite', brief='Get an invite link')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_invite(self, ctx: _Context):
+    async def invite(self, ctx: _Context):
         """
         Produces an invite link for this bot and sends it via DM.
 
@@ -104,7 +120,7 @@ class GeneralCog(_BaseCog, name='General'):
 
     @_command(name='links', brief='Show links')
     @_cooldown(rate=_BaseCog.RATE, per=_BaseCog.COOLDOWN, type=_BucketType.user)
-    async def cmd_links(self, ctx: _Context):
+    async def links(self, ctx: _Context):
         """
         Shows the links for useful sites regarding Pixel Starships.
 
@@ -140,7 +156,7 @@ class GeneralCog(_BaseCog, name='General'):
 
 
     @_command(name='ping', brief='Ping the server')
-    async def cmd_ping(self, ctx: _Context):
+    async def ping(self, ctx: _Context):
         """
         Ping the bot to verify that it\'s listening for _commands.
 
@@ -157,7 +173,7 @@ class GeneralCog(_BaseCog, name='General'):
 
 
     @_command(name='support', brief='Invite to bot\'s support server')
-    async def cmd_support(self, ctx: _Context):
+    async def support(self, ctx: _Context):
         """
         Produces an invite link to the support server for this bot and sends it via DM.
 

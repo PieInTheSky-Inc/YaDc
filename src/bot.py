@@ -653,22 +653,6 @@ async def cmd_event_last(ctx: Context):
     await utils.discord.reply_with_output(ctx, output)
 
 
-@BOT.command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.', hidden=True)
-async def cmd_flap(ctx: Context):
-    """
-    There's no flip without the flap.
-
-    Thanks to bloodyredbaron for the idea <3
-    """
-    __log_command_use(ctx)
-    await utils.discord.try_delete_original_message(ctx)
-    output = [
-        'There\'s no flip without the flap. (bloodyredbaron)',
-        'https://www.youtube.com/watch?v=V4vCQ-5mC_I'
-    ]
-    await utils.discord.post_output(ctx, output)
-
-
 @BOT.command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_fleet(ctx: Context, *, fleet_name: str):
