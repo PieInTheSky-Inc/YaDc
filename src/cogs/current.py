@@ -45,7 +45,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_best(self, ctx: _Context, slot: str, *, stat: str = None):
+    async def best(self, ctx: _Context, slot: str, *, stat: str = None):
         """
         Get the best enhancement item for a given slot. If multiple matches are found, matches will be shown in descending order according to their bonus.
 
@@ -98,7 +98,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='builder', brief='Get ship builder links')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_builder(self, ctx: _Context, *, player_name: str):
+    async def builder(self, ctx: _Context, *, player_name: str):
         """
         Get links to websites offering a ship builder tool with the specific player's ship layout loaded. Currently there'll be links produced for pixelprestige.com and pixyship.com.
 
@@ -139,7 +139,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='char', aliases=['crew'], brief='Get character stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_char(self, ctx: _Context, level: str = None, *, crew_name: str = None):
+    async def char(self, ctx: _Context, level: str = None, *, crew_name: str = None):
         """
         Get the stats of a character/crew. If a level is specified, the stats will apply to the crew being on that level. Else the stats range form level 1 to 40 will be displayed.
 
@@ -165,7 +165,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_craft(self, ctx: _Context, *, item_name: str):
+    async def craft(self, ctx: _Context, *, item_name: str):
         """
         Get the items a specified item can be crafted into.
 
@@ -190,7 +190,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='collection', aliases=['coll'], brief='Get collections')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_collection(self, ctx: _Context, *, collection_name: str = None):
+    async def collection(self, ctx: _Context, *, collection_name: str = None):
         """
         Get the details on a specific collection. If the collection name is omitted, it will display all collections.
 
@@ -214,7 +214,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='daily', brief='Show the dailies')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN*2, type=_BucketType.guild)
-    async def cmd_daily(self, ctx: _Context):
+    async def daily(self, ctx: _Context):
         """
         Prints the MOTD along today's contents of the dropship, the merchant ship, the shop and the sale.
 
@@ -236,7 +236,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command_group(name='event', brief='Get current event info', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_event(self, ctx: _Context, *, params: str = None):
+    async def event(self, ctx: _Context, *, params: str = None):
         """
         Prints information on currently running events in PSS.
 
@@ -253,9 +253,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_event.command(name='last', aliases=['latest'], brief='Get last event info')
+    @event.command(name='last', aliases=['latest'], brief='Get last event info')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_event_last(self, ctx: _Context):
+    async def event_last(self, ctx: _Context):
         """
         Prints information on the last event that ran in PSS.
 
@@ -273,7 +273,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='fleet', aliases=['alliance'], brief='Get infos on a fleet')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_fleet(self, ctx: _Context, *, fleet_name: str):
+    async def fleet(self, ctx: _Context, *, fleet_name: str):
         """
         Get details on a fleet. This command will also create a spreadsheet containing information on a fleet's members. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
@@ -321,7 +321,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='ingredients', aliases=['ing'], brief='Get item ingredients')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_ingredients(self, ctx: _Context, *, item_name: str):
+    async def ingredients(self, ctx: _Context, *, item_name: str):
         """
         Get the ingredients for an item to be crafted with their estimated crafting costs.
 
@@ -345,7 +345,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='item', brief='Get item stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_item(self, ctx: _Context, *, item_name: str):
+    async def item(self, ctx: _Context, *, item_name: str):
         """
         Get the stats of any item matching the given item_name.
 
@@ -368,7 +368,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='layout', brief='Get a player\'s ship layout')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_layout(self, ctx: _Context, *, player_name: str):
+    async def layout(self, ctx: _Context, *, player_name: str):
         """
         Searches for the given player and returns their current ship layout. The result will be delivered after 30 seconds.
 
@@ -418,7 +418,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_level(self, ctx: _Context, from_level: str, to_level: str = None):
+    async def level(self, ctx: _Context, from_level: str, to_level: str = None):
         """
         Shows the cost for a crew to reach a certain level.
 
@@ -457,7 +457,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='news', brief='Show the news')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_news(self, ctx: _Context, entry_count: str = '5'):
+    async def news(self, ctx: _Context, entry_count: str = '5'):
         """
         Prints all news in ascending order. You can
 
@@ -484,7 +484,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='player', aliases=['user'], brief='Get infos on a player')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_player(self, ctx: _Context, *, player_name: str = None):
+    async def player(self, ctx: _Context, *, player_name: str = None):
         """
         Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
@@ -532,7 +532,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='prestige', brief='Get prestige combos of crew')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_prestige(self, ctx: _Context, *, crew_name: str):
+    async def prestige(self, ctx: _Context, *, crew_name: str):
         """
         Get the prestige combinations of the crew specified.
 
@@ -555,7 +555,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='price', aliases=['fairprice', 'cost'], brief='Get item\'s prices from the PSS API')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_price(self, ctx: _Context, *, item_name: str):
+    async def price(self, ctx: _Context, *, item_name: str):
         """
         Get the average price (market price) and the Savy price (fair price) in bux of the item(s) specified.
 
@@ -581,7 +581,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='recipe', brief='Get character recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_recipe(self, ctx: _Context, *, name: str):
+    async def recipe(self, ctx: _Context, *, name: str):
         """
         Get the prestige recipes of the crew or the ingredients of the item specified.
 
@@ -633,7 +633,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='research', brief='Get research data')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_research(self, ctx: _Context, *, research_name: str):
+    async def research(self, ctx: _Context, *, research_name: str):
         """
         Get the details on a specific research. If multiple matches are found, only a brief summary will be provided.
 
@@ -656,7 +656,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='room', brief='Get room infos')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_room(self, ctx: _Context, *, room_name: str):
+    async def room(self, ctx: _Context, *, room_name: str):
         """
         Get detailed information on a room. If more than 2 results are found, details will be omitted.
 
@@ -681,7 +681,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command_group(name='sales', brief='List expired sales', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_sales(self, ctx: _Context, *, object_name: str = None):
+    async def sales(self, ctx: _Context, *, object_name: str = None):
         """
         Get information on things that have been sold in shop in the past. This command will post the late sales price and for how many days it will be available (rounded down, so 0 days means only available today). If a parameter is given, the command will output the sales history for that object along with the original shop prices.
 
@@ -744,9 +744,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List expired bed room sales')
+    @sales.command(name='bedrooms', aliases=['bed', 'beds', 'bedroom'], brief='List expired bed room sales')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_sales_bed(self, ctx: _Context, *, params: str = None):
+    async def sales_bed(self, ctx: _Context, *, params: str = None):
         """
         Get information on bed rooms that have been sold in shop in the past. This command will post the original shop price.
 
@@ -774,9 +774,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             raise _Error('An unknown error ocurred, please contact the bot\'s author.')
 
 
-    @cmd_sales.command(name='droidrooms', aliases=['droid', 'droids', 'droidroom'], brief='List expired droid room sales')
+    @sales.command(name='droidrooms', aliases=['droid', 'droids', 'droidroom'], brief='List expired droid room sales')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_sales_droid(self, ctx: _Context, *, params: str = None):
+    async def sales_droid(self, ctx: _Context, *, params: str = None):
         """
         Get information on android rooms that have been sold in shop in the past. This command will post the original shop price.
 
@@ -806,7 +806,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command_group(name='stars', brief='Division stars', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_stars(self, ctx: _Context, *, division: str = None):
+    async def stars(self, ctx: _Context, *, division: str = None):
         """
         Get stars earned by each fleet during the current final tournament week.
 
@@ -838,9 +838,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await ctx.invoke(cmd, month=None, year=None, division=division)
 
 
-    @cmd_stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
+    @stars.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
+    async def stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
         """
         Get stars earned by the specified fleet during the current final tournament week. If the provided fleet name does not match any fleet exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds.
 
@@ -890,7 +890,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='stats', aliases=['stat'], brief='Get item/crew stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_stats(self, ctx: _Context, level: str = None, *, name: str = None):
+    async def stats(self, ctx: _Context, level: str = None, *, name: str = None):
         """
         Get the stats of a character/crew or item. This command is a combination of the commands /char and /item.
 
@@ -939,7 +939,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='time', brief='Get PSS stardate & Melbourne time')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_time(self, ctx: _Context):
+    async def time(self, ctx: _Context):
         """
         Get PSS stardate, as well as the day and time in Melbourne, Australia. Gives the name of the Australian holiday, if it is a holiday in Australia.
 
@@ -981,7 +981,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command_group(name='top', brief='Prints top fleets or captains', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_top(self, ctx: _Context, *, count: str = '100'):
+    async def top(self, ctx: _Context, *, count: str = '100'):
         """
         Prints either top fleets or captains. Prints top 100 fleets by default.
 
@@ -1017,9 +1017,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await ctx.invoke(cmd, count=count)
 
 
-    @cmd_top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
+    @top.command(name='players', aliases=['player', 'captains', 'captain', 'users', 'user'], brief='Prints top captains')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_top_captains(self, ctx: _Context, count: str = '100'):
+    async def top_captains(self, ctx: _Context, count: str = '100'):
         """
         Prints top captains. Prints top 100 captains by default.
 
@@ -1045,9 +1045,9 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
+    @top.command(name='fleets', aliases=['fleet', 'alliances', 'alliance'], brief='Prints top fleets')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_top_fleets(self, ctx: _Context, count: str = '100'):
+    async def top_fleets(self, ctx: _Context, count: str = '100'):
         """
         Prints top fleets. Prints top 100 fleets by default.
 
@@ -1074,7 +1074,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
 
     @_command_group(name='tournament', aliases=['tourney'], brief='Information on tournament time')
-    async def cmd_tournament(self, ctx: _Context):
+    async def tournament(self, ctx: _Context):
         """
         Get information about the starting time of the tournament.
 
@@ -1091,8 +1091,8 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await ctx.invoke(cmd)
 
 
-    @cmd_tournament.command(name='current', brief='Information on this month\'s tournament time')
-    async def cmd_tournament_current(self, ctx: _Context):
+    @tournament.command(name='current', brief='Information on this month\'s tournament time')
+    async def tournament_current(self, ctx: _Context):
         """
         Get information about the starting time of the current month's tournament.
 
@@ -1116,8 +1116,8 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @cmd_tournament.command(name='next', brief='Information on next month\'s tournament time')
-    async def cmd_tournament_next(self, ctx: _Context):
+    @tournament.command(name='next', brief='Information on next month\'s tournament time')
+    async def tournament_next(self, ctx: _Context):
         """
         Get information about the starting time of the next month's tournament.
 
@@ -1143,7 +1143,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
     @_command(name='training', brief='Get training infos')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def cmd_training(self, ctx: _Context, *, training_name: str):
+    async def training(self, ctx: _Context, *, training_name: str):
         """
         Get detailed information on a training. If more than 2 results are found, some details will be omitted.
 
