@@ -1,4 +1,5 @@
 from .base import BaseCog
-from .general import GeneralCog
-from .tournament import TournamentCog
 from .current import CurrentDataCog
+from .general import GeneralCog
+from .settings import SettingsCog
+from .tournament import TournamentCog

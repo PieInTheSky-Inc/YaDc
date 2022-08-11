@@ -12,14 +12,7 @@ from discord.ext.commands import cooldown as _cooldown
 
 from . import BaseCog as _BaseCog
 
-from .. import database as _db
-from .. import emojis as _emojis
 from .. import pagination as _pagination
-from .. import pss_achievement as _achievement
-from .. import pss_ai as _ai
-from .. import pss_assert as _assert
-from .. import pss_core as _core
-from .. import pss_craft as _craft
 from .. import pss_crew as _crew
 from .. import pss_daily as _daily
 from .. import pss_dropship as _dropship
@@ -29,23 +22,16 @@ from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
 from ..pss_exception import ParameterTypeError as _ParameterTypeError
 from .. import pss_fleet as _fleet
-from .. import pss_gm as _gm
 from .. import pss_item as _item
-from .. import pss_login as _login
 from .. import pss_lookups as _lookups
-from .. import pss_mission as _mission
-from .. import pss_promo as _promo
-from .. import pss_raw as _raw
 from .. import pss_research as _research
 from .. import pss_room as _room
 from .. import pss_ship as _ship
 from .. import pss_situation as _situation
-from .. import pss_sprites as _sprites
 from .. import pss_tournament as _tourney
 from .. import pss_top as _top
 from .. import pss_training as _training
 from .. import pss_user as _user
-from .. import pss_wiki as _wiki
 from .. import server_settings as _server_settings
 from .. import settings as _settings
 from .. import utils as _utils
@@ -1173,3 +1159,10 @@ class CurrentDataCog(_BaseCog, name='Current PSS Data'):
         self._log_command_use(ctx)
         output = await _training.get_training_details_from_name(training_name, ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
+
+
+
+
+
+def setup(bot: _Bot):
+    bot.add_cog(CurrentDataCog(bot))

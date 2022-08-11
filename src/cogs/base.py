@@ -28,7 +28,7 @@ class BaseCog(_Cog):
         return self.__bot
 
 
-    def _extract_dash_parameters(full_arg: str, args: _Optional[_List[str]], *dash_parameters) -> _Tuple[_Union[bool, str], ...]:
+    def _extract_dash_parameters(self, full_arg: str, args: _Optional[_List[str]], *dash_parameters) -> _Tuple[_Union[bool, str], ...]:
         new_arg = full_arg or ''
         if args:
             new_arg += f' {" ".join(args)}'
