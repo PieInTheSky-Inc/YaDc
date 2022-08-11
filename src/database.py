@@ -4,10 +4,10 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import asyncpg
 
-import pss_daily as daily
-import settings
-from typehints import SalesCache
-import utils
+from . import pss_daily as daily
+from . import settings
+from .typehints import SalesCache
+from . import utils
 
 
 # ---------- Typehint definitions ----------

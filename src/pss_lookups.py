@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-import emojis
+from . import emojis
 
 
 ALLIANCE_MEMBERSHIP: Dict[str, str] = {

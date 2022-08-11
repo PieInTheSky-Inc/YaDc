@@ -5,9 +5,9 @@ from xml.etree import ElementTree as _ElementTree
 from . import format as _format
 from . import parse as _parse
 
-import pss_data as _pss_data
-import pss_lookups as _lookups
-from typehints import EntitiesData
+from .. import pss_data as _pss_data
+from .. import pss_lookups as _lookups
+from ..typehints import EntitiesData
 
 
 # ---------- Typehint definitions ----------

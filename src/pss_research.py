@@ -4,15 +4,15 @@ from typing import List, Optional, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import pss_assert
-import pss_core as core
-import pss_entity as entity
-from pss_exception import NotFound
-import pss_lookups as lookups
-import pss_sprites as sprites
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import pss_assert
+from . import pss_core as core
+from . import pss_entity as entity
+from .pss_exception import NotFound
+from . import pss_lookups as lookups
+from . import pss_sprites as sprites
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

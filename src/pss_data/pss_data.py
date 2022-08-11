@@ -1,11 +1,10 @@
 from json import load as _json_load
-import os
-from typing import Dict
-
-import utils
+import os as _os
+from typing import Dict as _Dict
 
 
-PWD = os.getcwd()
+
+PWD = _os.getcwd()
 if '/src' in PWD:
     PWD = f'{PWD}/pss_data/'
 else:
@@ -13,7 +12,7 @@ else:
 
 ID_NAMES_FILEPATH = f'{PWD}id_names.json'
 
-ID_NAMES_INFO: Dict[str, str]
+ID_NAMES_INFO: _Dict[str, str]
 
 with open(ID_NAMES_FILEPATH) as fp:
     ID_NAMES_INFO = _json_load(fp)

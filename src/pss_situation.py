@@ -4,19 +4,19 @@ from typing import Dict, List, Optional, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import emojis
-import pss_core as core
-import pss_crew as crew
-import pss_entity as entity
-from pss_exception import NotFound
-import pss_item as item
-import pss_mission as mission
-import pss_room as room
-import pss_sprites as sprites
-import resources
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import emojis
+from . import pss_core as core
+from . import pss_crew as crew
+from . import pss_entity as entity
+from .pss_exception import NotFound
+from . import pss_item as item
+from . import pss_mission as mission
+from . import pss_room as room
+from . import pss_sprites as sprites
+from . import resources
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

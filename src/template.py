@@ -3,11 +3,11 @@ from typing import Dict, List, Optional, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import pss_assert
-import pss_entity as entity
-from pss_exception import Error, NotFound
-import settings
-from typehints import EntitiesData, EntityInfo
+from . import pss_assert
+from . import pss_entity as entity
+from .pss_exception import Error, NotFound
+from . import settings
+from .typehints import EntitiesData, EntityInfo
 
 
 # ---------- Typehint definitions ----------

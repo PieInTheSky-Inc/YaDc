@@ -6,10 +6,10 @@ import asyncio
 from discord import ChannelType, Message, Reaction, User
 from discord.ext.commands import Context
 
-from pss_entity import EntityDetails
-import emojis
-import utils
-from typehints import EntityInfo
+from .pss_entity import EntityDetails
+from . import emojis
+from . import utils
+from .typehints import EntityInfo
 
 
 # ---------- Typehint definitions ----------

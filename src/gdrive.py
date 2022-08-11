@@ -14,13 +14,13 @@ import pydrive.auth
 import pydrive.drive
 import pydrive.files
 
-import pss_fleet as fleet
-import pss_lookups as lookups
-import pss_tournament as tourney
-import pss_user as user
-import settings
-import utils
-from typehints import EntitiesData, EntityInfo
+from . import pss_fleet as fleet
+from . import pss_lookups as lookups
+from . import pss_tournament as tourney
+from . import pss_user as user
+from . import settings
+from . import utils
+from .typehints import EntitiesData, EntityInfo
 
 
 # ---------- Classes ----------

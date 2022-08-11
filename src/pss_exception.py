@@ -1,6 +1,6 @@
 from typing import Any, List
 
-import settings
+from . import settings
 
 
 # ---------- Classes -----------

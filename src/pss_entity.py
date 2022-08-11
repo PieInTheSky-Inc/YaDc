@@ -7,13 +7,13 @@ from xml.etree import ElementTree
 from discord import Embed
 from discord.ext.commands import Context
 
-from cache import PssCache
-import pss_core as core
-import pss_entity as entity
-from pss_exception import Error
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from .cache import PssCache
+from . import pss_core as core
+from . import pss_entity as entity
+from .pss_exception import Error
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

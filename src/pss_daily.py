@@ -6,22 +6,22 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import database as db
-import emojis
-import pss_core as core
-import pss_entity as entity
-from pss_exception import Error
-import pss_item as item
-import pss_crew as crew
-import pss_lookups as lookups
-import pss_research as research
-import pss_room as room
-import pss_training as training
-import server_settings
-from server_settings import AutoDailySettings
-import settings
-from typehints import EntityInfo, SalesCache
-import utils
+from . import database as db
+from . import emojis
+from . import pss_core as core
+from . import pss_entity as entity
+from .pss_exception import Error
+from . import pss_item as item
+from . import pss_crew as crew
+from . import pss_lookups as lookups
+from . import pss_research as research
+from . import pss_room as room
+from . import pss_training as training
+from . import server_settings
+from .server_settings import AutoDailySettings
+from . import settings
+from .typehints import EntityInfo, SalesCache
+from . import utils
 
 
 # ---------- Constants ----------

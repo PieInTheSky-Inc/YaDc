@@ -4,16 +4,16 @@ from typing import Dict, List, Optional, Tuple, Union
 from discord import Colour, Embed
 from discord.ext.commands import Context
 
-import pss_assert
-from cache import PssCache
-import emojis
-import pss_entity as entity
-from pss_exception import Error, NotFound
-import pss_lookups as lookups
-import pss_sprites as sprites
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import pss_assert
+from .cache import PssCache
+from . import emojis
+from . import pss_entity as entity
+from .pss_exception import Error, NotFound
+from . import pss_lookups as lookups
+from . import pss_sprites as sprites
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

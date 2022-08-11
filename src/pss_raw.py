@@ -6,11 +6,11 @@ from typing import Any, List
 
 from discord.ext.commands import Context
 
-import excel
-import pss_entity as entity
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import excel
+from . import pss_entity as entity
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Raw info ----------

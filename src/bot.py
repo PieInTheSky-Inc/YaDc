@@ -17,42 +17,44 @@ import discord.ext.commands.errors as command_errors
 import discord.ext.tasks as tasks
 import holidays
 
-import database as db
-import emojis
-from gdrive import TourneyDataClient
-import pagination
-import pss_achievement as achievement
-import pss_ai as ai
-import pss_assert
-import pss_core as core
-import pss_craft as craft
-import pss_crew as crew
-import pss_daily as daily
-import pss_dropship as dropship
-from pss_entity import EntitiesData, EntityInfo
-from pss_exception import Error, InvalidParameterValueError, MaintenanceError, MissingParameterError, NotFound, ParameterTypeError
-import pss_fleet as fleet
-import pss_gm as gm
-import pss_item as item
-import pss_login as login
-import pss_lookups as lookups
-import pss_mission as mission
-import pss_promo as promo
-import pss_raw as raw
-import pss_research as research
-import pss_room as room
-import pss_ship as ship
-import pss_situation as situation
-import pss_sprites as sprites
-import pss_tournament as tourney
-import pss_top
-import pss_training as training
-import pss_user as user
-import pss_wiki as wiki
-import server_settings
-from server_settings import AutoDailySettings, GUILD_SETTINGS
-import settings
-import utils
+from . import database as db
+from . import emojis
+from .gdrive import TourneyDataClient as _TourneyDataClient
+from . import pagination
+from . import pss_achievement as achievement
+from . import pss_ai as ai
+from . import pss_assert
+from . import pss_core as core
+from . import pss_craft as craft
+from . import pss_crew as crew
+from . import pss_daily as daily
+from . import pss_dropship as dropship
+from .pss_entity import EntitiesData, EntityInfo
+from .pss_exception import Error, InvalidParameterValueError, MaintenanceError, MissingParameterError, NotFound, ParameterTypeError
+from . import pss_fleet as fleet
+from . import pss_gm as gm
+from . import pss_item as item
+from . import pss_login as login
+from . import pss_lookups as lookups
+from . import pss_mission as mission
+from . import pss_promo as promo
+from . import pss_raw as raw
+from . import pss_research as research
+from . import pss_room as room
+from . import pss_ship as ship
+from . import pss_situation as situation
+from . import pss_sprites as sprites
+from . import pss_tournament as tourney
+from . import pss_top
+from . import pss_training as training
+from . import pss_user as user
+from . import pss_wiki as wiki
+from . import server_settings
+from .server_settings import GUILD_SETTINGS
+from . import settings
+from . import utils
+
+from .cogs import GeneralCog, TournamentDataCog
 
 
 
@@ -71,6 +73,10 @@ BOT = Bot(command_prefix=get_prefix,
                     description='This is a Discord Bot for Pixel Starships',
                     activity=Activity(type=ActivityType.playing, name='/help'))
 
+
+
+
+
 __COMMANDS = []
 COOLDOWN: float = 15.0
 
@@ -82,20 +88,8 @@ RATE: int = 5
 RAW_COOLDOWN: float = 10.0
 RAW_RATE: int = 5
 
-TOURNEY_DATA_CLIENT: TourneyDataClient = None
-if settings.FEATURE_TOURNEYDATA_ENABLED:
-    TOURNEY_DATA_CLIENT = TourneyDataClient(
-        settings.GDRIVE_PROJECT_ID,
-        settings.GDRIVE_PRIVATE_KEY_ID,
-        settings.GDRIVE_PRIVATE_KEY,
-        settings.GDRIVE_CLIENT_EMAIL,
-        settings.GDRIVE_CLIENT_ID,
-        settings.GDRIVE_SCOPES,
-        settings.GDRIVE_FOLDER_ID,
-        settings.GDRIVE_SERVICE_ACCOUNT_FILE,
-        settings.GDRIVE_SETTINGS_FILE,
-        settings.TOURNAMENT_DATA_START_DATE
-    )
+TOURNEY_DATA_CLIENT: _TourneyDataClient = None
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -130,6 +124,14 @@ async def on_ready() -> None:
     print(f'DB schema version is: {schema_version}')
     print(f'Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
     print(f'discord.py version: {discord_version}')
+    print(f'Loading cog "{GeneralCog.qualified_name}" from extension "src.cogs.general"')
+    BOT.load_extension('src.cogs.general')
+    if settings.FEATURE_TOURNEYDATA_ENABLED:
+        print(f'Loading cog "{TournamentDataCog.qualified_name}" from extension "src.cogs.tournament_data"')
+        BOT.load_extension('src.cogs.tournament_data')
+        cog = BOT.get_cog('Fleet History')
+        global TOURNEY_DATA_CLIENT
+        TOURNEY_DATA_CLIENT = cog.tournament_data_client
     if settings.FEATURE_AUTODAILY_ENABLED:
         print('Starting auto-daily loop.')
         post_dailies_loop.start()
@@ -409,189 +411,6 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
             can_post = False
 
     return can_post, result
-
-
-
-
-
-
-
-
-
-
-# ############################################################################ #
-# ----------                  General Bot Commands                  ---------- #
-# ############################################################################ #
-
-@BOT.command(name='about', aliases=['info'], brief='Display info on this bot')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_about(ctx: Context):
-    """
-    Displays information about this bot and its authors.
-
-    Usage:
-      /about
-      /info
-
-    Examples:
-      /about - Displays information on this bot and its authors.
-    """
-    __log_command_use(ctx)
-    guild_count = len([guild for guild in BOT.guilds if guild.id not in settings.IGNORE_SERVER_IDS_FOR_COUNTING])
-    user_name = BOT.user.display_name
-    if ctx.guild is None:
-        nick = BOT.user.display_name
-    else:
-        nick = ctx.guild.me.display_name
-    has_nick = BOT.user.display_name != nick
-    pfp_url = BOT.user.avatar_url
-    about_info = core.read_about_file()
-
-    title = f'About {nick}'
-    if has_nick:
-        title += f' ({user_name})'
-    description = about_info['description']
-    footer = f'Serving on {guild_count} guild{"" if guild_count == 1 else "s"}.'
-    fields = [
-        ('version', f'v{settings.VERSION}', True),
-        ('authors', ', '.join(about_info['authors']), True),
-        ('profile pic by', about_info['pfp'], True),
-        ('support', about_info['support'], False)
-    ]
-    colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-
-    embed = utils.discord.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
-    await utils.discord.reply_with_output(ctx, [embed])
-
-
-@BOT.command(name='invite', brief='Get an invite link')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_invite(ctx: Context):
-    """
-    Produces an invite link for this bot and sends it via DM.
-
-    Usage:
-      /invite
-
-    Examples:
-      /invite - Produces an invite link for this bot and sends it via DM.
-    """
-    __log_command_use(ctx)
-
-    as_embed = await server_settings.get_use_embeds(ctx)
-
-    if ctx.guild is None:
-        nick = BOT.user.display_name
-    else:
-        nick = ctx.guild.me.display_name
-    title = f'Invite {nick} to your server'
-    invite_url = f'{settings.BASE_INVITE_URL}{BOT.user.id}'
-    colour = None
-
-    if as_embed:
-        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-        description = f'[{title}]({invite_url})'
-        output = utils.discord.create_embed(None, description=description, colour=colour)
-    else:
-        output = f'{title}: {invite_url}'
-    await utils.discord.dm_author(ctx, [output], output_is_embeds=as_embed)
-    if utils.discord.is_guild_channel(ctx.channel):
-        notice = f'{ctx.author.mention} Sent invite link via DM.'
-        if as_embed:
-            notice = utils.discord.create_embed(None, description=notice, colour=colour)
-        await utils.discord.reply_with_output(ctx, [notice])
-
-
-@BOT.command(name='links', brief='Show links')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_links(ctx: Context):
-    """
-    Shows the links for useful sites regarding Pixel Starships.
-
-    Usage:
-      /links
-
-    Examples:
-      /links - Shows the links for useful sites regarding Pixel Starships.
-    """
-    __log_command_use(ctx)
-    links = core.read_links_file()
-    output = []
-    if (await server_settings.get_use_embeds(ctx)):
-        title = 'Pixel Starships weblinks'
-        colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
-        fields = []
-        for field_name, hyperlinks in links.items():
-            field_value = []
-            for (description, hyperlink) in hyperlinks:
-                field_value.append(f'[{description}]({hyperlink})')
-            fields.append((field_name, '\n'.join(field_value), False))
-        embed = utils.discord.create_embed(title, fields=fields, colour=colour)
-        output.append(embed)
-    else:
-        for category, hyperlinks in links.items():
-            output.append(f'**{category}**')
-            for (description, hyperlink) in hyperlinks:
-                output.append(f'{description}: <{hyperlink}>')
-            output.append(utils.discord.ZERO_WIDTH_SPACE)
-        if output:
-            output = output[:-1]
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@BOT.command(name='ping', brief='Ping the server')
-async def cmd_ping(ctx: Context):
-    """
-    Ping the bot to verify that it\'s listening for commands.
-
-    Usage:
-      /ping
-
-    Examples:
-      /ping - The bot will answer with 'Pong!'.
-    """
-    __log_command_use(ctx)
-    msg = await ctx.send('Pong!')
-    miliseconds = (msg.created_at - ctx.message.created_at).microseconds / 1000.0
-    await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
-
-
-@BOT.command(name='support', brief='Invite to bot\'s support server')
-async def cmd_support(ctx: Context):
-    """
-    Produces an invite link to the support server for this bot and sends it via DM.
-
-    Usage:
-      /support
-
-    Examples:
-      /support - Produces an invite link to the support server and sends it via DM.
-    """
-    __log_command_use(ctx)
-
-    as_embed = await server_settings.get_use_embeds(ctx)
-
-    if ctx.guild is None:
-        nick = BOT.user.display_name
-    else:
-        nick = ctx.guild.me.display_name
-    about = core.read_about_file()
-    title = f'Join {nick} support server'
-    colour = None
-    guild_invite = about['support']
-
-    if as_embed:
-        colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-        description = f'[{title}]({guild_invite})'
-        output = utils.discord.create_embed(None, description=description, colour=colour)
-    else:
-        output = f'{title}: {guild_invite}'
-    await utils.discord.dm_author(ctx, [output], output_is_embeds=as_embed)
-    if utils.discord.is_guild_channel(ctx.channel):
-        notice = f'{ctx.author.mention} Sent invite link to bot support server via DM.'
-        if as_embed:
-            notice = utils.discord.create_embed(None, description=notice, colour=colour)
-        await utils.discord.reply_with_output(ctx, [notice])
 
 
 
@@ -884,9 +703,6 @@ async def cmd_fleet(ctx: Context, *, fleet_name: str):
         if fleet_info:
             as_embed = await server_settings.get_use_embeds(ctx)
             if is_tourney_running:
-                yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-                if False and yesterday_tourney_data:
-                    pass
                 max_tourney_battle_attempts = await tourney.get_max_tourney_battle_attempts()
             else:
                 max_tourney_battle_attempts = None
@@ -1064,248 +880,6 @@ async def cmd_news(ctx: Context, entry_count: str = '5'):
     await utils.discord.reply_with_output(ctx, output)
 
 
-@BOT.group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past(ctx: Context, month: str = None, year: str = None):
-    """
-    Get historic tournament data.
-
-    Parameters:
-      month: Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:  Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-
-    You need to use one of the subcommands.
-    """
-    __log_command_use(ctx)
-    await ctx.send_help('past')
-
-
-@cmd_past.group(name='stars', brief='Get historic division stars', invoke_without_command=True)
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past_stars(ctx: Context, month: str = None, year: str = None, *, division: str = None):
-    """
-    Get historic tournament division stars data.
-
-    Parameters:
-      month:    Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:     Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-      division: Optional. The division for which the data should be displayed. If not specified will print all divisions.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    utc_now = utils.get_utc_now()
-    output = []
-
-    (month, year, division) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-    if year is not None and month is None:
-        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-
-    if not pss_top.is_valid_division_letter(division):
-        subcommand = BOT.get_command('past stars fleet')
-        await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
-        return
-    else:
-        day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
-        if tourney_data:
-            output = await pss_top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@cmd_past_stars.command(name='fleet', aliases=['alliance'], brief='Get historic fleet stars')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past_stars_fleet(ctx: Context, month: str = None, year: str = None, *, fleet_name: str = None):
-    """
-    Get historic tournament fleet stars data.
-
-    Parameters:
-      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-      fleet_name: Mandatory. The fleet for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    output = []
-    utc_now = utils.get_utc_now()
-    (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-    if year is not None and month is None:
-        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-    if not fleet_name:
-        raise MissingParameterError('The parameter `fleet_name` is mandatory.')
-
-    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
-
-    if tourney_data is None:
-        fleet_infos = []
-    else:
-        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, tourney_data.max_tournament_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
-    else:
-        leading_space_note = ''
-        if fleet_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@cmd_past.command(name='fleet', aliases=['alliance'], brief='Get historic fleet data')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past_fleet(ctx: Context, month: str = None, year: str = None, *, fleet_name: str = None):
-    """
-    Get historic tournament fleet data.
-
-    Parameters:
-      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-      fleet_name: Mandatory. The fleet for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    error = None
-    utc_now = utils.get_utc_now()
-    (month, year, fleet_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-    if year is not None and month is None:
-        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-    if not fleet_name:
-        raise MissingParameterError('The parameter `fleet_name` is mandatory.')
-
-    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
-
-    if tourney_data is None:
-        fleet_infos = []
-    else:
-        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            as_embed = await server_settings.get_use_embeds(ctx)
-            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=as_embed)
-            await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
-            for file_path in file_paths:
-                os.remove(file_path)
-    elif error:
-        raise Error(str(error))
-    else:
-        leading_space_note = ''
-        if fleet_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
-
-
-@cmd_past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past_fleets(ctx: Context, month: str = None, year: str = None):
-    """
-    Get historic tournament fleet data.
-
-    Parameters:
-      month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-      fleet_name: Mandatory. The fleet for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    error = None
-    utc_now = utils.get_utc_now()
-    (month, year, _) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-    if year is not None and month is None:
-        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-
-    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
-    tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
-
-    if tourney_data and tourney_data.fleets and tourney_data.users:
-        file_name = f'tournament_results_{year}-{utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
-        file_paths = [fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
-        await utils.discord.reply_with_output_and_files(ctx, [], file_paths)
-        for file_path in file_paths:
-            os.remove(file_path)
-    elif error:
-        raise Error(str(error))
-    else:
-        raise Error(f'An error occured while retrieving tournament results for the {year} {calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!')
-
-
-@cmd_past.command(name='player', aliases=['user'], brief='Get historic player data')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_past_player(ctx: Context, month: str = None, year: str = None, *, player_name: str = None):
-    """
-    Get historic tournament player data.
-
-    Parameters:
-      month:       Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
-      year:        Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-      player_name: Mandatory. The player for which the data should be displayed.
-
-    If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
-    """
-    __log_command_use(ctx)
-    output = []
-    error = None
-    utc_now = utils.get_utc_now()
-    (month, year, player_name) = TourneyDataClient.retrieve_past_parameters(ctx, month, year)
-    if year is not None and month is None:
-        raise MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-    if not player_name:
-        raise MissingParameterError('The parameter `player_name` is mandatory.')
-
-    day, month, year = TourneyDataClient.retrieve_past_day_month_year(month, year, utc_now)
-    try:
-        tourney_data = TOURNEY_DATA_CLIENT.get_data(year, month, day=day)
-    except ValueError as err:
-        error = str(err)
-        tourney_data = None
-
-    if tourney_data is None:
-        user_infos = []
-    else:
-        user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
-    elif error:
-        raise Error(str(error))
-    else:
-        leading_space_note = ''
-        if player_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {calendar.month_name[int(month)]} tournament.{leading_space_note}')
-    await utils.discord.reply_with_output(ctx, output)
-
-
 @BOT.command(name='player', aliases=['user'], brief='Get infos on a player')
 @cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
 async def cmd_player(ctx: Context, *, player_name: str = None):
@@ -1339,7 +913,7 @@ async def cmd_player(ctx: Context, *, player_name: str = None):
             _, user_info = await paginator.wait_for_option_selection()
 
         if user_info:
-            if tourney.is_tourney_running():
+            if tourney.is_tourney_running() and settings.FEATURE_TOURNEYDATA_ENABLED:
                 yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
                 if yesterday_tourney_data:
                     yesterday_user_info = yesterday_tourney_data.users.get(user_info[user.USER_KEY_NAME], {})
@@ -1795,8 +1369,8 @@ async def cmd_targets(ctx: Context, division: str, star_value: str = None, troph
 
         criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = pss_top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
-        yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-        last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
+        yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data() if settings.FEATURE_TOURNEYDATA_ENABLED else None
+        last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users if settings.FEATURE_TOURNEYDATA_ENABLED else None
         current_fleet_data = await pss_top.get_alliances_with_division()
 
         if yesterday_tourney_data:
@@ -1900,8 +1474,8 @@ async def cmd_targets_top(ctx: Context, division: str, count: int = None, star_v
 
     criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = pss_top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
-    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-    last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users
+    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data() if settings.FEATURE_TOURNEYDATA_ENABLED else None
+    last_month_user_data = TOURNEY_DATA_CLIENT.get_latest_monthly_data().users if settings.FEATURE_TOURNEYDATA_ENABLED else None
     current_fleet_data = await pss_top.get_alliances_with_division()
 
     if yesterday_tourney_data:
@@ -2191,182 +1765,6 @@ async def cmd_training(ctx: Context, *, training_name: str):
     """
     __log_command_use(ctx)
     output = await training.get_training_details_from_name(training_name, ctx, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@BOT.group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_yesterday(ctx: Context) -> None:
-    """
-    Get yesterday's final tournament standings.
-
-    Usage:
-      Use one of the subcommands.
-    """
-    if ctx.invoked_subcommand is None:
-        await ctx.send_help('yesterday')
-
-
-@cmd_yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_yesterday_fleet(ctx: Context, *, fleet_name: str = None):
-    """
-    Get yesterday's tournament fleet data.
-
-    Parameters:
-      fleet_name: Mandatory. The fleet for which the data should be displayed.
-    """
-    __log_command_use(ctx)
-    utc_now = utils.get_utc_now()
-    tourney_day = tourney.get_tourney_day(utc_now)
-    if tourney_day is None:
-        raise Error('There\'s no tournament running currently.')
-    if not tourney_day:
-        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-    output = []
-
-    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-    if yesterday_tourney_data is None:
-        yesterday_fleet_infos = []
-    else:
-        yesterday_fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
-
-    if yesterday_fleet_infos:
-        if len(yesterday_fleet_infos) == 1:
-            fleet_info = yesterday_fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, yesterday_fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            fleet_id = fleet_info[fleet.FLEET_KEY_NAME]
-            day_before_tourney_data = TOURNEY_DATA_CLIENT.get_second_latest_daily_data()
-            yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[fleet.FLEET_KEY_NAME] == fleet_id}
-            day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[fleet.FLEET_KEY_NAME] == fleet_id}
-            for yesterday_user_info in yesterday_users_data.values():
-                day_before_user_info = day_before_users_data.get(yesterday_user_info[user.USER_KEY_NAME], {})
-                day_before_star_count = day_before_user_info.get('AllianceScore', 0)
-                yesterday_user_info['StarValue'], _ = user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
-            as_embed = await server_settings.get_use_embeds(ctx)
-            output, file_paths = await fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
-            await utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
-            for file_path in file_paths:
-                os.remove(file_path)
-    else:
-        leading_space_note = ''
-        if fleet_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in current tournament.{leading_space_note}')
-
-
-@cmd_yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_yesterday_player(ctx: Context, *, player_name: str = None):
-    """
-    Get historic tournament player data.
-
-    Parameters:
-      player_name: Mandatory. The player for which the data should be displayed.
-    """
-    __log_command_use(ctx)
-    utc_now = utils.get_utc_now()
-    tourney_day = tourney.get_tourney_day(utc_now)
-    if tourney_day is None:
-        raise Error('There\'s no tournament running currently.')
-    if not tourney_day:
-        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-    output = []
-
-    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-    if yesterday_tourney_data is None:
-        user_infos = []
-    else:
-        user_infos = await user.get_user_infos_from_tournament_data_by_name(player_name, yesterday_tourney_data.users)
-
-    if user_infos:
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, player_name, user_infos, user.get_user_search_details, use_pagination)
-            _, user_info = await paginator.wait_for_option_selection()
-
-        if user_info:
-            output = await user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await server_settings.get_use_embeds(ctx)))
-    else:
-        leading_space_note = ''
-        if player_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a player named `{player_name}` participating in the current tournament.{leading_space_note}')
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@cmd_yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_yesterday_stars(ctx: Context, *, division: str = None):
-    """
-    Get yesterday's final tournament division standings.
-    """
-    __log_command_use(ctx)
-    utc_now = utils.get_utc_now()
-    tourney_day = tourney.get_tourney_day(utc_now)
-    if tourney_day is None:
-        raise Error('There\'s no tournament running currently.')
-    if not tourney_day:
-        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-    output = []
-
-    if not pss_top.is_valid_division_letter(division):
-        subcommand = BOT.get_command('yesterday stars fleet')
-        await ctx.invoke(subcommand, fleet_name=division)
-        return
-    else:
-        yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-        if yesterday_tourney_data:
-            output = await pss_top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await server_settings.get_use_embeds(ctx)))
-    await utils.discord.reply_with_output(ctx, output)
-
-
-@cmd_yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
-@cooldown(rate=RATE, per=COOLDOWN, type=BucketType.user)
-async def cmd_yesterday_stars_fleet(ctx: Context, *, fleet_name: str = None):
-    """
-    Get yesterday's final tournament fleet standings.
-
-    Parameters:
-      fleet_name: Mandatory. The fleet for which the data should be displayed.
-    """
-    __log_command_use(ctx)
-    utc_now = utils.get_utc_now()
-    tourney_day = tourney.get_tourney_day(utc_now)
-    if tourney_day is None:
-        raise Error('There\'s no tournament running currently.')
-    if not tourney_day:
-        raise Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-    output = []
-
-    yesterday_tourney_data = TOURNEY_DATA_CLIENT.get_latest_daily_data()
-    if yesterday_tourney_data is None:
-        fleet_infos = []
-    else:
-        fleet_infos = await fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
-
-    if fleet_infos:
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            use_pagination = await server_settings.db_get_use_pagination(ctx.guild)
-            paginator = pagination.Paginator(ctx, fleet_name, fleet_infos, fleet.get_fleet_search_details, use_pagination)
-            _, fleet_info = await paginator.wait_for_option_selection()
-
-        if fleet_info:
-            output = await fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await server_settings.get_use_embeds(ctx)))
-    else:
-        leading_space_note = ''
-        if fleet_name.startswith(' '):
-            leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-        raise NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.{leading_space_note}')
     await utils.discord.reply_with_output(ctx, output)
 
 
@@ -4643,7 +4041,6 @@ async def __initialize() -> None:
     print(f'Initialized!')
 
 
-if __name__ == '__main__':
+def run_bot() -> None:
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)
-

@@ -1,7 +1,7 @@
 from typing import Any, List
 
-from pss_exception import InvalidParameterValueError
-import settings
+from .pss_exception import InvalidParameterValueError
+from . import settings
 
 
 # ---------- Functions ----------

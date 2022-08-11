@@ -5,11 +5,11 @@ from discord.ext.commands import Bot, Context
 from enum import IntEnum
 from typing import Any, Callable, Dict, ItemsView, KeysView, List, Optional, Tuple, Union, ValuesView
 
-import database as db
-import pss_assert
-import pss_entity as entity
-import settings as app_settings
-import utils
+from . import database as db
+from . import pss_assert
+from . import pss_entity as entity
+from . import settings as app_settings
+from . import utils
 
 
 # ---------- Constants ----------

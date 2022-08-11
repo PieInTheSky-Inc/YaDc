@@ -6,10 +6,10 @@ from typing import Iterable, Optional
 from PIL import Image, ImageEnhance, ImageFont
 import numpy as np
 
-import pss_core as core
-import pss_entity as entity
-import settings
-from typehints import EntitiesData, EntityInfo
+from . import pss_core as core
+from . import pss_entity as entity
+from . import settings
+from .typehints import EntitiesData, EntityInfo
 
 
 # ---------- Constants ----------

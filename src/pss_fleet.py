@@ -6,23 +6,23 @@ from discord import Embed
 from discord.utils import escape_markdown
 from discord.ext.commands import Context
 
-import emojis
-import excel
-import pss_assert
-import pss_core as core
-import pss_entity as entity
-import pss_fleet as fleet
-import pss_login as login
-import pss_lookups as lookups
-import pss_raw as raw
-import pss_sprites as sprites
-import pss_tournament as tourney
-import pss_top as top
-import pss_user as user
-from pss_user import USER_KEY_NAME
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import emojis
+from . import excel
+from . import pss_assert
+from . import pss_core as core
+from . import pss_entity as entity
+from . import pss_fleet as fleet
+from . import pss_login as login
+from . import pss_lookups as lookups
+from . import pss_raw as raw
+from . import pss_sprites as sprites
+from . import pss_tournament as tourney
+from . import pss_top as top
+from . import pss_user as user
+from .pss_user import USER_KEY_NAME
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

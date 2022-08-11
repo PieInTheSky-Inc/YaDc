@@ -8,7 +8,7 @@ from typing import Iterable as _Iterable
 from typing import List as _List
 from typing import Tuple as _Tuple
 
-import settings as _settings
+from .. import settings as _settings
 
 from . import constants as _constants
 from . import datetime as _datetime

@@ -10,22 +10,22 @@ from discord.utils import escape_markdown
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 import numpy as np
 
-import emojis
-import pss_assert
-import pss_core as core
-import pss_entity as entity
-import pss_fleet as fleet
-import pss_login as login
-import pss_lookups as lookups
-import pss_room as room
-import pss_ship as ship
-import pss_sprites as sprites
-import pss_top as top
-import pss_tournament as tourney
-import pss_user as user
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import emojis
+from . import pss_assert
+from . import pss_core as core
+from . import pss_entity as entity
+from . import pss_fleet as fleet
+from . import pss_login as login
+from . import pss_lookups as lookups
+from . import pss_room as room
+from . import pss_ship as ship
+from . import pss_sprites as sprites
+from . import pss_top as top
+from . import pss_tournament as tourney
+from . import pss_user as user
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

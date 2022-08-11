@@ -3,18 +3,18 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from discord import Embed
 
-import pss_assert
-import pss_crew as crew
-import pss_entity as entity
-from pss_exception import Error, NotFound
-import pss_item as item
-import pss_lookups as lookups
-import pss_research as research
-import pss_room as room
-import pss_sprites as sprites
-import settings
-from typehints import EntityInfo
-import utils
+from . import pss_assert
+from . import pss_crew as crew
+from . import pss_entity as entity
+from .pss_exception import Error, NotFound
+from . import pss_item as item
+from . import pss_lookups as lookups
+from . import pss_research as research
+from . import pss_room as room
+from . import pss_sprites as sprites
+from . import settings
+from .typehints import EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

@@ -7,8 +7,8 @@ from openpyxl.worksheet.table import TableStyleInfo
 import openpyxl.utils.dataframe
 import pandas
 
-import pss_tournament as tourney
-import utils
+from . import pss_tournament as tourney
+from . import utils
 
 
 # ---------- Constants ----------

@@ -5,11 +5,11 @@ from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 
-import pss_entity as entity
-from pss_exception import MaintenanceError
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import pss_entity as entity
+from .pss_exception import MaintenanceError
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

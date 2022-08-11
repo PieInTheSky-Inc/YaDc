@@ -4,18 +4,18 @@ from typing import Dict, List, Optional, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import pss_assert
-import pss_core as core
-import emojis
-import pss_entity as entity
-from pss_exception import Error, NotFound
-import pss_lookups as lookups
-import pss_sprites as sprites
-import pss_training as training
-import resources
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import pss_assert
+from . import pss_core as core
+from . import emojis
+from . import pss_entity as entity
+from .pss_exception import Error, NotFound
+from . import pss_lookups as lookups
+from . import pss_sprites as sprites
+from . import pss_training as training
+from . import resources
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Typehint definitions -----------

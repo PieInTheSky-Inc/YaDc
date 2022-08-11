@@ -4,9 +4,9 @@ from threading import Lock
 import time
 from typing import Dict, Optional
 
-import pss_core as core
-import utils
-from typehints import EntitiesData
+from . import pss_core as core
+from . import utils
+from .typehints import EntitiesData
 
 
 # ---------- Classes ----------

@@ -6,20 +6,20 @@ from discord import Colour, Embed
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
-import emojis
-import pss_assert
-import pss_core as core
-import pss_entity as entity
-from pss_exception import Error
-import pss_fleet as fleet
-import pss_login as login
-import pss_lookups as lookups
-import pss_sprites as sprites
-import pss_tournament as tourney
-import pss_user as user
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import emojis
+from . import pss_assert
+from . import pss_core as core
+from . import pss_entity as entity
+from .pss_exception import Error
+from . import pss_fleet as fleet
+from . import pss_login as login
+from . import pss_lookups as lookups
+from . import pss_sprites as sprites
+from . import pss_tournament as tourney
+from . import pss_user as user
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

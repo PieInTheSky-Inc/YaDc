@@ -7,10 +7,10 @@ from typing import List, Optional
 import aiohttp
 from asyncio import Lock
 
-import database as db
-import pss_core as core
-import settings
-import utils
+from . import database as db
+from . import pss_core as core
+from . import settings
+from . import utils
 
 
 # ---------- Constants & Internals ----------

@@ -3,8 +3,8 @@ from typing import List, Optional
 
 from discord import Colour, Embed
 
-import pss_core as core
-import utils
+from . import pss_core as core
+from . import utils
 
 
 # ---------- Tournament ----------

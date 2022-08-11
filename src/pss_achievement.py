@@ -1,4 +1,4 @@
-import pss_entity as entity
+from . import pss_entity as entity
 
 
 # ---------- Constants ----------

@@ -3,17 +3,17 @@ from typing import List, Optional, Tuple, Union
 from discord import Embed
 from discord.ext.commands import Context
 
-import emojis
-import pss_assert
-import pss_entity as entity
-from pss_exception import NotFound
-import pss_item as item
-import pss_lookups as lookups
-import pss_research as research
-import pss_sprites as sprites
-import settings
-from typehints import EntitiesData, EntityInfo
-import utils
+from . import emojis
+from . import pss_assert
+from . import pss_entity as entity
+from .pss_exception import NotFound
+from . import pss_item as item
+from . import pss_lookups as lookups
+from . import pss_research as research
+from . import pss_sprites as sprites
+from . import settings
+from .typehints import EntitiesData, EntityInfo
+from . import utils
 
 
 # ---------- Constants ----------

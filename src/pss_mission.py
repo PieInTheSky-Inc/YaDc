@@ -1,5 +1,4 @@
-import pss_entity as entity
-from typehints import EntitiesData, EntityInfo
+from . import pss_entity as entity
 
 
 # ---------- Constants ----------

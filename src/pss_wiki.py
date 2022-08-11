@@ -3,10 +3,10 @@ import os as _os
 from discord import File as _File
 from discord.ext.commands import Context as _Context
 
-from pss_exception import Error as _Error
-from pss_entity import EntityRetriever as _EntityRetriever
-import settings as _settings
-import utils as _utils
+from .pss_exception import Error as _Error
+from .pss_entity import EntityRetriever as _EntityRetriever
+from . import settings as _settings
+from . import utils as _utils
 
 
 async def get_data_lua(entity_retriever: _EntityRetriever) -> str:
