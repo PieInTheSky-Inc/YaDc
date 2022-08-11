@@ -26,7 +26,7 @@ from .. import utils as _utils
 
 
 
-class TournamentDataCog(_BaseCog, name='Tournament'):
+class TournamentCog(_BaseCog, name='Tournament'):
     """
     This extension offers commands to get information about fleets and players from past tournaments.
     """
@@ -678,4 +678,4 @@ class TournamentDataCog(_BaseCog, name='Tournament'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(TournamentDataCog(bot))
+    bot.add_cog(TournamentCog(bot))
