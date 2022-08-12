@@ -1,6 +1,7 @@
 import os as _os
 import json as _json
 import re as _re
+from typing import List as _List
 
 import discord.errors as _errors
 from discord import File as _File
@@ -319,6 +320,49 @@ class OwnerCog(_CogBase, name='Owner commands'):
         colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
         embed = _utils.discord.create_embed('Your message in an embed', description=message, colour=colour)
         await ctx.send(embed=embed)
+
+
+    @_command_group(name='list', brief='List stuff', invoke_without_command=False, hidden=True)
+    @_is_owner()
+    async def list_(self, ctx: _Context):
+        """
+        Lists stuff.
+        """
+        self._log_command_use(ctx)
+        if not ctx.invoked_subcommand:
+            ctx.send_help('list')
+
+
+    @list_.command(name='commands', brief='List all top-level commands', invoke_without_command=False, hidden=True)
+    @_is_owner()
+    async def list_commands(self, ctx: _Context):
+        """
+        Lists all top-level commands.
+        """
+        self._log_command_use(ctx)
+        commands = sorted(list(set([command.full_parent_name or command.name for command in self.bot.all_commands.values()])))
+        output = [
+            '```',
+            *commands,
+            '```',
+        ]
+        await _utils.discord.reply_with_output(ctx, output)
+
+
+    @list_.command(name='commandtree', brief='List the full command tree', invoke_without_command=False, hidden=True)
+    @_is_owner()
+    async def list_commandtree(self, ctx: _Context):
+        """
+        Lists all commands.
+        """
+        self._log_command_use(ctx)
+        command_tree = sorted(list(set(_get_command_tree(self.bot.all_commands.values()))))
+        output = [
+            '```',
+            *command_tree,
+            '```',
+        ]
+        await _utils.discord.reply_with_output(ctx, output)
 
 
     @_command(name='sales-add', brief='Add a past sale.', hidden=True)
@@ -678,6 +722,21 @@ class OwnerCog(_CogBase, name='Owner commands'):
         await _daily.update_db_sales_info_cache()
         await ctx.send('Updated all caches successfully!')
 
+
+
+
+
+def _get_command_tree(commands) -> _List[str]:
+    """Returns a nested dictionary"""
+    result = []
+    from discord.ext.commands import Command as _Command
+    from discord.ext.commands import Group as _Group
+    command: _Command = None
+    for command in commands:
+        result.append(f'{command.full_parent_name or ""} {command.name}'.strip())
+        if isinstance(command, _Group):
+            result.extend(_get_command_tree(command.walk_commands()))
+    return result
 
 
 
