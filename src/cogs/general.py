@@ -109,7 +109,7 @@ class GeneralCog(_CogBase, name='General'):
         await _utils.discord.respond_with_output(ctx, [output], ephemeral=True)
 
 
-    @_command(name='links', brief='Show links')
+    @_command(name='links', brief='Show useful links')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def links(self, ctx: _Context):
         """
@@ -122,28 +122,19 @@ class GeneralCog(_CogBase, name='General'):
         /links - Shows the links for useful sites regarding Pixel Starships.
         """
         self._log_command_use(ctx)
-        links = _read_links_file()
-        output = []
-        if (await _server_settings.get_use_embeds(ctx)):
-            title = 'Pixel Starships weblinks'
-            colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-            fields = []
-            for field_name, hyperlinks in links.items():
-                field_value = []
-                for (description, hyperlink) in hyperlinks:
-                    field_value.append(f'[{description}]({hyperlink})')
-                fields.append((field_name, '\n'.join(field_value), False))
-            embed = _utils.discord.create_embed(title, fields=fields, colour=colour)
-            output.append(embed)
-        else:
-            for category, hyperlinks in links.items():
-                output.append(f'**{category}**')
-                for (description, hyperlink) in hyperlinks:
-                    output.append(f'{description}: <{hyperlink}>')
-                output.append(_utils.discord.ZERO_WIDTH_SPACE)
-            if output:
-                output = output[:-1]
+        output = await self._get_links_output(ctx)
         await _utils.discord.reply_with_output(ctx, output)
+
+
+    @_slash_command(name='links', brief='Show useful links')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def links_slash(self, ctx: _ApplicationContext):
+        """
+        Shows the links for useful sites regarding Pixel Starships.
+        """
+        self._log_command_use(ctx)
+        output = await self._get_links_output(ctx)
+        await _utils.discord.respond_with_output(ctx, output)
 
 
     @_command(name='ping', brief='Ping the server')
@@ -244,6 +235,31 @@ class GeneralCog(_CogBase, name='General'):
             output = _utils.discord.create_embed(None, description=description, colour=colour)
         else:
             output = f'{title}: {invite_url}'
+        return output
+
+
+    async def _get_links_output(self, ctx: _Union[_ApplicationContext, _Context]) -> _Union[str, _Embed]:
+        links = _read_links_file()
+        output = []
+        if (await _server_settings.get_use_embeds(ctx)):
+            title = 'Pixel Starships weblinks'
+            colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+            fields = []
+            for field_name, hyperlinks in links.items():
+                field_value = []
+                for (description, hyperlink) in hyperlinks:
+                    field_value.append(f'[{description}]({hyperlink})')
+                fields.append((field_name, '\n'.join(field_value), False))
+            embed = _utils.discord.create_embed(title, fields=fields, colour=colour)
+            output.append(embed)
+        else:
+            for category, hyperlinks in links.items():
+                output.append(f'**{category}**')
+                for (description, hyperlink) in hyperlinks:
+                    output.append(f'{description}: <{hyperlink}>')
+                output.append(_utils.discord.ZERO_WIDTH_SPACE)
+            if output:
+                output = output[:-1]
         return output
 
 
