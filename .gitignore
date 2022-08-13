@@ -6,6 +6,7 @@ items-*.txt
 sprite_cache/
 bin/
 pyvenv.cfg
+*.lua
 
 # Visual Studio Code
 .vscode/

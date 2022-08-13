@@ -13,7 +13,6 @@ import discord.ext.commands.errors as command_errors
 import discord.ext.tasks as tasks
 
 from . import database as db
-from .gdrive import TourneyDataClient as _TourneyDataClient
 from . import pss_crew as crew
 from . import pss_daily as daily
 from . import pss_dropship as dropship
