@@ -2,8 +2,12 @@ import json as _json
 from typing import Any as _Any
 from typing import Dict as _Dict
 from typing import List as _List
+from typing import Union as _Union
 
-from discord.ext.commands import Bot as _Bot
+from discord import ApplicationContext as _ApplicationContext
+from discord import Bot as _Bot
+from discord import Embed as _Embed
+from discord import slash_command as _slash_command
 from discord.ext.commands import command as _command
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
@@ -23,28 +27,15 @@ class GeneralCog(_CogBase, name='General'):
     This module offers commands to obtain information about the bot itself.
     """
 
-    @_command(name='about', aliases=['info'], brief='Display info on this bot')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def about(self, ctx: _Context):
-        """
-        Displays information about this bot and its authors.
-
-        Usage:
-        /about
-        /info
-
-        Examples:
-        /about - Displays information on this bot and its authors.
-        """
-        self._log_command_use(ctx)
-        guild_count = len([guild for guild in self.__bot.guilds if guild.id not in _settings.IGNORE_SERVER_IDS_FOR_COUNTING])
-        user_name = self.__bot.user.display_name
+    def _get_about_output(self, ctx: _Union[_ApplicationContext, _Context]) -> _Embed:
+        guild_count = len([guild for guild in self.bot.guilds if guild.id not in _settings.IGNORE_SERVER_IDS_FOR_COUNTING])
+        user_name = self.bot.user.display_name
         if ctx.guild is None:
-            nick = self.__bot.user.display_name
+            nick = self.bot.user.display_name
         else:
             nick = ctx.guild.me.display_name
-        has_nick = self.__bot.user.display_name != nick
-        pfp_url = self.__bot.user.avatar_url
+        has_nick = self.bot.user.display_name != nick
+        pfp_url = (self.bot.user.avatar or self.bot.user.default_avatar).url
         about_info = _read_about_file()
 
         title = f'About {nick}'
@@ -58,10 +49,46 @@ class GeneralCog(_CogBase, name='General'):
             ('profile pic by', about_info['pfp'], True),
             ('support', about_info['support'], False)
         ]
-        colour = _utils.discord.get_bot_member_colour(self.__bot, ctx.guild)
+        colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
 
         embed = _utils.discord.create_embed(title, description=description, colour=colour, fields=fields, thumbnail_url=pfp_url, footer=footer)
+        return embed
+
+
+    @_command(name='about', aliases=['info'], brief='Display info on this bot')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def about(self, ctx: _ApplicationContext):
+        """
+        Displays information about this bot and its authors.
+
+        Usage:
+        /about
+        /info
+
+        Examples:
+        /about - Displays information on this bot and its authors.
+        """
+        self._log_command_use(ctx)
+        embed = self._get_about_output(ctx)
         await _utils.discord.reply_with_output(ctx, [embed])
+
+
+    @_slash_command(name='about', aliases=['info'], brief='Display info on this bot')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def about_slash(self, ctx: _ApplicationContext):
+        """
+        Displays information about this bot and its authors.
+
+        Usage:
+        /about
+        /info
+
+        Examples:
+        /about - Displays information on this bot and its authors.
+        """
+        self._log_command_use(ctx)
+        embed = self._get_about_output(ctx)
+        await _utils.discord.respond_with_output(ctx, [embed])
 
 
     @_command(name='flip', aliases=['flap', 'flipflap'], brief='There\'s no flip without the flap.', hidden=True)
@@ -97,11 +124,11 @@ class GeneralCog(_CogBase, name='General'):
         as_embed = await _server_settings.get_use_embeds(ctx)
 
         if ctx.guild is None:
-            nick = self.__bot.user.display_name
+            nick = self.bot.user.display_name
         else:
             nick = ctx.guild.me.display_name
         title = f'Invite {nick} to your server'
-        invite_url = f'{_settings.BASE_INVITE_URL}{self.__bot.user.id}'
+        invite_url = f'{_settings.BASE_INVITE_URL}{self.bot.user.id}'
         colour = None
 
         if as_embed:
@@ -135,7 +162,7 @@ class GeneralCog(_CogBase, name='General'):
         output = []
         if (await _server_settings.get_use_embeds(ctx)):
             title = 'Pixel Starships weblinks'
-            colour = _utils.discord.get_bot_member_colour(self.__bot, ctx.guild)
+            colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
             fields = []
             for field_name, hyperlinks in links.items():
                 field_value = []
@@ -188,7 +215,7 @@ class GeneralCog(_CogBase, name='General'):
         as_embed = await _server_settings.get_use_embeds(ctx)
 
         if ctx.guild is None:
-            nick = self.__bot.user.display_name
+            nick = self.bot.user.display_name
         else:
             nick = ctx.guild.me.display_name
         about = _read_about_file()

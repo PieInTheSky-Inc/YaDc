@@ -19,7 +19,6 @@ from . import pss_sprites as sprites
 from . import pss_tournament as tourney
 from . import pss_top as top
 from . import pss_user as user
-from .pss_user import USER_KEY_NAME
 from . import settings
 from .typehints import EntitiesData, EntityInfo
 from . import utils
@@ -167,7 +166,7 @@ async def get_fleet_users_stars_from_info(ctx: Context, fleet_info: EntityInfo, 
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
     division = lookups.DIVISION_DESIGN_ID_TO_CHAR[fleet_info[top.DIVISION_DESIGN_KEY_NAME]]
 
-    fleet_users_infos = entity.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (USER_KEY_NAME, int, False)])
+    fleet_users_infos = entity.sort_entities_by(list(fleet_users_infos.values()), [('AllianceScore', int, True), (user.USER_KEY_NAME, int, False)])
     fleet_users_infos_count = len(fleet_users_infos)
 
     title = f'{fleet_name} member stars (division {division})'
@@ -218,7 +217,7 @@ async def get_fleet_users_stars_from_tournament_data(ctx, fleet_info: EntityInfo
     fleet_users_infos = {}
     if fleet_id in fleet_data.keys():
         fleet_info[top.DIVISION_DESIGN_KEY_NAME] = fleet_data[fleet_id][top.DIVISION_DESIGN_KEY_NAME]
-        fleet_users_infos = dict({user_info[USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
+        fleet_users_infos = dict({user_info[user.USER_KEY_NAME]: user_info for user_info in user_data.values() if user_info[FLEET_KEY_NAME] == fleet_id})
     return await get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, retrieved_at=retrieved_date, as_embed=as_embed)
 
 
@@ -432,7 +431,7 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
         if include_division_name:
             line.append(get_division_name(user_info.get('Alliance', {}).get(top.DIVISION_DESIGN_KEY_NAME)))
         if include_player_id:
-            line.append(user_info.get(USER_KEY_NAME, ''))
+            line.append(user_info.get(user.USER_KEY_NAME, ''))
         if include_fleet_id:
             line.append(user_info.get(FLEET_KEY_NAME, ''))
         if include_pvp_stats:

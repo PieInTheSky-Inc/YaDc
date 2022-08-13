@@ -42,9 +42,12 @@ async def get_prefix(bot: Bot, message: Message) -> str:
     return when_mentioned_or(result)(bot, message)
 
 
-BOT = Bot(command_prefix=get_prefix,
-                    description='This is a Discord Bot for Pixel Starships',
-                    activity=Activity(type=ActivityType.playing, name='/help'))
+BOT = Bot(
+    command_prefix=get_prefix,
+    description='This is a Discord Bot for Pixel Starships',
+    activity=Activity(type=ActivityType.playing, name='/help'),
+    debug_guilds=[565819215731228672, 675078037938765843],
+)
 
 
 __COMMANDS = []
@@ -86,28 +89,6 @@ async def on_ready() -> None:
     if settings.FEATURE_AUTODAILY_ENABLED:
         print('Starting auto-daily loop.')
         post_dailies_loop.start()
-
-
-@BOT.event
-async def on_connect() -> None:
-    print('+ on_connect()')
-    await __initialize()
-
-
-@BOT.event
-async def on_resumed() -> None:
-    print('+ on_resumed()')
-    await __initialize()
-
-
-@BOT.event
-async def on_disconnect() -> None:
-    print('+ on_disconnect()')
-
-
-@BOT.event
-async def on_shard_ready() -> None:
-    print('+ on_shard_ready()')
 
 
 @BOT.event
@@ -394,15 +375,6 @@ async def __initialize() -> None:
     await room.init()
     await user.init()
 
-    load_cog(GeneralCog.__name__, 'src.cogs.general')
-    load_cog(CurrentDataCog.__name__, 'src.cogs.current')
-    load_cog(RawDataCog.__name__, 'src.cogs.raw')
-    load_cog(SettingsCog.__name__, 'src.cogs.settings')
-    load_cog(WikiCog.__name__, 'src.cogs.wiki')
-    load_cog(OwnerCog.__name__, 'src.cogs.owner')
-    if settings.FEATURE_TOURNEYDATA_ENABLED:
-        load_cog(TournamentCog.__name__, 'src.cogs.tournament')
-
     global __COMMANDS
     __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
     INITIALIZED = True
@@ -417,5 +389,14 @@ def load_cog(name: str, path: str) -> None:
 
 
 def run_bot() -> None:
+    load_cog(GeneralCog.__name__, 'src.cogs.general')
+    #load_cog(CurrentDataCog.__name__, 'src.cogs.current')
+    #load_cog(RawDataCog.__name__, 'src.cogs.raw')
+    #load_cog(SettingsCog.__name__, 'src.cogs.settings')
+    #load_cog(WikiCog.__name__, 'src.cogs.wiki')
+    #load_cog(OwnerCog.__name__, 'src.cogs.owner')
+    if settings.FEATURE_TOURNEYDATA_ENABLED:
+        load_cog(TournamentCog.__name__, 'src.cogs.tournament')
+
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)

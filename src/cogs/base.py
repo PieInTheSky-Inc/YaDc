@@ -16,11 +16,10 @@ class CogBase(_Cog):
     COOLDOWN: float = 15.0
     RATE: int = 5
 
-    def __init__(self, bot: _Bot, pretty_name: str = None) -> None:
+    def __init__(self, bot: _Bot) -> None:
         if not bot:
             raise ValueError('Parameter \'bot\' must not be None.')
         self.__bot = bot
-        self.__cog_description__
 
 
     @property

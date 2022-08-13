@@ -1,4 +1,14 @@
 from datetime import datetime as _datetime
+from re import compile as _compile
+from re import escape as _escape
+from re import Pattern as _Pattern
+from re import search as _search
+from typing import AnyStr as _AnyStr
+from typing import List as _List
+from typing import Union as _Union
+from typing import Tuple as _Tuple
+
+from discord import ApplicationContext as _ApplicationContext
 from discord import Colour as _Colour
 from discord import Embed as _Embed
 from discord import File as _File
@@ -13,14 +23,6 @@ from discord import User as _User
 from discord.abc import Messageable as _Messageable
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Context as _Context
-from re import compile as _compile
-from re import escape as _escape
-from re import Pattern as _Pattern
-from re import search as _search
-from typing import AnyStr as _AnyStr
-from typing import List as _List
-from typing import Union as _Union
-from typing import Tuple as _Tuple
 
 from . import miscellaneous as _utils
 
@@ -265,6 +267,27 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
             result = await ctx.reply(content=first_post, mention_author=mention_author)
             for post in posts:
                 result = await ctx.send(content=post)
+    return result
+
+
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS) -> _Message:
+    """
+    Returns the last message created or None, if output has not been specified.
+    """
+    result = None
+    if output:
+        output_is_embeds = isinstance(output[0], _Embed)
+        output = __prepare_output(output)
+
+        if output_is_embeds:
+            posts = output
+            post_groups = _utils.chunk_list(posts, 10)
+            for post_group in post_groups:
+                result = await ctx.respond(embeds=post_group)
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
+            for post in posts:
+                result = await ctx.respond(content=post)
     return result
 
 
