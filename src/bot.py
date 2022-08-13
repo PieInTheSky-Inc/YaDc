@@ -49,7 +49,7 @@ BOT = Bot(
     command_prefix=get_prefix,
     description='This is a Discord Bot for Pixel Starships',
     activity=Activity(type=ActivityType.playing, name='/help'),
-    debug_guilds=[565819215731228672, 675078037938765843],
+    debug_guilds=settings.DEBUG_GUILDS or None,
     intents=INTENTS,
 )
 

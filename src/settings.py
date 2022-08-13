@@ -16,6 +16,7 @@ BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permis
 DATABASE_SSL_MODE: str = os.environ.get('DATABASE_SSL_MODE', 'require')
 DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MODE}'
 
+DEBUG_GUILDS: List[int] = json.loads(str(os.environ.get('DEBUG_GUILDS', '[]')))
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
