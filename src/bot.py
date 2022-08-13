@@ -390,11 +390,11 @@ def load_cog(name: str, path: str) -> None:
 
 def run_bot() -> None:
     load_cog(GeneralCog.__name__, 'src.cogs.general')
-    #load_cog(CurrentDataCog.__name__, 'src.cogs.current')
-    #load_cog(RawDataCog.__name__, 'src.cogs.raw')
-    #load_cog(SettingsCog.__name__, 'src.cogs.settings')
-    #load_cog(WikiCog.__name__, 'src.cogs.wiki')
-    #load_cog(OwnerCog.__name__, 'src.cogs.owner')
+    load_cog(CurrentDataCog.__name__, 'src.cogs.current')
+    load_cog(RawDataCog.__name__, 'src.cogs.raw')
+    load_cog(SettingsCog.__name__, 'src.cogs.settings')
+    load_cog(WikiCog.__name__, 'src.cogs.wiki')
+    load_cog(OwnerCog.__name__, 'src.cogs.owner')
     if settings.FEATURE_TOURNEYDATA_ENABLED:
         load_cog(TournamentCog.__name__, 'src.cogs.tournament')
 
