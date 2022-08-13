@@ -179,28 +179,25 @@ class GeneralCog(_CogBase, name='General'):
         self._log_command_use(ctx)
 
         as_embed = await _server_settings.get_use_embeds(ctx)
-
-        if ctx.guild is None:
-            nick = self.bot.user.display_name
-        else:
-            nick = ctx.guild.me.display_name
-        about = _read_about_file()
-        title = f'Join {nick} support server'
-        colour = None
-        guild_invite = about['support']
-
-        if as_embed:
-            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            description = f'[{title}]({guild_invite})'
-            output = _utils.discord.create_embed(None, description=description, colour=colour)
-        else:
-            output = f'{title}: {guild_invite}'
+        output = self._get_support_output(ctx, as_embed)
         await _utils.discord.dm_author(ctx, [output], output_is_embeds=as_embed)
         if _utils.discord.is_guild_channel(ctx.channel):
             notice = f'{ctx.author.mention} Sent invite link to bot support server via DM.'
             if as_embed:
-                notice = _utils.discord.create_embed(None, description=notice, colour=colour)
+                notice = _utils.discord.create_embed(None, description=notice, colour=_utils.discord.get_bot_member_colour(self.bot, ctx.guild))
             await _utils.discord.reply_with_output(ctx, [notice])
+
+
+    @_slash_command(name='support', brief='Invite to bot\'s support server')
+    async def support_slash(self, ctx: _Context):
+        """
+        Produces an invite link to the support server for this bot and sends it via DM.
+        """
+        self._log_command_use(ctx)
+
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        output = self._get_support_output(ctx, as_embed)
+        await _utils.discord.respond_with_output(ctx, [output], ephemeral=True)
 
 
     def _get_about_output(self, ctx: _Union[_ApplicationContext, _Context]) -> _Embed:
@@ -271,6 +268,25 @@ class GeneralCog(_CogBase, name='General'):
                 output.append(_utils.discord.ZERO_WIDTH_SPACE)
             if output:
                 output = output[:-1]
+        return output
+
+
+    def _get_support_output(self, ctx: _Union[_ApplicationContext, _Context], as_embed: bool) -> _Union[str, _Embed]:
+        if ctx.guild is None:
+            nick = self.bot.user.display_name
+        else:
+            nick = ctx.guild.me.display_name
+        about = _read_about_file()
+        title = f'Join {nick} support server'
+        colour = None
+        guild_invite = about['support']
+
+        if as_embed:
+            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            description = f'[{title}]({guild_invite})'
+            output = _utils.discord.create_embed(None, description=description, colour=colour)
+        else:
+            output = f'{title}: {guild_invite}'
         return output
 
 
