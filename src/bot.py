@@ -5,7 +5,7 @@ import os
 import sys
 from typing import List, Tuple
 
-from discord import Activity, ActivityType, Embed, Guild, Message, TextChannel
+from discord import Activity, ActivityType, Embed, Guild, Intents, Message, TextChannel
 from discord import __version__ as discord_version
 from discord.ext.commands import Bot, Context, when_mentioned_or
 import discord.errors as errors
@@ -41,12 +41,16 @@ async def get_prefix(bot: Bot, message: Message) -> str:
     result = await server_settings.get_prefix(bot, message)
     return when_mentioned_or(result)(bot, message)
 
+INTENTS: Intents = Intents.default()
+if settings.INTENT_MESSAGE_CONTENT:
+    INTENTS.message_content = True
 
 BOT = Bot(
     command_prefix=get_prefix,
     description='This is a Discord Bot for Pixel Starships',
     activity=Activity(type=ActivityType.playing, name='/help'),
     debug_guilds=[565819215731228672, 675078037938765843],
+    intents=INTENTS,
 )
 
 
@@ -76,6 +80,9 @@ setattr(BOT, 'logger', logging.getLogger('bot.py'))
 @BOT.event
 async def on_ready() -> None:
     print('+ on_ready()')
+
+    await __initialize()
+
     print(f'sys.argv: {sys.argv}')
     print(f'Current time: {utils.format.datetime(utils.get_utc_now())}')
     print(f'Current Working Directory: {PWD}')
@@ -376,7 +383,7 @@ async def __initialize() -> None:
     await user.init()
 
     global __COMMANDS
-    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if value.hidden == False])
+    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if hasattr(value, 'hidden') and value.hidden == False])
     INITIALIZED = True
     print(f'Initialized!')
 

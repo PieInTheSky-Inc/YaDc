@@ -52,6 +52,8 @@ IGNORE_SERVER_IDS_FOR_COUNTING: List[int] = [
     450100127256936458
 ]
 
+INTENT_MESSAGE_CONTENT: bool = int(os.environ.get('INTENT_MESSAGE_CONTENT', '0'))
+
 
 LATEST_SETTINGS_BASE_PATH: str = 'SettingService/GetLatestVersion3?deviceType=DeviceTypeAndroid&languageKey='
 

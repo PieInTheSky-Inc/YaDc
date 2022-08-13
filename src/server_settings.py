@@ -723,7 +723,8 @@ async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str,
     if (await get_use_embeds(ctx)):
         fields = [(pretty_setting[0], pretty_setting[1], False) for pretty_setting in pretty_guild_settings]
         colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-        result = [utils.discord.create_embed(title, description=note, fields=fields, colour=colour, icon_url=ctx.guild.icon_url)]
+        icon_url = ctx.guild.icon.url if ctx.guild.icon else None
+        result = [utils.discord.create_embed(title, description=note, fields=fields, colour=colour, icon_url=icon_url)]
     else:
         result = []
         if title:
