@@ -149,9 +149,20 @@ class GeneralCog(_CogBase, name='General'):
         /ping - The bot will answer with 'Pong!'.
         """
         self._log_command_use(ctx)
-        msg = await ctx.send('Pong!')
-        miliseconds = (msg.created_at - ctx.message.created_at).microseconds / 1000.0
-        await msg.edit(content=f'{msg.content} ({miliseconds} ms)')
+        latency = self.bot.latency * 1000
+        output = f'Pong! ({int(latency)} ms)'
+        await _utils.discord.reply_with_output(ctx, [output])
+
+
+    @_slash_command(name='ping', brief='Ping the server')
+    async def ping_slash(self, ctx: _Context):
+        """
+        Ping the bot to verify that it\'s listening for _commands.
+        """
+        self._log_command_use(ctx)
+        latency = self.bot.latency * 1000
+        output = f'Pong! ({int(latency)} ms)'
+        await _utils.discord.respond_with_output(ctx, [output], ephemeral=True)
 
 
     @_command(name='support', brief='Invite to bot\'s support server')
