@@ -270,7 +270,7 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
     return result
 
 
-async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS) -> _Message:
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Message:
     """
     Returns the last message created or None, if output has not been specified.
     """
@@ -283,11 +283,11 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
             posts = output
             post_groups = _utils.chunk_list(posts, 10)
             for post_group in post_groups:
-                result = await ctx.respond(embeds=post_group)
+                result = await ctx.respond(embeds=post_group, ephemeral=ephemeral)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
             for post in posts:
-                result = await ctx.respond(content=post)
+                result = await ctx.respond(content=post, ephemeral=ephemeral)
     return result
 
 
