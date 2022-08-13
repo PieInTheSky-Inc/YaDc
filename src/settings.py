@@ -10,7 +10,7 @@ ACCESS_TOKEN: str = os.environ.get('PSS_ACCESS_TOKEN')
 
 
 BASE_API_URL: str = 'https://api.pixelstarships.com/'
-BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=bot&permissions=388160&client_id='
+BASE_INVITE_URL: str = 'https://discordapp.com/oauth2/authorize?scope=scope=applications.commands%20bot&permissions=388160&client_id='
 
 
 DATABASE_SSL_MODE: str = os.environ.get('DATABASE_SSL_MODE', 'require')
