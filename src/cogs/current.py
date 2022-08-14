@@ -133,8 +133,8 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def best_slash(self,
         ctx: _Context,
-        stat: _Option(str, choices=_BEST_STAT_CHOICES),
-        slot: _Option(str, required=False, default=None, choices=_BEST_SLOT_CHOICES)
+        slot: _Option(str, choices=_BEST_SLOT_CHOICES),
+        stat: _Option(str, choices=_BEST_STAT_CHOICES)
         ):
         """
         Get the best enhancement item for a given slot.
