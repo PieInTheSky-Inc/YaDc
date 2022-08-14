@@ -575,6 +575,8 @@ def fix_slot_and_stat(slot: str, stat: str) -> Tuple[str, str]:
     elif slot and not stat:
         stat = slot.lower()
         slot = None
+    if not slot and stat:
+        pass
     else:
         slot = slot.lower()
         stat = stat.lower()

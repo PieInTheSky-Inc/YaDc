@@ -2,8 +2,16 @@ import datetime as _datetime
 import holidays as _holidays
 import os as _os
 import pytz as _pytz
+from typing import List as _List
+from typing import Union as _Union
 
-from discord.ext.commands import Bot as _Bot
+from discord import ApplicationContext as _ApplicationContext
+from discord import Bot as _Bot
+from discord import Embed as _Embed
+from discord import Option as _Option
+from discord import OptionChoice as _OptionChoice
+from discord import slash_command as _slash_command
+from discord import SlashCommandOptionType as _SlashCommandOptionType
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
@@ -42,6 +50,30 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     """
     This module offers commands to get current game data.
     """
+    _BEST_SLOT_CHOICES = [
+        _OptionChoice(name='Any', value=None),
+        _OptionChoice(name='Head', value='head'),
+        _OptionChoice(name='Accessory', value='accessory'),
+        _OptionChoice(name='Body', value='body'),
+        _OptionChoice(name='Hand', value='weapon'),
+        _OptionChoice(name='Weapon', value='weapon'),
+        _OptionChoice(name='Leg', value='leg'),
+        _OptionChoice(name='Pet', value='pet'),
+        _OptionChoice(name='Module', value='module'),
+    ]
+    _BEST_STAT_CHOICES = [
+        _OptionChoice(name='HP', value='hp'),
+        _OptionChoice(name='Attack', value='atk'),
+        _OptionChoice(name='Repair', value='rep'),
+        _OptionChoice(name='Ability', value='abl'),
+        _OptionChoice(name='Pilot', value='plt'),
+        _OptionChoice(name='Science', value='sci'),
+        _OptionChoice(name='Stamina', value='stam'),
+        _OptionChoice(name='Engine', value='eng'),
+        _OptionChoice(name='Weapon', value='wpn'),
+        _OptionChoice(name='FireResistance', value='fr'),
+    ]
+
 
     @_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
@@ -69,7 +101,10 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
         item_name = slot
         if stat is not None:
-            item_name += f' {stat}'
+            if slot is None:
+                item_name = stat
+            else:
+                item_name += f' {stat}'
         item_name = item_name.strip().lower()
 
         if item_name not in _lookups.EQUIPMENT_SLOTS_LOOKUP and item_name not in _lookups.STAT_TYPES_LOOKUP:
@@ -90,10 +125,23 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         else:
             if found_matching_items:
                 raise ValueError(f'The item `{item_name}` is not a gear type item!')
-
-        slot, stat = _item.fix_slot_and_stat(slot, stat)
-        output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await self._get_best_output(ctx, slot, stat)
         await _utils.discord.reply_with_output(ctx, output)
+
+
+    @_slash_command(name='best', brief='Get best items for a slot')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def best_slash(self,
+        ctx: _Context,
+        stat: _Option(str, choices=_BEST_STAT_CHOICES),
+        slot: _Option(str, required=False, default=None, choices=_BEST_SLOT_CHOICES)
+        ):
+        """
+        Get the best enhancement item for a given slot.
+        """
+        self._log_command_use(ctx)
+        output = await self._get_best_output(ctx, slot, stat)
+        await _utils.discord.respond_with_output(ctx, output)
 
 
     @_command(name='builder', brief='Get ship builder links')
@@ -1163,6 +1211,12 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
         output = await _training.get_training_details_from_name(training_name, ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
+
+
+    async def _get_best_output(self, ctx: _Union[_ApplicationContext, _Context], slot: str, stat: str) -> _Union[_List[str], _List[_Embed]]:
+        slot, stat = _item.fix_slot_and_stat(slot, stat)
+        output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        return output
 
 
 
