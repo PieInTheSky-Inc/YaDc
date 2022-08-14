@@ -201,13 +201,13 @@ async def post_output_to_channel(channel: _Union[_TextChannel, _Member, _User], 
         output = __prepare_output(output)
 
         if output_is_embeds:
-            posts = output
+            posts = _chunk_embeds(output)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
         for post in posts:
             if post:
                 if output_is_embeds:
-                    await channel.send(embed=post)
+                    await channel.send(embeds=post)
                 else:
                     await channel.send(post)
 
@@ -218,7 +218,7 @@ async def post_output_with_files(ctx: _Context, output: _Union[_List[_Embed], _L
             output = __prepare_output(output)
 
         if output_is_embeds:
-            posts = output
+            posts = _chunk_embeds(output)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
         last_post_index = len(posts) - 1
@@ -226,7 +226,7 @@ async def post_output_with_files(ctx: _Context, output: _Union[_List[_Embed], _L
         if last_post_index >= 0:
             for i, post in enumerate(posts):
                 if output_is_embeds:
-                    await ctx.send(embed=post)
+                    await ctx.send(embeds=post)
                 else:
                     if i == last_post_index and post or files:
                         await ctx.send(content=post, files=files)
@@ -254,15 +254,15 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
         output = __prepare_output(output)
 
         if output_is_embeds:
-            posts = output
+            posts = _chunk_embeds(output)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
         first_post, *posts = posts
 
         if output_is_embeds:
-            result = await ctx.reply(embed=first_post, mention_author=mention_author)
+            result = await ctx.reply(embeds=first_post, mention_author=mention_author)
             for post in posts:
-                result = await ctx.send(embed=post)
+                result = await ctx.send(embeds=post)
         else:
             result = await ctx.reply(content=first_post, mention_author=mention_author)
             for post in posts:
@@ -291,25 +291,6 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
     return result
 
 
-def _chunk_embeds(embeds: _List[_Embed]) -> _List[_List[_Embed]]:
-    if not embeds:
-        return []
-    current_result = []
-    current_length = 0
-    result = []
-    while embeds:
-        embed = embeds.pop(0)
-        if current_length + len(embed) >= 6000 or len(current_result) == 10:
-            result.append(current_result)
-            current_result = []
-            current_length = 0
-        current_result.append(embed)
-        current_length += len(embed)
-    if current_result:
-        result.append(current_result)
-    return result
-
-
 async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed], _List[str]], file_paths: _List[str], output_is_embeds: bool = False, maximum_characters: int = MAXIMUM_CHARACTERS, mention_author: bool = False) -> None:
     """
     Returns the last message created or None, if neither output nor files have been specified.
@@ -320,7 +301,7 @@ async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed
             output = __prepare_output(output)
 
         if output_is_embeds:
-            posts = output
+            posts = _chunk_embeds(output)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
         first_post, *posts = posts
@@ -333,10 +314,10 @@ async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed
 
         if last_post:
             if output_is_embeds:
-                await ctx.reply(embed=first_post, mention_author=mention_author)
+                await ctx.reply(embeds=first_post, mention_author=mention_author)
                 for post in posts:
-                    await ctx.send(embed=post)
-                result = await ctx.send(embed=last_post)
+                    await ctx.send(embeds=post)
+                result = await ctx.send(embeds=last_post)
                 if files:
                     result = await ctx.send(files=files)
             else:
@@ -346,7 +327,7 @@ async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed
                 result = await ctx.send(content=last_post, files=files)
         else:
             if output_is_embeds:
-                result = await ctx.reply(embed=first_post, mention_author=mention_author)
+                result = await ctx.reply(embeds=first_post, mention_author=mention_author)
                 if files:
                     result = await ctx.send(files=files)
             else:
@@ -374,3 +355,22 @@ async def try_remove_reaction(reaction: _Reaction, user: _User) -> bool:
         return True
     except _Forbidden:
         return False
+
+
+def _chunk_embeds(embeds: _List[_Embed]) -> _List[_List[_Embed]]:
+    if not embeds:
+        return []
+    current_result = []
+    current_length = 0
+    result = []
+    while embeds:
+        embed = embeds.pop(0)
+        if current_length + len(embed) >= 6000 or len(current_result) == 10:
+            result.append(current_result)
+            current_result = []
+            current_length = 0
+        current_result.append(embed)
+        current_length += len(embed)
+    if current_result:
+        result.append(current_result)
+    return result
