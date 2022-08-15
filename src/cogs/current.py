@@ -2,14 +2,18 @@ import datetime as _datetime
 import holidays as _holidays
 import os as _os
 import pytz as _pytz
+from typing import Dict as _Dict
 from typing import List as _List
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Bot as _Bot
 from discord import Embed as _Embed
+from discord import Interaction as _Interaction
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
+from discord import SelectMenu as _SelectMenu
+from discord import SelectOption as _SelectOption
 from discord import slash_command as _slash_command
 from discord import SlashCommandOptionType as _SlashCommandOptionType
 from discord.ext.commands import command as _command
@@ -160,13 +164,13 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         /builder Namith - Returns links to ship builder pages with the layout of the player Namith loaded.
         """
         self._log_command_use(ctx)
+
         exact_name = _utils.discord.get_exact_args(ctx)
         if exact_name:
             player_name = exact_name
         if not player_name:
             raise _MissingParameterError('The parameter `player_name` is mandatory.')
         user_infos = await _user.get_users_infos_by_name(player_name)
-
         if user_infos:
             if len(user_infos) == 1:
                 user_info = user_infos[0]
@@ -174,7 +178,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
                 paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
-
             if user_info:
                 output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=(await _server_settings.get_use_embeds(ctx)))
                 await _utils.discord.reply_with_output(ctx, output)
@@ -183,6 +186,45 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             if player_name.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
             raise _NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
+
+
+    @_slash_command(name='builder', brief='Get ship builder links')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def builder_slash(self,
+            ctx: _ApplicationContext,
+            player_name: _Option(str, description='Enter player name')
+        ):
+        """
+        Get links to websites offering a ship builder tool with the specific player's ship layout loaded.
+        """
+        self._log_command_use(ctx)
+
+        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
+        user_infos = await _user.get_users_infos_by_name(player_name)
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        if user_infos:
+            user_info = None
+            if len(user_infos) == 1:
+                user_info = user_infos[0]
+            else:
+                options = {user_info[_user.USER_KEY_NAME]: (user_info, user_info[_user.USER_DESCRIPTION_PROPERTY_NAME], _user.get_user_search_details(user_info)) for user_info in user_infos}
+                view = _pagination.SelectView('Please select a player.', options, timeout=10)
+                await response.edit_original_message(content='Multiple matches have been found', view=view)
+                if (await view.wait()): # interaction timed out
+                    view.disable_all_items()
+                    await response.edit_original_message(view=view)
+                    return
+                else:
+                    user_info = view.selected_entity_info
+            if user_info:
+                await response.edit_original_message(content='Building layout links, please wait...', view=None)
+                output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
+                if as_embed:
+                    await response.edit_original_message(content=None, embeds=output)
+                else:
+                    await response.edit_original_message(content='\n'.join(output), embeds=None)
+        else:
+            raise _NotFound(f'Could not find a player named `{player_name}`.')
 
 
     @_command(name='char', aliases=['crew'], brief='Get character stats')
