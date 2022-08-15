@@ -1,9 +1,9 @@
 import inspect
 import math
-from typing import Awaitable, Callable, Dict, List, Tuple, Union
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import asyncio
-from discord import ChannelType, Message, Reaction, User
+from discord import ApplicationContext, ChannelType, Message, Reaction, User
 from discord.ext.commands import Context
 
 from .pss_entity import EntityDetails
@@ -35,7 +35,7 @@ class Paginator():
 
         self.__is_dm_channel = ctx.channel.type == ChannelType.private
         if ctx.channel.type == ChannelType.text and ctx.guild and ctx.guild.id:
-            bot_permissions = ctx.me.permissions_in(ctx.channel)
+            bot_permissions = ctx.channel.permissions_for(ctx.me)
             if bot_permissions.add_reactions:
                 self.__use_emojis = use_pagination
             else:
@@ -263,3 +263,68 @@ class Paginator():
             result += f' while searching for **{search_term}**'
         result += ':'
         return result
+
+
+
+
+
+from discord import Interaction, SelectOption
+from discord.ui import View, Select
+
+
+class OptionSelect(Select):
+    def __init__(self, title: str, options: List[SelectOption]):
+        super().__init__(
+            min_values=1,
+            max_values=1,
+            placeholder=title,
+            options=options
+        )
+
+
+class ViewBase(View):
+    def __init__(self, *args, timeout: float = 60.0, **kwargs):
+        super().__init__(*args, timeout=timeout, **kwargs)
+
+
+    async def on_timeout(self):
+        self.disable_all_items()
+
+
+
+class SelectView(ViewBase):
+    def __init__(self,
+            title: str,
+            available_options: Dict[str, Tuple[str, EntityInfo]],
+            *args,
+            timeout: float = 60.0,
+            **kwargs
+        ):
+        super().__init__(*args, timeout=timeout, **kwargs)
+        self.__title: str = title
+        self.__available_options: Dict[str, Tuple[str, EntityInfo]] = available_options
+        select_options = [SelectOption(label=label, value=entity_id) for entity_id, (label, _) in available_options.items()]
+        self.__select: OptionSelect = OptionSelect(title, select_options)
+        self.__select.callback = self.select_callback
+        self.add_item(self.__select)
+        self.__selected_entity_info: EntityInfo = None
+
+    @property
+    def select(self) -> OptionSelect:
+        return self.__select
+
+    @property
+    def selected_entity_info(self) -> Optional[EntityInfo]:
+        return self.__selected_entity_info
+
+    @property
+    def title(self) -> str:
+        return self.__title
+
+
+    async def select_callback(self, interaction: Interaction):
+        self.__select.disabled = True
+        await interaction.response.edit_message(view=self)
+        self.__selected_entity_info = self.__available_options[self.__select.values[0]][1]
+        self.disable_all_items()
+        self.stop()
