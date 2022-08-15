@@ -207,7 +207,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             if len(user_infos) == 1:
                 user_info = user_infos[0]
             else:
-                options = {user_info[_user.USER_KEY_NAME]: (user_info, user_info[_user.USER_DESCRIPTION_PROPERTY_NAME], _user.get_user_search_details(user_info)) for user_info in user_infos}
+                options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
                 view = _pagination.SelectView('Please select a player.', options, timeout=10)
                 await response.edit_original_message(content='Multiple matches have been found', view=view)
                 if (await view.wait()): # interaction timed out
