@@ -12,8 +12,9 @@ from discord import ApplicationContext as _ApplicationContext
 from discord import Colour as _Colour
 from discord import Embed as _Embed
 from discord import File as _File
-from discord import Guild as _Guild
 from discord import Forbidden as _Forbidden
+from discord import Guild as _Guild
+from discord import Interaction as _Interaction
 from discord import Member as _Member
 from discord import Message as _Message
 from discord import NotFound as _NotFound
@@ -270,7 +271,7 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
     return result
 
 
-async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Message:
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Interaction:
     """
     Returns the last message created or None, if output has not been specified.
     """
