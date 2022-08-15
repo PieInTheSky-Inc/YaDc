@@ -208,7 +208,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
                 user_info = user_infos[0]
             else:
                 options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
-                view = _pagination.SelectView('Please select a player.', options, timeout=10)
+                view = _pagination.SelectView('Please select a player.', options)
                 await response.edit_original_message(content='Multiple matches have been found', view=view)
                 if (await view.wait()): # interaction timed out
                     view.disable_all_items()
