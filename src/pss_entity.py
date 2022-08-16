@@ -785,7 +785,7 @@ class EntityRetriever:
         raw_data = await self.__cache.get_raw_data()
         for element in ElementTree.fromstring(raw_data).iter():
             element_id = element.attrib.get(self.__key_name)
-            if element_id:
+            if element_id == entity_id:
                 result = ElementTree.tostring(element).decode("utf-8")
                 break
         return result
