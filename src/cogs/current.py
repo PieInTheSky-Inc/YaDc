@@ -3,17 +3,14 @@ import holidays as _holidays
 import os as _os
 import pytz as _pytz
 from typing import List as _List
+from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Embed as _Embed
-from discord import Interaction as _Interaction
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
-from discord import SelectMenu as _SelectMenu
-from discord import SelectOption as _SelectOption
 from discord import slash_command as _slash_command
-from discord import SlashCommandOptionType as _SlashCommandOptionType
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
@@ -375,13 +372,25 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         /daily - Prints the information described above.
         """
         self._log_command_use(ctx)
+
         await _utils.discord.try_delete_original_message(ctx)
-        as_embed = await _server_settings.get_use_embeds(ctx)
-        output, output_embed, _ = await _dropship.get_dropship_text(ctx.bot, ctx.guild)
-        if as_embed:
-            await _utils.discord.post_output(ctx, output_embed)
-        else:
-            await _utils.discord.post_output(ctx, output)
+        output = await self._get_daily_output(ctx)
+        await _utils.discord.post_output(ctx, output)
+
+
+    @_slash_command(name='daily', brief='Show the dailies')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN*2, type=_BucketType.guild)
+    async def daily_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Prints the MOTD along today's contents of the dropship etc.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await self._get_daily_output(ctx)
+        await _utils.discord.respond_with_output(ctx, output)
 
 
     @_command_group(name='event', brief='Get current event info', invoke_without_command=True)
@@ -1319,6 +1328,16 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         slot, stat = _item.fix_slot_and_stat(slot, stat)
         output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
         return output
+
+
+    async def _get_daily_output(self, ctx: _Union[_ApplicationContext, _Context]) -> _Union[_List[str], _List[_Embed]]:
+        self._log_command_use(ctx)
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        output, output_embed, _ = await _dropship.get_dropship_text(ctx.bot, ctx.guild)
+        if as_embed:
+            return output_embed
+        else:
+            return output
 
 
     async def _perform_char_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
