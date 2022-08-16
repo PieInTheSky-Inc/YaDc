@@ -213,7 +213,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
                 if (await view.wait()): # interaction timed out
                     view.disable_all_items()
                     await response.edit_original_message(view=view)
-                    return
                 else:
                     user_info = view.selected_entity_info
             if user_info:
