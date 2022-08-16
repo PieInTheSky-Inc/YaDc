@@ -300,6 +300,30 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
+    @_slash_command(name='craft', brief='Get crafting recipes')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def craft_slash(self,
+        ctx: _Context,
+        item_name: _Option(str, 'Enter an item name')
+    ):
+        """
+        Get the items a specified item can be crafted into.
+        """
+        await self._perform_craft_command(ctx, item_name)
+
+
+    @_slash_command(name='upgrade', brief='Get crafting recipes')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def upgrade_slash(self,
+        ctx: _Context,
+        item_name: _Option(str, 'Enter an item name')
+    ):
+        """
+        Get the items a specified item can be crafted into.
+        """
+        await self._perform_craft_command(ctx, item_name)
+
+
     @_command(name='collection', aliases=['coll'], brief='Get collections')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def collection(self, ctx: _Context, *, collection_name: str = None):
@@ -1287,6 +1311,12 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
 
         output = await _crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    async def _perform_craft_command(self, ctx: _ApplicationContext, item_name: str) -> None:
+        self._log_command_use(ctx)
+        output = await _item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
