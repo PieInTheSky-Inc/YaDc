@@ -21,6 +21,7 @@ from discord import NotFound as _NotFound
 from discord import Reaction as _Reaction
 from discord import TextChannel as _TextChannel
 from discord import User as _User
+from discord import WebhookMessage as _WebhookMessage
 from discord.abc import Messageable as _Messageable
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Context as _Context
@@ -271,7 +272,7 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
     return result
 
 
-async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Interaction:
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Union[_Interaction, _WebhookMessage]:
     """
     Returns the last message created or None, if output has not been specified.
     """
