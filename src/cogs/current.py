@@ -3,7 +3,6 @@ import holidays as _holidays
 import os as _os
 import pytz as _pytz
 from typing import List as _List
-from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
@@ -11,6 +10,7 @@ from discord import Embed as _Embed
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
 from discord import slash_command as _slash_command
+from discord import SlashCommandGroup as _SlashCommandGroup
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
@@ -50,29 +50,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     """
     This module offers commands to get current game data.
     """
-    _BEST_SLOT_CHOICES = [
-        _OptionChoice(name='Any', value=None),
-        _OptionChoice(name='Head', value='head'),
-        _OptionChoice(name='Accessory', value='accessory'),
-        _OptionChoice(name='Body', value='body'),
-        _OptionChoice(name='Hand', value='weapon'),
-        _OptionChoice(name='Weapon', value='weapon'),
-        _OptionChoice(name='Leg', value='leg'),
-        _OptionChoice(name='Pet', value='pet'),
-        _OptionChoice(name='Module', value='module'),
-    ]
-    _BEST_STAT_CHOICES = [
-        _OptionChoice(name='HP', value='hp'),
-        _OptionChoice(name='Attack', value='atk'),
-        _OptionChoice(name='Repair', value='rep'),
-        _OptionChoice(name='Ability', value='abl'),
-        _OptionChoice(name='Pilot', value='plt'),
-        _OptionChoice(name='Science', value='sci'),
-        _OptionChoice(name='Stamina', value='stam'),
-        _OptionChoice(name='Engine', value='eng'),
-        _OptionChoice(name='Weapon', value='wpn'),
-        _OptionChoice(name='FireResistance', value='fr'),
-    ]
 
 
     @_command(name='best', brief='Get best items for a slot')
@@ -125,23 +102,10 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         else:
             if found_matching_items:
                 raise ValueError(f'The item `{item_name}` is not a gear type item!')
-        output = await self._get_best_output(ctx, slot, stat)
+
+        slot, stat = _item.fix_slot_and_stat(slot, stat)
+        output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
-
-
-    @_slash_command(name='best', brief='Get best items for a slot')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def best_slash(self,
-        ctx: _Context,
-        slot: _Option(str, choices=_BEST_SLOT_CHOICES),
-        stat: _Option(str, choices=_BEST_STAT_CHOICES)
-        ):
-        """
-        Get the best enhancement item for a given slot.
-        """
-        self._log_command_use(ctx)
-        output = await self._get_best_output(ctx, slot, stat)
-        await _utils.discord.respond_with_output(ctx, output)
 
 
     @_command(name='builder', brief='Get ship builder links')
@@ -185,41 +149,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             raise _NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
 
 
-    @_slash_command(name='builder', brief='Get ship builder links')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def builder_slash(self,
-            ctx: _ApplicationContext,
-            player_name: _Option(str, description='Enter player name')
-        ):
-        """
-        Get links to websites offering a ship builder tool with the specific player's ship layout loaded.
-        """
-        self._log_command_use(ctx)
-
-        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
-        user_infos = await _user.get_users_infos_by_name(player_name)
-        as_embed = await _server_settings.get_use_embeds(ctx)
-        if user_infos:
-            user_info = None
-            if len(user_infos) == 1:
-                await response.edit_original_message(content='Player found!')
-                user_info = user_infos[0]
-            else:
-                options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
-                view = _pagination.SelectView(ctx, 'Please select a player.', options)
-                user_info = await view.wait_for_selection(response)
-
-            if user_info:
-                await response.edit_original_message(content='Building layout links, please wait...', embeds=[], view=None)
-                output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
-                if as_embed:
-                    await response.edit_original_message(content=None, embeds=output)
-                else:
-                    await response.edit_original_message(content='\n'.join(output), embeds=[])
-        else:
-            raise _NotFound(f'Could not find a player named `{player_name}`.')
-
-
     @_command(name='char', aliases=['crew'], brief='Get character stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def char(self, ctx: _Context, level: str = None, *, crew_name: str = None):
@@ -246,32 +175,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @_slash_command(name='crew', brief='Get character stats')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def crew_slash(self,
-        ctx: _ApplicationContext,
-        crew_name: _Option(str, description='Specify the crew name.'),
-        level: _Option(int, min_value=1, max_value=40, required=False) = None
-    ):
-        """
-        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
-        """
-        await self._perform_char_command(ctx, crew_name, level)
-
-
-    @_slash_command(name='char', brief='Get character stats')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def char_slash(self,
-        ctx: _ApplicationContext,
-        crew_name: _Option(str, description='Specify the crew name.'),
-        level: _Option(int, min_value=1, max_value=40, required=False) = None
-    ):
-        """
-        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
-        """
-        await self._perform_char_command(ctx, crew_name, level)
-
-
     @_command(name='collection', aliases=['coll'], brief='Get collection stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def collection(self, ctx: _Context, *, collection_name: str = None):
@@ -294,20 +197,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
         output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
-
-
-    @_slash_command(name='collection', brief='Get collection stats')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def collection_slash(self,
-        ctx: _ApplicationContext,
-        collection_name: _Option(str, description='Enter a collection name', required=False) = None
-    ):
-        """
-        Get the details on a collection. If no collection is specified, will display all collections.
-        """
-        self._log_command_use(ctx)
-        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.respond_with_output(ctx, output)
 
 
     @_command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
@@ -335,30 +224,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @_slash_command(name='craft', brief='Get crafting recipes')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def craft_slash(self,
-        ctx: _ApplicationContext,
-        item_name: _Option(str, 'Enter an item name')
-    ):
-        """
-        Get the items a specified item can be crafted into.
-        """
-        await self._perform_craft_command(ctx, item_name)
-
-
-    @_slash_command(name='upgrade', brief='Get crafting recipes')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def upgrade_slash(self,
-        ctx: _ApplicationContext,
-        item_name: _Option(str, 'Enter an item name')
-    ):
-        """
-        Get the items a specified item can be crafted into.
-        """
-        await self._perform_craft_command(ctx, item_name)
-
-
     @_command(name='daily', brief='Show the dailies')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN*2, type=_BucketType.guild)
     async def daily(self, ctx: _Context):
@@ -374,23 +239,12 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
 
         await _utils.discord.try_delete_original_message(ctx)
-        output = await self._get_daily_output(ctx)
-        await _utils.discord.post_output(ctx, output)
-
-
-    @_slash_command(name='daily', brief='Show the dailies')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN*2, type=_BucketType.guild)
-    async def daily_slash(self,
-        ctx: _ApplicationContext
-    ):
-        """
-        Prints the MOTD along today's contents of the dropship etc.
-        """
-        self._log_command_use(ctx)
-
-        await ctx.interaction.response.defer()
-        output = await self._get_daily_output(ctx)
-        await _utils.discord.respond_with_output(ctx, output)
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        output, output_embed, _ = await _dropship.get_dropship_text(ctx.bot, ctx.guild)
+        if as_embed:
+            await _utils.discord.post_output(ctx, output_embed)
+        else:
+            await _utils.discord.post_output(ctx, output)
 
 
     @_command_group(name='event', brief='Get current event info', invoke_without_command=True)
@@ -1324,12 +1178,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    async def _get_best_output(self, ctx: _Union[_ApplicationContext, _Context], slot: str, stat: str) -> _Union[_List[str], _List[_Embed]]:
-        slot, stat = _item.fix_slot_and_stat(slot, stat)
-        output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        return output
-
-
     async def _get_daily_output(self, ctx: _Union[_ApplicationContext, _Context]) -> _Union[_List[str], _List[_Embed]]:
         self._log_command_use(ctx)
         as_embed = await _server_settings.get_use_embeds(ctx)
@@ -1338,6 +1186,198 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             return output_embed
         else:
             return output
+
+
+class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
+    _BEST_SLOT_CHOICES = [
+        _OptionChoice(name='Any', value=None),
+        _OptionChoice(name='Head', value='head'),
+        _OptionChoice(name='Accessory', value='accessory'),
+        _OptionChoice(name='Body', value='body'),
+        _OptionChoice(name='Hand', value='weapon'),
+        _OptionChoice(name='Weapon', value='weapon'),
+        _OptionChoice(name='Leg', value='leg'),
+        _OptionChoice(name='Pet', value='pet'),
+        _OptionChoice(name='Module', value='module'),
+    ]
+    _BEST_STAT_CHOICES = [
+        _OptionChoice(name='HP', value='hp'),
+        _OptionChoice(name='Attack', value='atk'),
+        _OptionChoice(name='Repair', value='rep'),
+        _OptionChoice(name='Ability', value='abl'),
+        _OptionChoice(name='Pilot', value='plt'),
+        _OptionChoice(name='Science', value='sci'),
+        _OptionChoice(name='Stamina', value='stam'),
+        _OptionChoice(name='Engine', value='eng'),
+        _OptionChoice(name='Weapon', value='wpn'),
+        _OptionChoice(name='FireResistance', value='fr'),
+    ]
+
+
+    @_slash_command(name='best', brief='Get best items for a slot')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def best_slash(self,
+        ctx: _Context,
+        slot: _Option(str, choices=_BEST_SLOT_CHOICES),
+        stat: _Option(str, choices=_BEST_STAT_CHOICES)
+        ):
+        """
+        Get the best enhancement item for a given slot.
+        """
+        self._log_command_use(ctx)
+
+        output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='builder', brief='Get ship builder links')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def builder_slash(self,
+            ctx: _ApplicationContext,
+            player_name: _Option(str, description='Enter player name')
+        ):
+        """
+        Get links to websites offering a ship builder tool with the specific player's ship layout loaded.
+        """
+        self._log_command_use(ctx)
+
+        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
+        user_infos = await _user.get_users_infos_by_name(player_name)
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        if user_infos:
+            user_info = None
+            if len(user_infos) == 1:
+                await response.edit_original_message(content='Player found!')
+                user_info = user_infos[0]
+            else:
+                options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
+                view = _pagination.SelectView(ctx, 'Please select a player.', options)
+                user_info = await view.wait_for_selection(response)
+
+            if user_info:
+                await response.edit_original_message(content='Building layout links, please wait...', embeds=[], view=None)
+                output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
+                if as_embed:
+                    await response.edit_original_message(content=None, embeds=output)
+                else:
+                    await response.edit_original_message(content='\n'.join(output), embeds=[])
+        else:
+            raise _NotFound(f'Could not find a player named `{player_name}`.')
+
+
+    @_slash_command(name='char', brief='Get character stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def char_slash(self,
+        ctx: _ApplicationContext,
+        crew_name: _Option(str, description='Specify the crew name.'),
+        level: _Option(int, min_value=1, max_value=40, required=False) = None
+    ):
+        """
+        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
+        """
+        await self._perform_char_command(ctx, crew_name, level)
+
+
+    @_slash_command(name='collection', brief='Get collection stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def collection_slash(self,
+        ctx: _ApplicationContext,
+        collection_name: _Option(str, description='Enter a collection name', required=False) = None
+    ):
+        """
+        Get the details on a collection. If no collection is specified, will display all collections.
+        """
+        self._log_command_use(ctx)
+        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='craft', brief='Get crafting recipes')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def craft_slash(self,
+        ctx: _ApplicationContext,
+        item_name: _Option(str, 'Enter an item name')
+    ):
+        """
+        Get the items a specified item can be crafted into.
+        """
+        await self._perform_craft_command(ctx, item_name)
+
+
+    @_slash_command(name='crew', brief='Get character stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def crew_slash(self,
+        ctx: _ApplicationContext,
+        crew_name: _Option(str, description='Specify the crew name.'),
+        level: _Option(int, min_value=1, max_value=40, required=False) = None
+    ):
+        """
+        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
+        """
+        await self._perform_char_command(ctx, crew_name, level)
+
+
+    @_slash_command(name='daily', brief='Show the dailies')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN*2, type=_BucketType.guild)
+    async def daily_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Prints the MOTD along today's contents of the dropship etc.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        output, output_embed, _ = await _dropship.get_dropship_text(ctx.bot, ctx.guild)
+        if as_embed:
+            _utils.discord.respond_with_output(ctx, output_embed)
+        else:
+            _utils.discord.respond_with_output(ctx, output)
+
+
+    _event_slash_group = _SlashCommandGroup('event', 'Get in-game event info')
+
+    @_event_slash_group.command(name='current', brief='Get current event info')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def event_current_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Prints information on currently running events in PSS.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _situation.get_event_details(ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_event_slash_group.command(name='last', brief='Get last event info')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def event_last_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Prints information on the last event that ran in PSS.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _situation.get_event_details(ctx, latest_only=True, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='upgrade', brief='Get crafting recipes')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def upgrade_slash(self,
+        ctx: _ApplicationContext,
+        item_name: _Option(str, 'Enter an item name')
+    ):
+        """
+        Get the items a specified item can be crafted into.
+        """
+        await self._perform_craft_command(ctx, item_name)
 
 
     async def _perform_char_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
@@ -1361,3 +1401,4 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
 def setup(bot: _Bot):
     bot.add_cog(CurrentDataCog(bot))
+    bot.add_cog(CurrentDataSlashCog(bot))
