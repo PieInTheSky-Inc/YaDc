@@ -3,7 +3,7 @@ import math
 from typing import Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import asyncio
-from discord import ApplicationContext, ChannelType, Message, Reaction, User
+from discord import ApplicationContext, ChannelType, Embed, Message, Reaction, User
 from discord.ext.commands import Context
 
 from .pss_entity import EntityDetails
@@ -268,12 +268,15 @@ class Paginator():
 
 
 
-from discord import Interaction, SelectOption
+from discord import Interaction, MessageInteraction, SelectOption
 from discord.ui import View, Select
 
 
 class OptionSelect(Select):
-    def __init__(self, title: str, options: List[SelectOption]):
+    def __init__(self,
+        title: str,
+        options: List[SelectOption]
+    ):
         super().__init__(
             min_values=1,
             max_values=1,
@@ -283,29 +286,48 @@ class OptionSelect(Select):
 
 
 class ViewBase(View):
-    def __init__(self, *args, timeout: float = 60.0, **kwargs):
+    def __init__(self,
+        ctx: ApplicationContext,
+        *args,
+        timeout: float = 60.0,
+        **kwargs
+    ):
         super().__init__(*args, timeout=timeout, **kwargs)
+        self.__context: ApplicationContext = ctx
 
 
     async def on_timeout(self):
         self.disable_all_items()
 
 
+    async def edit_original_message(self, interaction: Interaction, content: str = None, embeds: List[Embed] = None, remove_view: bool = False) -> Interaction:
+        view = None if remove_view else self
+        return (await interaction.edit_original_message(content=content, embeds=embeds or [], view=view))
+
+
+    async def disable_view(self, interaction: Interaction) -> Optional[Interaction]:
+        self.disable_all_items()
+        if interaction:
+            return (await self.edit_original_message(interaction))
+        return interaction
+
+
 
 class SelectView(ViewBase):
     def __init__(self,
+            ctx: ApplicationContext,
             title: str,
             available_options: Dict[str, Tuple[str, EntityInfo]],
             *args,
             timeout: float = 60.0,
             **kwargs
         ):
-        super().__init__(*args, timeout=timeout, **kwargs)
+        super().__init__(ctx, *args, timeout=timeout, **kwargs)
         self.__title: str = title
         self.__available_options: Dict[str, Tuple[str, EntityInfo]] = available_options
         select_options = [SelectOption(label=label, value=entity_id) for entity_id, (label, _) in available_options.items()]
         self.__select: OptionSelect = OptionSelect(title, select_options)
-        self.__select.callback = self.select_callback
+        self.__select.callback = self.__select_callback
         self.add_item(self.__select)
         self.__selected_entity_info: EntityInfo = None
 
@@ -322,9 +344,17 @@ class SelectView(ViewBase):
         return self.__title
 
 
-    async def select_callback(self, interaction: Interaction):
-        self.__select.disabled = True
-        await interaction.response.edit_message(view=self)
+    async def __select_callback(self, interaction: Interaction):
         self.__selected_entity_info = self.__available_options[self.__select.values[0]][1]
         self.disable_all_items()
+        await interaction.response.edit_message(view=self)
         self.stop()
+
+
+    async def wait_for_selection(self, interaction: Interaction) -> EntityInfo:
+        await self.edit_original_message(interaction, content='Multiple matches have been found')
+        if (await self.wait()): # interaction timed out
+            await self.disable_view(interaction)
+            return None
+        await self.edit_original_message(interaction, content='Player found!', remove_view=True)
+        return self.selected_entity_info

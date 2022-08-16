@@ -177,6 +177,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
                 paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
+
             if user_info:
                 output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=(await _server_settings.get_use_embeds(ctx)))
                 await _utils.discord.reply_with_output(ctx, output)
@@ -198,29 +199,26 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         """
         self._log_command_use(ctx)
 
-        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
+        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'], ephemeral=True)
         user_infos = await _user.get_users_infos_by_name(player_name)
         as_embed = await _server_settings.get_use_embeds(ctx)
         if user_infos:
             user_info = None
             if len(user_infos) == 1:
+                await response.edit_original_message(content='Player found!')
                 user_info = user_infos[0]
             else:
                 options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
-                view = _pagination.SelectView('Please select a player.', options)
-                await response.edit_original_message(content='Multiple matches have been found', view=view)
-                if (await view.wait()): # interaction timed out
-                    view.disable_all_items()
-                    await response.edit_original_message(view=view)
-                else:
-                    user_info = view.selected_entity_info
+                view = _pagination.SelectView(ctx, 'Please select a player.', options)
+                user_info = await view.wait_for_selection(response)
+
             if user_info:
-                await response.edit_original_message(content='Building layout links, please wait...', view=None)
+                response = await _utils.discord.respond_with_output(ctx, ['Building layout links, please wait...'])
                 output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
                 if as_embed:
-                    await response.edit_original_message(content=None, embeds=output)
+                    await response.edit(content=None, embeds=output)
                 else:
-                    await response.edit_original_message(content='\n'.join(output), embeds=None)
+                    await response.edit(content='\n'.join(output), embeds=[])
         else:
             raise _NotFound(f'Could not find a player named `{player_name}`.')
 
