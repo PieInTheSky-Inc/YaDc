@@ -259,7 +259,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         """
         Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
         """
-        await self._perform_crew_command(ctx, crew_name, level)
+        await self._perform_char_command(ctx, crew_name, level)
 
 
     @_slash_command(name='char', brief='Get character stats')
@@ -272,7 +272,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         """
         Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
         """
-        await self._perform_crew_command(ctx, crew_name, level)
+        await self._perform_char_command(ctx, crew_name, level)
 
 
     @_command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
@@ -1283,11 +1283,14 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         return output
 
 
-    async def _perform_crew_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
+    async def _perform_char_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
         self._log_command_use(ctx)
 
         output = await _crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
+
+
+
 
 
 
