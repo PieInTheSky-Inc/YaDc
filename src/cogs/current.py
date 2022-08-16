@@ -299,7 +299,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     @_slash_command(name='collection', brief='Get collection stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def collection_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         collection_name: _Option(str, description='Enter a collection name', required=False) = None
     ):
         """
@@ -338,7 +338,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     @_slash_command(name='craft', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def craft_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         item_name: _Option(str, 'Enter an item name')
     ):
         """
@@ -350,7 +350,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
     @_slash_command(name='upgrade', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         item_name: _Option(str, 'Enter an item name')
     ):
         """
