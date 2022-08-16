@@ -275,6 +275,44 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await self._perform_char_command(ctx, crew_name, level)
 
 
+    @_command(name='collection', aliases=['coll'], brief='Get collection stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def collection(self, ctx: _Context, *, collection_name: str = None):
+        """
+        Get the details on a specific collection. If the collection name is omitted, it will display all collections.
+
+        Usage:
+        /collection <collection_name>
+
+        Parameters:
+        collection_name: Mandatory. The name of the collection to get details on.
+
+        Examples:
+        /collection savy - Will print information on a collection having 'savy' in its name.
+        /collection - Will print less information on all collections.
+
+        Notes:
+        This command will only print stats for the collection with the best matching collection_name.
+        """
+        self._log_command_use(ctx)
+        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.reply_with_output(ctx, output)
+
+
+    @_slash_command(name='collection', brief='Get collection stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def collection_slash(self,
+        ctx: _Context,
+        collection_name: _Option(str, description='Enter a collection name', required=False) = None
+    ):
+        """
+        Get the details on a collection. If no collection is specified, will display all collections.
+        """
+        self._log_command_use(ctx)
+        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
     @_command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def craft(self, ctx: _Context, *, item_name: str):
@@ -322,30 +360,6 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         Get the items a specified item can be crafted into.
         """
         await self._perform_craft_command(ctx, item_name)
-
-
-    @_command(name='collection', aliases=['coll'], brief='Get collections')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def collection(self, ctx: _Context, *, collection_name: str = None):
-        """
-        Get the details on a specific collection. If the collection name is omitted, it will display all collections.
-
-        Usage:
-        /collection <collection_name>
-
-        Parameters:
-        collection_name: Mandatory. The name of the collection to get details on.
-
-        Examples:
-        /collection savy - Will print information on a collection having 'savy' in its name.
-        /collection - Will print less information on all collections.
-
-        Notes:
-        This command will only print stats for the collection with the best matching collection_name.
-        """
-        self._log_command_use(ctx)
-        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.reply_with_output(ctx, output)
 
 
     @_command(name='daily', brief='Show the dailies')
