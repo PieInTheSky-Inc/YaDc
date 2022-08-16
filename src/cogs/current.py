@@ -249,6 +249,32 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
+    @_slash_command(name='crew', brief='Get character stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def crew_slash(self,
+        ctx: _ApplicationContext,
+        crew_name: _Option(str, description='Specify the crew name.'),
+        level: _Option(int, min_value=1, max_value=40, required=False) = None
+    ):
+        """
+        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
+        """
+        await self._perform_crew_command(ctx, crew_name, level)
+
+
+    @_slash_command(name='char', brief='Get character stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def char_slash(self,
+        ctx: _ApplicationContext,
+        crew_name: _Option(str, description='Specify the crew name.'),
+        level: _Option(int, min_value=1, max_value=40, required=False) = None
+    ):
+        """
+        Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
+        """
+        await self._perform_crew_command(ctx, crew_name, level)
+
+
     @_command(name='craft', aliases=['upg', 'upgrade'], brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def craft(self, ctx: _Context, *, item_name: str):
@@ -1255,6 +1281,13 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         slot, stat = _item.fix_slot_and_stat(slot, stat)
         output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
         return output
+
+
+    async def _perform_crew_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
+        self._log_command_use(ctx)
+
+        output = await _crew.get_char_details_by_name(ctx, crew_name, level=level, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
 
 
 
