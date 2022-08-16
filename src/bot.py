@@ -5,7 +5,8 @@ import os
 import sys
 from typing import List, Tuple
 
-from discord import Activity, ActivityType, Embed, Guild, Intents, Message, TextChannel
+from discord import Activity, ActivityType, ApplicationContext, Embed, Guild, Intents, Message, TextChannel
+from discord import ApplicationCommandInvokeError, CheckFailure
 from discord import __version__ as discord_version
 from discord.ext.commands import Bot, Context, when_mentioned_or
 import discord.errors as errors
@@ -143,7 +144,6 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
         title = ' '.join(utils.parse.camel_case(error_type))
         as_embed = await server_settings.get_use_embeds(ctx)
         try:
-
             if as_embed:
                 colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
                 if retry_after:
@@ -155,6 +155,60 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                 if retry_after:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
                 await ctx.reply(f'**{title}**\n{error_message}', delete_after=retry_after, mention_author=False)
+        except errors.Forbidden:
+            __log_command_use_error(ctx, err, force_printing=True)
+
+
+@BOT.event
+async def on_application_command_error(ctx: ApplicationContext, err: Exception):
+    __log_slash_command_use_error(ctx, err)
+
+    if settings.THROW_COMMAND_ERRORS:
+        raise err
+    else:
+        error_type = type(err).__name__
+        error_message = str(err)
+        retry_after = None
+        if isinstance(err, command_errors.CommandOnCooldown):
+            error_message += f'\nThis message will delete itself, when you may use the command again.'
+            retry_after = err.retry_after
+        elif isinstance(err, CheckFailure):
+            error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
+        elif isinstance(err, ApplicationCommandInvokeError):
+            # Check err.original here for custom exceptions
+            if err.original:
+                error_type = type(err.original).__name__
+                if isinstance(err.original, Error):
+                    if isinstance(err.original, MaintenanceError):
+                        error_type = 'Pixel Starships is under maintenance'
+                    error_message = f'{err.original.msg}'
+                else:
+                    error_message = f'{err.original}'
+        else:
+            if not isinstance(err, command_errors.MissingRequiredArgument):
+                logging.getLogger().error(err, exc_info=True)
+            command_args = utils.discord.get_exact_args(ctx)
+            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+            command = BOT.get_command(help_args)
+            try:
+                await ctx.send_help(command)
+            except errors.Forbidden:
+                __log_command_use_error(ctx, err, force_printing=True)
+
+        title = ' '.join(utils.parse.camel_case(error_type))
+        as_embed = await server_settings.get_use_embeds(ctx)
+        try:
+            if as_embed:
+                colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+                if retry_after:
+                    error_message = f'{ctx.author.mention}\n{error_message}'
+                embed = utils.discord.create_embed(title, description=error_message, colour=colour)
+                await ctx.respond(embed=embed, delete_after=retry_after)
+            else:
+                error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+                if retry_after:
+                    error_message = f'> {ctx.author.mention}\n{error_message}'
+                await ctx.respond(content=f'**{title}**\n{error_message}', delete_after=retry_after)
         except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
@@ -355,6 +409,13 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
 # ############################################################################ #
 
 def __log_command_use_error(ctx: Context, err: Exception, force_printing: bool = False):
+    if settings.PRINT_DEBUG_COMMAND or force_printing:
+        print(f'Invoked command had an error: {ctx.message.content}')
+        if err:
+            print(str(err))
+
+
+def __log_slash_command_use_error(ctx: ApplicationContext, err: Exception, force_printing: bool = False):
     if settings.PRINT_DEBUG_COMMAND or force_printing:
         print(f'Invoked command had an error: {ctx.message.content}')
         if err:
