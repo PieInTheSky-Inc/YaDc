@@ -199,7 +199,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         """
         self._log_command_use(ctx)
 
-        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'], ephemeral=True)
+        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
         user_infos = await _user.get_users_infos_by_name(player_name)
         as_embed = await _server_settings.get_use_embeds(ctx)
         if user_infos:
@@ -213,12 +213,12 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
                 user_info = await view.wait_for_selection(response)
 
             if user_info:
-                response = await _utils.discord.respond_with_output(ctx, ['Building layout links, please wait...'])
+                await response.edit_original_message(content='Building layout links, please wait...', embeds=[], view=None)
                 output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
                 if as_embed:
-                    await response.edit(content=None, embeds=output)
+                    await response.edit_original_message(content=None, embeds=output)
                 else:
-                    await response.edit(content='\n'.join(output), embeds=[])
+                    await response.edit_original_message(content='\n'.join(output), embeds=[])
         else:
             raise _NotFound(f'Could not find a player named `{player_name}`.')
 

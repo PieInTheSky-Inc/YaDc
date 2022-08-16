@@ -300,6 +300,13 @@ class ViewBase(View):
         self.disable_all_items()
 
 
+    async def interaction_check(self, interaction: Interaction) -> bool:
+        if interaction.user != self.__context.author:
+            await interaction.response.send_message(content='You are not allowed to choose.', ephemeral=True, delete_after=5.0)
+            return False
+        return True
+
+
     async def edit_original_message(self, interaction: Interaction, content: str = None, embeds: List[Embed] = None, remove_view: bool = False) -> Interaction:
         view = None if remove_view else self
         return (await interaction.edit_original_message(content=content, embeds=embeds or [], view=view))
