@@ -2,12 +2,10 @@ import datetime as _datetime
 import holidays as _holidays
 import os as _os
 import pytz as _pytz
-from typing import Dict as _Dict
 from typing import List as _List
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
-from discord import Bot as _Bot
 from discord import Embed as _Embed
 from discord import Interaction as _Interaction
 from discord import Option as _Option
@@ -16,6 +14,7 @@ from discord import SelectMenu as _SelectMenu
 from discord import SelectOption as _SelectOption
 from discord import slash_command as _slash_command
 from discord import SlashCommandOptionType as _SlashCommandOptionType
+from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context

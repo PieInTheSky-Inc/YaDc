@@ -1,8 +1,3 @@
-import json as _json
-from typing import Any as _Any
-from typing import Dict as _Dict
-from typing import List as _List
-
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context

@@ -5,9 +5,9 @@ from typing import List as _List
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
-from discord import Bot as _Bot
 from discord import Embed as _Embed
 from discord import slash_command as _slash_command
+from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType

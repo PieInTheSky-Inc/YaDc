@@ -3,7 +3,7 @@ from typing import Dict as _Dict
 from typing import List as _List
 from typing import Tuple as _Tuple
 
-from discord.ext.commands import Bot as _Bot
+from discord import Bot as _Bot
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
@@ -15,7 +15,6 @@ from .. import pss_ai as _ai
 from .. import pss_craft as _craft
 from .. import pss_crew as _crew
 from ..pss_exception import Error as _Error
-from .. import pss_gm as _gm
 from .. import pss_item as _item
 from .. import pss_raw as _raw
 from .. import pss_research as _research

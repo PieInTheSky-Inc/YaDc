@@ -3,9 +3,9 @@ import json as _json
 import re as _re
 from typing import List as _List
 
-import discord.errors as _errors
-from discord import File as _File
 from discord import Embed as _Embed
+from discord import File as _File
+import discord.errors as _errors
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import command as _command

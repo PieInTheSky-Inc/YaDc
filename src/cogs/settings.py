@@ -1,8 +1,5 @@
-import os as _os
-import calendar as _calendar
-
+from discord import Bot as _Bot
 from discord import TextChannel as _TextChannel
-from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
@@ -12,16 +9,6 @@ import discord.ext.commands.errors as _command_errors
 
 from .base import CogBase as _CogBase
 from ..pss_exception import Error as _Error
-from ..pss_exception import MissingParameterError as _MissingParameterError
-from ..pss_exception import NotFound as _NotFound
-from .. import pss_fleet as _fleet
-from ..gdrive import TourneyDataClient as _TourneyDataClient
-from .. import pagination as _pagination
-from .. import pss_lookups as _lookups
-from .. import pss_sprites as _sprites
-from .. import pss_top as _top
-from .. import pss_tournament as _tourney
-from .. import pss_user as _user
 from .. import settings as _settings
 from .. import server_settings as _server_settings
 from .. import utils as _utils

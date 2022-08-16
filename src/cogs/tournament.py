@@ -1,7 +1,7 @@
 import os as _os
 import calendar as _calendar
 
-from discord.ext.commands import Bot as _Bot
+from discord import Bot as _Bot
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
