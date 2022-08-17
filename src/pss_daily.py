@@ -125,7 +125,7 @@ async def add_sale(entity_id: int, price: int, currency_type: str, entity_type: 
     already_exists = len([sale_info for sale_info in __sales_info_cache if sale_info['limitedcatalogexpirydate'] == expires_at])
     if already_exists:
         raise Error(f'There\'s already a sale info in the database expiring on: {utils.format.date(expires_at)}')
-    success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+    success = await db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
     if success:
         await update_db_sales_info_cache()
     return success
@@ -351,7 +351,7 @@ __SALES_FIELDS_PLACEHOLDERS_TEXT: str = ', '.join(f'${i+1}' for i, _ in enumerat
 __SALES_FIELDS_TEXT: List[str] = ', '.join(__SALES_FIELDS)
 
 
-async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int, overwrite: bool = False) -> bool:
+async def db_add_sale(entity_id: int, price: int, currency_type: str, entity_type: str, expires_at: datetime, max_amount: int, overwrite: bool = False) -> bool:
     query = f'INSERT INTO sales ({__SALES_FIELDS_TEXT}) VALUES ({__SALES_FIELDS_PLACEHOLDERS_TEXT})'
     args = [
         entity_id,
@@ -373,13 +373,13 @@ async def __db_add_sale(entity_id: int, price: int, currency_type: str, entity_t
             ])
             raise Error(error_msg) from ex
     if not success and overwrite:
-        success_delete = await __db_try_remove_sale(expires_at)
+        success_delete = await _db_try_remove_sale(expires_at)
         if success_delete:
-            success = await __db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
+            success = await db_add_sale(entity_id, price, currency_type, entity_type, expires_at, max_amount)
     return success
 
 
-async def __db_try_remove_sale(expiry_date: datetime) -> bool:
+async def _db_try_remove_sale(expiry_date: datetime) -> bool:
     if not expiry_date:
         raise ValueError('The parameter \'expiry_date\' is required.')
     query = f'DELETE FROM sales WHERE limitedcatalogexpirydate = $1'

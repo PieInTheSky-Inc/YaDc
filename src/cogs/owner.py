@@ -500,7 +500,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
 
         failed_sales_infos = []
         for sale_info in sales_infos:
-            success = await _daily.__db_add_sale(
+            success = await _daily.db_add_sale(
                 sale_info.get('limitedcatalogargument'),
                 sale_info.get('limitedcatalogcurrencyamount'),
                 sale_info.get('limitedcatalogcurrencytype'),
