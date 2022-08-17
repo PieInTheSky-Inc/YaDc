@@ -1395,7 +1395,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_slash_command(name='ingredients', brief='Get item ingredients')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def ingredients_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         item_name: _Option(str, 'Enter the item name')
     ):
         """
