@@ -595,7 +595,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @_command(name='recipe', brief='Get character recipes')
+    @_command(name='recipe', brief='Get crew/item recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def recipe(self, ctx: _Context, *, name: str):
         """
@@ -1510,6 +1510,48 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
         output = await _item.get_item_price(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='recipe', brief='Get crew/item recipes')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def recipe_slash(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter crew or item name.')
+    ):
+        """
+        Get the prestige recipes of the crew or the ingredients of the item specified.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        use_embeds = (await _server_settings.get_use_embeds(ctx))
+        char_error = None
+        item_error = None
+        try:
+            char_output = await _crew.get_prestige_to_info(ctx, name, as_embed=use_embeds)
+        except _crew.PrestigeNoResultsError as e:
+            raise _Error(e.msg) from e
+        except _Error as e:
+            char_error = e
+            char_output = []
+
+        try:
+            item_output = await _item.get_ingredients_for_item(ctx, name, as_embed=use_embeds)
+        except _Error as e:
+            item_error = e
+            item_output = []
+
+        if char_error and item_error:
+            if isinstance(char_error, _NotFound) and isinstance(item_error, _NotFound):
+                raise _NotFound(f'Could not find a character or an item named `{name}`.')
+            raise char_error
+        else:
+            if use_embeds:
+                output = char_output + item_output
+            else:
+                output = char_output + [_utils.discord.ZERO_WIDTH_SPACE] + item_output
+
+            await _utils.discord.respond_with_output(ctx, output)
 
 
     @_slash_command(name='upgrade', brief='Get crafting recipes')
