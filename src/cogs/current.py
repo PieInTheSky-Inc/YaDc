@@ -1435,6 +1435,24 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
                 raise _Error('Could not get the player\'s ship data.')
 
 
+    @_slash_command(name='level', brief='Get crew levelling costs')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def level_slash(self,
+        ctx: _ApplicationContext,
+        from_level: _Option(int, description='Enter the current level. Default is 1.', min_value=1, max_value=39, default=1),
+        to_level: _Option(int, description='Enter the target level. Default is 40.', min_value=2, max_value=40, default=40)
+    ):
+        """
+        Shows the cost for a crew to reach a certain level.
+        """
+        self._log_command_use(ctx)
+
+        if from_level >= to_level:
+            raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
+        output = _crew.get_level_costs(ctx, from_level, to_level, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
     @_slash_command(name='upgrade', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
