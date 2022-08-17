@@ -3,8 +3,10 @@ from re import compile as _compile
 from re import escape as _escape
 from re import Pattern as _Pattern
 from re import search as _search
+from typing import Any as _Any
 from typing import AnyStr as _AnyStr
 from typing import List as _List
+from typing import Optional as _Optional
 from typing import Union as _Union
 from typing import Tuple as _Tuple
 
@@ -17,6 +19,7 @@ from discord import Guild as _Guild
 from discord import Interaction as _Interaction
 from discord import Member as _Member
 from discord import Message as _Message
+from discord import MISSING as _MISSING
 from discord import NotFound as _NotFound
 from discord import Reaction as _Reaction
 from discord import TextChannel as _TextChannel
@@ -25,6 +28,7 @@ from discord import WebhookMessage as _WebhookMessage
 from discord.abc import Messageable as _Messageable
 from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Context as _Context
+from discord.ui import View as _View
 
 from . import miscellaneous as _utils
 
@@ -337,6 +341,74 @@ async def reply_with_output_and_files(ctx: _Context, output: _Union[_List[_Embed
     return result
 
 
+async def respond_with_output_and_files(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], file_paths: _List[str], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Union[_Interaction, _WebhookMessage]:
+    """
+    Returns the last message created or None, if output has not been specified.
+    """
+    result = None
+    if output:
+        output_is_embeds = isinstance(output[0], _Embed)
+        output = __prepare_output(output)
+
+        if output_is_embeds:
+            posts = _chunk_embeds(output)
+        else:
+            posts = create_posts_from_lines(output, maximum_characters)
+
+        first_post, posts, last_post = _split_posts(posts)
+        files = [_File(file_path) for file_path in file_paths] or None
+        kwarg_name = 'embeds' if output_is_embeds else 'content'
+
+        if first_post:
+            first_kwargs = {kwarg_name: first_post}
+            await ctx.respond(**first_kwargs, ephemeral=ephemeral)
+        for post in posts:
+            post_kwargs = {kwarg_name: post}
+            await ctx.respond(**post_kwargs, ephemeral=ephemeral)
+        if last_post:
+            last_kwargs = {kwarg_name: last_post}
+            await ctx.respond(**last_kwargs, files=files, ephemeral=ephemeral)
+    return result
+
+
+async def edit_original_message(
+    interaction: _Interaction,
+    output: _Optional[_Union[_List[_Embed], _List[str]]] = None,
+    content: _Optional[str] = None,
+    embeds: _Optional[_List[_Embed]] = None,
+    file_paths: _List[str] = _MISSING,
+    view: _View = _MISSING
+    ) -> _Interaction:
+    if output is not None and content is not None or embeds is not None:
+        raise ValueError('You must either specify only output or content and/or embeds!')
+
+    result = None
+    if output:
+        output_is_embeds = isinstance(output[0], _Embed)
+        output = __prepare_output(output)
+
+        if output_is_embeds:
+            posts = _chunk_embeds(output)
+        else:
+            posts = create_posts_from_lines(output, MAXIMUM_CHARACTERS)
+        post = posts[0]
+
+        files = [_File(file_path) for file_path in file_paths] or _MISSING
+
+        if output_is_embeds:
+            kwargs = {
+                'content': None,
+                'embeds': post,
+            }
+        else:
+            kwargs = {
+                'content': post,
+                'embeds': None,
+            }
+        result = await interaction.edit_original_message(files=files, view=view, **kwargs)
+    return result
+
+
 async def try_delete_message(message: _Message) -> bool:
     try:
         await message.delete()
@@ -376,3 +448,15 @@ def _chunk_embeds(embeds: _List[_Embed]) -> _List[_List[_Embed]]:
     if current_result:
         result.append(current_result)
     return result
+
+
+def _split_posts(posts: _List[_Any]) -> _Tuple[_Optional[_Any], _List[_Any], _Optional[_Any]]:
+    if posts:
+        first_post, *posts = posts
+        if posts:
+            *posts, last_post = posts
+        else:
+            last_post = first_post
+            first_post = None
+        return first_post, posts, last_post
+    return None, [], None

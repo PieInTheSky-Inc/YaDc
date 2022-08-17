@@ -7,6 +7,7 @@ from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Embed as _Embed
+from discord import File as _File
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
 from discord import slash_command as _slash_command
@@ -1214,6 +1215,18 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     ]
 
 
+    @_slash_command(name='alliance', brief='Get infos on a fleet')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def alliance_slash(self,
+        ctx: _ApplicationContext,
+        fleet_name: _Option(str, 'Enter a fleet name')
+    ):
+        """
+        Get info on a fleet and its members.
+        """
+        await self._perform_fleet_command(ctx, fleet_name)
+
+
     @_slash_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def best_slash(self,
@@ -1368,6 +1381,18 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
+    @_slash_command(name='fleet', brief='Get infos on a fleet')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def fleet_slash(self,
+        ctx: _ApplicationContext,
+        fleet_name: _Option(str, 'Enter a fleet name')
+    ):
+        """
+        Get info on a fleet and its members.
+        """
+        await self._perform_fleet_command(ctx, fleet_name)
+
+
     @_slash_command(name='upgrade', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
@@ -1389,8 +1414,47 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
     async def _perform_craft_command(self, ctx: _ApplicationContext, item_name: str) -> None:
         self._log_command_use(ctx)
+
         output = await _item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
+
+
+    async def _perform_fleet_command(self, ctx: _ApplicationContext, fleet_name: str) -> None:
+        self._log_command_use(ctx)
+
+        is_tourney_running = _tourney.is_tourney_running()
+        response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+        fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        if fleet_infos:
+            fleet_info = None
+            if len(fleet_infos) == 1:
+                await response.edit_original_message(content='Fleet found!')
+                fleet_info = fleet_infos[0]
+            else:
+                fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
+                fleet_infos = fleet_infos[:25]
+                options = {fleet_info[_fleet.FLEET_KEY_NAME]: (_fleet.get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
+                view = _pagination.SelectView(ctx, 'Please select a fleet.', options)
+                fleet_info = await view.wait_for_selection(response)
+
+            if fleet_info:
+                as_embed = await _server_settings.get_use_embeds(ctx)
+                if is_tourney_running:
+                    max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
+                else:
+                    max_tourney_battle_attempts = None
+
+                await response.edit_original_message(content='Compiling fleet info...', embeds=[], view=None)
+                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
+
+                await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+                for file_path in file_paths:
+                    _os.remove(file_path)
+        else:
+            raise _NotFound(f'Could not find a fleet named `{fleet_name}`.')
+
+
 
 
 
