@@ -1220,23 +1220,23 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def alliance_slash(self,
         ctx: _ApplicationContext,
-        fleet_name: _Option(str, 'Enter a fleet name')
+        name: _Option(str, 'Enter fleet name.')
     ):
         """
         Get info on a fleet and its members.
         """
-        await self._perform_fleet_command(ctx, fleet_name)
+        await self._perform_fleet_command(ctx, name)
 
 
     @_slash_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def best_slash(self,
         ctx: _Context,
-        slot: _Option(str, choices=_BEST_SLOT_CHOICES),
-        stat: _Option(str, choices=_BEST_STAT_CHOICES)
+        slot: _Option(str, 'Enter ', choices=_BEST_SLOT_CHOICES),
+        stat: _Option(str, 'Enter ', choices=_BEST_STAT_CHOICES)
         ):
         """
-        Get the best enhancement item for a given slot.
+        Get the best equipment for a given slot.
         """
         self._log_command_use(ctx)
 
@@ -1248,14 +1248,14 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def builder_slash(self,
             ctx: _ApplicationContext,
-            player_name: _Option(str, description='Enter player name')
+            name: _Option(str, 'Enter player name.')
         ):
         """
         Get links to websites offering a ship builder tool with the specific player's ship layout loaded.
         """
         self._log_command_use(ctx)
 
-        user_info, response = await _user.find_user(ctx, player_name)
+        user_info, response = await _user.find_user(ctx, name)
 
         if user_info:
             await _utils.discord.edit_original_message(response, content='Player found. Building layout links, please wait...', embeds=[], view=None)
@@ -1268,26 +1268,26 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def char_slash(self,
         ctx: _ApplicationContext,
-        crew_name: _Option(str, description='Specify the crew name.'),
-        level: _Option(int, min_value=1, max_value=40, required=False) = None
+        name: _Option(str, 'Enter crew name.'),
+        level: _Option(int, 'Enter crew level.', min_value=1, max_value=40, required=False) = None
     ):
         """
         Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
         """
-        await self._perform_char_command(ctx, crew_name, level)
+        await self._perform_char_command(ctx, name, level)
 
 
     @_slash_command(name='collection', brief='Get collection stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def collection_slash(self,
         ctx: _ApplicationContext,
-        collection_name: _Option(str, description='Enter a collection name', required=False) = None
+        name: _Option(str, 'Enter collection name.', required=False) = None
     ):
         """
         Get the details on a collection. If no collection is specified, will display all collections.
         """
         self._log_command_use(ctx)
-        output = await _crew.get_collection_details_by_name(ctx, collection_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _crew.get_collection_details_by_name(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1295,25 +1295,25 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def craft_slash(self,
         ctx: _ApplicationContext,
-        item_name: _Option(str, 'Enter an item name')
+        name: _Option(str, 'Enter item name.')
     ):
         """
         Get the items a specified item can be crafted into.
         """
-        await self._perform_craft_command(ctx, item_name)
+        await self._perform_craft_command(ctx, name)
 
 
     @_slash_command(name='crew', brief='Get character stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def crew_slash(self,
         ctx: _ApplicationContext,
-        crew_name: _Option(str, description='Specify the crew name.'),
-        level: _Option(int, min_value=1, max_value=40, required=False) = None
+        name: _Option(str, 'Enter crew name.'),
+        level: _Option(int, 'Enter crew level.', min_value=1, max_value=40, required=False) = None
     ):
         """
         Get the stats of a character/crew at a specific level or ranging from level 1 to 40.
         """
-        await self._perform_char_command(ctx, crew_name, level)
+        await self._perform_char_command(ctx, name, level)
 
 
     @_slash_command(name='daily', brief='Show the dailies')
@@ -1371,26 +1371,26 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def fleet_slash(self,
         ctx: _ApplicationContext,
-        fleet_name: _Option(str, 'Enter a fleet name')
+        name: _Option(str, 'Enter fleet name.')
     ):
         """
         Get info on a fleet and its members.
         """
-        await self._perform_fleet_command(ctx, fleet_name)
+        await self._perform_fleet_command(ctx, name)
 
 
     @_slash_command(name='ingredients', brief='Get item ingredients')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def ingredients_slash(self,
         ctx: _ApplicationContext,
-        item_name: _Option(str, 'Enter the item name')
+        name: _Option(str, 'Enter item name.')
     ):
         """
         Get the ingredients for an item to be crafted with their estimated crafting costs.
         """
         self._log_command_use(ctx)
 
-        output = await _item.get_ingredients_for_item(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _item.get_ingredients_for_item(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1398,7 +1398,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def item_slash(self,
         ctx: _Context,
-        item_name: _Option(str, 'Enter the item name')
+        item_name: _Option(str, 'Enter item name.')
     ):
         """
         Get the stats of any item matching the given item name.
@@ -1413,14 +1413,14 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def layout_slash(self,
         ctx: _ApplicationContext,
-        player_name: _Option(str, 'Enter player name')
+        name: _Option(str, 'Enter player name.')
     ):
         """
         Searches for the given player and returns their current ship layout.
         """
         self._log_command_use(ctx)
 
-        user_info, response = await _user.find_user(ctx, player_name)
+        user_info, response = await _user.find_user(ctx, name)
 
         if user_info:
             await _utils.discord.edit_original_message(response, content='Player found.')
@@ -1439,17 +1439,17 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def level_slash(self,
         ctx: _ApplicationContext,
-        from_level: _Option(int, description='Enter the current level. Default is 1.', min_value=1, max_value=39, default=1),
-        to_level: _Option(int, description='Enter the target level. Default is 40.', min_value=2, max_value=40, default=40)
+        from_level: _Option(int, 'Enter the current level. Default is 1.', min_value=1, max_value=39, default=1),
+        to: _Option(int, 'Enter the target level. Default is 40.', min_value=2, max_value=40, default=40)
     ):
         """
         Shows the cost for a crew to reach a certain level.
         """
         self._log_command_use(ctx)
 
-        if from_level >= to_level:
+        if from_level >= to:
             raise ValueError('Parameter `from_level` must be smaller than parameter `to_level`.')
-        output = _crew.get_level_costs(ctx, from_level, to_level, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = _crew.get_level_costs(ctx, from_level, to, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1457,7 +1457,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def news_slash(self,
         ctx: _ApplicationContext,
-        entry_count: _Option(int, description='Number of entries to be displayed', min_value=1, max_value=100, default=1)
+        entries: _Option(int, 'Enter number of entries to be displayed.', min_value=1, default=1)
     ):
         """
         Prints news in ascending order.
@@ -1465,7 +1465,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         await ctx.interaction.response.defer()
-        output = await _dropship.get_news(ctx, take=entry_count, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _dropship.get_news(ctx, take=entries, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1473,19 +1473,19 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def player_slash(self,
         ctx: _ApplicationContext,
-        player_name: _Option(str, description='Enter player name.')
+        name: _Option(str, 'Enter player name.')
     ):
         """
         Get details on a player.
         """
-        await self._perform_player_command(ctx, player_name)
+        await self._perform_player_command(ctx, name)
 
 
     @_slash_command(name='prestige', brief='Get prestige combos of crew')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def prestige_slash(self,
         ctx: _ApplicationContext,
-        crew_name: _Option(str, description='Enter crew name.')
+        name: _Option(str, 'Enter crew name.')
     ):
         """
         Get the prestige combinations of the crew specified.
@@ -1493,7 +1493,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         await ctx.interaction.response.defer()
-        output = await _crew.get_prestige_from_info(ctx, crew_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _crew.get_prestige_from_info(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1501,14 +1501,14 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def price_slash(self,
         ctx: _Context,
-        item_name: _Option(str, description='Enter item name.')
+        name: _Option(str, 'Enter item name.')
     ):
         """
         Get the average price (market price) and the Savy Fair Price in bux of the item(s) specified.
         """
         self._log_command_use(ctx)
 
-        output = await _item.get_item_price(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _item.get_item_price(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1558,7 +1558,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def research(self,
         ctx: _ApplicationContext,
-        name: _Option(str, description='Enter research name.')
+        name: _Option(str, 'Enter research name.')
     ):
         """
         Get the details on one or more specific research(es).
@@ -1574,8 +1574,8 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def room(self,
         ctx: _ApplicationContext,
-        name: _Option(str, description='Enter room name or abbreviation/short name.'),
-        level: _Option(int, description='Enter room level.', min_value=1, required=False) = None
+        name: _Option(str, 'Enter room name or abbreviation/short name.'),
+        level: _Option(int, 'Enter room level.', min_value=1, required=False) = None
     ):
         """
         Get detailed information on one or more rooms.
@@ -1594,8 +1594,8 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def stats(self,
         ctx: _ApplicationContext,
-        name: _Option(str, 'Enter crew/item name.'),
-        level: _Option(int, description='Enter crew level', min_value=1, max_value=40, default=None, required=False),
+        name: _Option(str, 'Enter crew or item name.'),
+        level: _Option(int, 'Enter crew level', min_value=1, max_value=40, default=None, required=False),
     ):
         """
         Get the stats of a character/crew or item.
@@ -1671,7 +1671,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def training_slash(self,
         ctx: _ApplicationContext,
-        training_name: _Option(str, description='Enter training name.')
+        name: _Option(str, 'Enter training name.')
     ):
         """
         Get detailed information on one or more training(s).
@@ -1679,7 +1679,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         await ctx.interaction.response.defer()
-        output = await _training.get_training_details_from_name(training_name, ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _training.get_training_details_from_name(name, ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -1687,24 +1687,24 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
         ctx: _ApplicationContext,
-        item_name: _Option(str, 'Enter an item name')
+        name: _Option(str, 'Enter item name.')
     ):
         """
         Get the items a specified item can be crafted into.
         """
-        await self._perform_craft_command(ctx, item_name)
+        await self._perform_craft_command(ctx, name)
 
 
     @_slash_command(name='user', brief='Get infos on a player')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def user_slash(self,
         ctx: _ApplicationContext,
-        player_name: _Option(str, description='Enter player name.')
+        name: _Option(str, 'Enter player name.')
     ):
         """
         Get details on a player.
         """
-        await self._perform_player_command(ctx, player_name)
+        await self._perform_player_command(ctx, name)
 
 
     async def _perform_char_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:

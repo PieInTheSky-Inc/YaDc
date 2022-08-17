@@ -242,7 +242,9 @@ class GeneralCog(GeneralBaseCog, name='General'):
 class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
     @_slash_command(name='about', brief='Display info on this bot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def about_slash(self, ctx: _ApplicationContext):
+    async def about_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Displays information about this bot and its authors.
         """
@@ -253,7 +255,9 @@ class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
 
     @_slash_command(name='invite', brief='Get an invite link')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def invite_slash(self, ctx: _ApplicationContext):
+    async def invite_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Produces an invite link for this bot and displays it.
         """
@@ -266,7 +270,9 @@ class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
 
     @_slash_command(name='links', brief='Show useful links')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def links_slash(self, ctx: _ApplicationContext):
+    async def links_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Shows the links for useful sites regarding Pixel Starships.
         """
@@ -276,7 +282,9 @@ class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
 
 
     @_slash_command(name='ping', brief='Ping the server')
-    async def ping_slash(self, ctx: _Context):
+    async def ping_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Ping the bot to verify that it\'s listening for _commands.
         """
@@ -287,7 +295,9 @@ class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
 
 
     @_slash_command(name='support', brief='Invite to bot\'s support server')
-    async def support_slash(self, ctx: _Context):
+    async def support_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Produces an invite link to the support server for this bot and sends it via DM.
         """
