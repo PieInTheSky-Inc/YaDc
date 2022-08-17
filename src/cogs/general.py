@@ -239,7 +239,7 @@ class GeneralCog(GeneralBaseCog, name='General'):
 
 
 
-class GeneralSlashCog(GeneralBaseCog, name='General'):
+class GeneralSlashCog(GeneralBaseCog, name='General Slash'):
     @_slash_command(name='about', brief='Display info on this bot')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def about_slash(self, ctx: _ApplicationContext):
