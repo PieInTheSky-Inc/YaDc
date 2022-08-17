@@ -1590,6 +1590,116 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
+    sales_slash: _SlashCommandGroup = _SlashCommandGroup('sales', 'Get information about past sales.')
+
+    @sales_slash.command(name='recent', brief='List recently expired sales')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def sales_recent_slash(self,
+        ctx: _ApplicationContext,
+    ):
+        """
+        Get information on things that have been sold in shop over the last 30 days.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _daily.get_sales_details(ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @sales_slash.command(name='of', brief='List all sales of a specific crew, item or room.')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def sales_of_slash(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter crew, item or room name.')
+    ):
+        """
+        Get information on things that have been sold in shop in the past.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+
+        entities_infos = []
+        characters_designs_infos = await _crew.characters_designs_retriever.get_entities_infos_by_name(name)
+        for entity_info in characters_designs_infos:
+            entity_info['entity_type'] = 'Character'
+            entity_info['entity_id'] = entity_info[_crew.CHARACTER_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[_crew.CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        items_designs_infos = await _item.items_designs_retriever.get_entities_infos_by_name(name)
+        for entity_info in items_designs_infos:
+            entity_info['entity_type'] = 'Item'
+            entity_info['entity_id'] = entity_info[_item.ITEM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[_item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+        rooms_designs_infos = await _room.rooms_designs_retriever.get_entities_infos_by_name(name)
+        for entity_info in rooms_designs_infos:
+            entity_info['entity_type'] = 'Room'
+            entity_info['entity_id'] = entity_info[_room.ROOM_DESIGN_KEY_NAME]
+            entity_info['entity_name'] = entity_info[_room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
+            entities_infos.append(entity_info)
+
+        if entities_infos:
+            if len(entities_infos) == 1:
+                entity_info = entities_infos[0]
+            else:
+                entities_infos = sorted(entities_infos, key=lambda x: x['entity_name'])
+                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
+                paginator = _pagination.Paginator(ctx, name, entities_infos, _daily.get_sales_search_details, use_pagination)
+                _, entity_info = await paginator.wait_for_option_selection()
+
+            if entity_info:
+                output = await _daily.get_sales_history(ctx, entity_info, as_embed=(await _server_settings.get_use_embeds(ctx)))
+            else:
+                output = []
+        else:
+            raise _NotFound(f'Could not find a crew, an item or a room with the name `{name}`.')
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @sales_slash.command(name='beds', brief='List expired bed room sales.')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def sales_beds_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Get information on bed rooms that have been sold in shop in the past.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        room_type = 'Bedroom'
+        room_type_pretty = 'bed room'
+        output = await _daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, as_embed=(await _server_settings.get_use_embeds(ctx)))
+
+        if output:
+            await _utils.discord.respond_with_output(ctx, output)
+        else:
+            raise _Error('An unknown error ocurred, please contact the bot\'s author.')
+
+
+    @sales_slash.command(name='droidrooms', brief='List expired droid room sales.')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def sales_droidrooms_slash(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Get information on android rooms that have been sold in shop in the past.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        room_type = 'Android'
+        room_type_pretty = 'droid room'
+        output = await _daily.get_sales_history_for_rooms(ctx, room_type, room_type_pretty, as_embed=(await _server_settings.get_use_embeds(ctx)))
+
+        if output:
+            await _utils.discord.respond_with_output(ctx, output)
+        else:
+            raise _Error('An unknown error ocurred, please contact the bot\'s author.')
+
+
     @_slash_command(name='stats', aliases=['stat'], brief='Get crew/item stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def stats(self,
