@@ -1457,7 +1457,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def news_slash(self,
         ctx: _ApplicationContext,
-        entries: _Option(int, 'Enter number of entries to be displayed.', min_value=1, default=1)
+        count: _Option(int, 'Enter number of entries to be displayed.', min_value=1, default=1)
     ):
         """
         Prints news in ascending order.
@@ -1465,7 +1465,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         await ctx.interaction.response.defer()
-        output = await _dropship.get_news(ctx, take=entries, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _dropship.get_news(ctx, take=count, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
