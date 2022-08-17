@@ -1255,7 +1255,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        user_info, response = await _find_player(ctx, player_name)
+        user_info, response = await _user.find_user(ctx, player_name)
 
         if user_info:
             await _utils.discord.edit_original_message(response, content='Player found. Building layout links, please wait...', embeds=[], view=None)
@@ -1420,7 +1420,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        user_info, response = await _find_player(ctx, player_name)
+        user_info, response = await _user.find_user(ctx, player_name)
 
         if user_info:
             await _utils.discord.edit_original_message(response, content='Player found.')
@@ -1464,7 +1464,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     async def _perform_fleet_command(self, ctx: _ApplicationContext, fleet_name: str) -> None:
         self._log_command_use(ctx)
 
-        fleet_info, response = await _find_fleet(ctx, fleet_name)
+        fleet_info, response = await _fleet.find_fleet(ctx, fleet_name)
         if fleet_info:
             await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
             is_tourney_running = _tourney.is_tourney_running()
@@ -1474,43 +1474,6 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
             await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
             for file_path in file_paths:
                 _os.remove(file_path)
-
-
-async def _find_player(ctx: _ApplicationContext, player_name: str) -> _Tuple[_EntityInfo, _Interaction]:
-    response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
-    user_infos = await _user.get_users_infos_by_name(player_name)
-    if user_infos:
-        user_info = None
-        if len(user_infos) == 1:
-            user_info = user_infos[0]
-        else:
-            options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
-            view = _pagination.SelectView(ctx, 'Please select a player.', options)
-            user_info = await view.wait_for_selection(response)
-
-        return user_info, response
-    else:
-        raise _NotFound(f'Could not find a player named `{player_name}`.')
-
-
-async def _find_fleet(ctx: _ApplicationContext, fleet_name: str) -> _Tuple[_EntityInfo, _Interaction]:
-    response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
-    fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
-    if fleet_infos:
-        fleet_info = None
-        if len(fleet_infos) == 1:
-            fleet_info = fleet_infos[0]
-        else:
-            fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
-            fleet_infos = fleet_infos[:25]
-
-            options = {fleet_info[_fleet.FLEET_KEY_NAME]: (_fleet.get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
-            view = _pagination.SelectView(ctx, 'Please select a fleet.', options)
-            fleet_info = await view.wait_for_selection(response)
-
-        return fleet_info, response
-    else:
-        raise _NotFound(f'Could not find a fleet named `{fleet_name}`.')
 
 
 

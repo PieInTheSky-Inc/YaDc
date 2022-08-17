@@ -2,15 +2,19 @@ from datetime import datetime
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+from discord import ApplicationContext
 from discord import Embed
+from discord import Interaction
 from discord.utils import escape_markdown
 from discord.ext.commands import Context
 
 from . import emojis
 from . import excel
+from .pagination import SelectView
 from . import pss_assert
 from . import pss_core as core
 from . import pss_entity as entity
+from .pss_exception import NotFound
 from . import pss_fleet as fleet
 from . import pss_login as login
 from . import pss_lookups as lookups
@@ -324,6 +328,26 @@ def __get_type(fleet_info: EntityInfo, fleet_users_data: EntitiesData, **kwargs)
 
 
 # ---------- Helper functions ----------
+
+async def find_fleet(ctx: ApplicationContext, fleet_name: str) -> Tuple[EntityInfo, Interaction]:
+    response = await utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+    fleet_infos = await get_fleet_infos_by_name(fleet_name)
+    if fleet_infos:
+        fleet_info = None
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            fleet_infos.sort(key=lambda fleet: fleet[FLEET_DESCRIPTION_PROPERTY_NAME])
+            fleet_infos = fleet_infos[:25]
+
+            options = {fleet_info[FLEET_KEY_NAME]: (get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
+            view = SelectView(ctx, 'Please select a fleet.', options)
+            fleet_info = await view.wait_for_selection(response)
+
+        return fleet_info, response
+    else:
+        raise NotFound(f'Could not find a fleet named `{fleet_name}`.')
+
 
 def get_division_name(division_design_id: time.strftime) -> str:
     result = None
