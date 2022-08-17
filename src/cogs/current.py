@@ -1667,6 +1667,40 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
+    top_slash: _SlashCommandGroup = _SlashCommandGroup('top', 'Get info on the best players and fleets.')
+
+    @top_slash.command(name='players', brief='Prints top players')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def top_captains_slash(self,
+        ctx: _ApplicationContext,
+        count: _Option(int, 'Enter the number of entries to be displayed', min_value=1, max_value=100, default=100, required=False)
+    ):
+        """
+        Prints top captains. Prints top 100 captains by default.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _top.get_top_captains(ctx, count, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @top_slash.command(name='fleets', brief='Prints top fleets')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def top_fleets(self,
+        ctx: _ApplicationContext,
+        count: _Option(int, 'Enter the number of entries to be displayed', min_value=1, max_value=100, default=100, required=False)
+    ):
+        """
+        Prints top fleets. Prints top 100 fleets by default.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _top.get_top_fleets(ctx, take=count, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
     @_slash_command(name='training', brief='Get training infos')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def training_slash(self,
