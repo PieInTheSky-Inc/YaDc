@@ -1558,7 +1558,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def research(self,
         ctx: _ApplicationContext,
-        name: _Option(str, 'Enter research name.')
+        name: _Option(str, description='Enter research name.')
     ):
         """
         Get the details on one or more specific research(es).
@@ -1567,6 +1567,26 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
         await ctx.interaction.response.defer()
         output = await _research.get_research_infos_by_name(name, ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='room', brief='Get room infos')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def room(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, description='Enter room name or abbreviation/short name.'),
+        level: _Option(int, description='Enter room level.', min_value=1, required=False) = None
+    ):
+        """
+        Get detailed information on one or more rooms.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        room_name = name
+        if level:
+            room_name += str(level)
+        output = await _room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
