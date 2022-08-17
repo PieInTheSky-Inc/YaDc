@@ -266,14 +266,33 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
         first_post, *posts = posts
 
         if output_is_embeds:
-            result = await ctx.reply(embeds=first_post, mention_author=mention_author)
+            if (await original_message_exists(ctx)):
+                result = await ctx.reply(embeds=first_post, mention_author=mention_author)
+            else:
+                result = await ctx.send(embeds=first_post)
+
             for post in posts:
                 result = await ctx.send(embeds=post)
         else:
-            result = await ctx.reply(content=first_post, mention_author=mention_author)
+            if (await original_message_exists(ctx)):
+                result = await ctx.reply(content=first_post, mention_author=mention_author)
+            else:
+                result = await ctx.send(content=first_post)
+
             for post in posts:
                 result = await ctx.send(content=post)
     return result
+
+
+async def original_message_exists(ctx: _Context) -> bool:
+    if not ctx.message:
+        return False
+    try:
+        await ctx.fetch_message(ctx.message.id) #try to fetch the message
+        return True
+    except _NotFound: #if a NotFound error appears, the message is either not in this channel or deleted
+        return False
+
 
 
 async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False, view: _View = None) -> _Union[_Interaction, _WebhookMessage]:
