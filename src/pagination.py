@@ -268,7 +268,7 @@ class Paginator():
 
 
 
-from discord import Interaction, MessageInteraction, SelectOption
+from discord import Interaction, MessageInteraction, MISSING, SelectOption
 from discord.ui import View, Select
 
 
@@ -295,19 +295,23 @@ class ViewBase(View):
         super().__init__(*args, timeout=timeout, **kwargs)
         self.__context: ApplicationContext = ctx
 
+    @property
+    def context(self) -> ApplicationContext:
+        return self.__context
+
 
     async def on_timeout(self):
         self.disable_all_items()
 
 
     async def interaction_check(self, interaction: Interaction) -> bool:
-        if interaction.user != self.__context.author:
+        if interaction.user != self.context.author:
             await interaction.response.send_message(content='You are not allowed to choose.', ephemeral=True, delete_after=5.0)
             return False
         return True
 
 
-    async def edit_original_message(self, interaction: Interaction, content: str = None, embeds: List[Embed] = None, remove_view: bool = False) -> Interaction:
+    async def edit_original_message(self, interaction: Interaction, content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
         view = None if remove_view else self
         return (await interaction.edit_original_message(content=content, embeds=embeds or [], view=view))
 
@@ -359,9 +363,9 @@ class SelectView(ViewBase):
 
 
     async def wait_for_selection(self, interaction: Interaction) -> EntityInfo:
-        await self.edit_original_message(interaction, content='Multiple matches have been found')
+        await self.edit_original_message(interaction, content='Multiple matches have been found.')
         if (await self.wait()): # interaction timed out
             await self.disable_view(interaction)
             return None
-        await self.edit_original_message(interaction, content='Player found!', remove_view=True)
+        await self.edit_original_message(interaction, remove_view=True)
         return self.selected_entity_info

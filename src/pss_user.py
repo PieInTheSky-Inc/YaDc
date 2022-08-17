@@ -110,7 +110,8 @@ async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = sett
     user_info, user_ship_info = await ship.get_inspect_ship_for_user(user_id)
     ship_design_info: entity.EntityInfo = ships_designs_data[user_ship_info.get('ShipDesignId')]
     rooms_designs_sprites_ids = {value.get('RoomDesignId'): value.get('SpriteId') for value in rooms_designs_sprites_data.values() if value.get('RaceId') == ship_design_info.get('RaceId')}
-    file_path = await ship.make_ship_layout_sprite(str(ctx.message.id), user_ship_info, ship_design_info, rooms_designs_data, rooms_designs_sprites_ids)
+    file_name_prefix = f'{ctx.author.id}{int(utils.get_utc_now().timestamp())}'
+    file_path = await ship.make_ship_layout_sprite(file_name_prefix, user_ship_info, ship_design_info, rooms_designs_data, rooms_designs_sprites_ids)
     title = f'{escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME])}'
     fields = []
     fleet_name = user_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME)

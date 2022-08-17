@@ -3,11 +3,12 @@ import holidays as _holidays
 import os as _os
 import pytz as _pytz
 from typing import List as _List
+from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Embed as _Embed
-from discord import File as _File
+from discord import Interaction as _Interaction
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
 from discord import slash_command as _slash_command
@@ -43,6 +44,7 @@ from .. import pss_training as _training
 from .. import pss_user as _user
 from .. import server_settings as _server_settings
 from .. import settings as _settings
+from ..typehints import EntityInfo as _EntityInfo
 from .. import utils as _utils
 
 
@@ -1253,28 +1255,13 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
-        user_infos = await _user.get_users_infos_by_name(player_name)
-        as_embed = await _server_settings.get_use_embeds(ctx)
-        if user_infos:
-            user_info = None
-            if len(user_infos) == 1:
-                await response.edit_original_message(content='Player found!')
-                user_info = user_infos[0]
-            else:
-                options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
-                view = _pagination.SelectView(ctx, 'Please select a player.', options)
-                user_info = await view.wait_for_selection(response)
+        user_info, response = await _find_player(ctx, player_name)
 
-            if user_info:
-                await response.edit_original_message(content='Building layout links, please wait...', embeds=[], view=None)
-                output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
-                if as_embed:
-                    await response.edit_original_message(content=None, embeds=output)
-                else:
-                    await response.edit_original_message(content='\n'.join(output), embeds=[])
-        else:
-            raise _NotFound(f'Could not find a player named `{player_name}`.')
+        if user_info:
+            await _utils.discord.edit_original_message(response, content='Player found. Building layout links, please wait...', embeds=[], view=None)
+            as_embed = await _server_settings.get_use_embeds(ctx)
+            output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
+            await _utils.discord.edit_original_message(response, output=output)
 
 
     @_slash_command(name='char', brief='Get character stats')
@@ -1422,6 +1409,32 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
+    @_slash_command(name='layout', brief='Get a player\'s ship layout')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def layout_slash(self,
+        ctx: _ApplicationContext,
+        player_name: _Option(str, 'Enter player name')
+    ):
+        """
+        Searches for the given player and returns their current ship layout.
+        """
+        self._log_command_use(ctx)
+
+        user_info, response = await _find_player(ctx, player_name)
+
+        if user_info:
+            await _utils.discord.edit_original_message(response, content='Player found.')
+            _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
+            if user_ship_info:
+                await _utils.discord.edit_original_message(response, content='Building layout, please wait...', embeds=[], view=None)
+                output, file_path = await _user.get_user_ship_layout(ctx, user_info[_user.USER_KEY_NAME], as_embed=(await _server_settings.get_use_embeds(ctx)))
+
+                await _utils.discord.edit_original_message(response, output=output, file_paths=[file_path])
+                _os.remove(file_path)
+            else:
+                raise _Error('Could not get the player\'s ship data.')
+
+
     @_slash_command(name='upgrade', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
@@ -1451,38 +1464,53 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     async def _perform_fleet_command(self, ctx: _ApplicationContext, fleet_name: str) -> None:
         self._log_command_use(ctx)
 
-        is_tourney_running = _tourney.is_tourney_running()
-        response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
-        fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
-        as_embed = await _server_settings.get_use_embeds(ctx)
-        if fleet_infos:
-            fleet_info = None
-            if len(fleet_infos) == 1:
-                await response.edit_original_message(content='Fleet found!')
-                fleet_info = fleet_infos[0]
-            else:
-                fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
-                fleet_infos = fleet_infos[:25]
-                options = {fleet_info[_fleet.FLEET_KEY_NAME]: (_fleet.get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
-                view = _pagination.SelectView(ctx, 'Please select a fleet.', options)
-                fleet_info = await view.wait_for_selection(response)
+        fleet_info, response = await _find_fleet(ctx, fleet_name)
+        if fleet_info:
+            await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+            is_tourney_running = _tourney.is_tourney_running()
+            max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts()) if is_tourney_running else None
+            output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
 
-            if fleet_info:
-                as_embed = await _server_settings.get_use_embeds(ctx)
-                if is_tourney_running:
-                    max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
-                else:
-                    max_tourney_battle_attempts = None
+            await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+            for file_path in file_paths:
+                _os.remove(file_path)
 
-                await response.edit_original_message(content='Compiling fleet info...', embeds=[], view=None)
-                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
 
-                await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
-                for file_path in file_paths:
-                    _os.remove(file_path)
+async def _find_player(ctx: _ApplicationContext, player_name: str) -> _Tuple[_EntityInfo, _Interaction]:
+    response = await _utils.discord.respond_with_output(ctx, ['Searching player...'])
+    user_infos = await _user.get_users_infos_by_name(player_name)
+    if user_infos:
+        user_info = None
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
         else:
-            raise _NotFound(f'Could not find a fleet named `{fleet_name}`.')
+            options = {user_info[_user.USER_KEY_NAME]: (_user.get_user_search_details(user_info), user_info) for user_info in user_infos}
+            view = _pagination.SelectView(ctx, 'Please select a player.', options)
+            user_info = await view.wait_for_selection(response)
 
+        return user_info, response
+    else:
+        raise _NotFound(f'Could not find a player named `{player_name}`.')
+
+
+async def _find_fleet(ctx: _ApplicationContext, fleet_name: str) -> _Tuple[_EntityInfo, _Interaction]:
+    response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+    fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
+    if fleet_infos:
+        fleet_info = None
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
+            fleet_infos = fleet_infos[:25]
+
+            options = {fleet_info[_fleet.FLEET_KEY_NAME]: (_fleet.get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
+            view = _pagination.SelectView(ctx, 'Please select a fleet.', options)
+            fleet_info = await view.wait_for_selection(response)
+
+        return fleet_info, response
+    else:
+        raise _NotFound(f'Could not find a fleet named `{fleet_name}`.')
 
 
 

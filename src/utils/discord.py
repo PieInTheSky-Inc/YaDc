@@ -276,7 +276,7 @@ async def reply_with_output(ctx: _Context, output: _Union[_List[_Embed], _List[s
     return result
 
 
-async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False) -> _Union[_Interaction, _WebhookMessage]:
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False, view: _View = None) -> _Union[_Interaction, _WebhookMessage]:
     """
     Returns the last message created or None, if output has not been specified.
     """
@@ -289,11 +289,11 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
             posts = output
             post_groups = _chunk_embeds(posts)
             for post_group in post_groups:
-                result = await ctx.respond(embeds=post_group, ephemeral=ephemeral)
+                result = await ctx.respond(embeds=post_group, ephemeral=ephemeral, view=view)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
             for post in posts:
-                result = await ctx.respond(content=post, ephemeral=ephemeral)
+                result = await ctx.respond(content=post, ephemeral=ephemeral, view=view)
     return result
 
 
@@ -374,15 +374,16 @@ async def respond_with_output_and_files(ctx: _ApplicationContext, output: _Union
 async def edit_original_message(
     interaction: _Interaction,
     output: _Optional[_Union[_List[_Embed], _List[str]]] = None,
-    content: _Optional[str] = None,
-    embeds: _Optional[_List[_Embed]] = None,
-    file_paths: _List[str] = _MISSING,
+    content: _Optional[str] = _MISSING,
+    embeds: _Optional[_List[_Embed]] = _MISSING,
+    file_paths: _Optional[_List[str]] = _MISSING,
     view: _View = _MISSING
-    ) -> _Interaction:
-    if output is not None and content is not None or embeds is not None:
+) -> _Interaction:
+    if output is not None and (content and content != _MISSING or embeds and embeds != _MISSING):
         raise ValueError('You must either specify only output or content and/or embeds!')
 
     result = None
+    files = [_File(file_path) for file_path in file_paths] if file_paths else _MISSING
     if output:
         output_is_embeds = isinstance(output[0], _Embed)
         output = __prepare_output(output)
@@ -392,8 +393,6 @@ async def edit_original_message(
         else:
             posts = create_posts_from_lines(output, MAXIMUM_CHARACTERS)
         post = posts[0]
-
-        files = [_File(file_path) for file_path in file_paths] or _MISSING
 
         if output_is_embeds:
             kwargs = {
@@ -405,7 +404,12 @@ async def edit_original_message(
                 'content': post,
                 'embeds': None,
             }
-        result = await interaction.edit_original_message(files=files, view=view, **kwargs)
+    else:
+        kwargs = {
+            'content': content,
+            'embeds': embeds,
+        }
+    result = await interaction.edit_original_message(files=files, view=view, **kwargs)
     return result
 
 
