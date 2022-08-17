@@ -1331,9 +1331,9 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         as_embed = await _server_settings.get_use_embeds(ctx)
         output, output_embed, _ = await _dropship.get_dropship_text(ctx.bot, ctx.guild)
         if as_embed:
-            _utils.discord.respond_with_output(ctx, output_embed)
+            await _utils.discord.respond_with_output(ctx, output_embed)
         else:
-            _utils.discord.respond_with_output(ctx, output)
+            await _utils.discord.respond_with_output(ctx, output)
 
 
     _event_slash_group = _SlashCommandGroup('event', 'Get in-game event info')
