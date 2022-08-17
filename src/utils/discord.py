@@ -303,6 +303,11 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
     if output:
         output_is_embeds = isinstance(output[0], _Embed)
         output = __prepare_output(output)
+        if not view:
+            if ctx.interaction.response.is_done():
+                view = _MISSING
+            else:
+                view = None
 
         if output_is_embeds:
             posts = output
