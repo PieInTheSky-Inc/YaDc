@@ -295,7 +295,7 @@ async def original_message_exists(ctx: _Context) -> bool:
 
 
 
-async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False, view: _View = None) -> _Union[_Interaction, _WebhookMessage]:
+async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Embed], _List[str]], maximum_characters: int = MAXIMUM_CHARACTERS, ephemeral: bool = False, view: _View = _MISSING) -> _Union[_Interaction, _WebhookMessage]:
     """
     Returns the last message created or None, if output has not been specified.
     """
