@@ -904,7 +904,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
             await ctx.invoke(cmd, month=None, year=None, fleet_name=fleet_name)
 
 
-    @_command(name='stats', aliases=['stat'], brief='Get item/crew stats')
+    @_command(name='stats', aliases=['stat'], brief='Get crew/item stats')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def stats(self, ctx: _Context, level: str = None, *, name: str = None):
         """
@@ -1588,6 +1588,44 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
             room_name += str(level)
         output = await _room.get_room_details_by_name(room_name, ctx=ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='stats', aliases=['stat'], brief='Get crew/item stats')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def stats(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter crew/item name.'),
+        level: _Option(int, description='Enter crew level', min_value=1, max_value=40, default=None, required=False),
+    ):
+        """
+        Get the stats of a character/crew or item.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        use_embeds = (await _server_settings.get_use_embeds(ctx))
+        try:
+            char_output = await _crew.get_char_details_by_name(ctx, name, level, as_embed=use_embeds)
+            char_success = True
+        except (_InvalidParameterValueError, _Error):
+            char_output = []
+            char_success = False
+        try:
+            item_output = await _item.get_item_details_by_name(ctx, name, as_embed=use_embeds)
+            item_success = True
+        except (_InvalidParameterValueError, _Error):
+            item_output = []
+            item_success = False
+
+        if char_success or item_success:
+            if use_embeds:
+                output = char_output + item_output
+            else:
+                output = char_output + [_utils.discord.ZERO_WIDTH_SPACE] + item_output
+
+            await _utils.discord.respond_with_output(ctx, output)
+        else:
+            raise _NotFound(f'Could not find a character or an item named `{name}`.')
 
 
     @_slash_command(name='upgrade', brief='Get crafting recipes')
