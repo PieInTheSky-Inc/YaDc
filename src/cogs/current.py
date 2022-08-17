@@ -1628,6 +1628,45 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
             raise _NotFound(f'Could not find a character or an item named `{name}`.')
 
 
+    @_slash_command(name='time', brief='Get PSS stardate & Melbourne time')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def time(self,
+        ctx: _ApplicationContext
+    ):
+        """
+        Get PSS stardate, as well as the day and time in Melbourne, Australia.
+        """
+        self._log_command_use(ctx)
+
+        utc_now = _utils.get_utc_now()
+        star_date = f'Star date {_utils.datetime.get_star_date(utc_now)}'
+
+        mel_tz = _pytz.timezone('Australia/Melbourne')
+        mel_time = utc_now.replace(tzinfo=_datetime.timezone.utc).astimezone(mel_tz)
+        melbourne_time = mel_time.strftime('It is %A, %H:%M in Melbourne (at Savy HQ)')
+
+        aus_holidays = _holidays.Australia(years=utc_now.year, prov='ACT')
+        mel_date = _datetime.date(mel_time.year, mel_time.month, mel_time.day)
+        holiday = ('It is also a holiday in Australia', aus_holidays.get(mel_date))
+
+        first_day_of_next_month = _utils.datetime.get_first_of_following_month(utc_now)
+        time_till_next_month = ('Time until next monthly reset', f'{_utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({_utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
+
+        while (first_day_of_next_month.month - 1) % 3:
+            first_day_of_next_month = _utils.datetime.get_first_of_following_month(first_day_of_next_month)
+        time_till_next_prestige_change = ('Time until next prestige recipe changes', f'{_utils.format.timedelta(first_day_of_next_month - utc_now, include_relative_indicator=False, include_seconds=False)} ({_utils.datetime.get_discord_datestamp(first_day_of_next_month, include_time=True)})')
+
+        fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        if as_embed:
+            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            output = [_utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
+        else:
+            output = [star_date, melbourne_time]
+            [output.append(f'{field[0]}: {field[1]}') for field in fields if field[1]]
+        await _utils.discord.respond_with_output(ctx, output)
+
+
     @_slash_command(name='upgrade', brief='Get crafting recipes')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def upgrade_slash(self,
