@@ -9,7 +9,6 @@ from discord import Interaction
 from discord.utils import escape_markdown
 from discord.ext.commands import Context
 
-from .gdrive import TourneyData
 
 from . import emojis
 from . import excel
@@ -352,7 +351,7 @@ async def find_fleet(ctx: ApplicationContext, fleet_name: str) -> Tuple[EntityIn
         raise NotFound(f'Could not find a fleet named `{fleet_name}`.')
 
 
-async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
+async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.respond_with_output(ctx, ['Searching fleet...'])
     fleet_infos = await get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
     if fleet_infos:
