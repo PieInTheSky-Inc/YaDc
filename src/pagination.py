@@ -268,7 +268,7 @@ class Paginator():
 
 
 
-from discord import Interaction, MessageInteraction, MISSING, SelectOption
+from discord import Interaction, MISSING, SelectOption, WebhookMessage
 from discord.ui import View, Select
 
 
@@ -311,12 +311,12 @@ class ViewBase(View):
         return True
 
 
-    async def edit_original_message(self, interaction: Interaction, content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
+    async def edit_original_message(self, interaction: Union[Interaction, WebhookMessage], content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
         view = None if remove_view else self
-        return (await interaction.edit_original_message(content=content, embeds=embeds or [], view=view))
+        return (await utils.discord.edit_original_message(interaction, content=content, embeds=embeds or [], view=view))
 
 
-    async def disable_view(self, interaction: Interaction) -> Optional[Interaction]:
+    async def disable_view(self, interaction: Union[Interaction, WebhookMessage]) -> Optional[Union[Interaction, WebhookMessage]]:
         self.disable_all_items()
         if interaction:
             return (await self.edit_original_message(interaction))
@@ -326,13 +326,13 @@ class ViewBase(View):
 
 class SelectView(ViewBase):
     def __init__(self,
-            ctx: ApplicationContext,
-            title: str,
-            available_options: Dict[str, Tuple[str, EntityInfo]],
-            *args,
-            timeout: float = 60.0,
-            **kwargs
-        ):
+        ctx: ApplicationContext,
+        title: str,
+        available_options: Dict[str, Tuple[str, EntityInfo]],
+        *args,
+        timeout: float = 60.0,
+        **kwargs
+    ):
         super().__init__(ctx, *args, timeout=timeout, **kwargs)
         self.__title: str = title
         self.__available_options: Dict[str, Tuple[str, EntityInfo]] = available_options
@@ -362,10 +362,10 @@ class SelectView(ViewBase):
         self.stop()
 
 
-    async def wait_for_selection(self, interaction: Interaction) -> EntityInfo:
-        await self.edit_original_message(interaction, content='Multiple matches have been found.')
+    async def wait_for_selection(self, response: Union[Interaction, WebhookMessage]) -> EntityInfo:
+        await self.edit_original_message(response, content='Multiple matches have been found.')
         if (await self.wait()): # interaction timed out
-            await self.disable_view(interaction)
+            await self.disable_view(response)
             return None
-        await self.edit_original_message(interaction, remove_view=True)
+        await self.edit_original_message(response, remove_view=True)
         return self.selected_entity_info

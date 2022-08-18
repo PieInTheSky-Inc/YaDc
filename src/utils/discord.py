@@ -396,7 +396,7 @@ async def respond_with_output_and_files(ctx: _ApplicationContext, output: _Union
 
 
 async def edit_original_message(
-    interaction: _Interaction,
+    interaction: _Union[_Interaction, _WebhookMessage],
     output: _Optional[_Union[_List[_Embed], _List[str]]] = None,
     content: _Optional[str] = _MISSING,
     embeds: _Optional[_List[_Embed]] = _MISSING,
@@ -406,7 +406,6 @@ async def edit_original_message(
     if output is not None and (content and content != _MISSING or embeds and embeds != _MISSING):
         raise ValueError('You must either specify only output or content and/or embeds!')
 
-    result = None
     files = [_File(file_path) for file_path in file_paths] if file_paths else _MISSING
     if output:
         output_is_embeds = isinstance(output[0], _Embed)
@@ -433,8 +432,13 @@ async def edit_original_message(
             'content': content,
             'embeds': embeds,
         }
-    result = await interaction.edit_original_message(files=files, view=view, **kwargs)
-    return result
+    kwargs['files'] = files
+    kwargs['view'] = view
+
+    if isinstance(interaction, _WebhookMessage):
+        return (await interaction.edit(**kwargs))
+    else:
+        return (await interaction.edit_original_message(**kwargs))
 
 
 async def try_delete_message(message: _Message) -> bool:
