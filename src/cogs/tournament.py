@@ -295,182 +295,6 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @_command_group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday(self, ctx: _Context) -> None:
-        """
-        Get yesterday's final tournament standings.
-
-        Usage:
-        Use one of the subcommands.
-        """
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help('yesterday')
-
-
-    @yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_fleet(self, ctx: _Context, *, fleet_name: str = None):
-        """
-        Get yesterday's tournament fleet data.
-
-        Parameters:
-        fleet_name: Mandatory. The fleet for which the data should be displayed.
-        """
-        self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
-        tourney_day = _tourney.get_tourney_day(utc_now)
-        if tourney_day is None:
-            raise _Error('There\'s no tournament running currently.')
-        if not tourney_day:
-            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-        output = []
-
-        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            yesterday_fleet_infos = []
-        else:
-            yesterday_fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
-
-        if yesterday_fleet_infos:
-            if len(yesterday_fleet_infos) == 1:
-                fleet_info = yesterday_fleet_infos[0]
-            else:
-                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, fleet_name, yesterday_fleet_infos, _fleet.get_fleet_search_details, use_pagination)
-                _, fleet_info = await paginator.wait_for_option_selection()
-
-            if fleet_info:
-                fleet_id = fleet_info[_fleet.FLEET_KEY_NAME]
-                day_before_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_second_latest_daily_data()
-                yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
-                day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
-                for yesterday_user_info in yesterday_users_data.values():
-                    day_before_user_info = day_before_users_data.get(yesterday_user_info[_user.USER_KEY_NAME], {})
-                    day_before_star_count = day_before_user_info.get('AllianceScore', 0)
-                    yesterday_user_info['StarValue'], _ = _user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
-                as_embed = await _server_settings.get_use_embeds(ctx)
-                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
-                await _utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
-                for file_path in file_paths:
-                    _os.remove(file_path)
-        else:
-            leading_space_note = ''
-            if fleet_name.startswith(' '):
-                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in current tournament.{leading_space_note}')
-
-
-    @yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_player(self, ctx: _Context, *, player_name: str = None):
-        """
-        Get historic tournament player data.
-
-        Parameters:
-        player_name: Mandatory. The player for which the data should be displayed.
-        """
-        self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
-        tourney_day = _tourney.get_tourney_day(utc_now)
-        if tourney_day is None:
-            raise _Error('There\'s no tournament running currently.')
-        if not tourney_day:
-            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-        output = []
-
-        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            user_infos = []
-        else:
-            user_infos = await _user.get_user_infos_from_tournament_data_by_name(player_name, yesterday_tourney_data.users)
-
-        if user_infos:
-            if len(user_infos) == 1:
-                user_info = user_infos[0]
-            else:
-                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
-                _, user_info = await paginator.wait_for_option_selection()
-
-            if user_info:
-                output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        else:
-            leading_space_note = ''
-            if player_name.startswith(' '):
-                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a player named `{player_name}` participating in the current tournament.{leading_space_note}')
-        await _utils.discord.reply_with_output(ctx, output)
-
-
-    @yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_stars(self, ctx: _Context, *, division: str = None):
-        """
-        Get yesterday's final tournament division standings.
-        """
-        self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
-        tourney_day = _tourney.get_tourney_day(utc_now)
-        if tourney_day is None:
-            raise _Error('There\'s no tournament running currently.')
-        if not tourney_day:
-            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-        output = []
-
-        if not _top.is_valid_division_letter(division):
-            subcommand = self.bot.get_command('yesterday stars fleet')
-            await ctx.invoke(subcommand, fleet_name=division)
-            return
-        else:
-            yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
-            if yesterday_tourney_data:
-                output = await _top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.reply_with_output(ctx, output)
-
-
-    @yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
-        """
-        Get yesterday's final tournament fleet standings.
-
-        Parameters:
-        fleet_name: Mandatory. The fleet for which the data should be displayed.
-        """
-        self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
-        tourney_day = _tourney.get_tourney_day(utc_now)
-        if tourney_day is None:
-            raise _Error('There\'s no tournament running currently.')
-        if not tourney_day:
-            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
-        output = []
-
-        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            fleet_infos = []
-        else:
-            fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
-
-        if fleet_infos:
-            if len(fleet_infos) == 1:
-                fleet_info = fleet_infos[0]
-            else:
-                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, fleet_name, fleet_infos, _fleet.get_fleet_search_details, use_pagination)
-                _, fleet_info = await paginator.wait_for_option_selection()
-
-            if fleet_info:
-                output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        else:
-            leading_space_note = ''
-            if fleet_name.startswith(' '):
-                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.{leading_space_note}')
-        await _utils.discord.reply_with_output(ctx, output)
-
-
     @_command_group(name='targets', brief='Get top tournament targets', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
     async def targets(self, ctx: _Context, division: str, star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> None:
@@ -676,6 +500,182 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
             raise _Error('Could not retrieve yesterday\'s tournament data.')
 
 
+    @_command_group(name='yesterday', brief='Get yesterday\'s tourney results', invoke_without_command=True)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday(self, ctx: _Context) -> None:
+        """
+        Get yesterday's final tournament standings.
+
+        Usage:
+        Use one of the subcommands.
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help('yesterday')
+
+
+    @yesterday.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_fleet(self, ctx: _Context, *, fleet_name: str = None):
+        """
+        Get yesterday's tournament fleet data.
+
+        Parameters:
+        fleet_name: Mandatory. The fleet for which the data should be displayed.
+        """
+        self._log_command_use(ctx)
+        utc_now = _utils.get_utc_now()
+        tourney_day = _tourney.get_tourney_day(utc_now)
+        if tourney_day is None:
+            raise _Error('There\'s no tournament running currently.')
+        if not tourney_day:
+            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+        output = []
+
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        if yesterday_tourney_data is None:
+            yesterday_fleet_infos = []
+        else:
+            yesterday_fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
+
+        if yesterday_fleet_infos:
+            if len(yesterday_fleet_infos) == 1:
+                fleet_info = yesterday_fleet_infos[0]
+            else:
+                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
+                paginator = _pagination.Paginator(ctx, fleet_name, yesterday_fleet_infos, _fleet.get_fleet_search_details, use_pagination)
+                _, fleet_info = await paginator.wait_for_option_selection()
+
+            if fleet_info:
+                fleet_id = fleet_info[_fleet.FLEET_KEY_NAME]
+                day_before_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_second_latest_daily_data()
+                yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
+                day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
+                for yesterday_user_info in yesterday_users_data.values():
+                    day_before_user_info = day_before_users_data.get(yesterday_user_info[_user.USER_KEY_NAME], {})
+                    day_before_star_count = day_before_user_info.get('AllianceScore', 0)
+                    yesterday_user_info['StarValue'], _ = _user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
+                as_embed = await _server_settings.get_use_embeds(ctx)
+                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=6, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=as_embed)
+                await _utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
+                for file_path in file_paths:
+                    _os.remove(file_path)
+        else:
+            leading_space_note = ''
+            if fleet_name.startswith(' '):
+                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+            raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in current tournament.{leading_space_note}')
+
+
+    @yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_player(self, ctx: _Context, *, player_name: str = None):
+        """
+        Get yesterday's tournament player data.
+
+        Parameters:
+        player_name: Mandatory. The player for which the data should be displayed.
+        """
+        self._log_command_use(ctx)
+        utc_now = _utils.get_utc_now()
+        tourney_day = _tourney.get_tourney_day(utc_now)
+        if tourney_day is None:
+            raise _Error('There\'s no tournament running currently.')
+        if not tourney_day:
+            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+        output = []
+
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        if yesterday_tourney_data is None:
+            user_infos = []
+        else:
+            user_infos = await _user.get_user_infos_from_tournament_data_by_name(player_name, yesterday_tourney_data.users)
+
+        if user_infos:
+            if len(user_infos) == 1:
+                user_info = user_infos[0]
+            else:
+                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
+                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
+                _, user_info = await paginator.wait_for_option_selection()
+
+            if user_info:
+                output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        else:
+            leading_space_note = ''
+            if player_name.startswith(' '):
+                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+            raise _NotFound(f'Could not find a player named `{player_name}` participating in the current tournament.{leading_space_note}')
+        await _utils.discord.reply_with_output(ctx, output)
+
+
+    @yesterday.group(name='stars', brief='Get yesterday\'s division stars', invoke_without_command=True)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_stars(self, ctx: _Context, *, division: str = None):
+        """
+        Get yesterday's final tournament division standings.
+        """
+        self._log_command_use(ctx)
+        utc_now = _utils.get_utc_now()
+        tourney_day = _tourney.get_tourney_day(utc_now)
+        if tourney_day is None:
+            raise _Error('There\'s no tournament running currently.')
+        if not tourney_day:
+            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+        output = []
+
+        if not _top.is_valid_division_letter(division):
+            subcommand = self.bot.get_command('yesterday stars fleet')
+            await ctx.invoke(subcommand, fleet_name=division)
+            return
+        else:
+            yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+            if yesterday_tourney_data:
+                output = await _top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.reply_with_output(ctx, output)
+
+
+    @yesterday_stars.command(name='fleet', aliases=['alliance'], brief='Get yesterday\'s fleet stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_stars_fleet(self, ctx: _Context, *, fleet_name: str = None):
+        """
+        Get yesterday's final tournament fleet standings.
+
+        Parameters:
+        fleet_name: Mandatory. The fleet for which the data should be displayed.
+        """
+        self._log_command_use(ctx)
+        utc_now = _utils.get_utc_now()
+        tourney_day = _tourney.get_tourney_day(utc_now)
+        if tourney_day is None:
+            raise _Error('There\'s no tournament running currently.')
+        if not tourney_day:
+            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
+        output = []
+
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        if yesterday_tourney_data is None:
+            fleet_infos = []
+        else:
+            fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
+
+        if fleet_infos:
+            if len(fleet_infos) == 1:
+                fleet_info = fleet_infos[0]
+            else:
+                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
+                paginator = _pagination.Paginator(ctx, fleet_name, fleet_infos, _fleet.get_fleet_search_details, use_pagination)
+                _, fleet_info = await paginator.wait_for_option_selection()
+
+            if fleet_info:
+                output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        else:
+            leading_space_note = ''
+            if fleet_name.startswith(' '):
+                leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
+            raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.{leading_space_note}')
+        await _utils.discord.reply_with_output(ctx, output)
+
+
 
 
 
@@ -743,7 +743,7 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_stars_division_slash(self,
         ctx: _ApplicationContext,
-        division: _Option(str, 'Enter division letter.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None,
+        division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None,
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -792,31 +792,13 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
         await self._perform_past_player_command(ctx, player_name, month, year)
 
 
-    async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not ctx.interaction.response.is_done():
-            await ctx.interaction.response.defer()
-
-        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
-        return _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
-
-
-    async def _perform_past_player_command(self, ctx: _ApplicationContext, player_name: str, month: _Optional[int], year: _Optional[int]) -> None:
-        tourney_data = await self._get_tourney_data(ctx, month, year)
-        user_info, response = await _user.find_tournament_user(ctx, player_name, tourney_data)
-
-        output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_message(response, output=output)
-
-
     targets_slash: _SlashCommandGroup = _SlashCommandGroup('targets', 'Get top tournament targets')
 
     @targets_slash(name='top', brief='Get top tournament targets', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
     async def targets(self,
         ctx: _ApplicationContext,
-        division: _Option(str, 'Enter division.', choices=_top.DIVISION_CHOICES),
+        division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES),
         min_star_value: _Option(int, 'Enter minimum star value of target.', min_value=1, required=False) = None,
         max_star_value: _Option(int, 'Enter maximum star value of target.', min_value=1, required=False) = None,
         min_trophies: _Option(int, 'Enter minimum trophy count of target.', min_value=1, required=False) = None,
@@ -906,7 +888,7 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
     async def targets_fleets_slash(self,
         ctx: _ApplicationContext,
-        division: _Option(str, 'Enter division.', choices=_top.DIVISION_CHOICES),
+        division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES),
         count: _Option(int, 'Enter number of players per fleet to be displayed.') = None,
         min_star_value: _Option(int, 'Enter minimum star value of target.', min_value=1, required=False) = None,
         max_star_value: _Option(int, 'Enter maximum star value of target.', min_value=1, required=False) = None,
@@ -1010,6 +992,137 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
             await _utils.discord.respond_with_output(ctx, output)
         else:
             raise _Error('Could not retrieve yesterday\'s tournament data.')
+
+
+    yesterday_slash: _SlashCommandGroup = _SlashCommandGroup('yesterday', 'Get yesterday\'s tournament data')
+
+    @yesterday_slash.command(name='fleet', brief='Get yesterday\'s fleet data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_fleet_slash(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter fleet name.'),
+    ):
+        """
+        Get yesterday's tournament fleet data.
+        """
+        self._log_command_use(ctx)
+        self._assure_yesterday_command_valid()
+
+        yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, yesterday_tourney_data)
+
+        await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+
+        fleet_id = fleet_info[_fleet.FLEET_KEY_NAME]
+        day_before_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_second_latest_daily_data()
+        yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
+        day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
+
+        for yesterday_user_info in yesterday_users_data.values():
+            day_before_user_info = day_before_users_data.get(yesterday_user_info[_user.USER_KEY_NAME], {})
+            day_before_star_count = day_before_user_info.get('AllianceScore', 0)
+            yesterday_user_info['StarValue'], _ = _user.get_star_value_from_user_info(yesterday_user_info, star_count=day_before_star_count)
+        max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts())
+        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
+
+        await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+        for file_path in file_paths:
+            _os.remove(file_path)
+
+
+    @yesterday_slash.command(name='player', brief='Get yesterday\'s player data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_player_slash(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter player name.')
+    ):
+        """
+        Get yesterday's tournament player data.
+        """
+        self._log_command_use(ctx)
+        self._assure_yesterday_command_valid()
+
+        yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
+        user_info, response = await _user.find_tournament_user(ctx, name, yesterday_tourney_data)
+
+        await _utils.discord.edit_original_message(response, content='Player found. Compiling player info...', embeds=[], view=None)
+        output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output)
+
+
+    yesterday_stars_slash: _SlashCommandGroup = yesterday_slash.subgroup('stars', 'Get yesterday\'s division stars')
+
+    @yesterday_stars_slash.group(name='division', brief='Get yesterday\'s division stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_stars_division_slash(self,
+        ctx: _ApplicationContext,
+        division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None
+    ):
+        """
+        Get yesterday's final tournament division standings.
+        """
+        self._log_command_use(ctx)
+        self._assure_yesterday_command_valid()
+
+        yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
+        output = await _top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @yesterday_stars_slash.command(name='fleet', brief='Get yesterday\'s fleet stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def yesterday_stars_fleet(self,
+        ctx: _ApplicationContext,
+        name: _Option(str, 'Enter fleet name.'),
+    ):
+        """
+        Get yesterday's final tournament fleet standings.
+
+        Parameters:
+        fleet_name: Mandatory. The fleet for which the data should be displayed.
+        """
+        self._log_command_use(ctx)
+        self._assure_yesterday_command_valid()
+
+        yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, yesterday_tourney_data)
+
+        await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+        output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output)
+
+
+    async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
+        if year is not None and month is None:
+            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        if not ctx.interaction.response.is_done():
+            await ctx.interaction.response.defer()
+
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
+        return _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
+
+
+    async def _get_yesterday_tourney_data(self, ctx: _ApplicationContext) -> _TourneyData:
+        if not ctx.interaction.response.is_done():
+            await ctx.interaction.response.defer()
+
+        return _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+
+
+    async def _perform_past_player_command(self, ctx: _ApplicationContext, player_name: str, month: _Optional[int], year: _Optional[int]) -> None:
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        user_info, response = await _user.find_tournament_user(ctx, player_name, tourney_data)
+
+        output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output)
+
+
+    def _assure_yesterday_command_valid(self) -> None:
+        tourney_day = _tourney.get_tourney_day(_utils.get_utc_now())
+        if tourney_day is None:
+            raise _Error('There\'s no tournament running currently.')
+        if not tourney_day:
+            raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
 
 
 
