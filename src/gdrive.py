@@ -23,9 +23,11 @@ from . import utils
 from .typehints import EntitiesData, EntityInfo
 
 
+
 # ---------- Classes ----------
 
-class TourneyData(object):
+
+class TourneyData(object, metaclass=utils.Singleton):
     def __init__(self, data: dict) -> None:
         self.__fleets: EntitiesData = None
         self.__users: EntitiesData = None
@@ -481,6 +483,7 @@ class TourneyData(object):
 
 class TourneyDataClient():
     def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: List[str], folder_id: str, service_account_file_path: str, settings_file_path: str, earliest_date: datetime) -> None:
+        print('Create TourneyDataClient')
         self._client_email: str = client_email
         self._client_id: str = client_id
         self._folder_id: str = folder_id

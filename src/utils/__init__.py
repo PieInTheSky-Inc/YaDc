@@ -12,3 +12,4 @@ from . import discord
 from . import format
 from . import io
 from . import parse
+from .singleton import Singleton
