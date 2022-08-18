@@ -810,6 +810,208 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_message(response, output=output)
 
 
+    targets_slash: _SlashCommandGroup = _SlashCommandGroup('targets', 'Get top tournament targets')
+
+    @targets_slash(name='top', brief='Get top tournament targets', invoke_without_command=True)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
+    async def targets(self,
+        ctx: _ApplicationContext,
+        division: _Option(str, 'Enter division.', choices=_top.DIVISION_CHOICES),
+        min_star_value: _Option(int, 'Enter minimum star value of target.', min_value=1, required=False) = None,
+        max_star_value: _Option(int, 'Enter maximum star value of target.', min_value=1, required=False) = None,
+        min_trophies: _Option(int, 'Enter minimum trophy count of target.', min_value=1, required=False) = None,
+        max_trophies: _Option(int, 'Enter maximum trophy count of target.', min_value=1, required=False) = None,
+        max_highest_trophies: _Option(int, 'Enter highest trophies maximum.', min_value=1000, required=False) = None
+    ):
+        """
+        Prints a list of highest value tournament targets in a specified division.
+        """
+        self._log_command_use(ctx)
+        if not _tourney.is_tourney_running():
+            raise _Error('There\'s no tournament running currently.')
+
+        await ctx.interaction.response.defer()
+        division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
+
+        star_values = []
+        if min_star_value:
+            star_values.append(min_star_value)
+        if max_star_value:
+            star_values.append(max_star_value)
+        star_value = '-'.join(sorted(star_values))
+        trophies_values = []
+        if min_trophies:
+            trophies_values.append(min_trophies)
+        if max_trophies:
+            trophies_values.append(max_trophies)
+        trophies_value = '-'.join(sorted(trophies_values))
+
+        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
+
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        last_month_user_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_monthly_data().users
+        current_fleet_data = await _top.get_alliances_with_division()
+
+        if yesterday_tourney_data:
+            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+            if not yesterday_user_infos:
+                error_lines = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
+                raise _Error('\n'.join(error_lines))
+
+            yesterday_user_infos_count = len(yesterday_user_infos)
+            if yesterday_user_infos_count >= 100:
+                yesterday_user_infos = yesterday_user_infos[:100]
+                count_display_text = f'Displaying the first 100 of {yesterday_user_infos_count} matching targets.'
+            else:
+                count_display_text = None
+
+            output = []
+            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            as_embed = await _server_settings.get_use_embeds(ctx)
+            divisions_designs_infos = await _top.divisions_designs_retriever.get_data_dict3()
+            footer, output_lines = _top.make_target_output_lines(yesterday_user_infos)
+            historic_data_note = _utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
+
+            if criteria_lines or count_display_text:
+                output_lines.insert(0, '_ _')
+                for criteria_line in reversed(criteria_lines):
+                    output_lines.insert(0, criteria_line)
+                if count_display_text:
+                    output_lines.insert(0, count_display_text)
+
+            if as_embed:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
+                title = f'{divisions_designs_infos[division_design_id][_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets'
+                thumbnail_url = await _sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
+                embed_bodies = _utils.discord.create_posts_from_lines(output_lines, _utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                for i, embed_body in enumerate(embed_bodies):
+                    thumbnail_url = thumbnail_url if i == 0 else None
+                    embed = _utils.discord.create_embed(title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                    output.append(embed)
+            else:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
+                title = f'__**{divisions_designs_infos[division_design_id][_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets**__'
+                output.append(title)
+                output.extend(output_lines)
+                output.append(_utils.discord.ZERO_WIDTH_SPACE)
+
+            await _utils.discord.respond_with_output(ctx, output)
+        else:
+            raise _Error('Could not retrieve yesterday\'s tournament data.')
+
+
+    @targets_slash.command(name='fleets', brief='Get top tournament targets per fleet')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN * 2, type=_BucketType.user)
+    async def targets_fleets_slash(self,
+        ctx: _ApplicationContext,
+        division: _Option(str, 'Enter division.', choices=_top.DIVISION_CHOICES),
+        count: _Option(int, 'Enter number of players per fleet to be displayed.') = None,
+        min_star_value: _Option(int, 'Enter minimum star value of target.', min_value=1, required=False) = None,
+        max_star_value: _Option(int, 'Enter maximum star value of target.', min_value=1, required=False) = None,
+        min_trophies: _Option(int, 'Enter minimum trophy count of target.', min_value=1, required=False) = None,
+        max_trophies: _Option(int, 'Enter maximum trophy count of target.', min_value=1, required=False) = None,
+        max_highest_trophies: _Option(int, 'Enter highest trophies maximum.', min_value=1000, required=False) = None
+    ):
+        """
+        Prints a list of the highest value tournament targets of all fleets in a specific division.
+        """
+        self._log_command_use(ctx)
+        if not _tourney.is_tourney_running():
+            raise _Error('There\'s no tournament running currently.')
+
+        await ctx.interaction.response.defer()
+        division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
+
+        star_values = []
+        if min_star_value:
+            star_values.append(min_star_value)
+        if max_star_value:
+            star_values.append(max_star_value)
+        star_value = '-'.join(sorted(star_values))
+        trophies_values = []
+        if min_trophies:
+            trophies_values.append(min_trophies)
+        if max_trophies:
+            trophies_values.append(max_trophies)
+        trophies_value = '-'.join(sorted(trophies_values))
+
+        max_count = _lookups.DIVISION_MAX_COUNT_TARGETS_TOP[division_design_id]
+        if count:
+            if count > max_count:
+                count = max_count
+        else:
+            count = max_count
+
+        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
+
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        last_month_user_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_monthly_data().users
+        current_fleet_data = await _top.get_alliances_with_division()
+
+        if yesterday_tourney_data:
+            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+            if not yesterday_user_infos:
+                error_text = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
+                raise _Error('\n'.join(error_text))
+
+            yesterday_fleet_users_infos = {}
+            for user_info in yesterday_user_infos:
+                yesterday_fleet_users_infos.setdefault(user_info[_fleet.FLEET_KEY_NAME], []).append(user_info)
+
+            for fleet_id, fleet_users_infos in yesterday_fleet_users_infos.items():
+                if count < len(fleet_users_infos):
+                    yesterday_fleet_users_infos[fleet_id] = fleet_users_infos[:count]
+
+            historic_data_note = _utils.datetime.get_historic_data_note(yesterday_tourney_data.retrieved_at)
+            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            as_embed = await _server_settings.get_use_embeds(ctx)
+            divisions_designs_infos = await _top.divisions_designs_retriever.get_data_dict3()
+            output_lines = []
+            current_fleet_infos = sorted(current_fleet_data.values(), key=lambda fleet_info: int(fleet_info.get('Score', 0)), reverse=True)
+            current_fleet_infos = [current_fleet_info for current_fleet_info in current_fleet_infos if current_fleet_info.get(_top.DIVISION_DESIGN_KEY_NAME) == division_design_id]
+            for fleet_rank, current_fleet_info in enumerate(current_fleet_infos, 1):
+                fleet_id = current_fleet_info[_fleet.FLEET_KEY_NAME]
+                if fleet_id in yesterday_fleet_users_infos:
+                    fleet_title_lines = [f'**{fleet_rank}. {current_fleet_info[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME]}**']
+                    footer, text_lines = _top.make_target_output_lines(yesterday_fleet_users_infos[fleet_id], include_fleet_name=False)
+                    fleet_title_lines[0] += f'\n{text_lines[0]}'
+                    output_lines.extend(fleet_title_lines)
+                    output_lines.extend(text_lines[1:])
+                    output_lines.append('')
+
+            if criteria_lines or count:
+                output_lines.insert(0, '_ _')
+                for criteria_line in reversed(criteria_lines):
+                    output_lines.insert(0, criteria_line)
+                if count:
+                    output_lines.insert(0, f'Top {count} members')
+
+            output = []
+            if as_embed:
+                if historic_data_note:
+                    footer += f'\n\n{historic_data_note}'
+                division_title = f'{divisions_designs_infos[division_design_id][_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet'
+                thumbnail_url = await _sprites.get_download_sprite_link(divisions_designs_infos[division_design_id]['BackgroundSpriteId'])
+                embed_bodies = _utils.discord.create_posts_from_lines(output_lines, _utils.discord.MAXIMUM_CHARACTERS_EMBED_DESCRIPTION)
+                for user_rank, embed_body in enumerate(embed_bodies):
+                    thumbnail_url = thumbnail_url if user_rank == 0 else None
+                    embed = _utils.discord.create_embed(division_title, description=embed_body, footer=footer, thumbnail_url=thumbnail_url, colour=colour)
+                    output.append(embed)
+            else:
+                if historic_data_note:
+                    footer += f'\n{historic_data_note}'
+                division_title = f'__**{divisions_designs_infos[division_design_id][_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet**__'
+                output.append(division_title)
+                output.extend(output_lines)
+                output.append(_utils.discord.ZERO_WIDTH_SPACE)
+
+            await _utils.discord.respond_with_output(ctx, output)
+        else:
+            raise _Error('Could not retrieve yesterday\'s tournament data.')
+
+
 
 
 
