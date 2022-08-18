@@ -694,7 +694,32 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
         _OptionChoice('December', 12),
     ]
 
+
     past_slash: _SlashCommandGroup = _SlashCommandGroup('past', 'Get historic data')
+
+    @past_slash.command(name='fleet', brief='Get historic fleet data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_fleet(self,
+        ctx: _Context,
+        fleet_name: _Option(str, 'Enter fleet name.'),
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic tournament fleet data.
+        """
+        self._log_command_use(ctx)
+
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, fleet_name, tourney_data)
+
+        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+
+        for file_path in file_paths:
+            _os.remove(file_path)
+
+
     past_stars_slash: _SlashCommandGroup = past_slash.create_subgroup('stars', 'Get historic stars')
 
     @past_stars_slash.command(name='division', brief='Get historic division stars')
@@ -702,8 +727,8 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     async def past_stars_division_slash(self,
         ctx: _ApplicationContext,
         division: _Option(str, 'Enter division letter.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None,
-        month: _Option(int, 'Enter month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
-        year: _Option(int, 'Enter year. If set, a month has to be entered, too.', min_value=2019, required=False, default=None) = None
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
         """
         Get historic tournament division stars data.
@@ -720,8 +745,8 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     async def past_stars_fleet_slash(self,
         ctx: _ApplicationContext,
         fleet_name: _Option(str, 'Enter fleet name.'),
-        month: _Option(int, 'Enter month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
-        year: _Option(int, 'Enter year. If set, a month has to be entered, too.', min_value=2019, required=False, default=None) = None
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
         """
         Get historic tournament fleet stars data.
