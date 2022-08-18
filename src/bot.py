@@ -3,9 +3,9 @@ import logging
 import json
 import os
 import sys
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Type
 
-from discord import Activity, ActivityType, ApplicationContext, Embed, Guild, Intents, Message, TextChannel
+from discord import Activity, ActivityType, ApplicationCommand, ApplicationContext, Embed, Guild, Intents, Message, SlashCommand, SlashCommandGroup, TextChannel
 from discord import ApplicationCommandInvokeError, CheckFailure
 from discord import __version__ as discord_version
 from discord.ext.commands import Bot, Context, when_mentioned_or
@@ -28,7 +28,51 @@ from .server_settings import GUILD_SETTINGS
 from . import settings
 from . import utils
 
-from .cogs import CurrentDataCog, GeneralCog, OwnerCog, RawDataCog, SettingsCog, TournamentCog, WikiCog
+
+
+
+class YadcBot(Bot):
+    def get_application_command(
+        self,
+        name: str,
+        guild_ids: Optional[List[int]] = None,
+        type: Type[ApplicationCommand] = SlashCommand,
+    ) -> Optional[ApplicationCommand]:
+        """Get a :class:`.ApplicationCommand` from the internal list
+        of commands.
+
+        .. versionadded:: 2.0
+
+        Parameters
+        -----------
+        name: :class:`str`
+            The name of the command to get.
+        guild_ids: List[:class:`int`]
+            The guild ids associated to the command to get.
+        type: Type[:class:`.ApplicationCommand`]
+            The type of the command to get. Defaults to :class:`.SlashCommand`.
+
+        Returns
+        --------
+        Optional[:class:`.ApplicationCommand`]
+            The command that was requested. If not found, returns ``None``.
+        """
+        names = name.split()
+        if not names:
+            return None
+        obj = next((cmd for cmd in self.application_commands if cmd.name == names[0]), None)
+        if (type == SlashCommand and not isinstance(obj, SlashCommandGroup)) or isinstance(obj, type):
+            return obj
+
+        for name in names[1:]:
+            try:
+                obj = next((cmd for cmd in obj.subcommands if cmd.name == name), None)
+            except AttributeError:
+                return None
+
+        if isinstance(obj, type) and (not guild_ids or set(obj.guild_ids) <= set(guild_ids)):
+            return obj
+        return None
 
 
 
@@ -46,7 +90,7 @@ INTENTS: Intents = Intents.default()
 if settings.INTENT_MESSAGE_CONTENT:
     INTENTS.message_content = True
 
-BOT = Bot(
+BOT = YadcBot(
     command_prefix=get_prefix,
     description='This is a Discord Bot for Pixel Starships',
     activity=Activity(type=ActivityType.playing, name='/help'),
@@ -92,7 +136,7 @@ async def on_ready() -> None:
     schema_version = await db.get_schema_version()
     print(f'DB schema version is: {schema_version}')
     print(f'Python version: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')
-    print(f'discord.py version: {discord_version}')
+    print(f'py-cord version: {discord_version}')
 
     if settings.FEATURE_AUTODAILY_ENABLED:
         print('Starting auto-daily loop.')
@@ -456,22 +500,22 @@ async def __initialize() -> None:
     print(f'Initialized!')
 
 
-def load_cog(name: str, path: str) -> None:
-    print(f'Loading cog "{name}" from extension "{path}"')
+def load_cog(path: str) -> None:
+    print(f'Loading extension \'{path}\'.')
     BOT.extensions.get(path)
     if not BOT.extensions.get(path):
         BOT.load_extension(path)
 
 
 def run_bot() -> None:
-    load_cog(GeneralCog.__name__, 'src.cogs.general')
-    load_cog(CurrentDataCog.__name__, 'src.cogs.current')
-    load_cog(RawDataCog.__name__, 'src.cogs.raw')
-    load_cog(SettingsCog.__name__, 'src.cogs.settings')
-    load_cog(WikiCog.__name__, 'src.cogs.wiki')
-    load_cog(OwnerCog.__name__, 'src.cogs.owner')
+    load_cog('src.cogs.general')
+    load_cog('src.cogs.current')
+    load_cog('src.cogs.raw')
+    load_cog('src.cogs.settings')
+    load_cog('src.cogs.wiki')
+    load_cog('src.cogs.owner')
     if settings.FEATURE_TOURNEYDATA_ENABLED:
-        load_cog(TournamentCog.__name__, 'src.cogs.tournament')
+        load_cog('src.cogs.tournament')
 
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)
