@@ -4463,13 +4463,14 @@ async def cmd_send_bot_news(ctx: Context, *, news: str = None):
     avatar_url = BOT.user.avatar_url
     if not for_testing:
         for bot_news_channel in server_settings.GUILD_SETTINGS.bot_news_channels:
-            embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
-            embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
-            embed.set_thumbnail(url=avatar_url)
-            try:
-                await bot_news_channel.send(embed=embed)
-            except errors.Forbidden:
-                pass
+            if bot_news_channel:
+                embed_colour = utils.discord.get_bot_member_colour(BOT, bot_news_channel.guild)
+                embed: Embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
+                embed.set_thumbnail(url=avatar_url)
+                try:
+                    await bot_news_channel.send(embed=embed)
+                except errors.Forbidden:
+                    pass
     embed_colour = utils.discord.get_bot_member_colour(BOT, ctx.guild)
     embed = utils.discord.create_embed(title, description=content, colour=embed_colour)
     embed.set_thumbnail(url=avatar_url)
