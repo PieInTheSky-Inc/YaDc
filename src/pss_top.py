@@ -328,7 +328,7 @@ async def get_alliances_with_division() -> EntitiesData:
     return fleet_infos
 
 
-def get_targets_parameters(star_value: str = None, trophies: str = None, highest_trophies: int = None) -> Tuple[List[str], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
+def get_targets_parameters(star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> Tuple[List[str], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
     star_values = [int(value) for value in (star_value or '').split('-') if value]
     trophies_values = [int(value) for value in (trophies or '').split('-') if value]
 
@@ -360,14 +360,14 @@ def get_targets_parameters(star_value: str = None, trophies: str = None, highest
             min_trophies_value = None
             criteria_lines.append(f'Maximum trophy count: {max_trophies_value}')
 
-    if highest_trophies is not None:
-        if highest_trophies < 0:
+    if max_highest_trophies is not None:
+        if max_highest_trophies < 0:
             raise ValueError('The highest trophy count must not be negative.')
-        elif any(value > highest_trophies for value in trophies_values):
+        elif any(value > max_highest_trophies for value in trophies_values):
             raise ValueError('The highest trophy count for a player must not be lower than any current trophy count value.')
-        criteria_lines.append(f'Maximum highest trophy count: {highest_trophies}')
+        criteria_lines.append(f'Maximum highest trophy count: {max_highest_trophies}')
 
-    return criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, highest_trophies
+    return criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies
 
 
 def is_valid_division_letter(div_letter: str) -> bool:
@@ -378,7 +378,7 @@ def is_valid_division_letter(div_letter: str) -> bool:
     return result
 
 
-def make_target_output_lines(user_infos: List[EntityInfo], include_fleet_name: bool = True) -> List[str]:
+def make_target_output_lines(user_infos: List[EntityInfo], include_fleet_name: bool = True) -> Tuple[str, List[str]]:
     footer = f'Properties displayed: Star value (Current, Last month\'s star count) {emojis.star} Trophies (Max Trophies) {emojis.trophy} Player name'
     if include_fleet_name:
         footer += ' (Fleet name)'
