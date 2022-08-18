@@ -22,6 +22,7 @@ from .. import pss_room as _room
 from .. import pss_ship as _ship
 from .. import pss_training as _training
 from .. import pss_wiki as _wiki
+from .. import settings as _settings
 from .. import utils as _utils
 
 
@@ -292,4 +293,5 @@ class WikiCog(_RawCogBase, name='Wiki data'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(WikiCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(WikiCog(bot))

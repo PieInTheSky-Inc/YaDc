@@ -815,5 +815,7 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(TournamentCog(bot))
-    bot.add_cog(TournamentSlashCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(TournamentCog(bot))
+    if _settings.OFFER_SLASH_COMMANDS:
+        bot.add_cog(TournamentSlashCog(bot))

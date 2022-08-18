@@ -2008,5 +2008,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(CurrentDataCog(bot))
-    bot.add_cog(CurrentDataSlashCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(CurrentDataCog(bot))
+    if _settings.OFFER_SLASH_COMMANDS:
+        bot.add_cog(CurrentDataSlashCog(bot))

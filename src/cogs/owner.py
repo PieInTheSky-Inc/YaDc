@@ -742,4 +742,5 @@ def _get_command_tree(commands) -> _List[str]:
 
 
 def setup(bot: _Bot):
-    bot.add_cog(OwnerCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(OwnerCog(bot))

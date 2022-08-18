@@ -339,5 +339,7 @@ def _read_links_file(language_key: str = 'en') -> _Dict[str, _List[_List[str]]]:
 
 
 def setup(bot: _Bot):
-    bot.add_cog(GeneralCog(bot))
-    bot.add_cog(GeneralSlashCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(GeneralCog(bot))
+    if _settings.OFFER_SLASH_COMMANDS:
+        bot.add_cog(GeneralSlashCog(bot))

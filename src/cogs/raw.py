@@ -18,6 +18,7 @@ from .. import pss_room as _room
 from .. import pss_ship as _ship
 from .. import pss_situation as _situation
 from .. import pss_training as _training
+from .. import settings as _settings
 
 
 class RawDataCog(_RawCogBase, name='Raw Data'):
@@ -486,4 +487,5 @@ class RawDataCog(_RawCogBase, name='Raw Data'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(RawDataCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(RawDataCog(bot))

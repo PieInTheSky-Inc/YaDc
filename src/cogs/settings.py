@@ -780,4 +780,5 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
 def setup(bot: _Bot):
-    bot.add_cog(SettingsCog(bot))
+    if _settings.OFFER_PREFIXED_COMMANDS:
+        bot.add_cog(SettingsCog(bot))
