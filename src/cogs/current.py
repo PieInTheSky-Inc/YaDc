@@ -1214,6 +1214,13 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         _OptionChoice(name='Weapon', value='wpn'),
         _OptionChoice(name='FireResistance', value='fr'),
     ]
+    _STARS_DIVISION_CHOICES = [
+        _OptionChoice(name='All', value=None),
+        _OptionChoice(name='A', value='a'),
+        _OptionChoice(name='B', value='b'),
+        _OptionChoice(name='C', value='c'),
+        _OptionChoice(name='D', value='d'),
+    ]
 
 
     @_slash_command(name='alliance', brief='Get infos on a fleet')
@@ -1698,6 +1705,63 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
             await _utils.discord.respond_with_output(ctx, output)
         else:
             raise _Error('An unknown error ocurred, please contact the bot\'s author.')
+
+
+    stars_slash: _SlashCommandGroup = _SlashCommandGroup('stars', 'Get star count information.')
+
+    @stars_slash.command(name='division', brief='Division stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def stars_division_slash(self,
+        ctx: _ApplicationContext,
+        division: _Option(str, 'Enter division letter.', choices=_STARS_DIVISION_CHOICES, default=None)
+    ):
+        """
+        Get stars earned by each fleet during the current final tournament week.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        if _tourney.is_tourney_running():
+            output = await _top.get_division_stars(ctx, division=division, as_embed=(await _server_settings.get_use_embeds(ctx)))
+            await _utils.discord.reply_with_output(ctx, output)
+        else:
+            raise _Error('There is no tournament running currently! Please use the `/past stars division` command for historic data.')
+
+
+    @stars_slash.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def stars_fleet_slash(self,
+        ctx: _ApplicationContext,
+        fleet_name: _Option(str, 'Enter fleet name.')
+    ):
+        """
+        Get stars earned by the specified fleet during the current final tournament week.
+        """
+        self._log_command_use(ctx)
+
+        response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+        if _tourney.is_tourney_running():
+            fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
+            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[_top.DIVISION_DESIGN_KEY_NAME] != '0']
+            fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
+            fleet_infos = fleet_infos[:25]
+            if fleet_infos:
+                if len(fleet_infos) == 1:
+                    fleet_info = fleet_infos[0]
+                else:
+                    options = {fleet_info[_fleet.FLEET_KEY_NAME]: (_fleet.get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
+                    view = _pagination.SelectView(ctx, 'Please select a fleet.', options)
+                    fleet_info = await view.wait_for_selection(response)
+
+                if fleet_info:
+                    max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
+                    fleet_users_infos = await _fleet.get_fleet_users_data_by_fleet_info(fleet_info)
+                    output = await _fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+                    await _utils.discord.reply_with_output(ctx, output)
+            else:
+                raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+        else:
+            raise _Error('There is no tournament running currently! Please use the `/past stars fleet` command for historic data.')
 
 
     @_slash_command(name='stats', aliases=['stat'], brief='Get crew/item stats')
