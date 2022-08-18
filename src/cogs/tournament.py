@@ -1,5 +1,6 @@
 import calendar as _calendar
 import os as _os
+from typing import Optional as _Optional
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Option as _Option
@@ -699,8 +700,8 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
 
     @past_slash.command(name='fleet', brief='Get historic fleet data')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def past_fleet(self,
-        ctx: _Context,
+    async def past_fleet_slash(self,
+        ctx: _ApplicationContext,
         fleet_name: _Option(str, 'Enter fleet name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
@@ -718,6 +719,22 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
 
         for file_path in file_paths:
             _os.remove(file_path)
+
+
+    @past_slash.command(name='player', brief='Get historic player data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_player_slash(self,
+        ctx: _ApplicationContext,
+        player_name: _Option(str, 'Enter player name.'),
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic tournament player data.
+        """
+        self._log_command_use(ctx)
+
+        await self._perform_past_player_command(ctx, player_name, month, year)
 
 
     past_stars_slash: _SlashCommandGroup = past_slash.create_subgroup('stars', 'Get historic stars')
@@ -759,6 +776,22 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_message(response, output)
 
 
+    @past_slash.command(name='user', brief='Get historic player data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_user_slash(self,
+        ctx: _ApplicationContext,
+        player_name: _Option(str, 'Enter player name.'),
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic tournament player data.
+        """
+        self._log_command_use(ctx)
+
+        await self._perform_past_player_command(ctx, player_name, month, year)
+
+
     async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
@@ -767,6 +800,14 @@ class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
 
         day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
         return _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
+
+
+    async def _perform_past_player_command(self, ctx: _ApplicationContext, player_name: str, month: _Optional[int], year: _Optional[int]) -> None:
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        user_info, response = await _user.find_tournament_user(ctx, player_name, tourney_data)
+
+        output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output)
 
 
 

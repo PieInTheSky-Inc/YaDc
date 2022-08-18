@@ -1,7 +1,7 @@
+import calendar
 from datetime import datetime
 import math
-import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from discord import ApplicationContext
 from discord import Embed
@@ -9,8 +9,8 @@ from discord import Interaction
 from discord.ext.commands import Context
 from discord.file import File
 from discord.utils import escape_markdown
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
-import numpy as np
+
+from .gdrive import TourneyData
 
 from . import emojis
 from.pagination import SelectView
@@ -19,7 +19,6 @@ from . import pss_core as core
 from . import pss_entity as entity
 from .pss_exception import NotFound
 from . import pss_fleet as fleet
-from . import pss_login as login
 from . import pss_lookups as lookups
 from . import pss_room as room
 from . import pss_ship as ship
@@ -340,6 +339,26 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 
 # ---------- Helper functions ----------
+
+async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
+    response = await utils.discord.respond_with_output(ctx, ['Searching player...'])
+    user_infos = await get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+
+    if user_infos:
+        if len(user_infos) == 1:
+            user_info = user_infos[0]
+        else:
+            user_infos.sort(key=lambda user: user[USER_DESCRIPTION_PROPERTY_NAME])
+            user_infos = user_infos[:25]
+
+            options = {user_info[USER_KEY_NAME]: (get_user_search_details(user_info), user_info) for user_info in user_infos}
+            view = SelectView(ctx, 'Please select a player.', options)
+            user_info = await view.wait_for_selection(response)
+
+        return user_info, response
+    else:
+        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
+
 
 async def find_user(ctx: ApplicationContext, player_name: str) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.respond_with_output(ctx, ['Searching player...'])
