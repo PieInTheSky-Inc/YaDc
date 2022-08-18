@@ -2,7 +2,7 @@ import calendar
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
-from discord import Colour, Embed
+from discord import Colour, Embed, OptionChoice
 from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
@@ -29,6 +29,13 @@ ALLOWED_DIVISION_LETTERS: List[str] = sorted([letter for letter in lookups.DIVIS
 DIVISION_DESIGN_BASE_PATH: str = 'DivisionService/ListAllDivisionDesigns2'
 DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'DivisionName'
 DIVISION_DESIGN_KEY_NAME: str = 'DivisionDesignId'
+
+DIVISION_CHOICES = [
+    OptionChoice(name='A', value='a'),
+    OptionChoice(name='B', value='b'),
+    OptionChoice(name='C', value='c'),
+    OptionChoice(name='D', value='d'),
+]
 
 STARS_BASE_PATH: str = 'AllianceService/ListAlliancesWithDivision'
 

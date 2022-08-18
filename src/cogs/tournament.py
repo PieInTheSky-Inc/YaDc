@@ -1,7 +1,12 @@
-import os as _os
 import calendar as _calendar
+import os as _os
 
-from discord import Bot as _Bot
+from discord import ApplicationContext as _ApplicationContext
+from discord import Option as _Option
+from discord import OptionChoice as _OptionChoice
+from discord import slash_command as _slash_command
+from discord import SlashCommandGroup as _SlashCommandGroup
+from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
@@ -12,6 +17,7 @@ from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
 from .. import pss_fleet as _fleet
+from ..gdrive import TourneyData as _TourneyData
 from ..gdrive import TourneyDataClient as _TourneyDataClient
 from .. import pagination as _pagination
 from .. import pss_lookups as _lookups
@@ -25,30 +31,26 @@ from .. import utils as _utils
 
 
 
-class TournamentCog(_CogBase, name='Tournament'):
+class _TournamentCogBase(_CogBase):
+    TOURNAMENT_DATA_CLIENT: _TourneyDataClient = _TourneyDataClient(
+        _settings.GDRIVE_PROJECT_ID,
+        _settings.GDRIVE_PRIVATE_KEY_ID,
+        _settings.GDRIVE_PRIVATE_KEY,
+        _settings.GDRIVE_CLIENT_EMAIL,
+        _settings.GDRIVE_CLIENT_ID,
+        _settings.GDRIVE_SCOPES,
+        _settings.GDRIVE_FOLDER_ID,
+        _settings.GDRIVE_SERVICE_ACCOUNT_FILE,
+        _settings.GDRIVE_SETTINGS_FILE,
+        _settings.TOURNAMENT_DATA_START_DATE
+    )
+
+
+
+class TournamentCog(_TournamentCogBase, name='Tournament'):
     """
     This module offers commands to get information about fleets and players from past tournaments.
     """
-    def __init__(self, bot: _Bot) -> None:
-        super().__init__(bot)
-        self.__tournament_data_client: _TourneyDataClient = _TourneyDataClient(
-                _settings.GDRIVE_PROJECT_ID,
-                _settings.GDRIVE_PRIVATE_KEY_ID,
-                _settings.GDRIVE_PRIVATE_KEY,
-                _settings.GDRIVE_CLIENT_EMAIL,
-                _settings.GDRIVE_CLIENT_ID,
-                _settings.GDRIVE_SCOPES,
-                _settings.GDRIVE_FOLDER_ID,
-                _settings.GDRIVE_SERVICE_ACCOUNT_FILE,
-                _settings.GDRIVE_SETTINGS_FILE,
-                _settings.TOURNAMENT_DATA_START_DATE
-            )
-
-
-    @property
-    def tournament_data_client(self) -> _TourneyDataClient:
-        return self.__tournament_data_client
-
 
     @_command_group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
@@ -85,7 +87,7 @@ class TournamentCog(_CogBase, name='Tournament'):
         utc_now = _utils.get_utc_now()
         output = []
 
-        (month, year, division) = self.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, division) = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
@@ -94,8 +96,8 @@ class TournamentCog(_CogBase, name='Tournament'):
             await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
             return
         else:
-            day, month, year = self.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-            tourney_data = self.tournament_data_client.get_data(year, month, day=day)
+            day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, utc_now)
+            tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
             if tourney_data:
                 output = await _top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
@@ -117,14 +119,14 @@ class TournamentCog(_CogBase, name='Tournament'):
         self._log_command_use(ctx)
         output = []
         utc_now = _utils.get_utc_now()
-        (month, year, fleet_name) = self.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, fleet_name) = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        day, month, year = self.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.tournament_data_client.get_data(year, month, day=day)
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, utc_now)
+        tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
 
         if tourney_data is None:
             fleet_infos = []
@@ -165,14 +167,14 @@ class TournamentCog(_CogBase, name='Tournament'):
         self._log_command_use(ctx)
         error = None
         utc_now = _utils.get_utc_now()
-        (month, year, fleet_name) = self.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, fleet_name) = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        day, month, year = self.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.tournament_data_client.get_data(year, month, day=day)
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, utc_now)
+        tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
 
         if tourney_data is None:
             fleet_infos = []
@@ -218,12 +220,12 @@ class TournamentCog(_CogBase, name='Tournament'):
         self._log_command_use(ctx)
         error = None
         utc_now = _utils.get_utc_now()
-        (month, year, _) = self.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, _) = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        day, month, year = self.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.tournament_data_client.get_data(year, month, day=day)
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, utc_now)
+        tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
 
         if tourney_data and tourney_data.fleets and tourney_data.users:
             file_name = f'tournament_results_{year}-{_utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
@@ -254,15 +256,15 @@ class TournamentCog(_CogBase, name='Tournament'):
         output = []
         error = None
         utc_now = _utils.get_utc_now()
-        (month, year, player_name) = self.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, player_name) = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not player_name:
             raise _MissingParameterError('The parameter `player_name` is mandatory.')
 
-        day, month, year = self.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, utc_now)
         try:
-            tourney_data = self.tournament_data_client.get_data(year, month, day=day)
+            tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
         except ValueError as err:
             error = str(err)
             tourney_data = None
@@ -323,7 +325,7 @@ class TournamentCog(_CogBase, name='Tournament'):
             raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
         output = []
 
-        yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
         if yesterday_tourney_data is None:
             yesterday_fleet_infos = []
         else:
@@ -339,7 +341,7 @@ class TournamentCog(_CogBase, name='Tournament'):
 
             if fleet_info:
                 fleet_id = fleet_info[_fleet.FLEET_KEY_NAME]
-                day_before_tourney_data = self.tournament_data_client.get_second_latest_daily_data()
+                day_before_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_second_latest_daily_data()
                 yesterday_users_data = {user_id: user_info for user_id, user_info in yesterday_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
                 day_before_users_data = {user_id: user_info for user_id, user_info in day_before_tourney_data.users.items() if user_info[_fleet.FLEET_KEY_NAME] == fleet_id}
                 for yesterday_user_info in yesterday_users_data.values():
@@ -376,7 +378,7 @@ class TournamentCog(_CogBase, name='Tournament'):
             raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
         output = []
 
-        yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
         if yesterday_tourney_data is None:
             user_infos = []
         else:
@@ -420,7 +422,7 @@ class TournamentCog(_CogBase, name='Tournament'):
             await ctx.invoke(subcommand, fleet_name=division)
             return
         else:
-            yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
+            yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
             if yesterday_tourney_data:
                 output = await _top.get_division_stars(ctx, division=division, fleet_data=yesterday_tourney_data.fleets, retrieved_date=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
@@ -444,7 +446,7 @@ class TournamentCog(_CogBase, name='Tournament'):
             raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
         output = []
 
-        yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
         if yesterday_tourney_data is None:
             fleet_infos = []
         else:
@@ -502,8 +504,8 @@ class TournamentCog(_CogBase, name='Tournament'):
 
             criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
-            yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
-            last_month_user_data = self.tournament_data_client.get_latest_monthly_data().users
+            yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+            last_month_user_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_monthly_data().users
             current_fleet_data = await _top.get_alliances_with_division()
 
             if yesterday_tourney_data:
@@ -607,8 +609,8 @@ class TournamentCog(_CogBase, name='Tournament'):
 
         criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies, max_highest_trophies)
 
-        yesterday_tourney_data = self.tournament_data_client.get_latest_daily_data()
-        last_month_user_data = self.tournament_data_client.get_latest_monthly_data().users
+        yesterday_tourney_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_daily_data()
+        last_month_user_data = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_latest_monthly_data().users
         current_fleet_data = await _top.get_alliances_with_division()
 
         if yesterday_tourney_data:
@@ -676,5 +678,76 @@ class TournamentCog(_CogBase, name='Tournament'):
 
 
 
+class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
+    _PAST_MONTH_CHOICES = [
+        _OptionChoice('January', 1),
+        _OptionChoice('February', 2),
+        _OptionChoice('March', 3),
+        _OptionChoice('April', 4),
+        _OptionChoice('May', 5),
+        _OptionChoice('June', 6),
+        _OptionChoice('July', 7),
+        _OptionChoice('August', 8),
+        _OptionChoice('September', 9),
+        _OptionChoice('October', 10),
+        _OptionChoice('November', 11),
+        _OptionChoice('December', 12),
+    ]
+
+    past_slash: _SlashCommandGroup = _SlashCommandGroup('past', 'Get historic data')
+    past_stars_slash: _SlashCommandGroup = past_slash.create_subgroup('stars', 'Get historic stars')
+
+    @past_stars_slash.command(name='division', brief='Get historic division stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_stars_division_slash(self,
+        ctx: _ApplicationContext,
+        division: _Option(str, 'Enter division letter.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None,
+        month: _Option(int, 'Enter month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If set, a month has to be entered, too.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic tournament division stars data.
+        """
+        self._log_command_use(ctx)
+
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        output = await _top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @past_stars_slash.command(name='fleet', brief='Get historic fleet stars')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_stars_fleet_slash(self,
+        ctx: _ApplicationContext,
+        fleet_name: _Option(str, 'Enter fleet name.'),
+        month: _Option(int, 'Enter month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If set, a month has to be entered, too.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic tournament fleet stars data.
+        """
+        self._log_command_use(ctx)
+
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, fleet_name, tourney_data)
+        output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output)
+
+
+    async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
+        if year is not None and month is None:
+            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        if not ctx.interaction.response.is_done():
+            await ctx.interaction.response.defer()
+
+        day, month, year = _TournamentCogBase.TOURNAMENT_DATA_CLIENT.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
+        return _TournamentCogBase.TOURNAMENT_DATA_CLIENT.get_data(year, month, day=day)
+
+
+
+
+
+
 def setup(bot: _Bot):
     bot.add_cog(TournamentCog(bot))
+    bot.add_cog(TournamentSlashCog(bot))

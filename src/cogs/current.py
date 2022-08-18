@@ -3,12 +3,10 @@ import holidays as _holidays
 import os as _os
 import pytz as _pytz
 from typing import List as _List
-from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Embed as _Embed
-from discord import Interaction as _Interaction
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
 from discord import slash_command as _slash_command
@@ -1214,13 +1212,6 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         _OptionChoice(name='Weapon', value='wpn'),
         _OptionChoice(name='FireResistance', value='fr'),
     ]
-    _STARS_DIVISION_CHOICES = [
-        _OptionChoice(name='All', value=None),
-        _OptionChoice(name='A', value='a'),
-        _OptionChoice(name='B', value='b'),
-        _OptionChoice(name='C', value='c'),
-        _OptionChoice(name='D', value='d'),
-    ]
 
 
     @_slash_command(name='alliance', brief='Get infos on a fleet')
@@ -1713,7 +1704,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def stars_division_slash(self,
         ctx: _ApplicationContext,
-        division: _Option(str, 'Enter division letter.', choices=_STARS_DIVISION_CHOICES, default=None)
+        division: _Option(str, 'Enter division letter.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None
     ):
         """
         Get stars earned by each fleet during the current final tournament week.
@@ -1724,8 +1715,11 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         if _tourney.is_tourney_running():
             output = await _top.get_division_stars(ctx, division=division, as_embed=(await _server_settings.get_use_embeds(ctx)))
             await _utils.discord.reply_with_output(ctx, output)
+        elif _settings.FEATURE_TOURNEYDATA_ENABLED:
+            cmd = self.bot.get_application_command('past stars division')
+            await ctx.invoke(cmd, division)
         else:
-            raise _Error('There is no tournament running currently! Please use the `/past stars division` command for historic data.')
+            raise _Error('There is no tournament running currently!')
 
 
     @stars_slash.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
@@ -1739,8 +1733,9 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+        await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
+            response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
             fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[_top.DIVISION_DESIGN_KEY_NAME] != '0']
             fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
@@ -1760,8 +1755,11 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
                     await _utils.discord.reply_with_output(ctx, output)
             else:
                 raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+        elif _settings.FEATURE_TOURNEYDATA_ENABLED:
+            cmd = self.bot.get_application_command('past stars fleet')
+            await ctx.invoke(cmd, fleet_name)
         else:
-            raise _Error('There is no tournament running currently! Please use the `/past stars fleet` command for historic data.')
+            raise _Error('There is no tournament running currently!')
 
 
     @_slash_command(name='stats', aliases=['stat'], brief='Get crew/item stats')

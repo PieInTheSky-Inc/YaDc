@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -7,6 +8,8 @@ from discord import Embed
 from discord import Interaction
 from discord.utils import escape_markdown
 from discord.ext.commands import Context
+
+from .gdrive import TourneyData
 
 from . import emojis
 from . import excel
@@ -347,6 +350,26 @@ async def find_fleet(ctx: ApplicationContext, fleet_name: str) -> Tuple[EntityIn
         return fleet_info, response
     else:
         raise NotFound(f'Could not find a fleet named `{fleet_name}`.')
+
+
+async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
+    response = await utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+    fleet_infos = await get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
+    if fleet_infos:
+        fleet_info = None
+        if len(fleet_infos) == 1:
+            fleet_info = fleet_infos[0]
+        else:
+            fleet_infos.sort(key=lambda fleet: fleet[FLEET_DESCRIPTION_PROPERTY_NAME])
+            fleet_infos = fleet_infos[:25]
+
+            options = {fleet_info[FLEET_KEY_NAME]: (get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
+            view = SelectView(ctx, 'Please select a fleet.', options)
+            fleet_info = await view.wait_for_selection(response)
+
+        return fleet_info, response
+    else:
+        raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
 
 
 def get_division_name(division_design_id: time.strftime) -> str:
