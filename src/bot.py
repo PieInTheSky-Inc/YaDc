@@ -193,15 +193,12 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
                 if retry_after:
                     error_message = f'{ctx.author.mention}\n{error_message}'
                 embed = utils.discord.create_embed(title, description=error_message, colour=colour)
-                output = [embed]
                 await ctx.reply(embed=embed, delete_after=retry_after, mention_author=False)
             else:
                 error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
                 if retry_after:
                     error_message = f'> {ctx.author.mention}\n{error_message}'
-                output = [f'**{title}**', error_message]
                 await ctx.reply(f'**{title}**\n{error_message}', delete_after=retry_after, mention_author=False)
-            await utils.discord.edit_original_message
         except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
 
