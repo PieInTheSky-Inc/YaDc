@@ -425,7 +425,7 @@ async def edit_original_message(
         else:
             kwargs = {
                 'content': post,
-                'embeds': None,
+                'embeds': [],
             }
     else:
         kwargs = {
