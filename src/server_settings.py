@@ -944,6 +944,7 @@ async def _db_create_server_settings(guild_id: int) -> bool:
     else:
         query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
         success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
+        return success
 
 
 async def _db_delete_server_settings(guild_id: int) -> bool:
