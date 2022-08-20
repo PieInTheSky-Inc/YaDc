@@ -10,7 +10,6 @@ from discord.ext.commands import Context
 from discord.file import File
 from discord.utils import escape_markdown
 
-from .gdrive import TourneyData
 
 from . import emojis
 from.pagination import SelectView
@@ -340,7 +339,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 # ---------- Helper functions ----------
 
-async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
+async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.respond_with_output(ctx, ['Searching player...'])
     user_infos = await get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 

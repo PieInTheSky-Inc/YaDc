@@ -481,7 +481,7 @@ class TourneyData(object):
 
 
 
-class TourneyDataClient(metaclass=utils.Singleton):
+class TourneyDataClient():
     def __init__(self, project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, scopes: List[str], folder_id: str, service_account_file_path: str, settings_file_path: str, earliest_date: datetime) -> None:
         print('Create TourneyDataClient')
         self._client_email: str = client_email

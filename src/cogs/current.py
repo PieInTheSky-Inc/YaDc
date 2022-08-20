@@ -11,7 +11,6 @@ from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
 from discord import slash_command as _slash_command
 from discord import SlashCommandGroup as _SlashCommandGroup
-from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
@@ -44,6 +43,7 @@ from .. import server_settings as _server_settings
 from .. import settings as _settings
 from ..typehints import EntityInfo as _EntityInfo
 from .. import utils as _utils
+from ..yadc_bot import YadcBot as _YadcBot
 
 
 
@@ -985,7 +985,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
         as_embed = await _server_settings.get_use_embeds(ctx)
         if as_embed:
-            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            colour = _utils.discord.get_YadcBot_member_colour(ctx.bot, ctx.guild)
             output = [_utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
         else:
             output = [star_date, melbourne_time]
@@ -1120,7 +1120,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
         utc_now = _utils.get_utc_now()
         start_of_tourney = _tourney.get_current_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+        embed_colour = _utils.discord.get_YadcBot_member_colour(self.bot, ctx.guild)
         embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await _server_settings.get_use_embeds(ctx)):
             output = [embed]
@@ -1145,7 +1145,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
         self._log_command_use(ctx)
         utc_now = _utils.get_utc_now()
         start_of_tourney = _tourney.get_next_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+        embed_colour = _utils.discord.get_YadcBot_member_colour(self.bot, ctx.guild)
         embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await _server_settings.get_use_embeds(ctx)):
             output = [embed]
@@ -1831,7 +1831,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
         fields = [(field[0], field[1], False) for field in [holiday, time_till_next_month, time_till_next_prestige_change] if field[1]]
         as_embed = await _server_settings.get_use_embeds(ctx)
         if as_embed:
-            colour = _utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            colour = _utils.discord.get_YadcBot_member_colour(ctx.bot, ctx.guild)
             output = [_utils.discord.create_embed(star_date, description=melbourne_time, fields=fields, colour=colour)]
         else:
             output = [star_date, melbourne_time]
@@ -1885,7 +1885,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
         utc_now = _utils.get_utc_now()
         start_of_tourney = _tourney.get_current_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+        embed_colour = _utils.discord.get_YadcBot_member_colour(self.bot, ctx.guild)
         embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await _server_settings.get_use_embeds(ctx)):
             output = [embed]
@@ -1905,7 +1905,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
         utc_now = _utils.get_utc_now()
         start_of_tourney = _tourney.get_next_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+        embed_colour = _utils.discord.get_YadcBot_member_colour(self.bot, ctx.guild)
         embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
         if (await _server_settings.get_use_embeds(ctx)):
             output = [embed]
@@ -2005,7 +2005,7 @@ class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
 
 
 
-def setup(bot: _Bot):
+def setup(bot: _YadcBot):
     if _settings.OFFER_PREFIXED_COMMANDS:
         bot.add_cog(CurrentDataCog(bot))
     if _settings.OFFER_SLASH_COMMANDS:

@@ -4,11 +4,11 @@ from typing import Optional as _Optional
 from typing import Tuple as _Tuple
 from typing import Union as _Union
 
-from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Cog as _Cog
 from discord.ext.commands import Context as _Context
 
 from .. import settings as _settings
+from ..yadc_bot import YadcBot as _YadcBot
 
 
 
@@ -16,14 +16,14 @@ class CogBase(_Cog):
     COOLDOWN: float = 15.0
     RATE: int = 5
 
-    def __init__(self, bot: _Bot) -> None:
+    def __init__(self, bot: _YadcBot) -> None:
         if not bot:
             raise ValueError('Parameter \'bot\' must not be None.')
         self.__bot = bot
 
 
     @property
-    def bot(self) -> _Bot:
+    def bot(self) -> _YadcBot:
         return self.__bot
 
 
