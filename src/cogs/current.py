@@ -1191,7 +1191,7 @@ class CurrentDataCog(_CogBase, name='Current PSS Data'):
 
 class CurrentDataSlashCog(_CogBase, name='Current PSS Data Slash'):
     _BEST_SLOT_CHOICES = [
-        _OptionChoice(name='Any', value=None),
+        _OptionChoice(name='Any', value=''),
         _OptionChoice(name='Head', value='head'),
         _OptionChoice(name='Accessory', value='accessory'),
         _OptionChoice(name='Body', value='body'),
