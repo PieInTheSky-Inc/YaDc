@@ -6,10 +6,11 @@ import asyncio
 from discord import ApplicationContext, ChannelType, Embed, Message, Reaction, User
 from discord.ext.commands import Context
 
-from .pss_entity import EntityDetails
 from . import emojis
-from . import utils
+from .pss_entity import EntityDetails
+from .pss_exception import SelectTimeoutError
 from .typehints import EntityInfo
+from . import utils
 
 
 # ---------- Typehint definitions ----------
@@ -366,6 +367,6 @@ class SelectView(ViewBase):
         await self.edit_original_message(response, content='Multiple matches have been found.')
         if (await self.wait()): # interaction timed out
             await self.disable_view(response)
-            return None
+            raise SelectTimeoutError
         await self.edit_original_message(response, remove_view=True)
         return self.selected_entity_info

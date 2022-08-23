@@ -18,7 +18,7 @@ from .gdrive import TourneyDataClient
 from . import pss_crew as crew
 from . import pss_daily as daily
 from . import pss_dropship as dropship
-from .pss_exception import Error, MaintenanceError
+from .pss_exception import Error, MaintenanceError, SelectTimeoutError
 from . import pss_item as item
 from . import pss_login as login
 from . import pss_room as room
@@ -179,9 +179,12 @@ async def on_application_command_error(ctx: ApplicationContext, err: Exception):
             if err.original:
                 error_type = type(err.original).__name__
                 if isinstance(err.original, Error):
-                    if isinstance(err.original, MaintenanceError):
-                        error_type = 'Pixel Starships is under maintenance'
-                    error_message = f'{err.original.msg}'
+                    if isinstance(err.original, SelectTimeoutError):
+                        pass
+                    else:
+                        if isinstance(err.original, MaintenanceError):
+                            error_type = 'Pixel Starships is under maintenance'
+                        error_message = f'{err.original.msg}'
                 else:
                     error_message = f'{err.original}'
         else:

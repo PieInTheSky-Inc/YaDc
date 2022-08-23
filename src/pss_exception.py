@@ -74,3 +74,7 @@ class NotFound(Error):
 
 class ParameterTypeError(TypeError):
     pass
+
+
+class SelectTimeoutError(Error):
+    pass
