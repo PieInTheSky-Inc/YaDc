@@ -793,7 +793,7 @@ class TourneyDataClient():
                 temp_month -= 1
             temp_month = temp_month % 12 + 1
         else:
-            temp_month = utils.datetime.MONTH_NAME_TO_NUMBER.get(month.lower(), None)
+            temp_month = utils.datetime.MONTH_NAME_TO_NUMBER.get(str(month).lower(), None)
             temp_month = temp_month or utils.datetime.MONTH_SHORT_NAME_TO_NUMBER.get(month.lower(), None)
             if temp_month is None:
                 try:
