@@ -6,9 +6,9 @@ from typing import List as _List
 from discord import Embed as _Embed
 from discord import File as _File
 import discord.errors as _errors
-from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import command as _command
+from discord.ext.commands import Command as _Command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import is_owner as _is_owner
 
@@ -28,6 +28,8 @@ from .. import pss_training as _training
 from .. import server_settings as _server_settings
 from .. import settings as _settings
 from .. import utils as _utils
+from ..yadc_bot import YadcBot as _YadcBot
+
 
 
 class OwnerCog(_CogBase, name='Owner commands'):
@@ -356,7 +358,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
         Lists all commands.
         """
         self._log_command_use(ctx)
-        command_tree = sorted(list(set(_get_command_tree(self.bot.all_commands.values()))))
+        command_tree = sorted(list(set(self._get_command_tree(self.bot.all_commands.values()))))
         output = [
             '```',
             *command_tree,
@@ -723,24 +725,20 @@ class OwnerCog(_CogBase, name='Owner commands'):
         await ctx.send('Updated all caches successfully!')
 
 
-
-
-
-def _get_command_tree(commands) -> _List[str]:
-    """Returns a nested dictionary"""
-    result = []
-    from discord.ext.commands import Command as _Command
-    from discord.ext.commands import Group as _Group
-    command: _Command = None
-    for command in commands:
-        result.append(f'{command.full_parent_name or ""} {command.name}'.strip())
-        if isinstance(command, _Group):
-            result.extend(_get_command_tree(command.walk_commands()))
-    return result
+    def _get_command_tree(self, commands: _List[_Command]) -> _List[str]:
+        """Returns a nested dictionary"""
+        result = []
+        from discord.ext.commands import Command as _Command
+        from discord.ext.commands import Group as _Group
+        command: _Command = None
+        for command in commands:
+            result.append(f'{command.full_parent_name or ""} {command.name}'.strip())
+            if isinstance(command, _Group):
+                result.extend(self._get_command_tree(command.walk_commands()))
+        return result
 
 
 
 
-def setup(bot: _Bot):
-    if _settings.OFFER_PREFIXED_COMMANDS:
-        bot.add_cog(OwnerCog(bot))
+def setup(bot: _YadcBot):
+    bot.add_cog(OwnerCog(bot))

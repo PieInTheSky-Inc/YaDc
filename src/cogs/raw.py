@@ -1,4 +1,3 @@
-from discord.ext.commands import Bot as _Bot
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
@@ -18,7 +17,8 @@ from .. import pss_room as _room
 from .. import pss_ship as _ship
 from .. import pss_situation as _situation
 from .. import pss_training as _training
-from .. import settings as _settings
+from ..yadc_bot import YadcBot as _YadcBot
+
 
 
 class RawDataCog(_RawCogBase, name='Raw Data'):
@@ -486,6 +486,5 @@ class RawDataCog(_RawCogBase, name='Raw Data'):
 
 
 
-def setup(bot: _Bot):
-    if _settings.OFFER_PREFIXED_COMMANDS:
-        bot.add_cog(RawDataCog(bot))
+def setup(bot: _YadcBot):
+    bot.add_cog(RawDataCog(bot))

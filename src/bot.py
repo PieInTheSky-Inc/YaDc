@@ -465,14 +465,25 @@ def load_cog(path: str) -> None:
 
 
 def run_bot() -> None:
-    load_cog('src.cogs.general')
-    load_cog('src.cogs.current')
-    load_cog('src.cogs.raw')
-    load_cog('src.cogs.settings')
-    load_cog('src.cogs.wiki')
-    load_cog('src.cogs.owner')
-    if settings.FEATURE_TOURNEYDATA_ENABLED:
-        load_cog('src.cogs.tournament')
+    if settings.OFFER_PREFIXED_COMMANDS:
+        load_cog('src.cogs.general')
+        load_cog('src.cogs.current')
+        load_cog('src.cogs.raw')
+        load_cog('src.cogs.settings')
+        load_cog('src.cogs.wiki')
+        load_cog('src.cogs.owner')
+        if settings.FEATURE_TOURNEYDATA_ENABLED:
+            load_cog('src.cogs.tournament')
+
+    if settings.OFFER_SLASH_COMMANDS:
+        load_cog('src.cogs.slash_general')
+        load_cog('src.cogs.slash_current')
+        #load_cog('src.cogs.slash_raw')
+        #load_cog('src.cogs.slash_settings')
+        #load_cog('src.cogs.slash_wiki')
+        #load_cog('src.cogs.slash_owner')
+        if settings.FEATURE_TOURNEYDATA_ENABLED:
+            load_cog('src.cogs.slash_tournament')
 
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)

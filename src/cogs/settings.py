@@ -1,4 +1,3 @@
-from discord import Bot as _Bot
 from discord import TextChannel as _TextChannel
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
@@ -12,6 +11,7 @@ from ..pss_exception import Error as _Error
 from .. import settings as _settings
 from .. import server_settings as _server_settings
 from .. import utils as _utils
+from ..yadc_bot import YadcBot as _YadcBot
 
 
 
@@ -779,6 +779,5 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
 
-def setup(bot: _Bot):
-    if _settings.OFFER_PREFIXED_COMMANDS:
-        bot.add_cog(SettingsCog(bot))
+def setup(bot: _YadcBot):
+    bot.add_cog(SettingsCog(bot))
