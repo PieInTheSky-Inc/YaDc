@@ -287,10 +287,12 @@ class OptionSelect(Select):
 
 
 class ViewBase(View):
+    BASE_TIMEOUT = 60.0
+
     def __init__(self,
         ctx: ApplicationContext,
         *args,
-        timeout: float = 60.0,
+        timeout: float = BASE_TIMEOUT,
         **kwargs
     ):
         super().__init__(*args, timeout=timeout, **kwargs)
@@ -331,7 +333,7 @@ class SelectView(ViewBase):
         title: str,
         available_options: Dict[str, Tuple[str, EntityInfo]],
         *args,
-        timeout: float = 60.0,
+        timeout: float = ViewBase.BASE_TIMEOUT,
         **kwargs
     ):
         super().__init__(ctx, *args, timeout=timeout, **kwargs)
