@@ -180,7 +180,7 @@ async def on_application_command_error(ctx: ApplicationContext, err: Exception):
                 error_type = type(err.original).__name__
                 if isinstance(err.original, Error):
                     if isinstance(err.original, SelectTimeoutError):
-                        pass
+                        return
                     else:
                         if isinstance(err.original, MaintenanceError):
                             error_type = 'Pixel Starships is under maintenance'
