@@ -245,14 +245,14 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def item_slash(self,
         ctx: _Context,
-        item_name: _Option(str, 'Enter item name.')
+        name: _Option(str, 'Enter item name.')
     ):
         """
         Get the stats of any item matching the given item name.
         """
         self._log_command_use(ctx)
 
-        output = await _item.get_item_details_by_name(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _item.get_item_details_by_name(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
@@ -575,7 +575,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def stars_fleet_slash(self,
         ctx: _ApplicationContext,
-        fleet_name: _Option(str, 'Enter fleet name.')
+        name: _Option(str, 'Enter fleet name.')
     ):
         """
         Get stars earned by the specified fleet during the current final tournament week.
@@ -585,7 +585,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
             response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
-            fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
+            fleet_infos = await _fleet.get_fleet_infos_by_name(name)
             fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[_top.DIVISION_DESIGN_KEY_NAME] != '0']
             fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
             fleet_infos = fleet_infos[:25]
@@ -603,10 +603,10 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                     output = await _fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
                     await _utils.discord.reply_with_output(ctx, output)
             else:
-                raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.')
+                raise _NotFound(f'Could not find a fleet named `{name}` participating in the current tournament.')
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
             cmd = self.bot.get_application_command('past stars fleet')
-            await ctx.invoke(cmd, fleet_name)
+            await ctx.invoke(cmd, name)
         else:
             raise _Error('There is no tournament running currently!')
 

@@ -47,7 +47,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_fleet_slash(self,
         ctx: _ApplicationContext,
-        fleet_name: _Option(str, 'Enter fleet name.'),
+        name: _Option(str, 'Enter fleet name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -57,7 +57,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         self._log_command_use(ctx)
 
         tourney_data = await self._get_tourney_data(ctx, month, year)
-        fleet_info, response = await _fleet.find_tournament_fleet(ctx, fleet_name, tourney_data)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, tourney_data)
 
         output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
@@ -70,7 +70,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_player_slash(self,
         ctx: _ApplicationContext,
-        player_name: _Option(str, 'Enter player name.'),
+        name: _Option(str, 'Enter player name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -79,7 +79,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         """
         self._log_command_use(ctx)
 
-        await self._perform_past_player_command(ctx, player_name, month, year)
+        await self._perform_past_player_command(ctx, name, month, year)
 
 
     past_stars_slash: _SlashCommandGroup = past_slash.create_subgroup('stars', 'Get historic stars')
@@ -106,7 +106,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_stars_fleet_slash(self,
         ctx: _ApplicationContext,
-        fleet_name: _Option(str, 'Enter fleet name.'),
+        name: _Option(str, 'Enter fleet name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -116,7 +116,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         self._log_command_use(ctx)
 
         tourney_data = await self._get_tourney_data(ctx, month, year)
-        fleet_info, response = await _fleet.find_tournament_fleet(ctx, fleet_name, tourney_data)
+        fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, tourney_data)
         output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.edit_original_message(response, output)
 
@@ -125,7 +125,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_user_slash(self,
         ctx: _ApplicationContext,
-        player_name: _Option(str, 'Enter player name.'),
+        name: _Option(str, 'Enter player name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -134,7 +134,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         """
         self._log_command_use(ctx)
 
-        await self._perform_past_player_command(ctx, player_name, month, year)
+        await self._perform_past_player_command(ctx, name, month, year)
 
 
     targets_slash: _SlashCommandGroup = _SlashCommandGroup('targets', 'Get top tournament targets')
@@ -422,9 +422,6 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     ):
         """
         Get yesterday's final tournament fleet standings.
-
-        Parameters:
-        fleet_name: Mandatory. The fleet for which the data should be displayed.
         """
         self._log_command_use(ctx)
         self._assure_yesterday_command_valid()
