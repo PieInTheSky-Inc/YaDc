@@ -469,7 +469,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         tourney_day = _tourney.get_tourney_day(_utils.get_utc_now())
         if tourney_day is None:
             raise _Error('There\'s no tournament running currently.')
-        if not tourney_day:
+        if tourney_day == 0:
             raise _Error('It\'s day 1 of the current tournament, there is no data from yesterday.')
 
 
