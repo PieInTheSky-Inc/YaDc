@@ -521,7 +521,7 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
 
             if user_info:
                 if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
-                    yesterday_tourney_data = self.bot.get_cog('Fleet History').tournament_data_client.get_latest_daily_data()
+                    yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
                     if yesterday_tourney_data:
                         yesterday_user_info = yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME], {})
                         user_info['YesterdayAllianceScore'] = yesterday_user_info.get('AllianceScore', '0')
