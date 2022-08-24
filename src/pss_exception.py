@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from . import settings
 
@@ -11,7 +11,7 @@ class Error(Exception):
     Attributes:
         msg -- explanation of the error
     """
-    def __init__(self, msg: str) -> None:
+    def __init__(self, msg: Optional[str] = None) -> None:
         super().__init__()
         self.__msg: str = msg or ''
 

@@ -367,6 +367,6 @@ class SelectView(ViewBase):
         await self.edit_original_message(response, content='Multiple matches have been found.')
         if (await self.wait()): # interaction timed out
             await self.disable_view(response)
-            raise SelectTimeoutError
+            raise SelectTimeoutError('User has not selected anything.')
         await self.edit_original_message(response, remove_view=True)
         return self.selected_entity_info
