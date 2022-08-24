@@ -440,8 +440,11 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not ctx.interaction.response.is_done():
-            await ctx.interaction.response.defer()
+        output = ['Retrieving data...']
+        if ctx.interaction.response.is_done():
+            await _utils.discord.edit_original_message(ctx.interaction, output=output)
+        else:
+            await _utils.discord.respond_with_output(ctx, output)
 
         day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
         return self.bot.tournament_data_client.get_data(year, month, day=day)
