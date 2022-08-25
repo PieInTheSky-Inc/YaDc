@@ -160,19 +160,8 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await ctx.interaction.response.defer()
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
-        star_values = []
-        if min_star_value:
-            star_values.append(min_star_value)
-        if max_star_value:
-            star_values.append(max_star_value)
-        star_value = '-'.join(sorted(star_values))
-        trophies_values = []
-        if min_trophies:
-            trophies_values.append(min_trophies)
-        if max_trophies:
-            trophies_values.append(max_trophies)
-        trophies_value = '-'.join(sorted(trophies_values))
-
+        star_value = _utils.format.range_string(min_star_value, max_star_value)
+        trophies_value = _utils.format.range_string(min_trophies, max_trophies)
         criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
@@ -251,18 +240,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await ctx.interaction.response.defer()
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
-        star_values = []
-        if min_star_value:
-            star_values.append(min_star_value)
-        if max_star_value:
-            star_values.append(max_star_value)
-        star_value = '-'.join(sorted(star_values))
-        trophies_values = []
-        if min_trophies:
-            trophies_values.append(min_trophies)
-        if max_trophies:
-            trophies_values.append(max_trophies)
-        trophies_value = '-'.join(sorted(trophies_values))
+        star_value = _utils.format.range_string(min_star_value, max_star_value)
+        trophies_value = _utils.format.range_string(min_trophies, max_trophies)
+        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
 
         max_count = _lookups.DIVISION_MAX_COUNT_TARGETS_TOP[division_design_id]
         if count:
@@ -270,8 +250,6 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
                 count = max_count
         else:
             count = max_count
-
-        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
         last_month_user_data = self.bot.tournament_data_client.get_latest_monthly_data().users

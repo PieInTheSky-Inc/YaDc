@@ -1,7 +1,9 @@
 from datetime import datetime as _datetime, timedelta as _timedelta
 import math as _math
-from typing import Iterable as _Iterable, Optional
+from typing import Iterable as _Iterable
+from typing import Optional as _Optional
 from typing import Tuple as _Tuple
+from typing import Union as _Union
 
 from . import constants as _constants
 from . import lookups as _lookups
@@ -33,7 +35,7 @@ def datetime(date_time: _datetime, include_time: bool = True, include_tz: bool =
     return result
 
 
-def datetime_for_excel(dt: _datetime, include_seconds: bool = True) -> Optional[str]:
+def datetime_for_excel(dt: _datetime, include_seconds: bool = True) -> _Optional[str]:
     if dt:
         format_str = '%Y-%m-%d %H:%M'
         if include_seconds:
@@ -128,6 +130,15 @@ def number_up_to_decimals(num: float, max_decimal_count: int = _constants.DEFAUL
 def pss_datetime(dt: _datetime) -> str:
     result = dt.strftime(_constants.API_DATETIME_FORMAT_ISO)
     return result
+
+
+def range_string(min_value: _Union[float, int, str], max_value: _Union[float, int, str]) -> _Optional[str]:
+    values = []
+    if min_value:
+        values.append(str(min_value))
+    if max_value:
+        values.append(str(max_value))
+    return '-'.join(sorted(values))
 
 
 def ranking(ranking: str) -> str:
