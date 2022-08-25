@@ -563,7 +563,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
             output = await _top.get_division_stars(ctx, division=division, as_embed=(await _server_settings.get_use_embeds(ctx)))
-            await _utils.discord.reply_with_output(ctx, output)
+            await _utils.discord.respond_with_output(ctx, output)
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
             cmd = self.bot.get_application_command('past stars division')
             await ctx.invoke(cmd, division)
@@ -601,7 +601,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                     max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
                     fleet_users_infos = await _fleet.get_fleet_users_data_by_fleet_info(fleet_info)
                     output = await _fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-                    await _utils.discord.reply_with_output(ctx, output)
+                    await _utils.discord.edit_original_message(response, output=output)
             else:
                 raise _NotFound(f'Could not find a fleet named `{name}` participating in the current tournament.')
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
