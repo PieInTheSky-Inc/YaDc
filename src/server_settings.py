@@ -1013,7 +1013,7 @@ async def _db_update_prefix(guild_id: int, prefix: str) -> bool:
 
 # ---------- Initialization & DEFAULT ----------
 
-DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.POST_NEW
+DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.EDIT
 
 GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 
