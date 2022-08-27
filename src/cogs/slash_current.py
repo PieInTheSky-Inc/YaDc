@@ -63,18 +63,6 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     ]
 
 
-    @_slash_command(name='alliance', brief='Get infos on a fleet')
-    @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def alliance_slash(self,
-        ctx: _ApplicationContext,
-        name: _Option(str, 'Enter fleet name.')
-    ):
-        """
-        Get info on a fleet and its members.
-        """
-        await self._perform_fleet_command(ctx, name)
-
-
     @_slash_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def best_slash(self,
@@ -223,7 +211,17 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         Get info on a fleet and its members.
         """
-        await self._perform_fleet_command(ctx, name)
+        self._log_command_use(ctx)
+
+        fleet_info, response = await _fleet.find_fleet(ctx, name)
+        await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+        is_tourney_running = _tourney.is_tourney_running()
+        max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts()) if is_tourney_running else None
+        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+
+        await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+        for file_path in file_paths:
+            _os.remove(file_path)
 
 
     @_slash_command(name='ingredients', brief='Get item ingredients')
@@ -814,20 +812,6 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
         output = await _item.get_item_upgrades_from_name(ctx, item_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
-
-
-    async def _perform_fleet_command(self, ctx: _ApplicationContext, fleet_name: str) -> None:
-        self._log_command_use(ctx)
-
-        fleet_info, response = await _fleet.find_fleet(ctx, fleet_name)
-        await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
-        is_tourney_running = _tourney.is_tourney_running()
-        max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts()) if is_tourney_running else None
-        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-
-        await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
-        for file_path in file_paths:
-            _os.remove(file_path)
 
 
     async def _perform_player_command(self, ctx: _ApplicationContext, player_name: str) -> None:
