@@ -82,11 +82,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await self._perform_past_player_command(ctx, name, month, year)
 
 
-    past_stars_slash: _SlashCommandGroup = past_slash.create_subgroup('stars', 'Get historic stars')
-
-    @past_stars_slash.command(name='division', brief='Get historic division stars')
+    @past_slash.command(name='stars', brief='Get historic division stars')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def past_stars_division_slash(self,
+    async def past_stars_slash(self,
         ctx: _ApplicationContext,
         division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None,
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
@@ -102,9 +100,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
-    @past_stars_slash.command(name='fleet', brief='Get historic fleet stars')
+    @past_slash.command(name='starsfleet', brief='Get historic fleet stars')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def past_stars_fleet_slash(self,
+    async def past_starsfleet_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter fleet name.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
