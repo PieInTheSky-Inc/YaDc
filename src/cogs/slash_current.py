@@ -323,7 +323,18 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         Get details on a player.
         """
-        await self._perform_player_command(ctx, name)
+        self._log_command_use(ctx)
+
+        user_info, response = await _user.find_user(ctx, name)
+        await _utils.discord.edit_original_message(response, content='Player found. Compiling player info...', embeds=[], view=None)
+        if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
+            yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
+            if yesterday_tourney_data:
+                yesterday_user_info = yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME], {})
+                user_info['YesterdayAllianceScore'] = yesterday_user_info.get('AllianceScore', '0')
+        max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
+        output = await _user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        await _utils.discord.edit_original_message(response, output=output)
 
 
     @_slash_command(name='prestige', brief='Get prestige combos of crew')
@@ -788,18 +799,6 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         await self._perform_craft_command(ctx, name)
 
 
-    @_slash_command(name='user', brief='Get infos on a player')
-    @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def user_slash(self,
-        ctx: _ApplicationContext,
-        name: _Option(str, 'Enter player name.')
-    ):
-        """
-        Get details on a player.
-        """
-        await self._perform_player_command(ctx, name)
-
-
     async def _perform_char_command(self, ctx: _ApplicationContext, crew_name: str, level: int = None) -> None:
         self._log_command_use(ctx)
 
@@ -814,19 +813,6 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
-    async def _perform_player_command(self, ctx: _ApplicationContext, player_name: str) -> None:
-        self._log_command_use(ctx)
-
-        user_info, response = await _user.find_user(ctx, player_name)
-        await _utils.discord.edit_original_message(response, content='Player found. Compiling player info...', embeds=[], view=None)
-        if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
-            yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
-            if yesterday_tourney_data:
-                yesterday_user_info = yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME], {})
-                user_info['YesterdayAllianceScore'] = yesterday_user_info.get('AllianceScore', '0')
-        max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
-        output = await _user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_message(response, output=output)
 
 
 
