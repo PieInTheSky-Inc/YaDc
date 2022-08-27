@@ -646,7 +646,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
         _, for_testing, title, content = self._extract_dash_parameters(news, None, '--test', '--title=', '--content=')
         if not title:
             raise ValueError('You need to specify a title!')
-        avatar_url = self.bot.user.avatar_url
+        avatar_url = self.bot.user.avatar.url
         if not for_testing:
             for bot_news_channel in _server_settings.GUILD_SETTINGS.bot_news_channels:
                 embed_colour = _utils.discord.get_bot_member_colour(self.bot, bot_news_channel.guild)
