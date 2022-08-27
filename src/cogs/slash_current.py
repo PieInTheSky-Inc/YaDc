@@ -578,7 +578,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             raise _Error('There is no tournament running currently!')
 
 
-    @_slash_command.command(name='starsfleet', brief='Fleet stars')
+    @_slash_command(name='starsfleet', brief='Fleet stars')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def starsfleet_slash(self,
         ctx: _ApplicationContext,
