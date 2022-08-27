@@ -140,38 +140,6 @@ class SettingsCog(_CogBase, name='Settings'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    @settings.command(name='botnews', aliases=['botchannel'], brief='Retrieve the bot news channel', hidden=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def settings_get_botnews(self, ctx: _Context, *args):
-        """
-        Retrieves the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
-
-        You need the 'Manage Server' permission to use this command.
-        This command can only be used on Discord servers/guilds.
-
-        Usage:
-        /settings botnews
-        /settings botchannel
-
-        Examples:
-        /settings botnews - Gets the channel configured for this server to receive bot news.
-        """
-        self._log_command_use(ctx)
-        await self._assert_settings_command_valid(ctx)
-
-        _, on_reset, on_set = self._extract_dash_parameters(ctx.message.content, args, '--on_reset', '--on_set')
-        guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
-        full_settings = guild_settings.get_bot_news_channel_setting()
-        title = f'Server settings for {ctx.guild.name}'
-        note = None
-        if on_reset:
-            note = 'Successfully reset bot news channel for this server!'
-        elif on_set:
-            note = 'Successfully set bot news channel for this server!'
-        output = await _server_settings.get_pretty_guild_settings(ctx, full_settings, title=title, note=note)
-        await _utils.discord.reply_with_output(ctx, output)
-
-
     @settings.command(name='embed', aliases=['embeds'], brief='Retrieve embed settings')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_get_embeds(self, ctx: _Context, *args):
@@ -407,35 +375,6 @@ class SettingsCog(_CogBase, name='Settings'):
                             + 'Please try again or contact the bot\'s author.')
 
 
-    @settings_reset.command(name='botnews', aliases=['botchannel'], brief='Reset bot news channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def settings_reset_bot_news_channel(self, ctx: _Context):
-        """
-        Reset the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel.
-
-        You need the 'Manage Server' permission to use this command.
-        This command can only be used on Discord servers/guilds.
-
-        Usage:
-        /settings reset botnews
-        /settings reset botchannel
-
-        Examples:
-        /settings reset botnews - Removes the channel '#announcements' from the list of channels to receive bot news.
-        """
-        self._log_command_use(ctx)
-        await self._assert_settings_command_valid(ctx)
-
-        if _utils.discord.is_guild_channel(ctx.channel):
-            guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
-            success = await guild_settings.reset_bot_news_channel()
-            if success:
-                await ctx.invoke(self.bot.get_command(f'settings botnews'), '--on_reset')
-            else:
-                raise _Error('An error ocurred while trying to remove the bot news channel setting for this server.\n'
-                            + 'Please try again or contact the bot\'s author.')
-
-
     @settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_embeds(self, ctx: _Context):
@@ -626,47 +565,6 @@ class SettingsCog(_CogBase, name='Settings'):
             await ctx.invoke(self.bot.get_command('settings autodaily changemode'), '--on_set')
         else:
             raise _Error(f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.')
-
-
-    @settings_set.command(name='botnews', aliases=['botchannel'], brief='Set the bot news channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def settings_set_bot_news_channel(self, ctx: _Context, text_channel: _TextChannel = None):
-        """
-        Set the bot news channel for this server. When there're important news about this bot, it'll post a message in the configured channel. If the channel gets omitted, the current channel will be used.
-
-        You need the 'Manage Server' permission to use this command.
-        This command can only be used on Discord servers/guilds.
-
-        Usage:
-        /settings set botnews <text channel mention>
-        /settings set botchannel <text channel mention>
-
-        Parameters:
-        text_channel_mention: Optional. A mention of a text-channel on the current Discord server/guild. If omitted, the bot will attempt to set the current channel.
-
-        Examples:
-        /settings set botnews #announcements - Sets the channel '#announcements' to receive bot news.
-        """
-        self._log_command_use(ctx)
-        await self._assert_settings_command_valid(ctx)
-
-        if text_channel is None:
-            text_channel = ctx.channel
-
-        permissions = text_channel.permissions_for(ctx.me)
-        if permissions.read_messages is not True:
-            raise _Error('I don\'t have access to that channel.')
-        if permissions.read_message_history is not True:
-            raise _Error('I don\'t have access to the messages history in that channel.')
-        if permissions.send_messages is not True:
-            raise _Error('I don\'t have permission to post in that channel.')
-
-        guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
-        success = await guild_settings.set_bot_news_channel(text_channel)
-        if success:
-            await ctx.invoke(self.bot.get_command('settings botnews'), '--on_set')
-        else:
-            raise _Error(f'Could not set the bot news channel for this server. Please try again or contact the bot\'s author.')
 
 
     @settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
