@@ -547,11 +547,9 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             raise _Error('An unknown error ocurred, please contact the bot\'s author.')
 
 
-    stars_slash: _SlashCommandGroup = _SlashCommandGroup('stars', 'Get star count information.')
-
-    @stars_slash.command(name='division', brief='Division stars')
+    @_slash_command(name='stars', brief='Division stars')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def stars_division_slash(self,
+    async def stars_slash(self,
         ctx: _ApplicationContext,
         division: _Option(str, 'Enter division letter.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None
     ):
@@ -571,9 +569,9 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             raise _Error('There is no tournament running currently!')
 
 
-    @stars_slash.command(name='fleet', aliases=['alliance'], brief='Fleet stars')
+    @_slash_command.command(name='starsfleet', brief='Fleet stars')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def stars_fleet_slash(self,
+    async def starsfleet_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter fleet name.')
     ):
