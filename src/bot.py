@@ -49,7 +49,7 @@ if settings.INTENT_MESSAGE_CONTENT:
 BOT = YadcBot(
     command_prefix=get_prefix,
     description='This is a Discord Bot for Pixel Starships',
-    activity=Activity(type=ActivityType.playing, name='@Dolores 2.0#8550 help'),
+    activity=Activity(type=ActivityType.playing, name='Visit support.dolores2.xyz'),
     debug_guilds=settings.DEBUG_GUILDS or None,
     intents=INTENTS,
 )
