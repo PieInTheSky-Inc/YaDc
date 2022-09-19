@@ -441,7 +441,7 @@ async def __initialize() -> None:
     print('Initializing.')
     await db.init()
     await server_settings.init(BOT)
-    await server_settings.clean_up_invalid_server_settings(BOT)
+    #await server_settings.clean_up_invalid_server_settings(BOT)
     await sprites.init()
     await login.init()
     await daily.init()
