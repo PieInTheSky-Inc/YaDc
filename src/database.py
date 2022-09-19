@@ -576,7 +576,7 @@ async def try_set_schema_version(version: str) -> bool:
         query = f'UPDATE settings SET modifydate = $1, settingtext = $2 WHERE settingname = $3'
     success = await try_execute(query, [utc_now, version, 'schema_version'])
     if success:
-        __settings_cache['schema_version'] = version
+        __settings_cache['schema_version'] = (version, utc_now)
     return success
 
 
@@ -728,7 +728,7 @@ async def set_setting(setting_name: str, value: Any, utc_now: datetime = None) -
         query = f'UPDATE settings SET {column_name} = $1, modifydate = $2 WHERE settingname = $3'
     success = not query or await try_execute(query, [value, utc_now, setting_name])
     if success:
-        __settings_cache[setting_name] = value
+        __settings_cache[setting_name] = (value, utc_now)
     return success
 
 
@@ -830,11 +830,15 @@ __settings_cache: Dict[str, Tuple[object, datetime]] = None
 
 
 async def __init_caches() -> None:
+    try:
+        settings = await get_settings()
+    except (asyncpg.exceptions.UndefinedTableError): # settings table doesn't exist
+        settings = {}
     global __settings_cache
-    __settings_cache = await get_settings()
+    __settings_cache = settings
 
 
 async def init() -> None:
-    await __init_caches()
     await connect()
+    await __init_caches()
     await init_schema()
