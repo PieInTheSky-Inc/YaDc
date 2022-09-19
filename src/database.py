@@ -63,7 +63,7 @@ async def import_from_json(json: str) -> None:
 async def _export_table(table_name: str) -> dict:
     column_names = await get_column_names(table_name)
     rows = await fetchall(f'SELECT * FROM {table_name}')
-    values = [dict(row) for row in rows]
+    values = [list(dict(row).values()) for row in rows]
     return {
         'column_names': column_names,
         'values': values
