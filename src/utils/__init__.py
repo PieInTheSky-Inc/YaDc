@@ -11,5 +11,6 @@ from .datetime import get_utc_now
 from . import discord
 from . import format
 from . import io
+from . import json
 from . import parse
 from .singleton import Singleton

@@ -51,11 +51,11 @@ async def export_to_json() -> str:
         'sales': sales,
         'serversettings': serversettings,
     }
-    return _json.dumps(result, indent=4)
+    return _json.dumps(result, indent=4, cls=utils.json.YadcEncoder)
 
 
 async def import_from_json(json: str) -> None:
-    tables = _json.loads(json)
+    tables = _json.loads(json, cls=utils.json.YadcDecoder)
     for table_name, table_contents in tables.items():
         await _import_table(table_name, table_contents['column_names'], table_contents['values'])
 

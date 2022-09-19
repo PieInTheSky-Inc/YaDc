@@ -494,7 +494,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
         utc_now = _utils.get_utc_now()
         file_name = f'sales_history_{_utils.format.datetime(utc_now, include_tz=False, include_tz_brackets=False)}.json'
         with open(file_name, 'w') as fp:
-            _json.dump(sales_infos, fp, indent=4, cls=_daily.SaleInfoEncoder)
+            _json.dump(sales_infos, fp, indent=4, cls=_utils.json.YadcEncoder)
         await ctx.send(file=_File(file_name))
         _os.remove(file_name)
 
@@ -520,8 +520,8 @@ class OwnerCog(_CogBase, name='Owner commands'):
         if not file_contents:
             raise _Error('The file provided must not be empty.')
 
-        sales_infos = _json.JSONDecoder(object_hook=_daily.sale_info_decoder_object_hook).decode(file_contents)
-        #sales_infos = json.loads(file_contents, cls=json.JSONDecoder(object_hook=daily.sale_info_decoder_object_hook))
+        sales_infos = _utils.json.YadcDecoder().decode(file_contents)
+
         if not sales_infos:
             raise _Error('The data provided must not be empty.')
         sales_infos = sorted(sales_infos, key=lambda x: x['limitedcatalogexpirydate'])
