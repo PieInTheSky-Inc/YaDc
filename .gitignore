@@ -7,7 +7,7 @@ sprite_cache/
 bin/
 pyvenv.cfg
 *.lua
-pss-statistics-db-export*
+pss-statistics*-db-export*
 
 # Visual Studio Code
 .vscode/
