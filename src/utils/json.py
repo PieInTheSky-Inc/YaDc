@@ -11,7 +11,7 @@ from . import parse as _parse
 
 class YadcDecoder(_json.JSONDecoder):
     def __init__(self,):
-        super().__init__(object_hook=yadc_decoder_object_hook, parse_float=None, parse_int=None, parse_constant=None, strict=True, object_pairs_hook=None)
+        super().__init__(object_hook=yadc_decoder_object_hook)
 
 
 
