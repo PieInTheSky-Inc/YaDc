@@ -451,6 +451,20 @@ async def __initialize() -> None:
     await room.init()
     await user.init()
 
+    global __COMMANDS
+    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if hasattr(value, 'hidden') and value.hidden == False])
+    INITIALIZED = True
+    print(f'Initialized!')
+
+
+def load_cog(path: str) -> None:
+    print(f'Loading extension \'{path}\'.')
+    BOT.extensions.get(path)
+    if not BOT.extensions.get(path):
+        BOT.load_extension(path)
+
+
+def run_bot() -> None:
     if settings.OFFER_PREFIXED_COMMANDS:
         load_cog('src.cogs.general')
         load_cog('src.cogs.current')
@@ -471,19 +485,5 @@ async def __initialize() -> None:
         if settings.FEATURE_TOURNEYDATA_ENABLED:
             load_cog('src.cogs.slash_tournament')
 
-    global __COMMANDS
-    __COMMANDS = sorted([key for key, value in BOT.all_commands.items() if hasattr(value, 'hidden') and value.hidden == False])
-    INITIALIZED = True
-    print(f'Initialized!')
-
-
-def load_cog(path: str) -> None:
-    print(f'Loading extension \'{path}\'.')
-    BOT.extensions.get(path)
-    if not BOT.extensions.get(path):
-        BOT.load_extension(path)
-
-
-def run_bot() -> None:
     token = str(os.environ.get('DISCORD_BOT_TOKEN'))
     BOT.run(token)
