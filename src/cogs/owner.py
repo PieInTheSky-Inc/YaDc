@@ -108,7 +108,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
         file_name = f'pss-statistics-db-export_{utc_now.strftime("%Y%m%d-%H%M%S")}.json'
         with open(file_name, 'w') as fp:
             fp.write(export)
-        await ctx.send('Database export:', file=_File(file_name))
+        await ctx.reply('Database export:', file=_File(file_name))
 
 
     @db.command(name='import', brief='Import the database from JSON')
@@ -124,7 +124,8 @@ class OwnerCog(_CogBase, name='Owner commands'):
 
         await _db.import_from_json(file_contents)
         await _db.init_caches()
-        await ctx.send('Database imported successfully!')
+        await _server_settings.GUILD_SETTINGS.init(self.bot)
+        await ctx.reply('Database imported successfully!')
 
 
     @db.command(name='query', brief='Try to execute a DB query', hidden=True)
