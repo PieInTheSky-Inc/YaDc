@@ -99,6 +99,34 @@ class OwnerCog(_CogBase, name='Owner commands'):
         await ctx.send_help('db')
 
 
+    @db.command(name='export', brief='Export the database to JSON')
+    @_is_owner()
+    async def db_export(self, ctx: _Context):
+        utc_now = _utils.get_utc_now()
+        export = await _db.export_to_json()
+
+        file_name = f'pss-statistics-db-export_{utc_now.strftime("%Y%m%d-%H%M%S")}.json'
+        with open(file_name, 'w') as fp:
+            fp.write(export)
+        await ctx.send('Database export:', file=_File(file_name))
+
+
+    @db.command(name='import', brief='Import the database from JSON')
+    @_is_owner()
+    async def db_import(self, ctx: _Context):
+        if not ctx.message.attachments:
+            raise _Error('You need to upload a JSON file to be imported with the command!')
+
+        attachment = ctx.message.attachments[0]
+        file_contents = (await attachment.read()).decode('utf-8')
+        if not file_contents:
+            raise _Error('The file provided must not be empty.')
+
+        await _db.import_from_json(file_contents)
+        await _db.init_caches()
+        await ctx.send('Database imported successfully!')
+
+
     @db.command(name='query', brief='Try to execute a DB query', hidden=True)
     @_is_owner()
     async def db_query(self, ctx: _Context, *, query: str):

@@ -1,4 +1,5 @@
 from datetime import datetime
+import json as _json
 from threading import Lock as _Lock
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -33,6 +34,56 @@ USING_LOOKUP = {
     'BIGINT': 'bigint',
     'INT': 'integer'
 }
+
+
+
+
+
+# ---------- Import/Export ----------
+
+async def export_to_json() -> str:
+    devices = await _export_table('devices')
+    sales = await _export_table('sales')
+    serversettings = await _export_table('serversettings')
+
+    result = {
+        'devices': devices,
+        'sales': sales,
+        'serversettings': serversettings,
+    }
+    return _json.dumps(result, indent=4)
+
+
+async def import_from_json(json: str) -> None:
+    tables = _json.loads(json)
+    for table_name, table_contents in tables.items():
+        await _import_table(table_name, table_contents['column_names'], table_contents['values'])
+
+
+async def _export_table(table_name: str) -> dict:
+    column_names = await get_column_names(table_name)
+    rows = await fetchall(f'SELECT * FROM {table_name}')
+    values = [dict(row) for row in rows]
+    return {
+        'column_names': column_names,
+        'values': values
+    }
+
+
+async def _import_table(table_name: str, column_names: List[str], rows: List[List[Any]]) -> None:
+    """
+    This function will clear the specified table and insert the values provided.
+    """
+    column_names_string = ','.join(column_names)
+    values_string = ', '.join([f'${i}' for i in range(1, len(column_names) + 1)])
+    query = f'INSERT INTO {table_name} ({column_names_string}) VALUES ({values_string})'
+
+    print(f'[_import_table] Clearing table: {table_name}')
+    await execute(f'DELETE FROM {table_name}')
+
+    print(f'[_import_table] Importing data to table: {table_name}')
+    for values in rows:
+        await execute(query, values)
 
 
 
@@ -829,7 +880,7 @@ def __log_db(message: str) -> None:
 __settings_cache: Dict[str, Tuple[object, datetime]] = None
 
 
-async def __init_caches() -> None:
+async def init_caches() -> None:
     try:
         settings = await get_settings()
     except (asyncpg.exceptions.UndefinedTableError): # settings table doesn't exist
@@ -840,5 +891,5 @@ async def __init_caches() -> None:
 
 async def init() -> None:
     await connect()
-    await __init_caches()
+    await init_caches()
     await init_schema()
