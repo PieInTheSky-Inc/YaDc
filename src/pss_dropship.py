@@ -73,7 +73,6 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         dropship_msg = await __get_dropship_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data)
         merchantship_msg = await __get_merchantship_msg_from_info_as_text(daily_info, items_designs_data, trainings_designs_data)
         shop_msg, image_id = await __get_shop_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
-        sale_msg = await __get_sale_msg_from_info_as_text(daily_info, chars_designs_data, collections_designs_data, items_designs_data, rooms_designs_data, trainings_designs_data)
         daily_reward_msg = await __get_daily_reward_from_info_as_text(daily_info, items_designs_data, trainings_designs_data)
     except Exception as e:
         pp = pprint.PrettyPrinter(indent=4)
@@ -81,7 +80,7 @@ async def get_dropship_text(bot: Bot = None, guild: Guild = None, daily_info: di
         print(e)
         return [], [], False
 
-    parts_text = [dropship_msg, merchantship_msg, shop_msg, sale_msg, daily_reward_msg]
+    parts_text = [dropship_msg, merchantship_msg, shop_msg, daily_reward_msg]
 
     expiring_sale_details_text = await daily.get_oldest_expired_sale_entity_details(utc_now, for_embed=False)
     if expiring_sale_details_text:
@@ -237,46 +236,6 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     result.append(f'Can own (max): {can_own_max}')
 
     return result, sprite_id
-
-
-async def __get_sale_msg_from_info_as_text(daily_info: EntityInfo, chars_data: EntitiesData, collections_data: EntitiesData, items_data: EntitiesData, rooms_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
-    # 'SaleItemMask': use lookups.SALE_ITEM_MASK_LOOKUP to print which item to buy
-    result = [f'{emojis.pss_sale} **Sale**']
-
-    sale_type = daily_info['SaleType']
-    if not entity.entity_property_has_value(sale_type):
-        return []
-
-    sale_items = utils.convert.iap_options_mask(int(daily_info['SaleItemMask']))
-    sale_quantity = daily_info['SaleQuantity']
-    result.append(f'Buy a {sale_items} _of Starbux_ and get:')
-
-    sale_argument = daily_info['SaleArgument']
-    if sale_type == 'Character':
-        char_details = crew.get_char_details_by_id(sale_argument, chars_data, collections_data)
-        entity_details = ''.join(await char_details.get_details_as_text(entity.EntityDetailsType.SHORT))
-    elif sale_type == 'Item':
-        item_details = item.get_item_details_by_id(sale_argument, items_data, trainings_data)
-        entity_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
-    elif sale_type == 'Room':
-        room_details = room.get_room_details_by_id(sale_argument, rooms_data, None, None, None)
-        entity_details = ''.join(await room_details.get_details_as_text(entity.EntityDetailsType.SHORT))
-    elif sale_type == 'Bonus':
-        entity_details = f'{sale_argument} % bonus starbux'
-    #elif sale_type == 'FleetGift':
-    #    sale_rewards = utils.parse.requirement_string(daily_info.get('SaleRewardType'))
-    #    for entity_type, _, entity_amount, entity_amount_modifier in sale_rewards:
-    else: # Print debugging info
-        sale_title = daily_info.get('SaleTitle')
-        debug_details = []
-        debug_details.append(f'Sale Type: {sale_type}')
-        debug_details.append(f'Sale Argument: {sale_argument}')
-        debug_details.append(f'Sale Title: {sale_title}')
-        entity_details = '\n'.join(debug_details)
-
-    result.append(f'{sale_quantity} x {entity_details}')
-
-    return result
 
 
 async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
