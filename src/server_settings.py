@@ -782,8 +782,6 @@ def __prettify_guild_settings(guild_settings: Dict[str, str]) -> List[Tuple[str,
             result.append(('Auto-daily channel', guild_settings['autodaily_channel']))
         if 'autodaily_mode' in guild_settings:
             result.append(('Auto-daily mode', guild_settings['autodaily_mode']))
-    if 'bot_news_channel' in guild_settings:
-        result.append(('Bot news channel', guild_settings['bot_news_channel']))
     if 'pagination' in guild_settings:
         result.append(('Pagination', guild_settings['pagination']))
     if 'prefix' in guild_settings:
