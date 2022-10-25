@@ -503,14 +503,17 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             entity_info['entity_name'] = entity_info[_room.ROOM_DESIGN_DESCRIPTION_PROPERTY_NAME]
             entities_infos.append(entity_info)
 
+
         if entities_infos:
             if len(entities_infos) == 1:
                 entity_info = entities_infos[0]
             else:
-                entities_infos = sorted(entities_infos, key=lambda x: x['entity_name'])
-                use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, name, entities_infos, _daily.get_sales_search_details, use_pagination)
-                _, entity_info = await paginator.wait_for_option_selection()
+                entities_infos.sort(key=lambda entity: entity['entity_name'])
+                entities_infos = entities_infos[:25]
+
+                options = {entity_info['entity_name']: (entity_info['entity_name'], entity_info) for entity_info in entities_infos}
+                view = _pagination.SelectView(ctx, 'Please select.', options)
+                entity_info = await view.wait_for_selection(ctx.interaction)
 
             if entity_info:
                 output = await _daily.get_sales_history(ctx, entity_info, as_embed=(await _server_settings.get_use_embeds(ctx)))
@@ -518,7 +521,10 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                 output = []
         else:
             raise _NotFound(f'Could not find a crew, an item or a room with the name `{name}`.')
-        await _utils.discord.respond_with_output(ctx, output)
+        if ctx.interaction.response.is_done():
+            await _utils.discord.edit_original_message(ctx.interaction, output)
+        else:
+            await _utils.discord.respond_with_output(ctx, output)
 
 
     @sales_slash.command(name='beds', brief='List expired bed room sales.')
