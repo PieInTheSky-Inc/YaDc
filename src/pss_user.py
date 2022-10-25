@@ -188,7 +188,10 @@ def __get_crew_donated_borrowed(user_info: EntityInfo, fleet_info: EntityInfo = 
 
 
 def __get_division_name(user_info: EntityInfo, fleet_info: EntityInfo = None, **kwargs) -> Optional[str]:
-    result = fleet.get_division_name(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME))
+    if fleet_info:
+        result = fleet.get_division_name(fleet_info.get(top.DIVISION_DESIGN_KEY_NAME))
+    else:
+        result = '-'
     return result
 
 
