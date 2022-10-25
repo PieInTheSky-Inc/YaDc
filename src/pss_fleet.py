@@ -352,7 +352,7 @@ async def find_fleet(ctx: ApplicationContext, fleet_name: str) -> Tuple[EntityIn
 
 
 async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
-    response = await utils.discord.respond_with_output(ctx, ['Searching fleet...'])
+    response = await utils.discord.edit_original_message(ctx.interaction, ['Searching fleet...'])
     fleet_infos = await get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
     if fleet_infos:
         fleet_info = None
@@ -364,9 +364,9 @@ async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourne
 
             options = {fleet_info[FLEET_KEY_NAME]: (get_fleet_search_details(fleet_info), fleet_info) for fleet_info in fleet_infos}
             view = SelectView(ctx, 'Please select a fleet.', options)
-            fleet_info = await view.wait_for_selection(response)
+            fleet_info = await view.wait_for_selection(ctx.interaction)
 
-        return fleet_info, response
+        return fleet_info, ctx.interaction
     else:
         raise NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
 

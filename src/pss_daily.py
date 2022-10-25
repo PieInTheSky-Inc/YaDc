@@ -56,10 +56,6 @@ DAILY_INFO_FIELDS_TO_CHECK: List[str] = [
     'LimitedCatalogCurrencyType',
     'LimitedCatalogMaxTotal',
     'LimitedCatalogType',
-    'SaleArgument',
-    'SaleItemMask',
-    'SaleQuantity',
-    'SaleType'
 ]
 
 DB_DAILY_INFO_COLUMN_NAMES: Dict[str, str] = {f'daily{setting_name}': setting_name for setting_name in DAILY_INFO_FIELDS}
