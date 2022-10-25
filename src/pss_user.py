@@ -343,7 +343,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 # ---------- Helper functions ----------
 
 async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
-    response = await utils.discord.respond_with_output(ctx, ['Searching player...'])
+    response = await utils.discord.edit_original_message(ctx.interaction, ['Searching player...'])
     user_infos = await get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:
@@ -355,9 +355,9 @@ async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourne
 
             options = {user_info[USER_KEY_NAME]: (get_user_search_details(user_info), user_info) for user_info in user_infos}
             view = SelectView(ctx, 'Please select a player.', options)
-            user_info = await view.wait_for_selection(response)
+            user_info = await view.wait_for_selection(ctx.interaction)
 
-        return user_info, response
+        return user_info, ctx.interaction
     else:
         raise NotFound(f'Could not find a player named `{player_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
 
