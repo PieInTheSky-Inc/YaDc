@@ -75,6 +75,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
+        await ctx.interaction.response.defer()
         output = await _item.get_best_items(ctx, slot, stat, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
@@ -122,6 +123,8 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         Get the details on a collection. If no collection is specified, will display all collections.
         """
         self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
         output = await _crew.get_collection_details_by_name(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
@@ -235,6 +238,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
+        await ctx.interaction.response.defer()
         output = await _item.get_ingredients_for_item(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
@@ -327,6 +331,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         user_info, response = await _user.find_user(ctx, name)
+
         await _utils.discord.edit_original_message(response, content='Player found. Compiling player info...', embeds=[], view=None)
         if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
             yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
@@ -365,6 +370,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
+        await ctx.interaction.response.defer()
         output = await _item.get_item_price(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
