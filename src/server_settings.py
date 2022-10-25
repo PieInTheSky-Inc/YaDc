@@ -186,6 +186,7 @@ class AutoDailySettings():
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
+            self.__channel_id = None
             self.__delete_on_change = None
             self.__latest_message_id = None
             self.__latest_message_created_at = None
@@ -203,6 +204,7 @@ class AutoDailySettings():
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
             self.__channel = None
+            self.__channel_id = None
             self.__latest_message_id = None
             self.__latest_message_created_at = None
             self.__latest_message_modified_at = None
@@ -242,6 +244,7 @@ class AutoDailySettings():
             success = await db_update_server_settings(self.guild_id, settings)
             if success:
                 self.__channel = channel
+                self.__channel_id = channel.id
             return success
         return True
 
@@ -312,6 +315,7 @@ class AutoDailySettings():
         if success:
             if update_channel:
                 self.__channel = channel
+                self.__channel_id = channel.id
             if update_can_post:
                 self.__can_post = settings.get(_COLUMN_NAME_DAILY_CAN_POST)
             if update_latest_message:
