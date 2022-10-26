@@ -318,10 +318,8 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
         else:
             posts = create_posts_from_lines(output, maximum_characters)
             if posts:
-                _utils.dbg_prnt(f'Posting post 1 of {len(posts)}')
                 result = await ctx.respond(content=posts[0], ephemeral=ephemeral, view=view)
                 for i, post in enumerate(posts[1:], 2):
-                    _utils.dbg_prnt(f'Posting post {i} of {len(posts)}')
                     result = await ctx.respond(content=post, ephemeral=ephemeral, view=view)
     return result
 
