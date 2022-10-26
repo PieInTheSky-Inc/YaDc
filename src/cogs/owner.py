@@ -740,12 +740,6 @@ class OwnerCog(_CogBase, name='Owner commands'):
         self._log_command_use(ctx)
         await _crew.characters_designs_retriever.update_cache()
         await _crew.collections_designs_retriever.update_cache()
-        prestige_to_caches = list(_crew.__prestige_to_cache_dict.values())
-        for prestige_to_cache in prestige_to_caches:
-            await prestige_to_cache.update_data()
-        prestige_from_caches = list(_crew.__prestige_from_cache_dict.values())
-        for prestige_from_cache in prestige_from_caches:
-            await prestige_from_cache.update_data()
         await _item.items_designs_retriever.update_cache()
         await _research.researches_designs_retriever.update_cache()
         await _room.rooms_designs_retriever.update_cache()
