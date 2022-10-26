@@ -429,36 +429,35 @@ async def edit_original_response(
                 'content': None,
                 'embeds': post,
             }
+            output_keyword = 'embeds'
         else:
             kwargs = {
                 'content': post,
                 'embeds': [],
             }
+            output_keyword = 'content'
     else:
         kwargs = {
             'content': content,
             'embeds': embeds,
         }
+        output_keyword = None
     kwargs['files'] = files
     kwargs['view'] = view
 
     if isinstance(interaction, _WebhookMessage):
-        _utils.dbg_prnt('Editing Original Message')
         result = await interaction.edit(**kwargs)
         kwargs.pop('files')
         kwargs.pop('view')
         for post in posts:
-            _utils.dbg_prnt('Posting another Message')
-            kwargs['content'] = post
+            kwargs[output_keyword] = post
             result = await ctx.send(**kwargs)
     else:
-        _utils.dbg_prnt('Editing Original Message')
         result = await interaction.edit_original_response(**kwargs)
         kwargs.pop('files')
         kwargs.pop('view')
         for post in posts:
-            _utils.dbg_prnt('Posting another Message')
-            kwargs['content'] = post
+            kwargs[output_keyword] = post
             result = await ctx.send(**kwargs)
     return result
 
