@@ -621,7 +621,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                     max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
                     fleet_users_infos = await _fleet.get_fleet_users_data_by_fleet_info(fleet_info)
                     output = await _fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-                    await _utils.discord.edit_original_response(ctx, response, output=output, ctx=ctx)
+                    await _utils.discord.edit_original_response(ctx, response, output=output)
             else:
                 raise _NotFound(f'Could not find a fleet named `{name}` participating in the current tournament.')
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
