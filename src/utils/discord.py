@@ -440,6 +440,7 @@ async def edit_original_response(
             'embeds': embeds,
         }
         output_keyword = None
+        posts = []
     kwargs['files'] = files
     kwargs['view'] = view
 
