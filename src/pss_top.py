@@ -31,10 +31,10 @@ DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME: str = 'DivisionName'
 DIVISION_DESIGN_KEY_NAME: str = 'DivisionDesignId'
 
 DIVISION_CHOICES = [
-    OptionChoice(name='A', value='a'),
-    OptionChoice(name='B', value='b'),
-    OptionChoice(name='C', value='c'),
-    OptionChoice(name='D', value='d'),
+    OptionChoice(name='a', value='a'),
+    OptionChoice(name='b', value='b'),
+    OptionChoice(name='c', value='c'),
+    OptionChoice(name='d', value='d'),
 ]
 
 STARS_BASE_PATH: str = 'AllianceService/ListAlliancesWithDivision'
