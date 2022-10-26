@@ -60,7 +60,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, tourney_data)
 
         output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, past_fleets_data=tourney_data.fleets, past_users_data=tourney_data.users, past_retrieved_at=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_response(response, output=output, file_paths=file_paths)
+        await _utils.discord.edit_original_response(ctx, response, output=output, file_paths=file_paths)
 
         for file_path in file_paths:
             _os.remove(file_path)
@@ -83,7 +83,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         user_info, response = await _user.find_tournament_user(ctx, name, tourney_data)
 
         output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_response(response, output=output)
+        await _utils.discord.edit_original_response(ctx, response, output=output)
 
 
     def _assure_yesterday_command_valid(self) -> None:
@@ -128,7 +128,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         tourney_data = await self._get_tourney_data(ctx, month, year)
         fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, tourney_data)
         output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, tourney_data.fleets, tourney_data.users, tourney_data.retrieved_at, tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_response(response, output)
+        await _utils.discord.edit_original_response(ctx, response, output)
 
 
     targets_slash: _SlashCommandGroup = _SlashCommandGroup('targets', 'Get top tournament targets')
@@ -328,7 +328,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
         fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, yesterday_tourney_data)
 
-        await _utils.discord.edit_original_response(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+        await _utils.discord.edit_original_response(ctx, response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
 
         fleet_id = fleet_info[_fleet.FLEET_KEY_NAME]
         day_before_tourney_data = self.bot.tournament_data_client.get_second_latest_daily_data()
@@ -342,7 +342,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts())
         output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, past_fleets_data=yesterday_tourney_data.fleets, past_users_data=yesterday_users_data, past_retrieved_at=yesterday_tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
 
-        await _utils.discord.edit_original_response(response, output=output, file_paths=file_paths)
+        await _utils.discord.edit_original_response(ctx, response, output=output, file_paths=file_paths)
         for file_path in file_paths:
             _os.remove(file_path)
 
@@ -362,9 +362,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
         user_info, response = await _user.find_tournament_user(ctx, name, yesterday_tourney_data)
 
-        await _utils.discord.edit_original_response(response, content='Player found. Compiling player info...', embeds=[], view=None)
+        await _utils.discord.edit_original_response(ctx, response, content='Player found. Compiling player info...', embeds=[], view=None)
         output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_response(response, output=output)
+        await _utils.discord.edit_original_response(ctx, response, output=output)
 
 
     yesterday_stars_slash: _SlashCommandGroup = yesterday_slash.create_subgroup('stars', 'Get yesterday\'s division stars')
@@ -401,9 +401,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
         fleet_info, response = await _fleet.find_tournament_fleet(ctx, name, yesterday_tourney_data)
 
-        await _utils.discord.edit_original_response(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+        await _utils.discord.edit_original_response(ctx, response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
         output = await _fleet.get_fleet_users_stars_from_tournament_data(ctx, fleet_info, yesterday_tourney_data.fleets, yesterday_tourney_data.users, yesterday_tourney_data.retrieved_at, yesterday_tourney_data.max_tournament_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_response(response, output=output)
+        await _utils.discord.edit_original_response(ctx, response, output=output)
 
 
     async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:

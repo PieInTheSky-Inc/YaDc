@@ -316,7 +316,7 @@ class ViewBase(View):
 
     async def edit_original_response(self, interaction: Union[Interaction, WebhookMessage], content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
         view = None if remove_view else self
-        return (await utils.discord.edit_original_response(interaction, content=content, embeds=embeds or [], view=view))
+        return (await utils.discord.edit_original_response(self.context, interaction, content=content, embeds=embeds or [], view=view))
 
 
     async def disable_view(self, interaction: Union[Interaction, WebhookMessage]) -> Optional[Union[Interaction, WebhookMessage]]:

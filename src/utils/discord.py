@@ -301,10 +301,11 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
     """
     result = None
     if output:
+        response_is_done = ctx.interaction.response.is_done()
         output_is_embeds = isinstance(output[0], _Embed)
         output = __prepare_output(output)
         if not view:
-            if ctx.interaction.response.is_done():
+            if response_is_done:
                 view = _MISSING
             else:
                 view = None
@@ -316,8 +317,12 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
                 result = await ctx.respond(embeds=post_group, ephemeral=ephemeral, view=view)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
-            for post in posts:
-                result = await ctx.respond(content=post, ephemeral=ephemeral, view=view)
+            if posts:
+                _utils.dbg_prnt(f'Posting post 1 of {len(posts)}')
+                result = await ctx.respond(content=posts[0], ephemeral=ephemeral, view=view)
+                for i, post in enumerate(posts[1:], 2):
+                    _utils.dbg_prnt(f'Posting post {i} of {len(posts)}')
+                    result = await ctx.respond(content=post, ephemeral=ephemeral, view=view)
     return result
 
 
@@ -396,6 +401,7 @@ async def respond_with_output_and_files(ctx: _ApplicationContext, output: _Union
 
 
 async def edit_original_response(
+    ctx: _ApplicationContext,
     interaction: _Union[_Interaction, _WebhookMessage],
     output: _Optional[_Union[_List[_Embed], _List[str]]] = None,
     content: _Optional[str] = _MISSING,
@@ -416,6 +422,7 @@ async def edit_original_response(
         else:
             posts = create_posts_from_lines(output, MAXIMUM_CHARACTERS)
         post = posts[0]
+        posts = posts[1:]
 
         if output_is_embeds:
             kwargs = {
@@ -436,9 +443,24 @@ async def edit_original_response(
     kwargs['view'] = view
 
     if isinstance(interaction, _WebhookMessage):
-        return (await interaction.edit(**kwargs))
+        _utils.dbg_prnt('Editing Original Message')
+        result = await interaction.edit(**kwargs)
+        kwargs.pop('files')
+        kwargs.pop('view')
+        for post in posts:
+            _utils.dbg_prnt('Posting another Message')
+            kwargs['content'] = post
+            result = await ctx.send(**kwargs)
     else:
-        return (await interaction.edit_original_response(**kwargs))
+        _utils.dbg_prnt('Editing Original Message')
+        result = await interaction.edit_original_response(**kwargs)
+        kwargs.pop('files')
+        kwargs.pop('view')
+        for post in posts:
+            _utils.dbg_prnt('Posting another Message')
+            kwargs['content'] = post
+            result = await ctx.send(**kwargs)
+    return result
 
 
 async def try_delete_message(message: _Message) -> bool:
