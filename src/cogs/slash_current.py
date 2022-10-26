@@ -419,7 +419,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @_slash_command(name='research', brief='Get research data')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def research(self,
+    async def research_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter research name.')
     ):
@@ -435,7 +435,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @_slash_command(name='room', brief='Get room infos')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def room(self,
+    async def room_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter room name or abbreviation/short name.'),
         level: _Option(int, 'Enter room level.', min_value=1, required=False) = None
@@ -632,7 +632,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @_slash_command(name='stats', aliases=['stat'], brief='Get crew/item stats')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def stats(self,
+    async def stats_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter crew or item name.'),
         level: _Option(int, 'Enter crew level', min_value=1, max_value=40, default=None, required=False),
@@ -670,7 +670,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @_slash_command(name='time', brief='Get PSS stardate & Melbourne time')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def time(self,
+    async def time_slash(self,
         ctx: _ApplicationContext
     ):
         """
@@ -727,7 +727,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @top_slash.command(name='fleets', brief='Prints top fleets')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def top_fleets(self,
+    async def top_fleets_slash(self,
         ctx: _ApplicationContext,
         count: _Option(int, 'Enter the number of entries to be displayed', min_value=1, max_value=100, default=100, required=False)
     ):
