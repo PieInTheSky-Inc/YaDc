@@ -314,15 +314,15 @@ class ViewBase(View):
         return True
 
 
-    async def edit_original_message(self, interaction: Union[Interaction, WebhookMessage], content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
+    async def edit_original_response(self, interaction: Union[Interaction, WebhookMessage], content: str = MISSING, embeds: List[Embed] = MISSING, remove_view: bool = False) -> Interaction:
         view = None if remove_view else self
-        return (await utils.discord.edit_original_message(interaction, content=content, embeds=embeds or [], view=view))
+        return (await utils.discord.edit_original_response(interaction, content=content, embeds=embeds or [], view=view))
 
 
     async def disable_view(self, interaction: Union[Interaction, WebhookMessage]) -> Optional[Union[Interaction, WebhookMessage]]:
         self.disable_all_items()
         if interaction:
-            return (await self.edit_original_message(interaction))
+            return (await self.edit_original_response(interaction))
         return interaction
 
 
@@ -366,9 +366,9 @@ class SelectView(ViewBase):
 
 
     async def wait_for_selection(self, response: Union[Interaction, WebhookMessage]) -> EntityInfo:
-        await self.edit_original_message(response, content='Multiple matches have been found.')
+        await self.edit_original_response(response, content='Multiple matches have been found.')
         if (await self.wait()): # interaction timed out
             await self.disable_view(response)
             raise SelectTimeoutError('User has not selected anything.')
-        await self.edit_original_message(response, remove_view=True)
+        await self.edit_original_response(response, remove_view=True)
         return self.selected_entity_info

@@ -213,7 +213,7 @@ async def on_application_command_error(ctx: ApplicationContext, err: Exception):
                     error_message = f'> {ctx.author.mention}\n{error_message}'
                 output = [f'**{title}**', error_message]
             if ctx.interaction.response.is_done():
-                await utils.discord.edit_original_message(ctx.interaction, output)
+                await utils.discord.edit_original_response(ctx.interaction, output)
             else:
                 await utils.discord.respond_with_output(ctx, output)
         except errors.Forbidden:

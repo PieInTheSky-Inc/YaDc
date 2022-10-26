@@ -395,7 +395,7 @@ async def respond_with_output_and_files(ctx: _ApplicationContext, output: _Union
     return result
 
 
-async def edit_original_message(
+async def edit_original_response(
     interaction: _Union[_Interaction, _WebhookMessage],
     output: _Optional[_Union[_List[_Embed], _List[str]]] = None,
     content: _Optional[str] = _MISSING,
@@ -438,7 +438,7 @@ async def edit_original_message(
     if isinstance(interaction, _WebhookMessage):
         return (await interaction.edit(**kwargs))
     else:
-        return (await interaction.edit_original_message(**kwargs))
+        return (await interaction.edit_original_response(**kwargs))
 
 
 async def try_delete_message(message: _Message) -> bool:

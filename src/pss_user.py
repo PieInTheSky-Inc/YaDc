@@ -343,7 +343,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 # ---------- Helper functions ----------
 
 async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
-    response = await utils.discord.edit_original_message(ctx.interaction, ['Searching player...'])
+    response = await utils.discord.edit_original_response(ctx.interaction, ['Searching player...'])
     user_infos = await get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
 
     if user_infos:

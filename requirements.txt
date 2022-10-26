@@ -10,6 +10,6 @@ pandas
 pillow
 pip
 psycopg2==2.9.3
-py-cord>=2.0.1
+py-cord==2.2.2
 pytz
 git+https://github.com/googledrive/PyDrive.git#egg=PyDrive

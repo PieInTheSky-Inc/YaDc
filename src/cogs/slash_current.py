@@ -94,10 +94,10 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         user_info, response = await _user.find_user(ctx, name)
 
         if user_info:
-            await _utils.discord.edit_original_message(response, content='Player found. Building layout links, please wait...', embeds=[], view=None)
+            await _utils.discord.edit_original_response(response, content='Player found. Building layout links, please wait...', embeds=[], view=None)
             as_embed = await _server_settings.get_use_embeds(ctx)
             output = await _ship.get_ship_builder_links(ctx, user_info, as_embed=as_embed)
-            await _utils.discord.edit_original_message(response, output=output)
+            await _utils.discord.edit_original_response(response, output=output)
 
 
     @_slash_command(name='char', brief='Get character stats')
@@ -217,12 +217,12 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         self._log_command_use(ctx)
 
         fleet_info, response = await _fleet.find_fleet(ctx, name)
-        await _utils.discord.edit_original_message(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
+        await _utils.discord.edit_original_response(response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
         is_tourney_running = _tourney.is_tourney_running()
         max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts()) if is_tourney_running else None
         output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
 
-        await _utils.discord.edit_original_message(response, output=output, file_paths=file_paths)
+        await _utils.discord.edit_original_response(response, output=output, file_paths=file_paths)
         for file_path in file_paths:
             _os.remove(file_path)
 
@@ -273,13 +273,13 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         user_info, response = await _user.find_user(ctx, name)
 
         if user_info:
-            await _utils.discord.edit_original_message(response, content='Player found.')
+            await _utils.discord.edit_original_response(response, content='Player found.')
             _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
             if user_ship_info:
-                await _utils.discord.edit_original_message(response, content='Building layout, please wait...', embeds=[], view=None)
+                await _utils.discord.edit_original_response(response, content='Building layout, please wait...', embeds=[], view=None)
                 output, file_path = await _user.get_user_ship_layout(ctx, user_info[_user.USER_KEY_NAME], as_embed=(await _server_settings.get_use_embeds(ctx)))
 
-                await _utils.discord.edit_original_message(response, output=output, file_paths=[file_path])
+                await _utils.discord.edit_original_response(response, output=output, file_paths=[file_path])
                 _os.remove(file_path)
             else:
                 raise _Error('Could not get the player\'s ship data.')
@@ -332,7 +332,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
         user_info, response = await _user.find_user(ctx, name)
 
-        await _utils.discord.edit_original_message(response, content='Player found. Compiling player info...', embeds=[], view=None)
+        await _utils.discord.edit_original_response(response, content='Player found. Compiling player info...', embeds=[], view=None)
         if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
             yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
             if yesterday_tourney_data:
@@ -340,7 +340,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                 user_info['YesterdayAllianceScore'] = yesterday_user_info.get('AllianceScore', '0')
         max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
         output = await _user.get_user_details_by_info(ctx, user_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.edit_original_message(response, output=output)
+        await _utils.discord.edit_original_response(response, output=output)
 
 
     @_slash_command(name='prestige', brief='Get prestige combos of crew')
@@ -522,7 +522,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         else:
             raise _NotFound(f'Could not find a crew, an item or a room with the name `{name}`.')
         if ctx.interaction.response.is_done():
-            await _utils.discord.edit_original_message(ctx.interaction, output)
+            await _utils.discord.edit_original_response(ctx.interaction, output)
         else:
             await _utils.discord.respond_with_output(ctx, output)
 
@@ -621,7 +621,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
                     max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
                     fleet_users_infos = await _fleet.get_fleet_users_data_by_fleet_info(fleet_info)
                     output = await _fleet.get_fleet_users_stars_from_info(ctx, fleet_info, fleet_users_infos, max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
-                    await _utils.discord.edit_original_message(response, output=output)
+                    await _utils.discord.edit_original_response(response, output=output)
             else:
                 raise _NotFound(f'Could not find a fleet named `{name}` participating in the current tournament.')
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
