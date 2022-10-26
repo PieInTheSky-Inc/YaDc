@@ -676,7 +676,7 @@ def get_all_enhancements(item_info: EntityInfo) -> List[Tuple[str, float]]:
         module_stat = lookups.MODULE_TYPE_TO_STAT_LOOKUP.get(module_type)
         module_argument = entity.get_property_from_entity_info(item_info, 'ModuleArgument')
         if module_argument:
-            result.append((module_stat, float(module_argument) / 10))
+            result.append((module_stat, float(module_argument) / 100))
     return result
 
 
