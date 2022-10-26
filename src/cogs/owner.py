@@ -36,6 +36,17 @@ class OwnerCog(_CogBase, name='Owner commands'):
     """
     This module offers commands for the owner of the bot.
     """
+    QUERY_UPDATE_SEQUENCES = '\n'.join([
+        'DO',
+        '$do$',
+        'BEGIN',
+        '  IF EXISTS (SELECT FROM sales) THEN',
+        '    PERFORM setval(\'sales_id_seq\', (SELECT max(id) FROM sales));',
+        '  END IF;',
+        'END',
+        '$do$'
+    ])
+
 
     @_command_group(name='autodaily', brief='Configure auto-daily for the server', hidden=True)
     @_is_owner()
@@ -123,9 +134,13 @@ class OwnerCog(_CogBase, name='Owner commands'):
             raise _Error('The file provided must not be empty.')
 
         await _db.import_from_json(file_contents)
+        updated_sequences = await _db.try_execute(OwnerCog.QUERY_UPDATE_SEQUENCES)
         await _db.init_caches()
         await _server_settings.GUILD_SETTINGS.init(self.bot)
-        await ctx.reply('Database imported successfully!')
+        if updated_sequences:
+            await ctx.reply('Database imported successfully!')
+        else:
+            await ctx.reply('Data has been imported, but the sequences could not be updated!')
 
 
     @db.command(name='query', brief='Try to execute a DB query', hidden=True)
@@ -545,9 +560,15 @@ class OwnerCog(_CogBase, name='Owner commands'):
 
         if len(failed_sales_infos) == len(sales_infos):
             raise _Error('Could not import any sales info from the specified file.')
+
+
         output = [
             f'Successfully imported file {attachment.filename}.'
         ]
+        updated_sequences = await _db.try_execute(OwnerCog.QUERY_UPDATE_SEQUENCES)
+        if not updated_sequences:
+            output.append('Could not update the sequences!')
+
         if failed_sales_infos:
             output.append(
                 f'Failed to import the following sales infos:'
