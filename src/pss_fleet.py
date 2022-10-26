@@ -69,6 +69,13 @@ def create_fleets_sheet_csv(fleet_users_data: EntitiesData, retrieved_at: dateti
     return fleet_sheet_path
 
 
+async def get_current_tournament_fleet_infos_by_name(fleet_name: str) -> List[EntityInfo]:
+    pss_assert.valid_parameter_value(fleet_name, 'fleet_name', min_length=0)
+
+    fleet_infos = list((await __get_current_tournament_fleets_data_by_name(fleet_name)).values())
+    return fleet_infos
+
+
 async def get_fleet_infos_from_tourney_data_by_name(fleet_name: str, fleet_data: EntitiesData) -> List[EntityInfo]:
     fleet_name_lower = fleet_name.lower()
     result = {fleet_id: fleet_info for (fleet_id, fleet_info) in fleet_data.items() if fleet_name_lower in fleet_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, '').lower()}
@@ -146,6 +153,14 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
         file_paths.append(file_path)
 
     return post_content, file_paths
+
+
+async def __get_current_tournament_fleets_data_by_name(fleet_name: str) -> EntitiesData:
+    fleet_name = fleet_name.lower()
+    fleet_data_raw = await core.get_data_from_path('AllianceService/ListAlliancesWithDivision')
+    result = utils.convert.xmltree_to_dict3(fleet_data_raw)
+    result = {key: value for key, value in result.items() if fleet_name in value[FLEET_DESCRIPTION_PROPERTY_NAME].lower()}
+    return result
 
 
 async def __get_fleets_data_by_name(fleet_name: str) -> EntitiesData:

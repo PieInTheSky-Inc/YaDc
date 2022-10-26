@@ -605,8 +605,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
             response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
-            fleet_infos = await _fleet.get_fleet_infos_by_name(name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[_top.DIVISION_DESIGN_KEY_NAME] != '0']
+            fleet_infos = await _fleet.get_current_tournament_fleet_infos_by_name(name)
             fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
             fleet_infos = fleet_infos[:25]
             if fleet_infos:
