@@ -66,7 +66,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_slash_command(name='best', brief='Get best items for a slot')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def best_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         slot: _Option(str, 'Enter ', choices=_BEST_SLOT_CHOICES),
         stat: _Option(str, 'Enter ', choices=_BEST_STAT_CHOICES)
         ):
@@ -246,7 +246,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_slash_command(name='item', brief='Get item stats')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def item_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         name: _Option(str, 'Enter item name.')
     ):
         """
@@ -362,7 +362,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_slash_command(name='price', brief='Get item\'s prices from the PSS API')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def price_slash(self,
-        ctx: _Context,
+        ctx: _ApplicationContext,
         name: _Option(str, 'Enter item name.')
     ):
         """
@@ -746,7 +746,9 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @tournament_slash.command(name='current', brief='Information on this month\'s tournament time')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def tournament_current_slash(self, ctx: _Context):
+    async def tournament_current_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Get information about the starting time of the current month's tournament.
         """
@@ -766,7 +768,9 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @tournament_slash.command(name='next', brief='Information on next month\'s tournament time')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def tournament_next_slash(self, ctx: _Context):
+    async def tournament_next_slash(self,
+        ctx: _ApplicationContext
+    ):
         """
         Get information about the starting time of the next month's tournament.
         """
