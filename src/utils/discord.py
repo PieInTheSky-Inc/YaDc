@@ -445,18 +445,16 @@ async def edit_original_response(
 
     if isinstance(interaction, _WebhookMessage):
         result = await interaction.edit(**kwargs)
-        kwargs.pop('files')
-        kwargs.pop('view')
-        for post in posts:
-            kwargs[output_keyword] = post
-            result = await ctx.send(**kwargs)
     else:
         result = await interaction.edit_original_response(**kwargs)
+
+    if posts:
         kwargs.pop('files')
         kwargs.pop('view')
         for post in posts:
             kwargs[output_keyword] = post
             result = await ctx.send(**kwargs)
+
     return result
 
 
