@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 from . import pss_assert
 from .cache import PssCache
 from . import emojis
+from . import pss_core as core
 from . import pss_entity as entity
 from .pss_exception import Error, NotFound
 from . import pss_lookups as lookups
@@ -142,26 +143,10 @@ async def get_prestige_from_info(ctx: Context, char_name: str, as_embed: bool = 
             raise PrestigeNoResultsError(f'There are no prestige recipes using this crew: `{char_from_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)}`')
 
 
-def __create_and_add_prestige_from_cache(char_design_id: str) -> PssCache:
-    cache = __create_prestige_from_cache(char_design_id)
-    __prestige_from_cache_dict[char_design_id] = cache
-    return cache
-
-
-def __create_prestige_from_cache(char_design_id: str) -> PssCache:
-    url = f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}'
-    name = f'PrestigeFrom{char_design_id}'
-    result = PssCache(url, name, None)
-    return result
-
-
 async def __get_prestige_from_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    if char_design_id in __prestige_from_cache_dict.keys():
-        prestige_from_cache = __prestige_from_cache_dict[char_design_id]
-    else:
-        prestige_from_cache = __create_and_add_prestige_from_cache(char_design_id)
-    raw_data_dict = await prestige_from_cache.get_raw_data_dict()
+    raw_data = await core.get_data_from_path(f'{__PRESTIGE_FROM_BASE_PATH}{char_design_id}')
+    raw_data_dict = utils.convert.raw_xml_to_dict(raw_data)
     prestige_from_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterFrom']['Prestiges'].values())
     result = {}
     recipe_count = 0
@@ -206,26 +191,10 @@ async def get_prestige_to_info(ctx: Context, char_name: str, as_embed: bool = se
             raise PrestigeNoResultsError(f'There are no prestige recipes yielding this crew: `{char_to_info.get(CHARACTER_DESIGN_DESCRIPTION_PROPERTY_NAME)}`')
 
 
-def __create_and_add_prestige_to_cache(char_design_id: str) -> PssCache:
-    cache = __create_prestige_to_cache(char_design_id)
-    __prestige_to_cache_dict[char_design_id] = cache
-    return cache
-
-
-def __create_prestige_to_cache(char_design_id: str) -> PssCache:
-    url = f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}'
-    name = f'PrestigeTo{char_design_id}'
-    result = PssCache(url, name, None)
-    return result
-
-
 async def __get_prestige_to_ids_and_recipe_count(char_info: EntityInfo) -> Tuple[Dict[str, List[str]], int]:
     char_design_id = char_info[CHARACTER_DESIGN_KEY_NAME]
-    if char_design_id in __prestige_to_cache_dict.keys():
-        prestige_to_cache = __prestige_to_cache_dict[char_design_id]
-    else:
-        prestige_to_cache = __create_and_add_prestige_to_cache(char_design_id)
-    raw_data_dict = await prestige_to_cache.get_raw_data_dict()
+    raw_data = await core.get_data_from_path(f'{__PRESTIGE_TO_BASE_PATH}{char_design_id}')
+    raw_data_dict = utils.convert.raw_xml_to_dict(raw_data)
     prestige_to_infos = list(raw_data_dict['CharacterService']['PrestigeCharacterTo']['Prestiges'].values())
     recipe_count = len(prestige_to_infos)
     all_recipes = []
@@ -586,9 +555,6 @@ def __prepare_prestige_infos(characters_data: EntitiesData, prestige_ids: Dict[s
 
 
 # ---------- Initilization ----------
-
-__prestige_from_cache_dict = {}
-__prestige_to_cache_dict = {}
 
 characters_designs_retriever = entity.EntityRetriever(
     CHARACTER_DESIGN_BASE_PATH,
