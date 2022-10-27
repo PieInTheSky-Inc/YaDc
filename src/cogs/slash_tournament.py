@@ -131,11 +131,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_response(ctx, response, output)
 
 
-    #past_top_slash: _SlashCommandGroup = _SlashCommandGroup('top', 'Get past top players', parent=past_slash)
-
     @past_slash.command(name='top', brief='Get historic top captains')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def past_top_players_slash(self,
+    async def past_top_slash(self,
         ctx: _ApplicationContext,
         count: _Option(int, 'Enter number of players to be displayed', min_value=1, max_value=100, required=False, default=100) = 100,
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
