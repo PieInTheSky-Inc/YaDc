@@ -369,7 +369,7 @@ async def find_fleet(ctx: ApplicationContext, fleet_name: str) -> Tuple[EntityIn
 
 
 async def find_tournament_fleet(ctx: ApplicationContext, fleet_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
-    response = await utils.discord.edit_original_response(ctx.interaction, ['Searching fleet...'])
+    response = await utils.discord.edit_original_response(ctx, ctx.interaction, ['Searching fleet...'])
     fleet_infos = await get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
     if fleet_infos:
         fleet_info = None
