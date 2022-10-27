@@ -12,6 +12,7 @@ from discord.ext.commands import Context
 
 from . import emojis
 from . import excel
+from .gdrive import TourneyData
 from .pagination import SelectView
 from . import pss_assert
 from . import pss_core as core
@@ -20,9 +21,7 @@ from .pss_exception import NotFound
 from . import pss_fleet as fleet
 from . import pss_login as login
 from . import pss_lookups as lookups
-from . import pss_raw as raw
 from . import pss_sprites as sprites
-from . import pss_tournament as tourney
 from . import pss_top as top
 from . import pss_user as user
 from . import settings
@@ -127,7 +126,7 @@ async def get_fleets_data_by_id(fleet_id: str) -> EntitiesData:
     return result
 
 
-async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_tourney_battle_attempts: int = None, past_fleets_data: EntitiesData = None, past_users_data: EntitiesData = None, past_retrieved_at: datetime = None, as_embed: bool = settings.USE_EMBEDS) -> Tuple[Union[List[Embed], List[str]], List[str]]:
+async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_tourney_battle_attempts: int = None, past_fleets_data: EntitiesData = None, past_users_data: EntitiesData = None, past_retrieved_at: datetime = None, yesterday_tourney_data: TourneyData = None, as_embed: bool = settings.USE_EMBEDS) -> Tuple[Union[List[Embed], List[str]], List[str]]:
     """Returns a list of lines for the post, as well as the paths to the spreadsheet created"""
     fleet_id = fleet_info[FLEET_KEY_NAME]
     fleet_name = fleet_info[FLEET_DESCRIPTION_PROPERTY_NAME]
@@ -143,7 +142,7 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
     else:
         retrieved_at = utils.get_utc_now()
         fleet_info = await get_fleets_data_by_id(fleet_id)
-        fleet_users_data = await __get_fleet_users_data_by_fleet_id(fleet_id)
+        fleet_users_data = await __get_fleet_users_data_by_fleet_id(fleet_id, yesterday_tourney_data)
 
     post_content = await __get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
@@ -170,10 +169,13 @@ async def __get_fleets_data_by_name(fleet_name: str) -> EntitiesData:
     return result
 
 
-async def __get_fleet_users_data_by_fleet_id(alliance_id: str) -> EntitiesData:
+async def __get_fleet_users_data_by_fleet_id(alliance_id: str, yesterday_tourney_data: TourneyData = None) -> EntitiesData:
     path = await __get_search_fleet_users_base_path(alliance_id)
     fleet_users_data_raw = await core.get_data_from_path(path)
     result = utils.convert.xmltree_to_dict3(fleet_users_data_raw)
+    if yesterday_tourney_data:
+        for user_id, user_info in result.items():
+            user_info['YesterdayAllianceScore'] = int(yesterday_tourney_data.users.get(user_id, {}).get('AllianceScore', 0))
     return result
 
 

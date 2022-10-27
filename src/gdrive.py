@@ -14,10 +14,7 @@ import pydrive.auth
 import pydrive.drive
 import pydrive.files
 
-from . import pss_fleet as fleet
 from . import pss_lookups as lookups
-from . import pss_tournament as tourney
-from . import pss_user as user
 from . import settings
 from . import utils
 from .typehints import EntitiesData, EntityInfo
@@ -148,7 +145,7 @@ class TourneyData(object):
         """
         result = {}
         for current_fleet_id, current_fleet_data in self.__fleets.items():
-            current_fleet_name = current_fleet_data.get(user.USER_DESCRIPTION_PROPERTY_NAME, None)
+            current_fleet_name = current_fleet_data.get('Name', None)
             if current_fleet_name and fleet_name.lower() in current_fleet_name.lower():
                 result[current_fleet_id] = dict(current_fleet_data)
         return result
@@ -168,7 +165,7 @@ class TourneyData(object):
         """
         result = {}
         for current_user_id, current_user_data in self.__users.items():
-            current_user_name = current_user_data.get(user.USER_DESCRIPTION_PROPERTY_NAME, None)
+            current_user_name = current_user_data.get('Name', None)
             if current_user_name and user_name.lower() in current_user_name.lower():
                 result[current_user_id] = dict(current_user_data)
         return result
@@ -200,7 +197,7 @@ class TourneyData(object):
             }
         ranked_fleets_infos = sorted(sorted(result.values(), key=lambda fleet_info: int(fleet_info['Score']), reverse=True), key=lambda fleet_info: fleet_info['DivisionDesignId'])
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
-            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+            result[ranked_fleet_info['AllianceId']]['Ranking'] = str(i)
         return result
 
 
@@ -220,7 +217,7 @@ class TourneyData(object):
             }
         ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
-            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+            result[ranked_fleet_info['AllianceId']]['Ranking'] = str(i)
         return result
 
 
@@ -241,7 +238,7 @@ class TourneyData(object):
             }
         ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
-            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+            result[ranked_fleet_info['AllianceId']]['Ranking'] = str(i)
         return result
 
 
@@ -263,7 +260,7 @@ class TourneyData(object):
             }
         ranked_fleets_infos = sorted(result.values(), key=lambda fleet_info: (fleet_info['DivisionDesignId'], -int(fleet_info['Score']), -int(fleet_info['Trophy'])))
         for i, ranked_fleet_info in enumerate(ranked_fleets_infos, 1):
-            result[ranked_fleet_info[fleet.FLEET_KEY_NAME]]['Ranking'] = str(i)
+            result[ranked_fleet_info['AllianceId']]['Ranking'] = str(i)
         return result
 
 

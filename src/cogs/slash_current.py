@@ -219,8 +219,13 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         fleet_info, response = await _fleet.find_fleet(ctx, name)
         await _utils.discord.edit_original_response(ctx, response, content='Fleet found. Compiling fleet info...', embeds=[], view=None)
         is_tourney_running = _tourney.is_tourney_running()
-        max_tourney_battle_attempts = (await _tourney.get_max_tourney_battle_attempts()) if is_tourney_running else None
-        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        yesterday_tourney_data = None
+        max_tourney_battle_attempts = None
+        if is_tourney_running:
+            max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
+            if _settings.FEATURE_TOURNEYDATA_ENABLED:
+                yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
+        output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, yesterday_tourney_data=yesterday_tourney_data, as_embed=(await _server_settings.get_use_embeds(ctx)))
 
         await _utils.discord.edit_original_response(ctx, response, output=output, file_paths=file_paths)
         for file_path in file_paths:

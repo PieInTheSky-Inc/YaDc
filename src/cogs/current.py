@@ -309,11 +309,13 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
 
             if fleet_info:
                 as_embed = await _server_settings.get_use_embeds(ctx)
+                yesterday_tourney_data = None
+                max_tourney_battle_attempts = None
                 if is_tourney_running:
                     max_tourney_battle_attempts = await _tourney.get_max_tourney_battle_attempts()
-                else:
-                    max_tourney_battle_attempts = None
-                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, as_embed=as_embed)
+                    if _settings.FEATURE_TOURNEYDATA_ENABLED:
+                        yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
+                output, file_paths = await _fleet.get_full_fleet_info_as_text(ctx, fleet_info, max_tourney_battle_attempts=max_tourney_battle_attempts, yesterday_tourney_data=yesterday_tourney_data, as_embed=as_embed)
                 await _utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
                 for file_path in file_paths:
                     _os.remove(file_path)
