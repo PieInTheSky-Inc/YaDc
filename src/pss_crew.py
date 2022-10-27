@@ -332,10 +332,11 @@ def __get_collection_member_names(collection_info: EntityInfo, collections_data:
 
 
 def __get_collection_name(character_info: EntityInfo, characters_data: EntitiesData, collections_data: EntitiesData, **kwargs) -> Optional[str]:
-    result = None
     collection_id = character_info[COLLECTION_DESIGN_KEY_NAME]
     if collection_id and int(collection_id):
         result = collections_data[collection_id][COLLECTION_DESIGN_DESCRIPTION_PROPERTY_NAME]
+    else:
+        result = '-'
     return result
 
 
