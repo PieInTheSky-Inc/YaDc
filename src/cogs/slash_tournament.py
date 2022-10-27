@@ -411,7 +411,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         output = ['Retrieving data...']
         if ctx.interaction.response.is_done():
-            await _utils.discord.edit_original_response(ctx.interaction, output=output)
+            await _utils.discord.edit_original_response(ctx, ctx.interaction, output=output)
         else:
             await _utils.discord.respond_with_output(ctx, output)
 

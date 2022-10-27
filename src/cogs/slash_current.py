@@ -527,7 +527,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         else:
             raise _NotFound(f'Could not find a crew, an item or a room with the name `{name}`.')
         if ctx.interaction.response.is_done():
-            await _utils.discord.edit_original_response(ctx.interaction, output)
+            await _utils.discord.edit_original_response(ctx, ctx.interaction, output)
         else:
             await _utils.discord.respond_with_output(ctx, output)
 
