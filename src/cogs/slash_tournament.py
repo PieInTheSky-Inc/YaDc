@@ -131,6 +131,26 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_response(ctx, response, output)
 
 
+    #past_top_slash: _SlashCommandGroup = _SlashCommandGroup('top', 'Get past top players', parent=past_slash)
+
+    @past_slash.command(name='top', brief='Get historic top captains')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_top_players_slash(self,
+        ctx: _ApplicationContext,
+        count: _Option(int, 'Enter number of players to be displayed', min_value=1, max_value=100, required=False, default=100) = 100,
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
+    ):
+        """
+        Get historic top captains.
+        """
+        self._log_command_use(ctx)
+
+        tourney_data = await self._get_tourney_data(ctx, month, year)
+        output = await _top.get_top_captains(ctx, count, as_embed=(await _server_settings.get_use_embeds(ctx)), past_users_data=tourney_data.top_100_users)
+        await _utils.discord.respond_with_output(ctx, output)
+
+
     targets_slash: _SlashCommandGroup = _SlashCommandGroup('targets', 'Get top tournament targets')
 
     @targets_slash.command(name='top', brief='Get top tournament targets', invoke_without_command=True)
