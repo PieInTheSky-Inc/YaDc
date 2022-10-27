@@ -459,6 +459,8 @@ def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings
 def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     enhancements = get_all_enhancements(item_info)
     result = ', '.join(f'{__get_pretty_enhancement(*enhancement)}' for enhancement in enhancements)
+    if result and item_info['ItemType'] == 'Equipment' and 'Equipment' in item_info['ItemSubType'] and lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']] <= 30:
+        result += ' (+ ??)'
     return result or None
 
 
