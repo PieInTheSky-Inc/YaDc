@@ -125,13 +125,16 @@ def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple[int, str, str,
 
 # ---------- Top captains info ----------
 
-async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
+async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS, past_users_data: EntitiesData = None) -> Union[List[Embed], List[str]]:
     skip = 0
-    data = await __get_top_captains_data(skip, take)
+    if past_users_data:
+        users_data = past_users_data
+    else:
+        users_data = await __get_top_captains_data(skip, take)
 
-    if data:
+    if users_data:
         title = f'Top {take} captains'
-        prepared_data = __prepare_top_captains(data, skip, take)
+        prepared_data = __prepare_top_captains(users_data, skip, take)
         body_lines = __create_body_lines_top_captains(prepared_data)
         footer = f'Properties displayed: Ranking. Player name (Fleet name) - Trophies {emojis.trophy}'
         if as_embed:
@@ -149,11 +152,12 @@ async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = setti
 
 
 def __create_body_lines_top_captains(prepared_data: List[Tuple[int, str, str, str]]) -> List[str]:
-    result = [
-        f'**{position}.** {user_name} ({fleet_name}) - {trophies} {emojis.trophy}'
-        for position, user_name, fleet_name, trophies
-        in prepared_data
-    ]
+    result = []
+    for position, user_name, fleet_name, trophies in prepared_data:
+        if fleet_name:
+            result.append(f'**{position}.** {user_name} ({fleet_name}) - {trophies} {emojis.trophy}')
+        else:
+            result.append(f'**{position}.** {user_name} - {trophies} {emojis.trophy}')
     return result
 
 
@@ -172,17 +176,18 @@ async def __get_top_captains_path(skip: int, take: int) -> str:
 
 
 def __prepare_top_captains(users_data: EntitiesData, skip: int, take: int) -> List[Tuple]:
+    users_infos = sorted(list(users_data.values()), key=lambda user_info: -int(user_info.get('Trophy', 0)))
     start = skip + 1
     end = skip + take
     result = [
         (
             position,
             escape_markdown(user_info[user.USER_DESCRIPTION_PROPERTY_NAME]),
-            escape_markdown(user_info[fleet.FLEET_DESCRIPTION_PROPERTY_NAME]),
+            escape_markdown(user_info.get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(fleet.FLEET_DESCRIPTION_PROPERTY_NAME, ''))),
             user_info['Trophy']
         )
         for position, user_info
-        in enumerate(users_data.values(), start=start)
+        in enumerate(users_infos, start=start)
         if position >= start and position <= end
     ]
     return result

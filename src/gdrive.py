@@ -55,6 +55,16 @@ class TourneyData(object):
             self.__users = TourneyData.__create_user_data_from_data_v3(data['users'], data['data'], self.__fleets)
         self.__data_date: datetime = utils.parse.formatted_datetime(data['meta']['timestamp'], include_tz=False, include_tz_brackets=False)
 
+        self.__top_100_users: EntitiesData = {}
+        top_users_infos = sorted(list(self.__users.values()), key=lambda user_info: -int(user_info.get('Trophy', 0)))[:100]
+        top_users_ids = [user_info['Id'] for user_info in top_users_infos]
+        for key, value in self.__users.items():
+            if key in top_users_ids:
+                self.__top_100_users[key] = value
+                top_users_ids.remove(key)
+                if not top_users_ids:
+                    break
+
 
     @property
     def collected_in(self) -> float:
@@ -111,6 +121,13 @@ class TourneyData(object):
         Data collection schema version. Use to determine which information is available for fleets and users.
         """
         return self.__meta['schema_version']
+
+    @property
+    def top_100_users(self) -> EntitiesData:
+        """
+        Copy of top 100 users
+        """
+        return dict({key: dict(value) for key, value in self.__top_100_users.items()})
 
     @property
     def user_ids(self) -> List[str]:
