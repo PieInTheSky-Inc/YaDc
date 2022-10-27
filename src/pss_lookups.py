@@ -186,6 +186,12 @@ ITEM_SUB_TYPES_TO_GET_PARENTS_FOR: List[str] = [
 ]
 
 
+ITEM_SUB_TYPES_LOOKUP: Dict[str, str] = {
+    'BlueprintShip': 'Ship Blueprint',
+    'BlueprintRoom': 'Room Blueprint',
+}
+
+
 MODULE_TYPE_TO_STAT_LOOKUP: Dict[str, str] = {
     'Turret': 'Attack'
 }

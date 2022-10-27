@@ -547,6 +547,7 @@ def get_type(item_info: EntityInfo, items_data: EntitiesData, trainings_data: En
     item_sub_type = item_info.get('ItemSubType')
     if entity.entity_property_has_value(item_sub_type) and 'Equipment' not in item_sub_type:
         result = item_sub_type.replace('Equipment', '')
+        result = lookups.ITEM_SUB_TYPES_LOOKUP.get(result, result)
     else:
         item_type = item_info.get('ItemType')
         if entity.entity_property_has_value(item_type):
