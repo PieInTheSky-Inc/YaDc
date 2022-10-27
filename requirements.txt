@@ -1,7 +1,7 @@
 aiofiles
 aiohttp[speedups]
 asyncio
-asyncpg==0.25.0
+asyncpg==0.27.0
 google-api-python-client==2.41.0
 holidays
 jellyfish
@@ -9,7 +9,6 @@ openpyxl==3.0.10
 pandas
 pillow
 pip
-psycopg2==2.9.3
 py-cord==2.2.2
 pytz
 git+https://github.com/googledrive/PyDrive.git#egg=PyDrive
