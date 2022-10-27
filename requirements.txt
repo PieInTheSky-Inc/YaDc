@@ -5,7 +5,7 @@ asyncpg==0.25.0
 google-api-python-client==2.41.0
 holidays
 jellyfish
-openpyxl==3.0.9
+openpyxl==3.0.10
 pandas
 pillow
 pip

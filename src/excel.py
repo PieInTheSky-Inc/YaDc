@@ -96,7 +96,7 @@ def create_xl_from_raw_data_dict(flattened_data: List[Iterable[Any]], file_prefi
         wb = openpyxl.Workbook(write_only=True)
         ws: openpyxl.worksheet.worksheet.Worksheet = wb.create_sheet()
         df = pandas.DataFrame(flattened_data)
-        for (columnName, columnData) in df.iteritems():
+        for (columnName, columnData) in df.items():
             if 'datetime64' in columnData.dtype.name:
                 df[columnName] = df[columnName].dt.tz_convert(None)
 
