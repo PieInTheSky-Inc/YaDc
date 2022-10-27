@@ -745,6 +745,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         output = await _top.get_top_fleets(ctx, take=count, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
+
     @_slash_command(name='tournament', brief='Information on this month\'s tournament time')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def tournament_slash(self,
