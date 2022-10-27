@@ -745,49 +745,36 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         output = await _top.get_top_fleets(ctx, take=count, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
-
-    tournament_slash: _SlashCommandGroup = _SlashCommandGroup('tournament', 'Get tournament start and end date.')
-
-    @tournament_slash.command(name='current', brief='Information on this month\'s tournament time')
+    @_slash_command(name='tournament', brief='Information on this month\'s tournament time')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def tournament_current_slash(self,
+    async def tournament_slash(self,
         ctx: _ApplicationContext
     ):
         """
-        Get information about the starting time of the current month's tournament.
+        Get tournament dates and times.
         """
         self._log_command_use(ctx)
 
         utc_now = _utils.get_utc_now()
+        use_embeds = await _server_settings.get_use_embeds(ctx)
+
+        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
         start_of_tourney = _tourney.get_current_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await _server_settings.get_use_embeds(ctx)):
-            output = [embed]
+        tourney_embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
+
+        if (use_embeds):
+            output = [tourney_embed]
         else:
-            output = _tourney.convert_tourney_embed_to_plain_text(embed)
+            output = _tourney.convert_tourney_embed_to_plain_text(tourney_embed)
 
-        await _utils.discord.respond_with_output(ctx, output)
+        if start_of_tourney < utc_now:
+            start_of_next_tourney = _tourney.get_next_tourney_start()
+            next_tourney_embed = _tourney.get_tourney_start_as_embed(start_of_next_tourney, utc_now, embed_colour)
 
-
-    @tournament_slash.command(name='next', brief='Information on next month\'s tournament time')
-    @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def tournament_next_slash(self,
-        ctx: _ApplicationContext
-    ):
-        """
-        Get information about the starting time of the next month's tournament.
-        """
-        self._log_command_use(ctx)
-
-        utc_now = _utils.get_utc_now()
-        start_of_tourney = _tourney.get_next_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await _server_settings.get_use_embeds(ctx)):
-            output = [embed]
-        else:
-            output = _tourney.convert_tourney_embed_to_plain_text(embed)
+            if (use_embeds):
+                output.append(next_tourney_embed)
+            else:
+                output.extend(('\n', _tourney.convert_tourney_embed_to_plain_text(tourney_embed)))
 
         await _utils.discord.respond_with_output(ctx, output)
 

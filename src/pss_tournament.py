@@ -79,19 +79,24 @@ def get_tourney_start_as_embed(start_date: datetime, utc_now: datetime, colour: 
     currently_running = is_tourney_running(start_date, utc_now)
     starts = get_start_string(currently_running)
     tourney_date = start_date.strftime('%B %Y')
+
     if currently_running:
+        current_day = (utc_now - start_date).days + 1
+        title = f'{tourney_date} tournament - Day {current_day}'
         fields.append(utils.discord.get_embed_field_def(starts.capitalize(), utils.datetime.get_discord_datestamp(start_date), False))
-    else:
-        delta_start = start_date - utc_now
-        delta_start_formatted = utils.format.timedelta(delta_start)
-        delta_start_txt = f'{delta_start_formatted} ({utils.datetime.get_discord_datestamp(start_date, include_time=True)})'
-        fields.append(utils.discord.get_embed_field_def(starts.capitalize(), delta_start_txt, False))
-    if currently_running:
+
         end_date = utils.datetime.get_first_of_following_month(start_date)
         delta_end = end_date - utc_now
         delta_end_formatted = f'{utils.format.timedelta(delta_end, True)} ({utils.datetime.get_discord_datestamp(end_date, include_time=True)})'
         fields.append(utils.discord.get_embed_field_def('Ends', delta_end_formatted, False))
-    result = utils.discord.create_embed(f'{tourney_date} tournament', colour=colour, fields=fields)
+    else:
+        title = f'{tourney_date} tournament'
+        delta_start = start_date - utc_now
+        delta_start_formatted = utils.format.timedelta(delta_start)
+        delta_start_txt = f'{delta_start_formatted} ({utils.datetime.get_discord_datestamp(start_date, include_time=True)})'
+        fields.append(utils.discord.get_embed_field_def(starts.capitalize(), delta_start_txt, False))
+
+    result = utils.discord.create_embed(title, colour=colour, fields=fields)
     return result
 
 

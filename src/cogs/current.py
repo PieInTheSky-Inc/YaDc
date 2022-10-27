@@ -1093,57 +1093,27 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
         /tournament - Displays information about the starting time of this month's tournament.
         """
         self._log_command_use(ctx)
-        if ctx.invoked_subcommand is None:
-            cmd = self.bot.get_command('tournament current')
-            await ctx.invoke(cmd)
 
-
-    @tournament.command(name='current', brief='Information on this month\'s tournament time')
-    async def tournament_current(self, ctx: _Context):
-        """
-        Get information about the starting time of the current month's tournament.
-
-        Usage:
-        /tournament current
-        /tourney current
-
-        Examples:
-        /tournament current - Displays information about the starting time of this month's tournament.
-        """
-        self._log_command_use(ctx)
         utc_now = _utils.get_utc_now()
+        use_embeds = await _server_settings.get_use_embeds(ctx)
+
+        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
         start_of_tourney = _tourney.get_current_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await _server_settings.get_use_embeds(ctx)):
-            output = [embed]
+        tourney_embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
+
+        if (use_embeds):
+            output = [tourney_embed]
         else:
-            output = _tourney.convert_tourney_embed_to_plain_text(embed)
+            output = _tourney.convert_tourney_embed_to_plain_text(tourney_embed)
 
-        await _utils.discord.reply_with_output(ctx, output)
+        if start_of_tourney < utc_now:
+            start_of_next_tourney = _tourney.get_next_tourney_start()
+            next_tourney_embed = _tourney.get_tourney_start_as_embed(start_of_next_tourney, utc_now, embed_colour)
 
-
-    @tournament.command(name='next', brief='Information on next month\'s tournament time')
-    async def tournament_next(self, ctx: _Context):
-        """
-        Get information about the starting time of the next month's tournament.
-
-        Usage:
-        /tournament next
-        /tourney next
-
-        Examples:
-        /tournament next - Displays information about the starting time of next month's tournament.
-        """
-        self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
-        start_of_tourney = _tourney.get_next_tourney_start()
-        embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
-        if (await _server_settings.get_use_embeds(ctx)):
-            output = [embed]
-        else:
-            output = _tourney.convert_tourney_embed_to_plain_text(embed)
+            if (use_embeds):
+                output.append(next_tourney_embed)
+            else:
+                output.extend(('\n', _tourney.convert_tourney_embed_to_plain_text(tourney_embed)))
 
         await _utils.discord.reply_with_output(ctx, output)
 
