@@ -872,8 +872,8 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
             if not fleet_name:
                 raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-            fleet_infos = await _fleet.get_fleet_infos_by_name(fleet_name)
-            fleet_infos = [fleet_info for fleet_info in fleet_infos if fleet_info[_top.DIVISION_DESIGN_KEY_NAME] != '0']
+            fleet_infos = await _fleet.get_current_tournament_fleet_infos_by_name(fleet_name)
+            fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
 
             if fleet_infos:
                 if len(fleet_infos) == 1:
