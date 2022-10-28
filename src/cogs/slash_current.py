@@ -585,12 +585,12 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
+            await ctx.interaction.response.defer()
             output = await _top.get_division_stars(ctx, division=division, as_embed=(await _server_settings.get_use_embeds(ctx)))
             await _utils.discord.respond_with_output(ctx, output)
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
-            cmd = self.bot.get_application_command('past stars division')
+            cmd = self.bot.get_application_command('past stars')
             await ctx.invoke(cmd, division)
         else:
             raise _Error('There is no tournament running currently!')
@@ -607,8 +607,8 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        await ctx.interaction.response.defer()
         if _tourney.is_tourney_running():
+            await ctx.interaction.response.defer()
             response = await _utils.discord.respond_with_output(ctx, ['Searching fleet...'])
             fleet_infos = await _fleet.get_current_tournament_fleet_infos_by_name(name)
             fleet_infos.sort(key=lambda fleet: fleet[_fleet.FLEET_DESCRIPTION_PROPERTY_NAME])
@@ -629,7 +629,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             else:
                 raise _NotFound(f'Could not find a fleet named `{name}` participating in the current tournament.')
         elif _settings.FEATURE_TOURNEYDATA_ENABLED:
-            cmd = self.bot.get_application_command('past stars fleet')
+            cmd = self.bot.get_application_command('past starsfleet')
             await ctx.invoke(cmd, name)
         else:
             raise _Error('There is no tournament running currently!')

@@ -109,7 +109,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
 
         tourney_data = await self._get_tourney_data(ctx, month, year)
         output = await _top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        await _utils.discord.respond_with_output(ctx, output)
+        await _utils.discord.edit_original_response(ctx, ctx.interaction, output)
 
 
     @past_slash.command(name='starsfleet', brief='Get historic fleet stars')
