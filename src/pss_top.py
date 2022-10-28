@@ -7,10 +7,12 @@ from discord.ext.commands import Context
 from discord.utils import escape_markdown
 
 from . import emojis
+from .gdrive import TourneyData
 from . import pss_assert
 from . import pss_core as core
 from . import pss_entity as entity
 from .pss_exception import Error
+from .pss_exception import InvalidParameterValueError
 from . import pss_fleet as fleet
 from . import pss_login as login
 from . import pss_lookups as lookups
@@ -125,10 +127,10 @@ def __prepare_top_fleets(fleets_data: EntitiesData) -> List[Tuple[int, str, str,
 
 # ---------- Top captains info ----------
 
-async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS, past_users_data: EntitiesData = None) -> Union[List[Embed], List[str]]:
+async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = settings.USE_EMBEDS, tourney_data: TourneyData = None) -> Union[List[Embed], List[str]]:
     skip = 0
-    if past_users_data:
-        users_data = past_users_data
+    if tourney_data:
+        users_data = tourney_data.top_100_users
     else:
         users_data = await __get_top_captains_data(skip, take)
 
@@ -137,6 +139,8 @@ async def get_top_captains(ctx: Context, take: int = 100, as_embed: bool = setti
         prepared_data = __prepare_top_captains(users_data, skip, take)
         body_lines = __create_body_lines_top_captains(prepared_data)
         footer = f'Properties displayed: Ranking. Player name (Fleet name) - Trophies {emojis.trophy}'
+        if tourney_data:
+            footer += f'\n{utils.datetime.get_historic_data_note(tourney_data.retrieved_at)}'
         if as_embed:
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             result = __create_top_embeds(title, body_lines, colour, footer)

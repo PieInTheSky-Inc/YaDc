@@ -10,6 +10,7 @@ from .base import CogBase as _CogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
+from ..pss_exception import ParameterTypeError as _ParameterTypeError
 from .. import pss_fleet as _fleet
 from .. import pagination as _pagination
 from .. import pss_lookups as _lookups
@@ -124,6 +125,25 @@ class TournamentCog(_CogBase, name='Tournament'):
             if fleet_name.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
             raise _NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
+        await _utils.discord.reply_with_output(ctx, output)
+
+
+    @past.command(name='top', brief='Get historic top captains')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def past_top(self, ctx: _Context, month: str = None, year: str = None):
+        """
+        Get historic top 100 captains.
+        """
+        self._log_command_use(ctx)
+
+        utc_now = _utils.get_utc_now()
+        if year is not None and month is None:
+            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+
+        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
+        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+
+        output = await _top.get_top_captains(ctx, 100, as_embed=(await _server_settings.get_use_embeds(ctx)), tourney_data=tourney_data)
         await _utils.discord.reply_with_output(ctx, output)
 
 

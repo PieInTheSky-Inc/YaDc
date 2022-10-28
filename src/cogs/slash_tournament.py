@@ -145,7 +145,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         self._log_command_use(ctx)
 
         tourney_data = await self._get_tourney_data(ctx, month, year)
-        output = await _top.get_top_captains(ctx, count, as_embed=(await _server_settings.get_use_embeds(ctx)), past_users_data=tourney_data.top_100_users)
+        output = await _top.get_top_captains(ctx, count, as_embed=(await _server_settings.get_use_embeds(ctx)), tourney_data=tourney_data)
         await _utils.discord.respond_with_output(ctx, output)
 
 
