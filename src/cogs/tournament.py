@@ -594,6 +594,10 @@ class TournamentCog(_CogBase, name='Tournament'):
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
+                day_before_yesterday_tourney_data = self.bot.tournament_data_client.get_second_latest_daily_data()
+                day_before_user_info = day_before_yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME])
+                if day_before_user_info:
+                    user_info['YesterdayAllianceScore'] = day_before_user_info['AllianceScore']
                 output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
         else:
             leading_space_note = ''

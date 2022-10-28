@@ -380,6 +380,11 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
         user_info, response = await _user.find_tournament_user(ctx, name, yesterday_tourney_data)
 
+        day_before_yesterday_tourney_data = self.bot.tournament_data_client.get_second_latest_daily_data()
+        day_before_user_info = day_before_yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME])
+        if day_before_user_info:
+            user_info['YesterdayAllianceScore'] = day_before_user_info['AllianceScore']
+
         await _utils.discord.edit_original_response(ctx, response, content='Player found. Compiling player info...', embeds=[], view=None)
         output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.edit_original_response(ctx, response, output=output)
