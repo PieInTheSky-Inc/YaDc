@@ -101,7 +101,7 @@ class RawDataCog(_RawCogBase, name='Raw Data'):
 
     @raw_ai.command(name='action', aliases=['actions'], brief='Get raw ai action data')
     @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
-    async def raw_ai_action(self, ctx: _Context, ai_action_id: int = None):
+    async def raw_ai_action(self, ctx: _Context, ai_action_id: str = None):
         """
         Get raw ai action design data from the PSS API.
 
@@ -125,7 +125,7 @@ class RawDataCog(_RawCogBase, name='Raw Data'):
 
     @raw_ai.command(name='condition', aliases=['conditions'], brief='Get raw ai condition data')
     @_cooldown(rate=_RawCogBase.RATE, per=_RawCogBase.COOLDOWN, type=_BucketType.user)
-    async def raw_ai_condition(self, ctx: _Context, ai_condition_id: int = None):
+    async def raw_ai_condition(self, ctx: _Context, ai_condition_id: str = None):
         """
         Get raw ai condition design data from the PSS API.
 
