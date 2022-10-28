@@ -484,7 +484,7 @@ class TournamentCog(_CogBase, name='Tournament'):
                     output.append(embed)
             else:
                 if historic_data_note:
-                    footer += f'\n{historic_data_note}'
+                    footer += f'\n\n{historic_data_note}'
                 division_title = f'__**{divisions_designs_infos[division_design_id][_top.DIVISION_DESIGN_DESCRIPTION_PROPERTY_NAME]} - Top targets per fleet**__'
                 output.append(division_title)
                 output.extend(output_lines)
