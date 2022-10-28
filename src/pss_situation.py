@@ -71,7 +71,10 @@ async def get_event_details(ctx: Context, situation_id: str = None, all_events: 
     elif all_events:
         situation_infos.reverse()
     elif latest_only:
-        situation_infos = [situation_infos[0]]
+        if __get_is_event_running(situation_infos[0], utc_now):
+            situation_infos = [situation_infos[1]]
+        else:
+            situation_infos = [situation_infos[0]]
     else:
         situation_infos = __get_current_situations_infos(situations_data.values(), utc_now)
 
@@ -127,6 +130,12 @@ async def __get_event_reward(change_type: str, change_argument: str, chars_data:
     else:
         result = change_argument
     return result
+
+
+def __get_is_event_running(situation_info: EntityInfo, utc_now: datetime) -> bool:
+    starts = utils.parse.pss_datetime(situation_info['FromDate'])
+    ends = utils.parse.pss_datetime(situation_info['EndDate'])
+    return starts <= utc_now and ends >= utc_now
 
 
 
