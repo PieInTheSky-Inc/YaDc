@@ -384,7 +384,7 @@ async def _db_try_store_device(device: Device) -> bool:
 
 
 async def _db_try_update_device(device: Device) -> bool:
-    query = f'UPDATE devices SET (key, loginuntil) = ($1, $3) WHERE key = $1'
+    query = f'UPDATE devices SET (key, loginuntil) = ($1, $2) WHERE key = $1'
     success = await db.try_execute(query, [device.key, device.can_login_until])
     return success
 
