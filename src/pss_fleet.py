@@ -33,10 +33,26 @@ from . import utils
 
 FLEET_DESCRIPTION_PROPERTY_NAME: str = 'AllianceName'
 FLEET_KEY_NAME: str = 'AllianceId'
-FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
+
+FLEET_SHEET_COLUMN_DEFAULT_HEADERS: List[str] = [
+    'Timestamp',
+    'Fleet',
+    'Player name',
+    'Rank',
+    'Last Login Date',
+    'Trophies',
+    'Max Trophies',
+    'Stars',
+    'Join Date',
+    'Crew Donated',
+    'Crew Borrowed',
+    'Logged in ago',
+    'Joined ago',
+]
+FLEET_SHEET_COLUMN_FORMATS: Dict[str, Optional[str]] = {
     'Timestamp': settings.EXCEL_COLUMN_FORMAT_DATETIME,
-    'Fleet': None,
-    'Player name': None,
+    'Fleet': settings.EXCEL_COLUMN_FORMAT_TEXT,
+    'Player name': settings.EXCEL_COLUMN_FORMAT_TEXT,
     'Rank': None,
     'Last Login Date': settings.EXCEL_COLUMN_FORMAT_DATETIME,
     'Trophies': settings.EXCEL_COLUMN_FORMAT_NUMBER,
@@ -47,6 +63,8 @@ FLEET_SHEET_COLUMN_NAMES: Dict[str, Optional[str]] = {
     'Crew Borrowed': settings.EXCEL_COLUMN_FORMAT_NUMBER,
     'Logged in ago': None,
     'Joined ago': None,
+    'Tournament attempts left': settings.EXCEL_COLUMN_FORMAT_NUMBER,
+    'Star value': settings.EXCEL_COLUMN_FORMAT_NUMBER,
 }
 
 
@@ -411,7 +429,7 @@ def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: dateti
     print(f'Creating the fleet users data took {time1:.2f} seconds.')
 
     start = time.perf_counter()
-    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_data, None, retrieved_at, file_name=file_name)
+    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_data, None, retrieved_at, file_name=file_name, column_formats=FLEET_SHEET_COLUMN_FORMATS)
     time2 = time.perf_counter() - start
     print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
 
@@ -426,13 +444,18 @@ async def __get_fleet_details_by_info(ctx: Context, fleet_info: EntityInfo, flee
         return (await fleet_details.get_details_as_text(entity.EntityDetailsType.LONG))
 
 
-def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Any]:
-    fleet_sheet_data = [{fleet_sheet_lines[0][j]: fleet_sheet_lines[i][j] for j in range(len(fleet_sheet_lines[0]))} for i in range(1, len(fleet_sheet_lines))]
+def __get_fleet_sheet_data_from_lines(fleet_sheet_lines: List[List]) -> List[Dict]:
+    fleet_sheet_data = []
+    for i in range(1, len(fleet_sheet_lines)):
+        d = {}
+        for j in range(len(fleet_sheet_lines[0])):
+            d[fleet_sheet_lines[0][j]] = fleet_sheet_lines[i][j]
+        fleet_sheet_data.append(d)
     return fleet_sheet_data
 
 
 def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: datetime, max_tourney_battle_attempts: int = None, fleet_name: str = None, include_player_id: bool = False, include_fleet_id: bool = False, include_division_name: bool = False, include_pvp_stats: bool = False, sort_lines: bool = True) -> List[Any]:
-    titles = list(FLEET_SHEET_COLUMN_NAMES.keys())
+    titles = list(FLEET_SHEET_COLUMN_DEFAULT_HEADERS)
     include_tourney_battle_attempts = max_tourney_battle_attempts is not None
     if include_tourney_battle_attempts:
         titles.append('Tournament attempts left')
@@ -455,6 +478,12 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
 
     result = []
     for user_info in fleet_users_data.values():
+        user_fleet_name = fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, ''))
+        if user_fleet_name.startswith('='):
+            user_fleet_name = f'="{user_fleet_name}"'
+        user_name = user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '')
+        if user_name.startswith('='):
+            user_name = f'="{user_name}"'
         last_login_date = user_info.get('LastLoginDate')
         alliance_join_date = user_info.get('AllianceJoinDate')
         logged_in_ago = None
@@ -467,8 +496,8 @@ def __get_fleet_sheet_lines(fleet_users_data: EntitiesData, retrieved_at: dateti
             fleet_name = user_info[FLEET_DESCRIPTION_PROPERTY_NAME]
         line = [
             utils.format.datetime_for_excel(retrieved_at),
-            fleet_name or user_info.get(FLEET_DESCRIPTION_PROPERTY_NAME, user_info.get('Alliance', {}).get(FLEET_DESCRIPTION_PROPERTY_NAME, '')),
-            user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, ''),
+            user_fleet_name,
+            user_name,
             user_info.get('AllianceMembership', ''),
             utils.convert.pss_timestamp_to_excel(last_login_date),
             int(user_info['Trophy']) if 'Trophy' in user_info else '',
