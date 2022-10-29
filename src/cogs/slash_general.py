@@ -84,7 +84,8 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                     '```',
                 ]
         else:
-            title = f'{ctx.guild.me.display_name} Slash Commands'
+            user_name = ctx.guild.me.display_name if ctx.guild else self.bot.user.display_name
+            title = f'{user_name} Slash Commands'
             lines = list(self.__help_command_output)
             if as_embed:
                 output = _utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url)
