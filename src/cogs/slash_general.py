@@ -59,10 +59,6 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
             colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
 
         if name:
-            # Output:
-            # title: Command name + option names (in [] if optional, else in <>)
-            # description: Description
-            # fields: options
             cmd = self.__all_slash_commands_by_full_name.get(name)
             if not cmd:
                 raise _NotFound(f'A command with the name `{name}` does not exist.')
