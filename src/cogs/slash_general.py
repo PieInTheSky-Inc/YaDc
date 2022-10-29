@@ -83,8 +83,6 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                     'Use the /help command to get information on all or specific commands.',
                     '```',
                 ]
-
-            ephemeral = False
         else:
             title = f'{ctx.guild.me.display_name} Slash Commands'
             lines = list(self.__help_command_output)
@@ -92,8 +90,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                 output = _utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url)
             else:
                 output = lines.insert(0, title)
-            ephemeral = True
-        await _utils.discord.respond_with_output(ctx, output, ephemeral=ephemeral)
+        await _utils.discord.respond_with_output(ctx, output, ephemeral=True)
 
 
     @_slash_command(name='invite', brief='Get an invite link')
