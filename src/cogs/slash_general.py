@@ -71,6 +71,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                 footer = 'Use the /help command to get information on all or specific commands.'
                 output = _utils.discord.create_basic_embeds_from_fields(title, description=description, colour=colour, fields=fields, icon_url=icon_url, footer=footer)
             else:
+                title = title.replace(cmd.mention, cmd.qualified_name)
                 output = [
                     '```',
                     title,
