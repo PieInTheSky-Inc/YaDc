@@ -429,7 +429,7 @@ def __create_fleet_sheet_xl(fleet_users_data: EntitiesData, retrieved_at: dateti
     print(f'Creating the fleet users data took {time1:.2f} seconds.')
 
     start = time.perf_counter()
-    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_data, None, retrieved_at, file_name=file_name, column_formats=FLEET_SHEET_COLUMN_FORMATS)
+    fleet_sheet_path = excel.create_xl_from_raw_data_dict(fleet_sheet_data, None, retrieved_at, file_name=file_name)
     time2 = time.perf_counter() - start
     print(f'Creating the excel sheet took {time2:.2f} seconds ({time1+time2:.2f} seconds in total).')
 
