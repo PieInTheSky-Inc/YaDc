@@ -390,11 +390,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_response(ctx, response, output=output)
 
 
-    yesterday_stars_slash: _SlashCommandGroup = yesterday_slash.create_subgroup('stars', 'Get yesterday\'s division stars')
-
-    @yesterday_stars_slash.command(name='division', brief='Get yesterday\'s division stars')
+    @yesterday_slash.command(name='stars', brief='Get yesterday\'s division stars')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_stars_division_slash(self,
+    async def yesterday_stars_slash(self,
         ctx: _ApplicationContext,
         division: _Option(str, 'Select division.', choices=_top.DIVISION_CHOICES, default=None, required=False) = None
     ):
@@ -409,9 +407,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.respond_with_output(ctx, output)
 
 
-    @yesterday_stars_slash.command(name='fleet', brief='Get yesterday\'s fleet stars')
+    @yesterday_slash.command(name='starsfleet', brief='Get yesterday\'s fleet stars')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_stars_fleet_slash(self,
+    async def yesterday_starsfleet_slash(self,
         ctx: _ApplicationContext,
         name: _Option(str, 'Enter fleet name.'),
     ):
