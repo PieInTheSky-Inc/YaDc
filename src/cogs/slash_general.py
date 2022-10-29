@@ -43,7 +43,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def help_slash(self,
         ctx: _ApplicationContext,
-        command_or_category: _Option(str, 'Specify the command or category you need help for', required=False, default=None) = None
+        command: _Option(str, 'Specify the command you need help for', required=False, default=None) = None
     ):
         # Iterate all commands. self.bot.all_commands returns all base level commands and groups, no subcommands.
         # help will list all slash commands by their mention (cmd.mention) along with their description (cmd.mention).
@@ -52,7 +52,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
 
         self._update_command_lists()
 
-        if command_or_category:
+        if command:
             pass
         else:
             title = f'{ctx.guild.me.display_name} Slash Commands'
