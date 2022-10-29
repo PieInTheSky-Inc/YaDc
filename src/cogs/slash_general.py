@@ -1,5 +1,7 @@
 from typing import Dict as _Dict
 from typing import List as _List
+from typing import Optional as _Optional
+from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
@@ -12,6 +14,7 @@ from discord.ext.commands import cooldown as _cooldown
 
 from .base import CogBase as _CogBase
 from .base import GeneralCogBase as _GeneralCogBase
+from ..pss_exception import NotFound as _NotFound
 from .. import server_settings as _server_settings
 from .. import utils as _utils
 from ..yadc_bot import YadcBot as _YadcBot
@@ -22,6 +25,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
     def __init__(self, bot: _YadcBot):
         super().__init__(bot)
         self.__all_base_slash_commands: _Dict[int, _Union[_SlashCommand, _SlashCommandGroup]] = {}
+        self.__all_slash_commands_by_full_name: _Dict[str, _Union[_SlashCommand, _SlashCommandGroup]] = {}
         self.__base_slash_commands_by_cogs: _Dict[str, _Union[_SlashCommand, _SlashCommandGroup]] = {}
         self.__help_command_output: _List[str] = []
 
@@ -43,27 +47,57 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def help_slash(self,
         ctx: _ApplicationContext,
-        command: _Option(str, 'Specify the command you need help for', required=False, default=None) = None
+        name: _Option(str, 'Specify the command you need help for', required=False, default=None) = None
     ):
-        # Iterate all commands. self.bot.all_commands returns all base level commands and groups, no subcommands.
-        # help will list all slash commands by their mention (cmd.mention) along with their description (cmd.mention).
-        # if it got subcommands, there's a link/button for each
         self._log_command_use(ctx)
 
         self._update_command_lists()
 
-        if command:
-            pass
+        as_embed = await _server_settings.get_use_embeds(ctx)
+        if as_embed:
+            icon_url = (self.bot.user.avatar or self.bot.user.default_avatar).url
+            colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+
+        if name:
+            # Output:
+            # title: Command name + option names (in [] if optional, else in <>)
+            # description: Description
+            # fields: options
+            cmd = self.__all_slash_commands_by_full_name.get(name)
+            if not cmd:
+                raise _NotFound(f'A command with the name `{name}` does not exist.')
+
+            title, description, options = GeneralSlashCog._get_command_help(cmd)
+            if as_embed:
+                if options:
+                    description += '\n\nParameters:'
+                fields = [(title, content, False) for title, content in options]
+                footer = 'Use the /help command to get information on all or specific commands.'
+                output = _utils.discord.create_basic_embeds_from_fields(title, description=description, colour=colour, fields=fields, icon_url=icon_url, footer=footer)
+            else:
+                output = [
+                    '```',
+                    title,
+                    '',
+                    description,
+                    '',
+                    'Parameters:',
+                    *[f'{name} {description}' for name, description in options],
+                    '',
+                    'Use the /help command to get information on all or specific commands.',
+                    '```',
+                ]
+
+            ephemeral = False
         else:
             title = f'{ctx.guild.me.display_name} Slash Commands'
             lines = list(self.__help_command_output)
-            if (await _server_settings.get_use_embeds(ctx)):
-                icon_url = (self.bot.user.avatar or self.bot.user.default_avatar).url
-                colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
+            if as_embed:
                 output = _utils.discord.create_basic_embeds_from_description(title, description=lines, colour=colour, icon_url=icon_url)
             else:
                 output = lines.insert(0, title)
-            await _utils.discord.respond_with_output(ctx, output, ephemeral=True)
+            ephemeral = True
+        await _utils.discord.respond_with_output(ctx, output, ephemeral=ephemeral)
 
 
     @_slash_command(name='invite', brief='Get an invite link')
@@ -127,11 +161,15 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                 if isinstance(cmd, (_SlashCommand, _SlashCommandGroup)) and cmd.id not in self.__all_base_slash_commands.keys():
                     self.__all_base_slash_commands[cmd.id] = cmd
 
-        if not self.__base_slash_commands_by_cogs:
+            for cmd in self.__all_base_slash_commands.values():
+                if isinstance(cmd, _SlashCommand):
+                    self.__all_slash_commands_by_full_name[cmd.name] = cmd
+                elif isinstance(cmd, _SlashCommandGroup):
+                    self.__all_slash_commands_by_full_name.update(GeneralSlashCog._get_all_subcommands(cmd))
+
             for cmd in self.__all_base_slash_commands.values():
                 self.__base_slash_commands_by_cogs.setdefault(cmd.cog.qualified_name, []).append(cmd)
 
-        if not self.__help_command_output:
             for cog_name in sorted(self.__base_slash_commands_by_cogs.keys()):
                 cog_commands = sorted(self.__base_slash_commands_by_cogs[cog_name], key=lambda cmd: cmd.name)
                 block = ['', f'__**Category {cog_name.replace("Slash", "").replace("Cog", "").strip()}**__']
@@ -146,6 +184,17 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                 self.__help_command_output.extend(block)
             while self.__help_command_output and self.__help_command_output[0] == '':
                 self.__help_command_output.pop(0)
+
+
+    @staticmethod
+    def _get_all_subcommands(cmd: _SlashCommandGroup) -> _Dict[str, _SlashCommand]:
+        result = {}
+        for sub in cmd.subcommands:
+            if isinstance(sub, _SlashCommand):
+                result[sub.qualified_name] = sub
+            elif isinstance(sub, _SlashCommandGroup):
+                result.update(GeneralSlashCog._get_all_subcommands(sub))
+        return result
 
 
     @staticmethod
@@ -168,6 +217,30 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
         for sub_cmd in sub_commands:
             result.append(GeneralSlashCog._get_command_help_string(sub_cmd))
         return result
+
+
+    @staticmethod
+    def _get_command_help(cmd: _SlashCommand) -> _Tuple[str, str, _Optional[_List[_Tuple[str, str]]]]:
+        """
+        Returns (title, description, option list)
+        option list is of tuples (name, description)
+        """
+        parameters = []
+        options: _List[_Tuple[str, str]] = []
+        for option in cmd.options:
+            option_name = option.name
+            option_description = ''
+            if option.required:
+                parameters.append(f'<{option.name}>')
+                option_description += 'Mandatory. '
+            else:
+                parameters.append(f'[{option.name}]')
+                option_description += 'Optional. '
+            option_description += option.description
+            options.append((option_name, option_description))
+        title = (f'{cmd.qualified_name} ' + ' '.join(parameters)).strip()
+        description = cmd.description
+        return title, description, options
 
 
     @staticmethod
