@@ -232,7 +232,7 @@ class GeneralSlashCog(_GeneralCogBase, name='General Slash'):
                 option_description += 'Optional. '
             option_description += option.description
             options.append((option_name, option_description))
-        title = (f'{cmd.qualified_name} ' + ' '.join(parameters)).strip()
+        title = (f'{cmd.mention} ' + ' '.join(parameters)).strip()
         description = cmd.description
         return title, description, options
 
