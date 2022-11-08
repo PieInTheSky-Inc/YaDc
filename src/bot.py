@@ -292,7 +292,7 @@ async def post_dailies(current_daily_message: str, current_daily_embed: Embed, a
             if posted:
                 posted_count += 1
             else:
-                guild_name = guild_autodaily_settings.guild.name
+                guild_name = guild_autodaily_settings.guild.name if guild_autodaily_settings.guild else None
                 guild_id = guild_autodaily_settings.guild_id
                 channel_name = f'#{guild_autodaily_settings.channel.name}' if guild_autodaily_settings.channel else '<not accessible>'
                 channel_id = guild_autodaily_settings.channel_id
