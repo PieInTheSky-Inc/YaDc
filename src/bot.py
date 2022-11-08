@@ -231,8 +231,7 @@ async def on_guild_join(guild: Guild) -> None:
 @BOT.event
 async def on_guild_remove(guild: Guild) -> None:
     print(f'Left guild with id {guild.id} ({guild.name})')
-    #success = await GUILD_SETTINGS.delete_guild_settings(guild.id)
-    success = True
+    success = await GUILD_SETTINGS.delete_guild_settings(guild.id)
     if not success:
         print(f'[on_guild_join] Could not delete server settings for guild \'{guild.name}\' (ID: \'{guild.id}\')')
 
@@ -441,7 +440,7 @@ async def __initialize() -> None:
     print('Initializing.')
     await db.init()
     await server_settings.init(BOT)
-    #await server_settings.clean_up_invalid_server_settings(BOT)
+    await server_settings.clean_up_invalid_server_settings(BOT)
     await sprites.init()
     await login.init()
     await daily.init()
