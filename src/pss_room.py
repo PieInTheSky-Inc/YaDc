@@ -52,7 +52,7 @@ RX_NUMBER: re.Pattern = re.compile(r'\d+')
 
 
 __AMMO_TYPE_OVERWRITES: Dict[str, str] = {
-    'ION': 'Ion Cores'
+    'ION': 'Ion Cores',
 }
 
 __DISPLAY_NAMES: Dict[str, Dict[str, str]] = {
@@ -552,7 +552,7 @@ async def __get_required_research(room_info: EntityInfo, rooms_data: EntitiesDat
             if required_type == 'item':
                 return None
             elif required_type == 'research':
-                research_details = research.get_research_details_by_id(required_id, researches_data)
+                research_details = research.get_research_details_by_id(required_id, researches_data, rooms_data)
                 result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.MINI))
                 return result
             else:
@@ -1089,8 +1089,8 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
             entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
-            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit_float, forbidden_room_types=['Printer', 'Council']),
-            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, allowed_room_types=['Printer', 'Council']),
+            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit_float, allowed_room_types=['Shield']),
+            entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Shield']),
             entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
             entity.EntityDetailProperty(__display_name_properties['gas_per_crew'], True, entity_property_name='ManufactureRate', transform_function=__get_value, allowed_room_types=['Recycling']),
             entity.EntityDetailProperty(__display_name_properties['max_crew_blend'], True, entity_property_name='ManufactureCapacity', transform_function=__get_value, allowed_room_types=['Recycling']),
