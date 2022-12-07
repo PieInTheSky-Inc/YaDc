@@ -245,13 +245,25 @@ async def on_guild_remove(guild: Guild) -> None:
 
 @tasks.loop(minutes=5)
 async def post_dailies_loop() -> None:
+    MAX_GET_INFO_ATTEMPTS = 3
     utc_now = utils.get_utc_now()
     if utc_now < settings.POST_AUTODAILY_FROM:
         return
 
     utc_now = utils.get_utc_now()
 
-    daily_info = await daily.get_daily_info()
+    attempts = MAX_GET_INFO_ATTEMPTS
+    while attempts > 0:
+        try:
+            daily_info = await daily.get_daily_info()
+            attempts = 0
+        except Exception as ex:
+            print(f'ERROR: There was an error while tryiny to retrieve daily info:\n{ex}')
+            attempts -= 1
+            if attempts == 0:
+                print(f'ERROR: Could not retrieve the daily info after {MAX_GET_INFO_ATTEMPTS} attempts.')
+                return
+
     db_daily_info, db_daily_modify_date = await daily.db_get_daily_info()
     has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
