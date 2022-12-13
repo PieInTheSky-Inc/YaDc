@@ -366,7 +366,7 @@ async def db_get_daily_info(skip_cache: bool = False) -> Tuple[EntityInfo, datet
 
 
 async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
-    settings = {__get_daily_info_setting_name(key): (value, utc_now) for key, value in daily_info.items()}
+    settings = {__get_daily_info_setting_name(key): (value or None, utc_now) for key, value in daily_info.items()}
     settings_success = await db.set_settings(settings)
     if settings_success:
         await __update_db_daily_info_cache()
@@ -441,7 +441,7 @@ def __convert_to_daily_info(dropship_info: EntityInfo) -> EntityInfo:
         value = None
         if field_name in dropship_info.keys():
             value = dropship_info[field_name]
-        result[field_name] = value
+        result[field_name] = value or None
     return result
 
 
