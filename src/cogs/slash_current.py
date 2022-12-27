@@ -2,6 +2,7 @@ import datetime as _datetime
 import holidays as _holidays
 import os as _os
 import pytz as _pytz
+import re as _re
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Option as _Option
@@ -259,8 +260,10 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
+        sanitized_name = _re.sub("mki{0,3}", "", name, 0, _re.I).strip()
+
         await ctx.interaction.response.defer()
-        output = await _item.get_item_details_by_name(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _item.get_item_details_by_name(ctx, sanitized_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
