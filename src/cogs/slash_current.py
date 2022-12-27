@@ -260,7 +260,10 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        sanitized_name = _re.sub("mki{0,3}", "", name, 0, _re.I).strip()
+        # Matches roman numerals from 1-10
+        # (I -> X), case insensitive
+        # Then strips ending and starting spaces
+        sanitized_name = _re.sub("mk(x|ix|iv|v?i{0,3})", "", name, 0, _re.I).strip()
 
         await ctx.interaction.response.defer()
         output = await _item.get_item_details_by_name(ctx, sanitized_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
