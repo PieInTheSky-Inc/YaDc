@@ -552,7 +552,7 @@ async def __get_required_research(room_info: EntityInfo, rooms_data: EntitiesDat
             if required_type == 'item':
                 return None
             elif required_type == 'research':
-                research_details = research.get_research_details_by_id(required_id, researches_data, rooms_data)
+                research_details = research.get_research_details_by_id(required_id, researches_data)
                 result = ''.join(await research_details.get_details_as_text(entity.EntityDetailsType.MINI))
                 return result
             else:
