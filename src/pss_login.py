@@ -142,7 +142,8 @@ class Device():
         result = utils.convert.raw_xml_to_dict(data)
         self.__last_login = utc_now
         if 'UserService' in result.keys():
-            user = result['UserService']['UserLogin']['User']
+            user_id = result['UserService']['UserLogin']['UserId']
+            user = result['UserService']['UserLogin'][user_id]
 
             if user.get('Name', None):
                 self.__user = None

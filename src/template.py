@@ -1,13 +1,21 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict as _Dict
+from typing import List as _List
+from typing import Optional as _Optional
+from typing import Tuple as _Tuple
+from typing import Union as _Union
 
-from discord import Embed
-from discord.ext.commands import Context
+from discord import Embed as _Embed
+from discord.ext.commands import Context as _Context
 
-from . import pss_assert
-from . import pss_entity as entity
-from .pss_exception import Error, NotFound
-from . import settings
-from .typehints import EntitiesData, EntityInfo
+from . import pss_assert as _assert
+from . import pss_core as _core
+from . import pss_entity as _entity
+from .pss_exception import Error as _Error
+from .pss_exception import NotFound as _NotFound
+from . import settings as _settings
+from . import utils as _utils
+from .typehints import EntitiesData as _EntitiesData
+from .typehints import EntityInfo as _EntityInfo
 
 
 # ---------- Typehint definitions ----------
@@ -34,21 +42,21 @@ ENTITY_DESIGN_KEY_NAME: str = ''
 
 # ---------- Entity info ----------
 
-def get_entity_details_by_id(entity_design_id: str, entities_data: EntitiesData) -> entity.EntityDetails:
+def get_entity_details_by_id(entity_design_id: str, entities_data: _EntitiesData) -> _entity.EntityDetails:
     if entity_design_id:
         if entity_design_id and entity_design_id in entities_data.keys():
             return __create_entity_details_from_info(entities_data[entity_design_id], entities_data)
     return None
 
 
-async def get_entity_details_by_name(ctx: Context, entity_name: str, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    pss_assert.valid_entity_name(entity_name, 'entity_name')
+async def get_entity_details_by_name(ctx: _Context, entity_name: str, as_embed: bool = _settings.USE_EMBEDS) -> _Union[_List[_Embed], _List[str]]:
+    _assert.valid_entity_name(entity_name, 'entity_name')
 
     entities_data = await entities_designs_retriever.get_data_dict3()
     entity_info = await entities_designs_retriever.get_entity_info_by_name(entity_name, entities_data)
 
     if entity_info is None:
-        raise NotFound(f'Could not find an entity named `{entity_name}`.')
+        raise _NotFound(f'Could not find an entity named `{entity_name}`.')
     else:
         entities_details_collection = __create_entities_details_collection_from_infos([entity_info], entities_data)
         if as_embed:
@@ -62,7 +70,7 @@ async def get_entity_details_by_name(ctx: Context, entity_name: str, as_embed: b
 
 # ---------- Transformation functions ----------
 
-async def __get(entity_info: EntityInfo, entities_data: EntitiesData, **kwargs) -> Optional[str]:
+async def __get(entity_info: _EntityInfo, entities_data: _EntitiesData, **kwargs) -> _Optional[str]:
     pass
 
 
@@ -77,13 +85,13 @@ async def __get(entity_info: EntityInfo, entities_data: EntitiesData, **kwargs) 
 
 # ---------- Create entity.entity.EntityDetails ----------
 
-def __create_entity_details_from_info(entity_info: EntityInfo, entities_data: EntitiesData) -> entity.entity.EntityDetails:
-    return entity.entity.EntityDetails(entity_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], entities_data)
+def __create_entity_details_from_info(entity_info: _EntityInfo, entities_data: _EntitiesData) -> _entity.entity.EntityDetails:
+    return _entity.entity.EntityDetails(entity_info, __properties['title'], __properties['description'], __properties['properties'], __properties['embed_settings'], entities_data)
 
 
-def __create_entities_details_collection_from_infos(entities_designs_infos: List[EntityInfo], entities_data: EntitiesData) -> entity.EntityDetailsCollection:
+def __create_entities_details_collection_from_infos(entities_designs_infos: _List[_EntityInfo], entities_data: _EntitiesData) -> _entity.EntityDetailsCollection:
     entities_details = [__create_entity_details_from_info(entity_info, entities_data) for entity_info in entities_designs_infos]
-    result = entity.EntityDetailsCollection(entities_details, big_set_threshold=3)
+    result = _entity.EntityDetailsCollection(entities_details, big_set_threshold=3)
 
 
 
@@ -103,7 +111,7 @@ def __create_entities_details_collection_from_infos(entities_designs_infos: List
 
 # ---------- Initilization ----------
 
-entities_designs_retriever = entity.EntityRetriever(
+entities_designs_retriever = _entity.EntityRetriever(
     ENTITY_DESIGN_BASE_PATH,
     ENTITY_DESIGN_KEY_NAME,
     ENTITY_DESIGN_DESCRIPTION_PROPERTY_NAME,
@@ -111,37 +119,34 @@ entities_designs_retriever = entity.EntityRetriever(
 )
 
 
-__properties: entity.EntityDetailsCreationPropertiesCollection = {
-    'title': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='', transform_function=None),
-        property_long=entity.NO_PROPERTY,
-        property_short=entity.NO_PROPERTY,
-        property_mini=entity.NO_PROPERTY
+__properties: _entity.EntityDetailsCreationPropertiesCollection = {
+    'title': _entity.EntityDetailPropertyCollection(
+        _entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='', transform_function=None),
+        property_short=_entity.NO_PROPERTY,
+        property_mini=_entity.NO_PROPERTY
     ),
-    'description': entity.EntityDetailPropertyCollection(
-        entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='', transform_function=None),
-        property_long=entity.NO_PROPERTY,
-        property_short=entity.NO_PROPERTY,
-        property_mini=entity.NO_PROPERTY
+    'description': _entity.EntityDetailPropertyCollection(
+        _entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='', transform_function=None),
+        property_short=_entity.NO_PROPERTY,
+        property_mini=_entity.NO_PROPERTY
     ),
-    'properties': entity.EntityDetailPropertyListCollection(
+    'properties': _entity.EntityDetailPropertyListCollection(
         [
-            entity.EntityDetailProperty('Name', True, entity_property_name='', transform_function=None),
+            _entity.EntityDetailProperty('Name', True, entity_property_name='', transform_function=None),
         ],
-        properties_long=[],
         properties_short=[],
         properties_mini=[]
         ),
     'embed_settings': {
-        'author_url': entity.NO_PROPERTY,
-        'color': entity.NO_PROPERTY,
-        'description': entity.NO_PROPERTY,
-        'footer': entity.NO_PROPERTY,
-        'icon_url': entity.NO_PROPERTY,
-        'image_url': entity.NO_PROPERTY,
-        'thumbnail_url': entity.NO_PROPERTY,
-        'timestamp': entity.NO_PROPERTY,
-        'title': entity.NO_PROPERTY,
+        'author_url': _entity.NO_PROPERTY,
+        'color': _entity.NO_PROPERTY,
+        'description': _entity.NO_PROPERTY,
+        'footer': _entity.NO_PROPERTY,
+        'icon_url': _entity.NO_PROPERTY,
+        'image_url': _entity.NO_PROPERTY,
+        'thumbnail_url': _entity.NO_PROPERTY,
+        'timestamp': _entity.NO_PROPERTY,
+        'title': _entity.NO_PROPERTY,
     }
 }
 
