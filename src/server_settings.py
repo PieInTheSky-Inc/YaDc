@@ -240,6 +240,7 @@ class AutoMessageSettings():
         if success:
             self.__channel = None
             self.__channel_id = None
+            self.__change_mode = _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[self.__auto_message_type]
             self.__delete_on_change = None
             self.__latest_message_id = None
             self.__latest_message_created_at = None
@@ -264,12 +265,13 @@ class AutoMessageSettings():
         return success
 
 
-    async def reset_daily_delete_on_change(self) -> bool:
+    async def reset_change_mode(self) -> bool:
         settings = {
             _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]: _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[self.__auto_message_type],
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
+            self.__change_mode = _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[self.__auto_message_type]
             self.__delete_on_change = None
         return success
 

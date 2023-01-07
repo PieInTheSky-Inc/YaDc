@@ -367,11 +367,98 @@ class SettingsCog(_CogBase, name='Settings'):
 
         if _utils.discord.is_guild_channel(ctx.channel):
             autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
-            success = await autodaily_settings.reset_daily_delete_on_change()
+            success = await autodaily_settings.reset_change_mode()
             if success:
                 await ctx.invoke(self.bot.get_command(f'settings autodaily mode'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-daily notification settings for this server.\n'
+                            + 'Please try again or contact the bot\'s author.')
+
+
+    @settings_reset.group(name='autotrader', aliases=['trader'], brief='Reset auto-trader settings to defaults')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_reset_autotrader(self, ctx: _Context):
+        """
+        Reset the auto-trader settings for this server.
+
+        You need the 'Manage Server' permission to use this command.
+        This command can only be used on Discord servers/guilds.
+
+        Usage:
+        /settings reset autotrader
+        /settings reset trader
+
+        Examples:
+        /settings reset autotrader - Resets the auto-trader settings for the current Discord server/guild.
+        """
+        if ctx.invoked_subcommand is None:
+            self._log_command_use(ctx)
+            await self._assert_settings_command_valid(ctx)
+
+            autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
+            success = await autotrader_settings.reset()
+            if success:
+                await ctx.invoke(self.bot.get_command(f'settings autotrader'), '--on_reset')
+            else:
+                raise _Error('An error ocurred while trying to remove the auto-trader settings for this server.\n'
+                            + 'Please try again or contact the bot\'s author.')
+
+
+    @settings_reset_autotrader.command(name='channel', aliases=['ch'], brief='Reset auto-trader channel')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_reset_autotrader_channel(self, ctx: _Context):
+        """
+        Reset the auto-trader channel settings for this server.
+
+        You need the 'Manage Server' permission to use this command.
+        This command can only be used on Discord servers/guilds.
+
+        Usage:
+        /settings reset autotrader channel
+        /settings reset trader ch
+
+        Examples:
+        /settings reset autotrader - Removes the auto-trader channel settings for the current Discord server/guild.
+        """
+        self._log_command_use(ctx)
+        await self._assert_settings_command_valid(ctx)
+
+        if _utils.discord.is_guild_channel(ctx.channel):
+            autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
+            success = await autotrader_settings.reset_channel()
+            if success:
+                await ctx.invoke(self.bot.get_command(f'settings autotrader channel'), '--on_reset')
+            else:
+                raise _Error('An error ocurred while trying to remove the auto-trader channel setting for this server.\n'
+                            + 'Please try again or contact the bot\'s author.')
+
+
+    @settings_reset_autotrader.command(name='changemode', aliases=['mode'], brief='Reset auto-trader change mode')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_reset_autotrader_mode(self, ctx: _Context):
+        """
+        Reset the auto-trader change mode settings for this server.
+
+        You need the 'Manage Server' permission to use this command.
+        This command can only be used on Discord servers/guilds.
+
+        Usage:
+        /settings reset autotrader changemode
+        /settings reset trader mode
+
+        Examples:
+        /settings reset autotrader mode - Resets the change mode for auto-trader changes for the current Discord server/guild.
+        """
+        self._log_command_use(ctx)
+        await self._assert_settings_command_valid(ctx)
+
+        if _utils.discord.is_guild_channel(ctx.channel):
+            autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
+            success = await autotrader_settings.reset_change_mode()
+            if success:
+                await ctx.invoke(self.bot.get_command(f'settings autotrader mode'), '--on_reset')
+            else:
+                raise _Error('An error ocurred while trying to remove the auto-trader notification settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
 
 
