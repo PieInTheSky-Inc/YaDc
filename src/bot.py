@@ -295,7 +295,7 @@ async def before_post_dailies_loop() -> None:
     await BOT.wait_until_ready()
 
 
-async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoDailySettings], utc_now: datetime.datetime) -> int:
+async def post_dailies(current_daily_message: str, current_daily_embed: Embed, autodaily_settings: List[server_settings.AutoMessageSettings], utc_now: datetime.datetime) -> int:
     posted_count = 0
     for guild_autodaily_settings in autodaily_settings:
         if guild_autodaily_settings.guild_id is not None and guild_autodaily_settings.channel_id is not None:
@@ -322,7 +322,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
 
-        post_new = change_mode != server_settings.AutoDailyChangeMode.EDIT
+        post_new = change_mode != server_settings.AutoMessageChangeMode.EDIT
         can_post = True
         latest_message: Message = None
         use_embeds = await server_settings.get_use_embeds(None, bot=BOT, guild=text_channel.guild)
@@ -339,7 +339,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
                 latest_message_id = latest_message.id
-                if change_mode == server_settings.AutoDailyChangeMode.DELETE_AND_POST_NEW:
+                if change_mode == server_settings.AutoMessageChangeMode.DELETE_AND_POST_NEW:
                     try:
                         deleted = await utils.discord.try_delete_message(latest_message)
                         if deleted:
@@ -355,7 +355,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
                     except Exception as err:
                         print(f'[post_autodaily] {error_msg_delete}: {err}')
                         can_post = False
-                elif change_mode == server_settings.AutoDailyChangeMode.EDIT:
+                elif change_mode == server_settings.AutoMessageChangeMode.EDIT:
                     try:
                         if use_embeds:
                             await latest_message.edit(embed=embed)

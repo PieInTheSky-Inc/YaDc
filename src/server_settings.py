@@ -3,6 +3,7 @@ from datetime import datetime
 from discord import Embed, Guild, Message, TextChannel
 from discord.ext.commands import Bot, Context
 from enum import IntEnum
+from enum import StrEnum
 from typing import Any, Callable, Dict, ItemsView, KeysView, List, Optional, Tuple, Union, ValuesView
 
 from . import database as db
@@ -12,21 +13,81 @@ from . import settings as app_settings
 from . import utils
 
 
+# ---------- Enums ----------
+
+class AutoMessageChangeMode(IntEnum):
+    POST_NEW = 1 # Formerly None
+    DELETE_AND_POST_NEW = 2 # Formerly True
+    EDIT = 3 # Formerly False
+
+
+class AutoMessageType(StrEnum):
+    DAILY = 'autodaily'
+    TRADER = 'autotrader'
+
+
+class AutoMessageColumn(StrEnum):
+    CHANNEL_ID = 'channel_id'
+    CAN_POST = 'can_post'
+    LATEST_MESSAGE_ID = 'latest_message_id'
+    LATEST_MESSAGE_CREATED_AT = 'latest_message_create_date'
+    LATEST_MESSAGE_MODIFIED_AT = 'latest_message_modify_date'
+    CHANGE_MODE = 'change_mode'
+
+
+
+
+
 # ---------- Constants ----------
 
-__AUTODAILY_SETTING_COUNT: int = 7
+__AUTOMESSAGE_SETTING_COUNT: int = 7
 
 _COLUMN_NAME_GUILD_ID: str = 'guildid'
-_COLUMN_NAME_DAILY_CAN_POST: str = 'dailycanpost'
-_COLUMN_NAME_DAILY_CHANNEL_ID: str = 'dailychannelid'
-_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: str = 'dailylatestmessageid'
 _COLUMN_NAME_USE_PAGINATION: str = 'usepagination'
 _COLUMN_NAME_PREFIX: str = 'prefix'
-_COLUMN_NAME_DAILY_CHANGE_MODE: str = 'dailychangemode'
-_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: str = 'dailylatestmessagecreatedate'
-_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: str = 'dailylatestmessagemodifydate'
 _COLUMN_NAME_BOT_NEWS_CHANNEL_ID: str = 'botnewschannelid'
 _COLUMN_NAME_USE_EMBEDS: str = 'useembeds'
+
+_COLUMN_NAMES_AUTO_MESSAGE: Dict[AutoMessageColumn, Dict[AutoMessageType, str]] = {
+    AutoMessageColumn.CHANNEL_ID: {
+        AutoMessageType.DAILY: 'dailychannelid',
+        AutoMessageType.TRADER: 'traderchannelid',
+    },
+    AutoMessageColumn.CAN_POST: {
+        AutoMessageType.DAILY: 'dailycanpost',
+        AutoMessageType.TRADER: 'tradercanpost',
+    },
+    AutoMessageColumn.LATEST_MESSAGE_ID: {
+        AutoMessageType.DAILY: 'dailylatestmessageid',
+        AutoMessageType.TRADER: 'traderlatestmessageid',
+    },
+    AutoMessageColumn.LATEST_MESSAGE_CREATED_AT: {
+        AutoMessageType.DAILY: 'dailylatestmessagecreatedate',
+        AutoMessageType.TRADER: 'traderlatestmessagecreatedate',
+    },
+    AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT: {
+        AutoMessageType.DAILY: 'dailylatestmessagemodifydate',
+        AutoMessageType.TRADER: 'traderlatestmessagemodifydate',
+    },
+    AutoMessageColumn.CHANGE_MODE: {
+        AutoMessageType.DAILY: 'dailychangemode',
+        AutoMessageType.TRADER: 'traderchangemode',
+    },
+}
+
+
+_AUTO_MESSAGE_DEFAULT_CHANGE_MODE: Dict[AutoMessageType, AutoMessageChangeMode] = {
+    AutoMessageType.DAILY: AutoMessageChangeMode.EDIT,
+    AutoMessageType.TRADER: AutoMessageChangeMode.POST_NEW,
+}
+
+
+_ERROR_MESSAGES: Dict[str, Dict[AutoMessageType, str]] = {
+    'not_configured': {
+        AutoMessageType.DAILY: 'Auto-posting of the daily announcement is not configured for this server.',
+        AutoMessageType.TRADER: 'Auto-posting of the trader offerings is not configured for this server.',
+    }
+}
 
 _VALID_BOOL_SWITCH_VALUES: Dict[str, bool] = {
     'on': True,
@@ -47,27 +108,19 @@ _VALID_BOOL_SWITCH_VALUES: Dict[str, bool] = {
 
 # ---------- Classes ----------
 
-class AutoDailyChangeMode(IntEnum):
-    POST_NEW = 1 # Formerly None
-    DELETE_AND_POST_NEW = 2 # Formerly True
-    EDIT = 3 # Formerly False
-
-
-
-
-
-class AutoDailySettings():
-    def __init__(self, bot: Bot, guild_id: int, daily_channel_id: int, can_post: bool, latest_message_id: int, change_mode: AutoDailyChangeMode, latest_message_created_at: datetime, latest_message_modified_at: datetime) -> None:
+class AutoMessageSettings():
+    def __init__(self, bot: Bot, guild_id: int, daily_channel_id: int, can_post: bool, latest_message_id: int, change_mode: AutoMessageChangeMode, latest_message_created_at: datetime, latest_message_modified_at: datetime, auto_message_type: AutoMessageType) -> None:
         self.__bot: Bot = bot
         self.__can_post: bool = can_post
         self.__channel_id: int = daily_channel_id
         self.__channel: TextChannel = None
-        self.__change_mode: AutoDailyChangeMode = change_mode or AutoDailyChangeMode.POST_NEW
+        self.__change_mode: AutoMessageChangeMode = change_mode or AutoMessageChangeMode.POST_NEW
         self.__guild: Guild = None
         self.__guild_id: int = guild_id
         self.__latest_message_id: int = latest_message_id or None
         self.__latest_message_created_at: datetime = latest_message_created_at or None
         self.__latest_message_modified_at: datetime = latest_message_modified_at or None
+        self.__auto_message_type: AutoMessageType = auto_message_type
 
 
     @property
@@ -79,7 +132,7 @@ class AutoDailySettings():
         return self.__can_post
 
     @property
-    def change_mode(self) -> AutoDailyChangeMode:
+    def change_mode(self) -> AutoMessageChangeMode:
         return self.__change_mode
 
     @property
@@ -137,7 +190,7 @@ class AutoDailySettings():
             result.update(self.get_channel_setting())
             result.update(self.get_changemode_setting())
         else:
-            result['autodaily_error'] = 'Auto-posting of the daily announcement is not configured for this server.'
+            result[f'{self.__auto_message_type}_error'] = _ERROR_MESSAGES['not_configured'][self.__auto_message_type]
         return result
 
 
@@ -167,21 +220,21 @@ class AutoDailySettings():
             result = self.channel.mention
         else:
             result = self._get_pretty_channel_name()
-        return {'autodaily_channel': result}
+        return {f'{self.__auto_message_type}_channel': result}
 
 
     def get_changemode_setting(self) -> Dict[str, str]:
         result = self._get_pretty_mode()
-        return {'autodaily_mode': result}
+        return {f'{self.__auto_message_type}_mode': result}
 
 
     async def reset(self) -> bool:
         settings = {
-            _COLUMN_NAME_DAILY_CHANNEL_ID: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
-            _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]: _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[self.__auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]: None,
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
@@ -196,10 +249,10 @@ class AutoDailySettings():
 
     async def reset_channel(self) -> bool:
         settings = {
-            _COLUMN_NAME_DAILY_CHANNEL_ID: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]: None,
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
@@ -213,7 +266,7 @@ class AutoDailySettings():
 
     async def reset_daily_delete_on_change(self) -> bool:
         settings = {
-            _COLUMN_NAME_DAILY_CHANGE_MODE: DEFAULT_AUTODAILY_CHANGE_MODE
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]: _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[self.__auto_message_type],
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
@@ -223,9 +276,9 @@ class AutoDailySettings():
 
     async def reset_latest_message(self) -> bool:
         settings = {
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT: None,
-            _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT: None
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]: None,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]: None,
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
@@ -238,8 +291,8 @@ class AutoDailySettings():
     async def set_channel(self, channel: TextChannel) -> bool:
         if not self.channel_id or channel.id != self.channel_id:
             settings = {
-                _COLUMN_NAME_DAILY_CHANNEL_ID: channel.id,
-                _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID: None
+                _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][self.__auto_message_type]: channel.id,
+                _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]: None,
             }
             success = await db_update_server_settings(self.guild_id, settings)
             if success:
@@ -259,22 +312,22 @@ class AutoDailySettings():
                 modified_at = message.edited_at or message.created_at
 
             if not self.latest_message_id or message.id != self.latest_message_id:
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = message.id
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = modified_at
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]] = message.id
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]] = modified_at
                 if new_day:
-                    settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = message.created_at
+                    settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]] = message.created_at
         else:
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = None
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = None
-            settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = None
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]] = None
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]] = None
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]] = None
 
         if settings:
             success = await db_update_server_settings(self.guild_id, settings)
             if success:
-                self.__latest_message_id = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID]
-                self.__latest_message_modified_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
-                if _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT in settings:
-                    self.__latest_message_created_at = settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT]
+                self.__latest_message_id = settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]]
+                self.__latest_message_modified_at = settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]]
+                if _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type] in settings:
+                    self.__latest_message_created_at = settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]]
             return success
         else:
             return True
@@ -282,9 +335,9 @@ class AutoDailySettings():
 
     async def toggle_change_mode(self) -> bool:
         int_value = int(self.change_mode)
-        new_value = AutoDailyChangeMode((int_value % 3) + 1)
+        new_value = AutoMessageChangeMode((int_value % 3) + 1)
         settings = {
-            _COLUMN_NAME_DAILY_CHANGE_MODE: new_value
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]: new_value
         }
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
@@ -292,38 +345,38 @@ class AutoDailySettings():
         return success
 
 
-    async def update(self, channel: TextChannel = None, can_post: bool = None, latest_message: Message = None, change_mode: AutoDailyChangeMode = None, store_now_as_created_at: bool = False) -> bool:
+    async def update(self, channel: TextChannel = None, can_post: bool = None, latest_message: Message = None, change_mode: AutoMessageChangeMode = None, store_now_as_created_at: bool = False) -> bool:
         settings: Dict[str, object] = {}
         update_channel = channel is not None and channel != self.channel
         update_can_post = can_post is not None and can_post != self.can_post
         update_latest_message = (latest_message is None and store_now_as_created_at) or (latest_message is not None and latest_message.id != self.latest_message_id and (latest_message.edited_at or latest_message.created_at) != self.latest_message_modified_at)
         update_change_mode = change_mode is not None and change_mode != self.change_mode
         if update_channel:
-            settings[_COLUMN_NAME_DAILY_CHANNEL_ID] = channel.id
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][self.__auto_message_type]] = channel.id
         if update_can_post:
-            settings[_COLUMN_NAME_DAILY_CAN_POST] = can_post
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][self.__auto_message_type]] = can_post
         if update_latest_message:
             if store_now_as_created_at:
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = utils.get_utc_now()
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]] = utils.get_utc_now()
             else:
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID] = latest_message.id
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT] = latest_message.created_at
-                settings[_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT] = latest_message.edited_at or latest_message.created_at
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type]] = latest_message.id
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type]] = latest_message.created_at
+                settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type]] = latest_message.edited_at or latest_message.created_at
         if update_change_mode:
-            settings[_COLUMN_NAME_DAILY_CHANGE_MODE] = change_mode
+            settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]] = change_mode
         success = await db_update_server_settings(self.guild_id, settings)
         if success:
             if update_channel:
                 self.__channel = channel
                 self.__channel_id = channel.id
             if update_can_post:
-                self.__can_post = settings.get(_COLUMN_NAME_DAILY_CAN_POST)
+                self.__can_post = settings.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][self.__auto_message_type])
             if update_latest_message:
-                self.__latest_message_id = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
-                self.__latest_message_created_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
-                self.__latest_message_modified_at = settings.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
+                self.__latest_message_id = settings.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][self.__auto_message_type])
+                self.__latest_message_created_at = settings.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][self.__auto_message_type])
+                self.__latest_message_modified_at = settings.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][self.__auto_message_type])
             if update_change_mode:
-                self.__delete_on_change = settings[_COLUMN_NAME_DAILY_CHANGE_MODE]
+                self.__delete_on_change = settings[_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][self.__auto_message_type]]
         return success
 
 
@@ -342,19 +395,36 @@ class GuildSettings(object):
         self.__guild: Guild = None
         self.__bot_news_channel: TextChannel = None
 
-        daily_channel_id = row.get(_COLUMN_NAME_DAILY_CHANNEL_ID)
-        can_post_daily = row.get(_COLUMN_NAME_DAILY_CAN_POST)
-        daily_latest_message_id = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_ID)
-        daily_post_mode = row.get(_COLUMN_NAME_DAILY_CHANGE_MODE)
-        daily_latest_message_created_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT)
-        daily_latest_message_modified_at = row.get(_COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT)
+        self.__autodaily_settings: AutoMessageSettings = AutoMessageSettings(
+            self.__bot,
+            self.__guild_id,
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][AutoMessageType.DAILY]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][AutoMessageType.DAILY]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][AutoMessageType.DAILY]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.DAILY]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][AutoMessageType.DAILY]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.DAILY])
+        )
 
-        self.__autodaily_settings: AutoDailySettings = AutoDailySettings(self.__bot, self.__guild_id, daily_channel_id, can_post_daily, daily_latest_message_id, daily_post_mode, daily_latest_message_created_at, daily_latest_message_modified_at)
+        self.__autotrader_settings: AutoMessageSettings = AutoMessageSettings(
+            self.__bot,
+            self.__guild_id,
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][AutoMessageType.TRADER]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][AutoMessageType.TRADER]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][AutoMessageType.TRADER]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.TRADER]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][AutoMessageType.TRADER]),
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.TRADER])
+        )
 
 
     @property
-    def autodaily(self) -> AutoDailySettings:
+    def autodaily(self) -> AutoMessageSettings:
         return self.__autodaily_settings
+
+    @property
+    def autotrader(self) -> AutoMessageSettings:
+        return self.__autotrader_settings
 
     @property
     def bot(self) -> Bot:
@@ -430,6 +500,7 @@ class GuildSettings(object):
     def get_full_settings(self) -> Dict[str, str]:
         settings = {}
         settings.update(self.autodaily.get_full_settings())
+        settings.update(self.autotrader.get_full_settings())
         settings.update(self.get_bot_news_channel_setting())
         settings.update(self.get_pagination_setting())
         settings.update(self.get_prefix_setting())
@@ -449,13 +520,14 @@ class GuildSettings(object):
         return {'use_embeds': self.pretty_use_embeds}
 
 
-    async def reset(self) -> Tuple[bool, bool, bool, bool, bool]:
+    async def reset(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
         success_autodaily = await self.autodaily.reset()
+        success_autotrader = await self.autotrader.reset()
         success_bot_channel = await self.reset_bot_news_channel()
         success_pagination = await self.reset_use_pagination()
         success_prefix = await self.reset_prefix()
         success_embed = await self.reset_use_embeds()
-        return success_autodaily, success_bot_channel, success_pagination, success_prefix, success_embed
+        return success_autodaily, success_autotrader, success_bot_channel, success_pagination, success_prefix, success_embed
 
 
     async def reset_bot_news_channel(self) -> bool:
@@ -588,8 +660,13 @@ class GuildSettingsCollection():
 
 
     @property
-    def autodaily_settings(self) -> List[AutoDailySettings]:
+    def autodaily_settings(self) -> List[AutoMessageSettings]:
         result = [guild_settings.autodaily for guild_settings in self.__data.values() if guild_settings.autodaily.channel_id is not None]
+        return result
+
+    @property
+    def autotrader_settings(self) -> List[AutoMessageSettings]:
+        result = [guild_settings.autotrader for guild_settings in self.__data.values() if guild_settings.autotrader.channel_id is not None]
         return result
 
     @property
@@ -663,7 +740,7 @@ async def clean_up_invalid_server_settings(bot: Bot) -> None:
         await GUILD_SETTINGS.delete_guild_settings(invalid_guild_id)
 
 
-async def get_autodaily_settings_legacy(bot: Bot, utc_now: datetime, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+async def get_autodaily_settings_legacy(bot: Bot, utc_now: datetime, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoMessageSettings]:
     if guild_id:
         autodaily_settings = await GUILD_SETTINGS.get(bot, guild_id)
         return [autodaily_settings]
@@ -675,7 +752,7 @@ async def get_autodaily_settings_legacy(bot: Bot, utc_now: datetime, guild_id: i
     return result
 
 
-async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoDailySettings]:
+async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoMessageSettings]:
     if guild_id:
         if not bot:
             raise ValueError('You need to provide the bot, when specifying the guild_id.')
@@ -692,17 +769,48 @@ async def get_autodaily_settings(utc_now: datetime = None, bot: Bot = None, guil
     return result
 
 
-async def get_autodaily_settings_for_guild(bot: Bot, guild_id: int) -> AutoDailySettings:
+async def get_autodaily_settings_for_guild(bot: Bot, guild_id: int) -> AutoMessageSettings:
     autodaily_settings = await GUILD_SETTINGS.get(bot, guild_id)
     return autodaily_settings
 
 
-async def get_autodaily_settings_without_post(autodaily_settings: List[AutoDailySettings]) -> List[AutoDailySettings]:
+async def get_autodaily_settings_without_post(autodaily_settings: List[AutoMessageSettings]) -> List[AutoMessageSettings]:
     if autodaily_settings is None:
         autodaily_settings = GUILD_SETTINGS.autodaily_settings
 
-    result = [autodaily_settings for autodaily_settings in GUILD_SETTINGS.autodaily_settings if autodaily_settings.no_post_yet]
+    result = [autodaily_settings for autodaily_settings in autodaily_settings if autodaily_settings.no_post_yet]
     utils.dbg_prnt(f'[get_autodaily_settings_without_post] retrieved auto-daily settings for {len(result)} guilds, without a post yet.')
+    return result
+
+
+async def get_autotrader_settings(utc_now: datetime = None, bot: Bot = None, guild_id: int = None, can_post: bool = None, no_post_yet: bool = False) -> List[AutoMessageSettings]:
+    if guild_id:
+        if not bot:
+            raise ValueError('You need to provide the bot, when specifying the guild_id.')
+        autotrader_settings = await get_autotrader_settings_for_guild(bot, guild_id)
+        return [autotrader_settings]
+
+    result = [autotrader_settings for autotrader_settings in GUILD_SETTINGS.autotrader_settings if autotrader_settings.channel_id]
+    utils.dbg_prnt(f'[get_autotrader_settings] retrieved auto-trader settings for {len(result)} guilds')
+    if no_post_yet:
+        return await get_autotrader_settings_without_post(result)
+
+    if utc_now:
+        result = [autotrader_settings for autotrader_settings in result if not autotrader_settings.latest_message_created_at or autotrader_settings.latest_message_created_at.date != utc_now.date]
+    return result
+
+
+async def get_autotrader_settings_for_guild(bot: Bot, guild_id: int) -> AutoMessageSettings:
+    autotrader_settings = await GUILD_SETTINGS.get(bot, guild_id)
+    return autotrader_settings
+
+
+async def get_autotrader_settings_without_post(autotrader_settings: List[AutoMessageSettings]) -> List[AutoMessageSettings]:
+    if autotrader_settings is None:
+        autotrader_settings = GUILD_SETTINGS.autotrader_settings
+
+    result = [autotrader_settings for autotrader_settings in autotrader_settings if autotrader_settings.no_post_yet]
+    utils.dbg_prnt(f'[get_autotrader_settings_without_post] retrieved auto-trader settings for {len(result)} guilds, without a post yet.')
     return result
 
 
@@ -775,13 +883,28 @@ async def __fix_prefixes() -> bool:
 
 def __prettify_guild_settings(guild_settings: Dict[str, str]) -> List[Tuple[str, str]]:
     result = []
-    if 'autodaily_error' in guild_settings:
-        result.append(('Auto-daily settings', guild_settings['autodaily_error']))
+    autodaily_error = guild_settings.get(f'{AutoMessageType.DAILY}_error')
+    if autodaily_error:
+        result.append(('Auto-daily settings', autodaily_error))
     else:
-        if 'autodaily_channel' in guild_settings:
-            result.append(('Auto-daily channel', guild_settings['autodaily_channel']))
-        if 'autodaily_mode' in guild_settings:
-            result.append(('Auto-daily mode', guild_settings['autodaily_mode']))
+        autodaily_channel = guild_settings.get(f'{AutoMessageType.DAILY}_channel')
+        if autodaily_channel:
+            result.append(('Auto-daily channel', autodaily_channel))
+        autodaily_mode = guild_settings.get(f'{AutoMessageType.DAILY}_mode')
+        if autodaily_mode:
+            result.append(('Auto-daily mode', autodaily_mode))
+
+    autotrader_error = guild_settings.get(f'{AutoMessageType.TRADER}_error')
+    if autotrader_error:
+        result.append(('Auto-trader settings', autotrader_error))
+    else:
+        autotrader_channel = guild_settings.get(f'{AutoMessageType.TRADER}_channel')
+        if autotrader_channel:
+            result.append(('Auto-trader channel', autotrader_channel))
+        autotrader_mode = guild_settings.get(f'{AutoMessageType.TRADER}_mode')
+        if autotrader_mode:
+            result.append(('Auto-trader mode', autotrader_mode))
+
     if 'pagination' in guild_settings:
         result.append(('Pagination', guild_settings['pagination']))
     if 'prefix' in guild_settings:
@@ -824,13 +947,13 @@ def _convert_to_on_off(value: bool) -> str:
         return '<NOT SET>'
 
 
-def _convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
-    if value == AutoDailyChangeMode.DELETE_AND_POST_NEW:
-        return 'Delete daily post and post new daily on change.'
-    elif value == AutoDailyChangeMode.EDIT:
-        return 'Edit daily post on change.'
-    elif value == AutoDailyChangeMode.POST_NEW:
-        return 'Post new daily on change.'
+def _convert_to_edit_delete(value: AutoMessageChangeMode) -> str:
+    if value == AutoMessageChangeMode.DELETE_AND_POST_NEW:
+        return 'Delete current post and post new message on change.'
+    elif value == AutoMessageChangeMode.EDIT:
+        return 'Edit current post on change.'
+    elif value == AutoMessageChangeMode.POST_NEW:
+        return 'Post new message on change.'
     else:
         return '<not specified>'
 
@@ -840,24 +963,32 @@ def _convert_to_edit_delete(value: AutoDailyChangeMode) -> str:
 
 # ---------- DB functions ----------
 
-async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any]]:
-    wheres = [f'({_COLUMN_NAME_DAILY_CHANNEL_ID} IS NOT NULL)']
+async def db_get_automessage_settings(auto_message_type: AutoMessageType, guild_id: int = None, can_post: bool = None, only_guild_ids: bool = False, no_post_yet: bool = False) -> List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any]]:
+    wheres = [f'({_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][auto_message_type]} IS NOT NULL)']
     if guild_id is not None:
         wheres.append(utils.database.get_where_string(_COLUMN_NAME_GUILD_ID, column_value=guild_id))
     if can_post is not None:
-        wheres.append(utils.database.get_where_string(_COLUMN_NAME_DAILY_CAN_POST, column_value=can_post))
+        wheres.append(utils.database.get_where_string(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][auto_message_type], column_value=can_post))
     if no_post_yet is True:
-        wheres.append(utils.database.get_where_string(_COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, column_value=None))
+        wheres.append(utils.database.get_where_string(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][auto_message_type], column_value=None))
     if only_guild_ids:
         setting_names = [_COLUMN_NAME_GUILD_ID]
     else:
-        setting_names = [_COLUMN_NAME_GUILD_ID, _COLUMN_NAME_DAILY_CHANNEL_ID, _COLUMN_NAME_DAILY_CAN_POST, _COLUMN_NAME_DAILY_LATEST_MESSAGE_ID, _COLUMN_NAME_DAILY_CHANGE_MODE, _COLUMN_NAME_DAILY_LATEST_MESSAGE_CREATED_AT, _COLUMN_NAME_DAILY_LATEST_MESSAGE_MODIFIED_AT]
+        setting_names = [
+            _COLUMN_NAME_GUILD_ID,
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CAN_POST][auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][auto_message_type],
+            _COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][auto_message_type],
+        ]
     settings = await db_get_server_settings(guild_id, setting_names=setting_names, additional_wheres=wheres)
     result = []
     for setting in settings:
         if only_guild_ids:
             intermediate = [setting[0]]
-            intermediate.extend([None] * (__AUTODAILY_SETTING_COUNT - 1))
+            intermediate.extend([None] * (__AUTOMESSAGE_SETTING_COUNT - 1))
             result.append(tuple(intermediate))
         else:
             result.append((
@@ -872,15 +1003,15 @@ async def db_get_autodaily_settings(guild_id: int = None, can_post: bool = None,
     if not result:
         if guild_id:
             intermediate = [guild_id]
-            intermediate.extend([None] * (__AUTODAILY_SETTING_COUNT - 1))
+            intermediate.extend([None] * (__AUTOMESSAGE_SETTING_COUNT - 1))
             result.append(tuple(intermediate))
         else:
-            result.append(tuple([None] * __AUTODAILY_SETTING_COUNT))
+            result.append(tuple([None] * __AUTOMESSAGE_SETTING_COUNT))
     return result
 
 
-async def db_get_daily_channel_id(guild_id: int) -> int:
-    setting_names = [_COLUMN_NAME_DAILY_CHANNEL_ID]
+async def db_get_automessage_channel_id(auto_message_type: AutoMessageType, guild_id: int) -> int:
+    setting_names = [_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANNEL_ID][auto_message_type]]
     result = await _db_get_server_setting(guild_id, setting_names=setting_names)
     return result[0] or None if result else None
 
@@ -945,8 +1076,8 @@ async def _db_create_server_settings(guild_id: int) -> bool:
     if await _db_get_has_settings(guild_id):
         return True
     else:
-        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAME_DAILY_CHANGE_MODE}) VALUES ($1, $2)'
-        success = await db.try_execute(query, [guild_id, DEFAULT_AUTODAILY_CHANGE_MODE])
+        query = f'INSERT INTO serversettings ({_COLUMN_NAME_GUILD_ID}, {_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.DAILY]}, {_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.TRADER]}) VALUES ($1, $2, $3)'
+        success = await db.try_execute(query, [guild_id, _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[AutoMessageType.DAILY], _AUTO_MESSAGE_DEFAULT_CHANGE_MODE[AutoMessageType.TRADER]])
         return success
 
 
@@ -1015,8 +1146,6 @@ async def _db_update_prefix(guild_id: int, prefix: str) -> bool:
 
 # ---------- Initialization & DEFAULT ----------
 
-DEFAULT_AUTODAILY_CHANGE_MODE: AutoDailyChangeMode = AutoDailyChangeMode.EDIT
-
 GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 
 
@@ -1026,4 +1155,4 @@ GUILD_SETTINGS: GuildSettingsCollection = GuildSettingsCollection()
 async def init(bot: Bot) -> None:
     await __fix_prefixes()
     await GUILD_SETTINGS.init(bot)
-    utils.dbg_prnt(f'Loaded {len(GUILD_SETTINGS.keys())} guild settings with {len(GUILD_SETTINGS.autodaily_settings)} autodaily settings.')
+    utils.dbg_prnt(f'Loaded {len(GUILD_SETTINGS.keys())} guild settings with {len(GUILD_SETTINGS.autodaily_settings)} auto-daily and {len(GUILD_SETTINGS.autotrader_settings)} auto-trader settings.')

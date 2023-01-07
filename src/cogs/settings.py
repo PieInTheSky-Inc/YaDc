@@ -521,7 +521,7 @@ class SettingsCog(_CogBase, name='Settings'):
         self._log_command_use(ctx)
         await self._assert_settings_command_valid(ctx)
 
-        autodaily_settings: _server_settings.AutoDailySettings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
+        autodaily_settings: _server_settings.AutoMessageSettings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
         if not text_channel:
             text_channel = ctx.channel
 

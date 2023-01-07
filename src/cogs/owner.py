@@ -89,15 +89,15 @@ class OwnerCog(_CogBase, name='Owner commands'):
         """
         self._log_command_use(ctx)
         guild = ctx.guild
-        channel_id = await _server_settings.db_get_daily_channel_id(guild.id)
+        channel_id = await _server_settings.db_get_automessage_channel_id(_server_settings.AutoMessageType.DAILY, guild.id)
         if channel_id is not None:
             text_channel = self.bot.get_channel(channel_id)
             as_embed = await _server_settings.get_use_embeds(ctx)
             output, output_embed, _ = await _dropship.get_dropship_text()
             if as_embed:
-                await _utils.discord.reply_with_output_to_channel(text_channel, output_embed)
+                await _utils.discord.post_output_to_channel(text_channel, output_embed)
             else:
-                await _utils.discord.reply_with_output_to_channel(text_channel, output)
+                await _utils.discord.post_output_to_channel(text_channel, output)
 
 
     @_command_group(name='db', brief='DB commands', hidden=True, invoke_without_command=True)

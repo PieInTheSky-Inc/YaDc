@@ -18,7 +18,7 @@ from . import pss_research as research
 from . import pss_room as room
 from . import pss_training as training
 from . import server_settings
-from .server_settings import AutoDailySettings
+from .server_settings import AutoMessageSettings
 from . import settings
 from .typehints import EntityInfo, SalesCache
 from . import utils
@@ -380,7 +380,7 @@ async def db_set_daily_info(daily_info: EntityInfo, utc_now: datetime) -> bool:
 
 
 async def get_daily_channels(ctx: Context, guild_id: int = None, can_post: bool = None) -> List[str]:
-    settings = await server_settings.db_get_autodaily_settings(guild_id, can_post)
+    settings = await server_settings.db_get_automessage_settings(server_settings.AutoMessageType.DAILY, guild_id, can_post)
     result = []
     at_least_one = False
     for (guild_id, channel_id, can_post, _, _, _, _) in settings:
@@ -425,7 +425,7 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
         return not utils.dicts_equal(daily_info, db_daily_info)
 
 
-def remove_duplicate_autodaily_settings(autodaily_settings: List[AutoDailySettings]) -> List[AutoDailySettings]:
+def remove_duplicate_autodaily_settings(autodaily_settings: List[AutoMessageSettings]) -> List[AutoMessageSettings]:
     if not autodaily_settings:
         return autodaily_settings
     result = {}
