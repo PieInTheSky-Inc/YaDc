@@ -99,6 +99,10 @@ async def on_ready() -> None:
         print('Starting auto-daily loop.')
         autodaily_loop.start()
 
+    if settings.FEATURE_AUTOTRADER_ENABLED:
+        print('Starting auto-trader loop.')
+        autotrader_loop.start()
+
 
 @BOT.event
 async def on_command_error(ctx: Context, err: Exception) -> None:
@@ -246,9 +250,6 @@ async def on_guild_remove(guild: Guild) -> None:
 
 @tasks.loop(minutes=5)
 async def autodaily_loop() -> None:
-    if not settings.FEATURE_AUTODAILY_ENABLED:
-        autodaily_loop.cancel()
-
     MAX_GET_INFO_ATTEMPTS = 3
     utc_now = utils.get_utc_now()
     if utc_now < settings.POST_AUTODAILY_FROM:
@@ -409,9 +410,6 @@ __SECOND_AUTOTRADER_POST_TIME = datetime.time(12, 0, 30, 0, datetime.timezone.ut
 
 @tasks.loop(time=(__FIRST_AUTOTRADER_POST_TIME, __SECOND_AUTOTRADER_POST_TIME))
 async def autotrader_loop() -> None:
-    if not settings.FEATURE_AUTODAILY_ENABLED:
-        autotrader_loop.cancel()
-
     utc_now = utils.get_utc_now()
     # Get auto-trader message contents
     autotrader_message_embed, autotrader_message_text = await marker.get_autotrader_details()
