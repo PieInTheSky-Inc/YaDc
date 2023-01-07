@@ -480,7 +480,7 @@ def run_bot() -> None:
         load_cog('src.cogs.general')
         load_cog('src.cogs.current')
         #load_cog('src.cogs.raw')
-        #load_cog('src.cogs.settings')
+        load_cog('src.cogs.settings')
         #load_cog('src.cogs.wiki')
         #load_cog('src.cogs.owner')
         if settings.FEATURE_TOURNEYDATA_ENABLED:

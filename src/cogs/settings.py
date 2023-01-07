@@ -13,7 +13,7 @@ from .. import server_settings as _server_settings
 from .. import utils as _utils
 from ..yadc_bot import YadcBot as _YadcBot
 
-# TODO: Add auto-trader set & get commands
+
 
 class SettingsCog(_CogBase, name='Settings'):
     @_command_group(name='settings', brief='Display or change server settings', invoke_without_command=True)
@@ -132,7 +132,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
             success = await autodaily_settings.reset()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autodaily'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-daily settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -161,7 +161,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
             success = await autodaily_settings.reset_channel()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autodaily channel'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-daily channel setting for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -190,7 +190,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
             success = await autodaily_settings.reset_change_mode()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autodaily mode'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-daily notification settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -219,7 +219,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
             success = await autotrader_settings.reset()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autotrader'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-trader settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -248,7 +248,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
             success = await autotrader_settings.reset_channel()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autotrader channel'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-trader channel setting for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -277,7 +277,7 @@ class SettingsCog(_CogBase, name='Settings'):
             autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
             success = await autotrader_settings.reset_change_mode()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings autotrader mode'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to remove the auto-trader notification settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -306,7 +306,7 @@ class SettingsCog(_CogBase, name='Settings'):
             guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
             success = await guild_settings.reset_use_embeds()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings embed'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to reset the embed settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -335,7 +335,7 @@ class SettingsCog(_CogBase, name='Settings'):
             guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
             success = await guild_settings.reset_use_pagination()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings pagination'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to reset the pagination settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -363,7 +363,7 @@ class SettingsCog(_CogBase, name='Settings'):
             guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
             success = await guild_settings.reset_prefix()
             if success:
-                await ctx.invoke(self.bot.get_command(f'settings prefix'), '--on_reset')
+                await ctx.invoke(self.bot.get_command(f'settings'), '--on_reset')
             else:
                 raise _Error('An error ocurred while trying to reset the prefix settings for this server.\n'
                             + 'Please try again or contact the bot\'s author.')
@@ -429,7 +429,7 @@ class SettingsCog(_CogBase, name='Settings'):
         self._log_command_use(ctx)
         await self._assert_settings_command_valid(ctx)
 
-        autodaily_settings: _server_settings.AutoMessageSettings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
+        autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
         if not text_channel:
             text_channel = ctx.channel
 
@@ -443,23 +443,23 @@ class SettingsCog(_CogBase, name='Settings'):
 
         success = await autodaily_settings.set_channel(text_channel)
         if success:
-            await ctx.invoke(self.bot.get_command('settings autodaily channel'), '--on_set')
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
         else:
-            raise _Error(f'Could not set autodaily channel for this server. Please try again or contact the bot\'s author.')
+            raise _Error(f'Could not set auto-daily channel for this server. Please try again or contact the bot\'s author.')
 
 
-    @settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily repost mode')
+    @settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily change mode')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily_mode(self, ctx: _Context):
         """
-        Set the auto-daily mode for this server. If the contents of the daily post change, this setting decides, whether an existing daily post gets edited, or if it gets deleted and a new one gets posted instead.
+        Set the auto-daily change mode for this server. If the contents of the daily post change during the current star day, this setting decides, whether an existing trader post gets edited, or if it gets deleted and a new one gets posted instead or if a new message will posted without deleting the old one.
 
         You need the 'Manage Server' permission to use this command.
         This command can only be used on Discord servers/guilds.
 
         Usage:
         /settings set autodaily changemode
-        /settings set daily change
+        /settings set daily mode
 
         Examples:
         /settings set autodaily changemode - Toggles the change mode.
@@ -470,9 +470,92 @@ class SettingsCog(_CogBase, name='Settings'):
         autodaily_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autodaily
         success = await autodaily_settings.toggle_change_mode()
         if success:
-            await ctx.invoke(self.bot.get_command('settings autodaily changemode'), '--on_set')
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
         else:
-            raise _Error(f'Could not set repost on autodaily change mode for this server. Please try again or contact the bot\'s author.')
+            raise _Error(f'Could not set auto-daily change mode for this server. Please try again or contact the bot\'s author.')
+
+
+    @settings_set.group(name='autotrader', aliases=['trader'], brief='Change auto-trader settings', invoke_without_command=False)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_set_autotrader(self, ctx: _Context):
+        """
+        Set auto-trader settings for this server.
+
+        You need the 'Manage Server' permission to use any of these commands.
+        This command can only be used on Discord servers/guilds.
+        """
+        self._log_command_use(ctx)
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help('settings set autotrader')
+
+
+    @settings_set_autotrader.command(name='channel', aliases=['ch'], brief='Set auto-trader channel')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_set_autotrader_channel(self, ctx: _Context, text_channel: _TextChannel = None):
+        """
+        Set the auto-daily channel for this server. This channel will receive automatic /trader messages shortly after 12 pm and am UTC.
+
+        You need the 'Manage Server' permission to use this command.
+        This command can only be used on Discord servers/guilds.
+
+        Usage:
+        /settings set autotrader channel <text_channel_mention>
+        /settings set trader ch <text_channel_mention>
+
+        Parameters:
+        text_channel_mention: Optional. A mention of a text-channel on the current Discord server/guild. If omitted, the bot will attempt try to set the current channel.
+
+        Examples:
+        /settings set trader channel - Sets the current channel to receive the /trader message once a day.
+        /settings set autotrader ch #announcements - Sets the channel #announcements to receive the /trader message once a day.
+        """
+        self._log_command_use(ctx)
+        await self._assert_settings_command_valid(ctx)
+
+        autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
+        if not text_channel:
+            text_channel = ctx.channel
+
+        permissions = text_channel.permissions_for(ctx.me)
+        if permissions.read_messages is not True:
+            raise _Error('I don\'t have access to that channel.')
+        if permissions.read_message_history is not True:
+            raise _Error('I don\'t have access to the messages history in that channel.')
+        if permissions.send_messages is not True:
+            raise _Error('I don\'t have permission to post in that channel.')
+
+        success = await autotrader_settings.set_channel(text_channel)
+        if success:
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
+        else:
+            raise _Error(f'Could not set auto-trader channel for this server. Please try again or contact the bot\'s author.')
+
+
+    @settings_set_autotrader.command(name='changemode', aliases=['mode'], brief='Set auto-trader change mode')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def settings_set_autotrader_mode(self, ctx: _Context):
+        """
+        Set the auto-trader change mode for this server. When the contents of the /trader message change, this setting decides, whether an existing trader post gets edited, or if it gets deleted and a new one gets posted instead or if a new message will posted without deleting the old one.
+
+        You need the 'Manage Server' permission to use this command.
+        This command can only be used on Discord servers/guilds.
+
+        Usage:
+        /settings set autotrader changemode
+        /settings set trader mode
+
+        Examples:
+        /settings set autotrader changemode - Toggles the change mode.
+        """
+        self._log_command_use(ctx)
+        await self._assert_settings_command_valid(ctx)
+
+        autotrader_settings = (await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)).autotrader
+        success = await autotrader_settings.toggle_change_mode()
+        if success:
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
+        else:
+            raise _Error(f'Could not set auto-trader change mode for this server. Please try again or contact the bot\'s author.')
 
 
     @settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
@@ -504,7 +587,7 @@ class SettingsCog(_CogBase, name='Settings'):
         guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
         success = await guild_settings.set_use_embeds(switch)
         if success:
-            await ctx.invoke(self.bot.get_command('settings embed'), '--on_set')
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
         else:
             raise _Error(f'Could not set embed settings for this server. Please try again or contact the bot\'s author.')
 
@@ -538,7 +621,7 @@ class SettingsCog(_CogBase, name='Settings'):
         guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
         success = await guild_settings.set_use_pagination(switch)
         if success:
-            await ctx.invoke(self.bot.get_command('settings pagination'), '--on_set')
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
         else:
             raise _Error(f'Could not set pagination settings for this server. Please try again or contact the bot\'s author.')
 
@@ -568,7 +651,7 @@ class SettingsCog(_CogBase, name='Settings'):
         guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
         success = await guild_settings.set_prefix(prefix)
         if success:
-            await ctx.invoke(self.bot.get_command('settings prefix'), '--on_set')
+            await ctx.invoke(self.bot.get_command('settings'), '--on_set')
         else:
             raise _Error(f'Could not set prefix for this server. Please try again or contact the bot\'s author.')
 

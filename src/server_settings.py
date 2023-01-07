@@ -405,7 +405,8 @@ class GuildSettings(object):
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][AutoMessageType.DAILY]),
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.DAILY]),
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][AutoMessageType.DAILY]),
-            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.DAILY])
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.DAILY]),
+            AutoMessageType.DAILY,
         )
 
         self.__autotrader_settings: AutoMessageSettings = AutoMessageSettings(
@@ -416,7 +417,8 @@ class GuildSettings(object):
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_ID][AutoMessageType.TRADER]),
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.CHANGE_MODE][AutoMessageType.TRADER]),
             row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_CREATED_AT][AutoMessageType.TRADER]),
-            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.TRADER])
+            row.get(_COLUMN_NAMES_AUTO_MESSAGE[AutoMessageColumn.LATEST_MESSAGE_MODIFIED_AT][AutoMessageType.TRADER]),
+            AutoMessageType.TRADER,
         )
 
 
