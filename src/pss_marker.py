@@ -59,7 +59,7 @@ async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
     trader_info['offerings'] = offerings
     trader_details.update_entity_info(trader_info)
 
-    message =  await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
+    message = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
 
     trader_info['as_embed'] = True
     trader_details.update_entity_info(trader_info)

@@ -537,11 +537,15 @@ class EntityDetails(object):
 
 
     async def _get_details_properties(self, as_embed: bool, details_type: EntityDetailsType) -> List[CalculatedEntityDetailProperty]:
+        as_embed = as_embed or False
         if details_type == EntityDetailsType.EMBED:
             as_embed = True
             details_type = EntityDetailsType.LONG
         if self.__details[as_embed][details_type] is None and self.__properties[as_embed][details_type] is not None:
-            self.__details[as_embed][details_type] = [await self.__get_calculated_property(entity_detail_property) for entity_detail_property in self.__properties[as_embed][details_type]]
+            self.__details[as_embed][details_type] = []
+            for entity_detail_property in self.__properties[as_embed][details_type]:
+                self.__details[as_embed][details_type].append(await self.__get_calculated_property(entity_detail_property))
+            #self.__details[as_embed][details_type] = [await self.__get_calculated_property(entity_detail_property) for entity_detail_property in self.__properties[as_embed][details_type]]
         return self.__details[as_embed][details_type]
 
 
