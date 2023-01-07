@@ -23,6 +23,7 @@ from ..pss_exception import InvalidParameterValueError as _InvalidParameterValue
 from ..pss_exception import NotFound as _NotFound
 from .. import pss_fleet as _fleet
 from .. import pss_item as _item
+from .. import pss_marker as _marker
 from .. import pss_research as _research
 from .. import pss_room as _room
 from .. import pss_ship as _ship
@@ -777,6 +778,19 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             else:
                 output.extend(('\n', _tourney.convert_tourney_embed_to_plain_text(tourney_embed)))
 
+        await _utils.discord.respond_with_output(ctx, output)
+
+
+    @_slash_command(name='trader', brief='Get trader ship info')
+    @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
+    async def trader(self, ctx: _Context):
+        """
+        Get detailed information on the current offerings of the trader NPC ship.
+        """
+        self._log_command_use(ctx)
+
+        await ctx.interaction.response.defer()
+        output = await _marker.get_trader_details(ctx, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 
