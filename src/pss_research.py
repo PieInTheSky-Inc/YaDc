@@ -195,7 +195,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Required LAB lvl', True, entity_property_name='RequiredLabLevel'),
             entity.EntityDetailProperty('Required Research', True, transform_function=__get_required_research_name)
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Cost', False, transform_function=__get_costs),
             entity.EntityDetailProperty('Duration', False, transform_function=__get_duration),
             entity.EntityDetailProperty('LAB lvl', True, entity_property_name='RequiredLabLevel')

@@ -271,7 +271,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Starts at', True, entity_property_name='FromDate', transform_function=core.transform_pss_datetime_with_timespan, display_inline_for_embeds=False, omit_time_if_zero=True, include_seconds_in_timespan=False),
             entity.EntityDetailProperty('Ends at', True, entity_property_name='EndDate', transform_function=core.transform_pss_datetime_with_timespan, display_inline_for_embeds=False, omit_time_if_zero=True, include_seconds_in_timespan=False),
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Ends at', True, entity_property_name='EndDate', transform_function=core.transform_pss_datetime_with_timespan, display_inline_for_embeds=False, omit_time_if_zero=True, include_seconds_in_timespan=False)
         ],
         properties_mini=[]

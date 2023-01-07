@@ -130,7 +130,7 @@ def __convert_xml_to_dict(root: _ElementTree.Element, include_root: bool = True,
     for child in root:
         tag = child.tag
         key = None
-        if tag_count_map[tag] > 1:
+        if tag_count_map[tag] >= 1:
             id_attr_names = _pss_data.ID_NAMES_INFO.get(tag)
             if id_attr_names:
                 id_attr_values = [child.attrib[id_attr_name] for id_attr_name in id_attr_names]

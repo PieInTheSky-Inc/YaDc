@@ -46,9 +46,10 @@ EntityDetailsCreationPropertiesCollection = Dict[str, Union['EntityDetailPropert
 
 class EntityDetailsType(IntEnum):
     LONG = 1
-    SHORT = 2
-    MINI = 3
-    EMBED = 4
+    MEDIUM = 2
+    SHORT = 3
+    MINI = 4
+    EMBED = 5
 
 
 
@@ -110,7 +111,16 @@ class CalculatedEntityDetailProperty(object):
 
 
 class EntityDetailProperty(object):
-    def __init__(self, display_name: Union[str, Callable[[EntityInfo, EntitiesData], str], 'EntityDetailProperty'], force_display_name: bool, omit_if_none: bool = True, entity_property_name: str = None, transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None, embed_only: bool = False, text_only: bool = False, **transform_kwargs) -> None:
+    def __init__(self,
+        display_name: Union[str, Callable[[EntityInfo, EntitiesData], str], 'EntityDetailProperty'],
+        force_display_name: bool,
+        omit_if_none: bool = True,
+        entity_property_name: str = None,
+        transform_function: Union[Callable[[str], Union[str, Awaitable[str]]], Callable[[EntityInfo, Tuple[EntitiesData, ...]], Union[str, Awaitable[str]]]] = None,
+        embed_only: bool = False,
+        text_only: bool = False,
+        **transform_kwargs
+    ) -> None:
         if embed_only and text_only:
             raise ValueError('Only one of these parameters may be True at a time: embed_only, text_only')
         self.__embed_only: bool = embed_only or False
@@ -239,10 +249,12 @@ class EntityDetailTextOnlyProperty(EntityDetailProperty):
 
 class EntityDetailPropertyCollection(object):
     def __init__(self, property_long: EntityDetailProperty,
+                       property_medium: EntityDetailProperty = None,
                        property_short: EntityDetailProperty = None,
                        property_mini: EntityDetailProperty = None,
                        property_embed: EntityDetailProperty = None):
         self.__property_long: EntityDetailProperty = property_long
+        self.__property_medium: EntityDetailProperty = property_medium or None
         self.__property_short: EntityDetailProperty = property_short or None
         self.__property_mini: EntityDetailProperty = property_mini or None
         self.__property_embed: EntityDetailProperty = property_embed or None
@@ -253,11 +265,18 @@ class EntityDetailPropertyCollection(object):
         return self.__property_long
 
     @property
+    def property_medium(self) -> EntityDetailProperty:
+        if self.__property_medium:
+            return self.__property_medium
+        else:
+            return self.property_long
+
+    @property
     def property_short(self) -> EntityDetailProperty:
         if self.__property_short:
             return self.__property_short
         else:
-            return self.property_long
+            return self.property_medium
 
     @property
     def property_mini(self) -> EntityDetailProperty:
@@ -277,6 +296,8 @@ class EntityDetailPropertyCollection(object):
     def get_property(self, entity_details_type: EntityDetailsType) -> List[EntityDetailProperty]:
         if entity_details_type == EntityDetailsType.LONG:
             return self.property_long
+        elif entity_details_type == EntityDetailsType.MEDIUM:
+            return self.property_medium
         elif entity_details_type == EntityDetailsType.SHORT:
             return self.property_short
         elif entity_details_type == EntityDetailsType.MINI:
@@ -292,9 +313,11 @@ class EntityDetailPropertyCollection(object):
 
 class EntityDetailPropertyListCollection(object):
     def __init__(self, properties_long: List[EntityDetailProperty],
+                       properties_medium: List[EntityDetailProperty] = None,
                        properties_short: List[EntityDetailProperty] = None,
                        properties_mini: List[EntityDetailProperty] = None):
         self.__properties_long: List[EntityDetailProperty] = properties_long
+        self.__properties_medium: List[EntityDetailProperty] = properties_medium
         self.__properties_short: List[EntityDetailProperty] = properties_short
         self.__properties_mini: List[EntityDetailProperty] = properties_mini
 
@@ -304,11 +327,18 @@ class EntityDetailPropertyListCollection(object):
         return self.__properties_long
 
     @property
+    def properties_medium(self) -> List[EntityDetailProperty]:
+        if self.__properties_medium is not None:
+            return self.__properties_medium
+        else:
+            return self.properties_long
+
+    @property
     def properties_short(self) -> List[EntityDetailProperty]:
         if self.__properties_short is not None:
             return self.__properties_short
         else:
-            return self.properties_long
+            return self.properties_medium
 
     @property
     def properties_mini(self) -> List[EntityDetailProperty]:
@@ -355,11 +385,13 @@ class EntityDetails(object):
             self.__properties = {
                 False: {
                     EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.embed_only],
+                    EntityDetailsType.MEDIUM: [entity_property for entity_property in properties.properties_medium if not entity_property.embed_only],
                     EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.embed_only],
                     EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.embed_only]
                 },
                 True: {
                     EntityDetailsType.LONG: [entity_property for entity_property in properties.properties_long if not entity_property.text_only],
+                    EntityDetailsType.MEDIUM: [entity_property for entity_property in properties.properties_medium if not entity_property.text_only],
                     EntityDetailsType.SHORT: [entity_property for entity_property in properties.properties_short if not entity_property.text_only],
                     EntityDetailsType.MINI: [entity_property for entity_property in properties.properties_mini if not entity_property.text_only]
                 }
@@ -368,11 +400,13 @@ class EntityDetails(object):
             self.__properties = {
                 False: {
                     EntityDetailsType.LONG: [],
+                    EntityDetailsType.MEDIUM: [],
                     EntityDetailsType.SHORT: [],
                     EntityDetailsType.MINI: []
                 },
                 True: {
                     EntityDetailsType.LONG: [],
+                    EntityDetailsType.MEDIUM: [],
                     EntityDetailsType.SHORT: [],
                     EntityDetailsType.MINI: []
                 }
@@ -384,11 +418,13 @@ class EntityDetails(object):
         self.__details: Dict[bool, Dict[EntityDetailsType, List[CalculatedEntityDetailProperty]]] = {
             False: {
                 EntityDetailsType.LONG: None,
+                EntityDetailsType.MEDIUM: None,
                 EntityDetailsType.SHORT: None,
                 EntityDetailsType.MINI: None
             },
             True: {
                 EntityDetailsType.LONG: None,
+                EntityDetailsType.MEDIUM: None,
                 EntityDetailsType.SHORT: None,
                 EntityDetailsType.MINI: None
             }
@@ -436,6 +472,8 @@ class EntityDetails(object):
             raise ValueError(ERROR_ENTITY_DETAILS_TYPE_EMBED_NOT_ALLOWED)
         if details_type == EntityDetailsType.LONG:
             return await self.__get_details_long_as_text()
+        elif details_type == EntityDetailsType.MEDIUM:
+            return await self.__get_details_medium_as_text(for_embed)
         elif details_type == EntityDetailsType.SHORT:
             return await self.__get_details_short_as_text(for_embed)
         elif details_type == EntityDetailsType.MINI:
@@ -468,6 +506,16 @@ class EntityDetails(object):
         title, description = await self.__get_title_and_description(details_type)
         details = await self._get_details_properties(as_embed, details_type)
         return title, description, details
+
+
+    def update_entity_info(self, new_entity_info: EntityInfo) -> None:
+        """
+        Updates the property 'entity_info'.
+
+        Caution: The property 'entities_data' does not get updated accordingly!
+        """
+        if self.__entity_info:
+            self.__entity_info = new_entity_info
 
 
     async def _get_description(self, details_type: EntityDetailsType = EntityDetailsType.LONG) -> str:
@@ -523,6 +571,24 @@ class EntityDetails(object):
         return result
 
 
+    async def __get_details_medium_as_text(self, for_embed: bool) -> List[str]:
+        title, description, details_short = await self.get_full_details(for_embed, EntityDetailsType.MEDIUM)
+        title_text = title if title else ''
+        if description:
+            if title_text:
+                description = f' ({description})'
+            else:
+                description =f'({description})'
+        else:
+            description = ''
+        details = [detail.get_text(separator=DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR) for detail in details_short if detail.value]
+        details_text = DEFAULT_DETAILS_PROPERTIES_SEPARATOR.join([detail for detail in details if detail])
+        if details_text and title_text:
+            details_text = f' ({details_text})'
+        result = f'{self.prefix}{title_text}{description}{details_text}'
+        return [result]
+
+
     async def __get_details_mini_as_text(self, for_embed: bool) -> List[str]:
         title, description, details_mini = await self.get_full_details(for_embed, EntityDetailsType.MINI)
         title_text = title if title else ''
@@ -561,6 +627,8 @@ class EntityDetails(object):
 
         if details_type == EntityDetailsType.LONG:
             prop = property_collection.property_long
+        elif details_type == EntityDetailsType.MEDIUM:
+            prop = property_collection.property_medium
         elif details_type == EntityDetailsType.SHORT:
             prop = property_collection.property_short
         elif details_type == EntityDetailsType.MINI:
@@ -634,10 +702,10 @@ class EntityDetailsCollection():
             detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
             title = custom_title or Embed.Empty
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-            display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.SHORT)
+            display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.MEDIUM)
             fields = []
             for entity_details in self.__entities_details:
-                entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.SHORT)
+                entity_title, _, entity_details_properties = await entity_details.get_full_details(True, EntityDetailsType.MEDIUM)
                 field_name = entity_title if '**' in entity_title else f'**{entity_title}**'
                 details = detail_property_separator.join([detail.get_text(DEFAULT_DETAIL_PROPERTY_SHORT_SEPARATOR, suppress_display_name=True, force_value=True) for detail in entity_details_properties])
                 fields.append((field_name, details, display_inline))
@@ -674,7 +742,7 @@ class EntityDetailsCollection():
         return result
 
 
-    async def get_entities_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.SHORT, big_set_threshold: int = None) -> List[str]:
+    async def get_entities_details_as_text(self, custom_title: str = None, custom_footer_text: str = None, big_set_details_type: EntityDetailsType = EntityDetailsType.MEDIUM, big_set_threshold: int = None) -> List[str]:
         result = []
         is_big_set = self._get_is_big_set(big_set_threshold)
         if custom_title:

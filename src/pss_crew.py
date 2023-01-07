@@ -601,7 +601,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Slots', True, transform_function=__get_slots),
             entity.EntityDetailProperty('Role scores', True, transform_function=__get_pixel_prestige_hyperlink)
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
             entity.EntityDetailProperty('Ability', False, transform_function=__get_ability),
             entity.EntityDetailProperty('Collection', True, transform_function=__get_collection_name)
@@ -624,7 +624,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailEmbedOnlyProperty(__get_members_count_display_name, True, transform_function=__get_collection_member_names, display_inline=False),
             entity.EntityDetailProperty('Hyperlink', False, transform_function=__get_collection_hyperlink)
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Perk', False, transform_function=__get_collection_perk),
             entity.EntityDetailProperty('Member count', False, transform_function=__get_collection_member_count)
         ]),

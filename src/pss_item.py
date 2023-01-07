@@ -457,8 +457,9 @@ def __get_ingredients(item_info: EntityInfo, items_data: EntitiesData, trainings
 
 
 def __get_item_bonus_type_and_value(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
+    use_emojis = kwargs.get('use_emojis', False)
     enhancements = get_all_enhancements(item_info)
-    result = ', '.join(f'{__get_pretty_enhancement(*enhancement)}' for enhancement in enhancements)
+    result = ', '.join(f'{__get_pretty_enhancement(*enhancement, use_emojis=use_emojis)}' for enhancement in enhancements)
     if result and item_info['ItemType'] == 'Equipment' and 'Equipment' in item_info['ItemSubType'] and lookups.RARITY_ORDER_LOOKUP[item_info['Rarity']] <= 30:
         result += ' (+ ??)'
     return result or None
@@ -746,8 +747,10 @@ def __get_item_infos_by_name(item_name: str, items_data: EntitiesData, return_be
     return result
 
 
-def __get_pretty_enhancement(enhancement_type: str, enhancement_value: float) -> str:
+def __get_pretty_enhancement(enhancement_type: str, enhancement_value: float, use_emojis: bool = False) -> str:
     modifier = lookups.STAT_UNITS_ENHANCEMENT_MODIFIER_LOOKUP.get(enhancement_type) or ''
+    if use_emojis:
+        enhancement_type = lookups.STAT_EMOJI_LOOKUP.get(enhancement_type)
     result = f'{enhancement_type} +{enhancement_value}{modifier}'
     return result
 
@@ -851,7 +854,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
     ),
     'description': entity.EntityDetailPropertyCollection(
         entity.EntityDetailProperty('Description', False, entity_property_name='ItemDesignDescription'),
-        property_short=entity.NO_PROPERTY
+        property_medium=entity.NO_PROPERTY
     ),
     'base': entity.EntityDetailPropertyListCollection(
         [
@@ -865,13 +868,18 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
             entity.EntityDetailProperty('Requirements', True, entity_property_name='RequirementString', transform_function=__get_requirements),
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
             entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
             entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
             entity.EntityDetailProperty('Can sell', False, transform_function=__get_can_sell, text_only=True),
             entity.EntityDetailProperty('Market price', False, transform_function=__get_pretty_market_price, embed_only=True),
             entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
+        ],
+        properties_short=[
+            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
+            entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value, use_emojis=True),
+            entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
         ],
         properties_mini=[]
     ),
@@ -892,9 +900,16 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
             entity.EntityDetailProperty('Can sell', False, transform_function=__get_can_sell)
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
             entity.EntityDetailProperty('Market price (Fair price)', False, transform_function=__get_item_price)
+        ]
+    ),
+    'trader': entity.EntityDetailPropertyListCollection(
+        [
+            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
+            entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
+            entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
         ]
     ),
     'upgrade': entity.EntityDetailPropertyListCollection(

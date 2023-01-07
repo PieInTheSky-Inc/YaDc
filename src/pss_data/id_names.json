@@ -50,6 +50,7 @@
     "Sprite": ["SpriteId"],
     "StarSystem": ["StarSystemId"],
     "StarSystemLink": ["StarSystemLinkId"],
+    "StarSystemMarker": ["StarSystemMarkerId"],
     "TrainingDesign": ["TrainingDesignId"],
     "User": ["Id"],
     "UserEmailPasswordAuthorize": null
