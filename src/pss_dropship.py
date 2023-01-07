@@ -131,7 +131,7 @@ async def __get_current_events_details_as_text(situations_designs_data: Entities
         result = []
         sprite_id = None
         for event_details in events_details:
-            result.append(''.join(await event_details.get_details_as_text(entity.EntityDetailsType.SHORT)))
+            result.append(''.join(await event_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)))
             icon_sprite_id = event_details.entity_info['IconSpriteId']
             if not sprite_id and entity.entity_property_has_value(icon_sprite_id):
                 sprite_id = icon_sprite_id
@@ -152,11 +152,11 @@ async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_dat
     if daily_info:
         common_crew_id = daily_info['CommonCrewId']
         common_crew_details = crew.get_char_details_by_id(common_crew_id, chars_data, collections_data)
-        common_crew_info = await common_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        common_crew_info = await common_crew_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)
 
         hero_crew_id = daily_info['HeroCrewId']
         hero_crew_details = crew.get_char_details_by_id(hero_crew_id, chars_data, collections_data)
-        hero_crew_info = await hero_crew_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        hero_crew_info = await hero_crew_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)
 
         common_crew_rarity = common_crew_details.entity_info['Rarity']
         if common_crew_rarity in ['Unique', 'Epic', 'Hero', 'Special', 'Legendary']:
@@ -180,7 +180,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
             _, item_id, amount, _ = utils.parse.entity_string(cargo_info)
             if item_id:
                 item_details = item.get_item_details_by_id(item_id, items_data, trainings_data)
-                item_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+                item_details = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.MEDIUM))
                 currency_type, currency_id, currency_amount, _ = utils.parse.entity_string(cargo_prices[i])
                 currency_type = currency_type.lower()
                 if 'item' in currency_type:
@@ -211,17 +211,17 @@ async def __get_shop_msg_from_info_as_text(daily_info: EntityInfo, chars_data: E
     entity_details_txt = []
     if shop_type == 'Character':
         char_details = crew.get_char_details_by_id(entity_id, chars_data, collections_data)
-        entity_details_txt = await char_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await char_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)
         sprite_id = char_details.entity_info.get('ProfileSpriteId')
     elif shop_type == 'Item':
         item_details = item.get_item_details_by_id(entity_id, items_data, trainings_data)
-        entity_details_txt = await item_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await item_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)
         logo_sprite_id = item_details.entity_info.get('LogoSpriteId')
         image_sprite_id = item_details.entity_info.get('ImageSpriteId')
         sprite_id = logo_sprite_id if logo_sprite_id != image_sprite_id else None
     elif shop_type == 'Room':
         room_details = room.get_room_details_by_id(entity_id, rooms_data, None, None, None)
-        entity_details_txt = await room_details.get_details_as_text(entity.EntityDetailsType.SHORT)
+        entity_details_txt = await room_details.get_details_as_text(entity.EntityDetailsType.MEDIUM)
         sprite_id = room_details.entity_info.get('ImageSpriteId')
     else:
         result.append('-')
@@ -251,7 +251,7 @@ async def __get_daily_reward_from_info_as_text(daily_info: EntityInfo, item_data
     for item_reward in item_rewards:
         item_id, amount = item_reward.split('x')
         item_details: entity.EntityDetails = item.get_item_details_by_id(item_id, item_data, trainings_data)
-        item_details_text = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.SHORT))
+        item_details_text = ''.join(await item_details.get_details_as_text(entity.EntityDetailsType.MEDIUM))
         result.append(f'{amount} x {item_details_text}')
 
     return result

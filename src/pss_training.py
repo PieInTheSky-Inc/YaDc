@@ -269,7 +269,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, text_only=True),
             entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, embed_only=True, add_line_breaks=True)
     ],
-    properties_short=[
+    properties_medium=[
             entity.EntityDetailProperty('Consumable', True, transform_function=__get_training_item_name, embed_only=True),
             entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, text_only=True),
             entity.EntityDetailProperty('Stat gain chances', False, transform_function=__get_stat_chances, embed_only=True, add_line_breaks=True)

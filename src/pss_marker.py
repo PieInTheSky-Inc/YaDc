@@ -53,12 +53,17 @@ async def get_trader_details(ctx: _Context, as_embed: bool = _settings.USE_EMBED
     if not trader_details:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
 
-    contents = await __get_trader_offerings(trader_details.entity_info, items_data)
+    offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
+    trader_info = trader_details.entity_info
+    trader_info['offerings'] = offerings
+    trader_info['as_embed'] = as_embed
+    trader_details.update_entity_info(trader_info)
 
     if as_embed:
-        pass
+        result = await trader_details.get_details_as_embed(ctx)
     else:
-        pass
+        result = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
+    return [result]
 
 
 def get_star_system_marker_details_by_id(star_system_marker_id: str, stars_systems_markers_data: _EntitiesData) -> _entity.EntityDetails:
@@ -80,13 +85,33 @@ def get_trader_info(stars_systems_markers_data: _EntitiesData) -> _entity.Entity
 
 # ---------- Transformation functions ----------
 
-async def __get(entity_info: _EntityInfo, entities_data: _EntitiesData, **kwargs) -> _Optional[str]:
-    pass
+async def __get_expiration_dates(star_system_marker_info: _EntityInfo, stars_systems_markers_data: _EntitiesData, **kwargs) -> _Optional[str]:
+    expiration_date_1 = _utils.parse.pss_datetime(star_system_marker_info.get('StarSystemArrivalDate'))
+    expiration_date_2 = _utils.parse.pss_datetime(star_system_marker_info.get('ExpiryDate'))
+    result = [
+        f'Offers 1 & 2 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_1)} ({_utils.datetime.get_discord_timedelta(expiration_date_1)})',
+        f'Offers 3 - 6 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_2)} ({_utils.datetime.get_discord_timedelta(expiration_date_2)})',
+    ]
+    return '\n'.join(result)
 
 
-async def __get_sprite_download_path(star_system_marker_info: _EntityInfo, stars_systems_markers_data: _EntitiesData, **kwargs) -> _Optional[str]:
-    result = _sprites.get_sprite_download_url(star_system_marker_info['SpriteId'])
-    return result
+async def __get_offer_details(star_system_marker_info: _EntityInfo, stars_systems_markers_data: _EntitiesData, **kwargs) -> _Optional[str]:
+    offerings = star_system_marker_info.get('offerings')
+    index = kwargs.get('index', -1)
+    if offerings and index >= 0:
+        as_embed = star_system_marker_info.get('as_embed')
+        offer = offerings[index]
+
+        item_details: _entity.EntityDetails = offer[0]
+        currency_amount = offer[1]
+        currency_type = offer[2]
+
+        result = [
+            '\n'.join(await item_details.get_details_as_text(_entity.EntityDetailsType.SHORT, for_embed=as_embed)),
+            f'Cost: {currency_amount}x {currency_type}'
+        ]
+        return '\n'.join(result)
+    return None
 
 
 
@@ -102,7 +127,7 @@ async def __get_list_system_star_markers_base_path() -> str:
 
 async def __get_trader_offerings(trader_info: _EntityInfo, items_data: _EntitiesData) -> _List[_Tuple[_entity.EntityDetails, int, str]]:
     """
-    Returns a list of tuples: EntityDetails, currency amount, currency type
+    Returns a list of tuples: ItemDetails, currency amount, currency type
     """
     rewards = _utils.parse.entity_multi_string(trader_info['RewardString'], '|')
     costs = _utils.parse.entity_multi_string(trader_info['CostString'], '|')
@@ -174,20 +199,20 @@ def __create_stars_systems_markers_details_collection_from_infos(entities_design
 __properties: _entity.EntityDetailsCreationPropertiesCollection = {
     'title': _entity.EntityDetailPropertyCollection(
         _entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name=STAR_SYSTEM_MARKER_DESCRIPTION_PROPERTY_NAME, transform_function=None),
-        property_short=_entity.NO_PROPERTY,
-        property_mini=_entity.NO_PROPERTY
     ),
     'description': _entity.EntityDetailPropertyCollection(
         _entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='Description', transform_function=None),
-        property_short=_entity.NO_PROPERTY,
-        property_mini=_entity.NO_PROPERTY
     ),
     'properties': _entity.EntityDetailPropertyListCollection(
         [
-            _entity.EntityDetailProperty('Name', True, entity_property_name='', transform_function=None),
+            _entity.EntityDetailProperty('Offer 1', True, transform_function=__get_offer_details, index=0, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Offer 2', True, transform_function=__get_offer_details, index=1, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Offer 3', True, transform_function=__get_offer_details, index=2, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Offer 4', True, transform_function=__get_offer_details, index=3, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Offer 5', True, transform_function=__get_offer_details, index=4, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Offer 6', True, transform_function=__get_offer_details, index=5, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Expiring at', True, transform_function=__get_expiration_dates, display_inline_for_embeds=False),
         ],
-        properties_short=[],
-        properties_mini=[]
         ),
     'embed_settings': {
         'author_url': _entity.NO_PROPERTY,
@@ -195,8 +220,8 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
         'description': _entity.EntityDetailProperty('description', False, entity_property_name='Description'),
         'footer': _entity.NO_PROPERTY,
         'icon_url': _entity.NO_PROPERTY,
-        'image_url': _entity.NO_PROPERTY,
-        'thumbnail_url': _entity.EntityDetailProperty('icon_url', False, transform_function=__get_sprite_download_path),
+        'image_url': _entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=_sprites.get_download_sprite_link_by_property),
+        'thumbnail_url': _entity.NO_PROPERTY,
         'timestamp': _entity.NO_PROPERTY,
         'title': _entity.EntityDetailProperty('title', False, entity_property_name=STAR_SYSTEM_MARKER_DESCRIPTION_PROPERTY_NAME),
     }

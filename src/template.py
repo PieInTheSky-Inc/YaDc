@@ -122,11 +122,13 @@ entities_designs_retriever = _entity.EntityRetriever(
 __properties: _entity.EntityDetailsCreationPropertiesCollection = {
     'title': _entity.EntityDetailPropertyCollection(
         _entity.EntityDetailProperty('Title', False, omit_if_none=False, entity_property_name='', transform_function=None),
+        property_medium=_entity.NO_PROPERTY,
         property_short=_entity.NO_PROPERTY,
         property_mini=_entity.NO_PROPERTY
     ),
     'description': _entity.EntityDetailPropertyCollection(
         _entity.EntityDetailProperty('Description', False, omit_if_none=False, entity_property_name='', transform_function=None),
+        property_medium=_entity.NO_PROPERTY,
         property_short=_entity.NO_PROPERTY,
         property_mini=_entity.NO_PROPERTY
     ),
@@ -134,6 +136,7 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
         [
             _entity.EntityDetailProperty('Name', True, entity_property_name='', transform_function=None),
         ],
+        properties_medium=[],
         properties_short=[],
         properties_mini=[]
         ),

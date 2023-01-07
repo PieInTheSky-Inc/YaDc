@@ -104,7 +104,7 @@ async def get_oldest_expired_sale_entity_details(utc_now: datetime, for_embed: b
     sales_infos = await __process_db_sales_infos(db_sales_infos, utc_now)
     sales_infos = reversed(sales_infos)
     for sales_info in sales_infos:
-        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.SHORT, for_embed=for_embed)))
+        expiring_entity_details = '\n'.join((await sales_info['entity_details'].get_details_as_text(entity.EntityDetailsType.MEDIUM, for_embed=for_embed)))
         price = sales_info['price']
         currency = sales_info['currency']
         result = f'{expiring_entity_details}: {price} {currency}'

@@ -1102,7 +1102,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['more_info'], True, transform_function=__convert_room_flags),
             entity.EntityDetailProperty(__display_name_properties['wikia'], True, transform_function=__get_wikia_link),
         ],
-        properties_short=[
+        properties_medium=[
             entity.EntityDetailProperty('Room Type', False, entity_property_name=ROOM_DESIGN_TYPE_PROPERTY_NAME, transform_function=__get_value),
             entity.EntityDetailProperty('Enhanced by', True, entity_property_name='EnhancementType', transform_function=__get_value),
             entity.EntityDetailProperty('Ship lvl', True, entity_property_name='MinShipLevel', transform_function=__get_value),
