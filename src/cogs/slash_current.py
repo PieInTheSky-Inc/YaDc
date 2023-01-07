@@ -783,7 +783,7 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
     @_slash_command(name='trader', brief='Get trader ship info')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def trader(self, ctx: _Context):
+    async def trader(self, ctx: _ApplicationContext):
         """
         Get detailed information on the current offerings of the trader NPC ship.
         """
