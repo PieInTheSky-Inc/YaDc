@@ -9,6 +9,6 @@ openpyxl==3.0.10
 pandas
 pillow
 pip
-py-cord==2.2.2
+py-cord==2.3.2
 pytz
 git+https://github.com/googledrive/PyDrive.git#egg=PyDrive
