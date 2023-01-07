@@ -380,6 +380,7 @@ class EntityDetails(object):
         self.__entity_info: EntityInfo = entity_info or {}
         self.__title_property_collection: EntityDetailPropertyCollection = title or NO_PROPERTY
         self.__description_property_collection: EntityDetailPropertyCollection = description or NO_PROPERTY
+        self.__properties_property_collection = properties or NO_PROPERTY
         self.__properties: Dict[bool, Dict[EntityDetailsType, List[EntityDetailProperty]]] = {}
         if properties:
             self.__properties = {
@@ -448,6 +449,19 @@ class EntityDetails(object):
     @property
     def prefix(self) -> str:
         return self.__prefix
+
+
+    def copy(self) -> 'EntityDetails':
+        return EntityDetails(
+            self.__entity_info,
+            self.__title_property_collection,
+            self.__description_property_collection,
+            self.__properties_property_collection,
+            self.__embed_settings,
+            self.__entities_data,
+            self.__prefix,
+            self.__kwargs
+        )
 
 
     async def get_details(self, as_embed: bool, details_type: EntityDetailsType) -> List[CalculatedEntityDetailProperty]:
@@ -540,7 +554,7 @@ class EntityDetails(object):
         description = await self._get_description(details_type=EntityDetailsType.EMBED)
 
         embed_settings = await self.get_embed_settings()
-        colour = embed_settings.get('color', embed_settings.get('colour', utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)))
+        colour = embed_settings.get('color', embed_settings.get('colour', utils.discord.get_bot_member_colour(ctx.bot, ctx.guild))) if ctx else Embed.Empty
         author_url = embed_settings.get('author_url')
         icon_url = embed_settings.get('icon_url')
         image_url = embed_settings.get('image_url')

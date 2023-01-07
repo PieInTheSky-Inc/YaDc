@@ -21,6 +21,7 @@ from . import pss_dropship as dropship
 from .pss_exception import Error, MaintenanceError, SelectTimeoutError
 from . import pss_item as item
 from . import pss_login as login
+from . import pss_marker as marker
 from . import pss_room as room
 from . import pss_sprites as sprites
 from . import pss_user as user
@@ -96,7 +97,7 @@ async def on_ready() -> None:
 
     if settings.FEATURE_AUTODAILY_ENABLED:
         print('Starting auto-daily loop.')
-        post_dailies_loop.start()
+        autodaily_loop.start()
 
 
 @BOT.event
@@ -244,7 +245,10 @@ async def on_guild_remove(guild: Guild) -> None:
 # ############################################################################ #
 
 @tasks.loop(minutes=5)
-async def post_dailies_loop() -> None:
+async def autodaily_loop() -> None:
+    if not settings.FEATURE_AUTODAILY_ENABLED:
+        autodaily_loop.cancel()
+
     MAX_GET_INFO_ATTEMPTS = 3
     utc_now = utils.get_utc_now()
     if utc_now < settings.POST_AUTODAILY_FROM:
@@ -268,13 +272,13 @@ async def post_dailies_loop() -> None:
     has_daily_changed = daily.has_daily_changed(daily_info, utc_now, db_daily_info, db_daily_modify_date)
 
     if has_daily_changed:
-        print(f'[post_dailies_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
+        print(f'[autodaily_loop] daily info changed:\n{json.dumps(daily_info, indent=2)}')
         autodaily_settings = await server_settings.get_autodaily_settings(utc_now=utc_now)
-        print(f'[post_dailies_loop] retrieved {len(autodaily_settings)} guilds to post to')
+        print(f'[autodaily_loop] retrieved {len(autodaily_settings)} guilds to post to')
     else:
         autodaily_settings = await server_settings.get_autodaily_settings(no_post_yet=True)
         if autodaily_settings:
-            print(f'[post_dailies_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
+            print(f'[autodaily_loop] retrieved new {len(autodaily_settings)} channels without a post, yet.')
 
     created_output = False
     posted_count = 0
@@ -284,14 +288,14 @@ async def post_dailies_loop() -> None:
             current_daily_message = '\n'.join(output)
             current_daily_embed = output_embeds[0]
             posted_count = await post_dailies(current_daily_message, current_daily_embed, autodaily_settings, utc_now)
-        print(f'[post_dailies_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
+        print(f'[autodaily_loop] posted to {posted_count} of {len(autodaily_settings)} guilds')
 
     if has_daily_changed and (created_output or not autodaily_settings):
         await daily.db_set_daily_info(daily_info, utc_now)
 
 
-@post_dailies_loop.before_loop
-async def before_post_dailies_loop() -> None:
+@autodaily_loop.before_loop
+async def before_autodaily_loop() -> None:
     await BOT.wait_until_ready()
 
 
@@ -334,7 +338,7 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
             embed = None
 
         if can_post:
-            can_post, latest_message = await daily_fetch_latest_message(text_channel, latest_message_id)
+            can_post, latest_message = await __auto_fetch_latest_message(text_channel, latest_message_id)
 
         if can_post:
             if latest_message and latest_message.created_at.day == utc_now.day:
@@ -399,7 +403,133 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
         return posted, None, None
 
 
-async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_id: int) -> Tuple[bool, Message]:
+
+__FIRST_AUTOTRADER_POST_TIME = datetime.time(0, 0, 30, 0, datetime.timezone.utc)
+__SECOND_AUTOTRADER_POST_TIME = datetime.time(12, 0, 30, 0, datetime.timezone.utc)
+
+@tasks.loop(time=(__FIRST_AUTOTRADER_POST_TIME, __SECOND_AUTOTRADER_POST_TIME))
+async def autotrader_loop() -> None:
+    if not settings.FEATURE_AUTODAILY_ENABLED:
+        autotrader_loop.cancel()
+
+    utc_now = utils.get_utc_now()
+    # Get auto-trader message contents
+    autotrader_message_embed, autotrader_message_text = await marker.get_autotrader_details()
+    # Get auto-trader settings
+    all_autotrader_settings = server_settings.GUILD_SETTINGS.autotrader_settings
+    # for each auto-trader settings:
+    if all_autotrader_settings:
+        posted_count = 0
+        for autotrader_settings in all_autotrader_settings:
+            if autotrader_settings.guild_id is not None and autotrader_settings.channel_id is not None:
+                # post message
+                posted, can_post, latest_message = await post_autotrader(autotrader_settings.channel, autotrader_settings.latest_message_id, autotrader_settings.change_mode, autotrader_message_text, autotrader_message_embed, utc_now)
+                if posted:
+                    posted_count += 1
+                else:
+                    guild_name = autotrader_settings.guild.name if autotrader_settings.guild else None
+                    guild_id = autotrader_settings.guild_id
+                    channel_name = f'#{autotrader_settings.channel.name}' if autotrader_settings.channel else '<not accessible>'
+                    channel_id = autotrader_settings.channel_id
+                    print(f'[post_dailies] Failed to post to guild \'{guild_name}\' ({guild_id}), channel \'{channel_name}\' ({channel_id})')
+                await autotrader_settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
+
+        print(f'[autotrader_loop] posted to {posted_count} of {len(all_autotrader_settings)} guilds')
+
+
+@autotrader_loop.before_loop
+async def before_autotrader_loop() -> None:
+    await BOT.wait_until_ready()
+
+
+async def post_autotrader(text_channel: TextChannel, latest_message_id: int, change_mode: bool, current_daily_message: str, current_daily_embed: Embed, utc_now: datetime.datetime) -> Tuple[bool, bool, Message]:
+    """
+    Returns (posted, can_post, latest_message)
+    """
+    posted = False
+    if text_channel and current_daily_message:
+        error_msg_delete = f'could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
+        error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
+        error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
+
+        post_new = change_mode != server_settings.AutoMessageChangeMode.EDIT
+        can_post = True
+        latest_message: Message = None
+        use_embeds = await server_settings.get_use_embeds(None, bot=BOT, guild=text_channel.guild)
+        if use_embeds:
+            colour = utils.discord.get_bot_member_colour(BOT, text_channel.guild)
+            embed = current_daily_embed.copy()
+            embed.colour = colour
+        else:
+            embed = None
+
+        if can_post:
+            can_post, latest_message = await __auto_fetch_latest_message(text_channel, latest_message_id)
+
+        if can_post:
+            if latest_message:
+                latest_message_id = latest_message.id
+                if change_mode == server_settings.AutoMessageChangeMode.DELETE_AND_POST_NEW:
+                    try:
+                        deleted = await utils.discord.try_delete_message(latest_message)
+                        if deleted:
+                            latest_message = None
+                            utils.dbg_prnt(f'[post_autotrader] deleted message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                        else:
+                            print(f'[post_autotrader] could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                    except errors.NotFound:
+                        print(f'[post_autotrader] {error_msg_delete}: the message could not be found')
+                    except errors.Forbidden:
+                        print(f'[post_autotrader] {error_msg_delete}: the bot doesn\'t have the required permissions.')
+                        can_post = False
+                    except Exception as err:
+                        print(f'[post_autotrader] {error_msg_delete}: {err}')
+                        can_post = False
+                elif change_mode == server_settings.AutoMessageChangeMode.EDIT:
+                    try:
+                        if use_embeds:
+                            await latest_message.edit(embed=embed)
+                        else:
+                            await latest_message.edit(content=current_daily_message)
+                        posted = True
+                        utils.dbg_prnt(f'[post_autotrader] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                    except errors.NotFound:
+                        print(f'[post_autotrader] {error_msg_edit}: the message could not be found')
+                    except errors.Forbidden:
+                        print(f'[post_autotrader] {error_msg_edit}: the bot doesn\'t have the required permissions.')
+                        can_post = False
+                    except Exception as err:
+                        print(f'[post_autotrader] {error_msg_edit}: {err}')
+                        can_post = False
+            else:
+                post_new = True
+
+            if not posted and can_post and post_new:
+                try:
+                    if use_embeds:
+                        latest_message = await text_channel.send(embed=embed)
+                    else:
+                        latest_message = await text_channel.send(current_daily_message)
+                    posted = True
+                    utils.dbg_prnt(f'[post_autotrader] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+                except errors.Forbidden:
+                    print(f'[post_autotrader] {error_msg_post}: the bot doesn\'t have the required permissions.')
+                    can_post = False
+                except Exception as err:
+                    print(f'[post_autotrader] {error_msg_post}: {err}')
+                    can_post = False
+        else:
+            can_post = False
+
+        if latest_message:
+            return posted, can_post, latest_message
+        else:
+            return posted, can_post, None
+    else:
+        return posted, None, None
+
+
+async def __auto_fetch_latest_message(text_channel: TextChannel, latest_message_id: int) -> Tuple[bool, Message]:
     """
     Attempts to fetch the message by id, then by content from the specified channel.
     Returns (can_post, latest_message)
@@ -410,17 +540,14 @@ async def daily_fetch_latest_message(text_channel: TextChannel, latest_message_i
     if text_channel and latest_message_id is not None:
         try:
             result = await text_channel.fetch_message(latest_message_id)
-            utils.dbg_prnt(f'[daily_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+            utils.dbg_prnt(f'[auto_fetch_latest_message] found latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
         except errors.NotFound:
-            print(f'[daily_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
+            print(f'[auto_fetch_latest_message] could not find latest message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
         except Exception as err:
-            print(f'[daily_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
+            print(f'[auto_fetch_latest_message] could not fetch message by id [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]: {err}')
             can_post = False
 
     return can_post, result
-
-
-
 
 
 # ############################################################################ #

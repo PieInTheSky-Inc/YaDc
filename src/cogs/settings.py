@@ -527,6 +527,7 @@ class SettingsCog(_CogBase, name='Settings'):
         success = await autotrader_settings.set_channel(text_channel)
         if success:
             await ctx.invoke(self.bot.get_command('settings'), '--on_set')
+            await ctx.invoke(self.bot.get_command('trader'))
         else:
             raise _Error(f'Could not set auto-trader channel for this server. Please try again or contact the bot\'s author.')
 
@@ -535,7 +536,10 @@ class SettingsCog(_CogBase, name='Settings'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autotrader_mode(self, ctx: _Context):
         """
-        Set the auto-trader change mode for this server. When the contents of the /trader message change, this setting decides, whether an existing trader post gets edited, or if it gets deleted and a new one gets posted instead or if a new message will posted without deleting the old one.
+        Set the auto-trader change mode for this server. When the contents of the /trader message change, this setting decides, what happens. There are 3 modes:
+         - A new /trader message gets posted (default)
+         - The last /trader message gets deleted and a new one gets posted
+         - An existing /trader message gets edited. If it can't be edited, a new one will be posted.
 
         You need the 'Manage Server' permission to use this command.
         This command can only be used on Discord servers/guilds.

@@ -45,6 +45,29 @@ STAR_SYSTEM_MARKER_KEY_NAME: str = 'StarSystemMarkerId'
 
 # ---------- System Star Marker info ----------
 
+async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
+    items_data = await _item.items_designs_retriever.get_data_dict3()
+    stars_systems_markers_data = await __get_stars_systems_markers_data()
+    trader_details = get_trader_info(stars_systems_markers_data)
+
+    if not trader_details:
+        raise _NotFound('Could not find information on the trader ship. Please try again later.')
+
+    offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
+
+    trader_info = trader_details.entity_info
+    trader_info['offerings'] = offerings
+    trader_details.update_entity_info(trader_info)
+
+    message =  await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
+
+    trader_info['as_embed'] = True
+    trader_details.update_entity_info(trader_info)
+    embed = await trader_details.get_details_as_embed(None)
+
+    return embed, message
+
+
 async def get_trader_details(ctx: _Context, as_embed: bool = _settings.USE_EMBEDS) -> _Union[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
