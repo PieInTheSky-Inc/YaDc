@@ -163,9 +163,9 @@ async def update_schema_v_1_4_0_0() -> bool:
     print(f'[update_schema_v_1_4_0_0] Updating database schema from v1.3.1.0 to v1.4.0.0')
 
     column_definitions_trader = [
-        ('traderchannelid', 'INT', False, False),
+        ('traderchannelid', 'BIGINT', False, False),
         ('tradercanpost', 'BOOL', False, False),
-        ('traderlatestmessageid', 'INT', False, False),
+        ('traderlatestmessageid', 'BIGINT', False, False),
         ('traderlatestmessagecreatedate', 'TIMESTAMPTZ', False, False),
         ('traderlatestmessagemodifydate', 'TIMESTAMPTZ', False, False),
         ('traderchangemode', 'INT', False, False),
