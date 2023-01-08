@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import json
@@ -18,7 +19,7 @@ from .gdrive import TourneyDataClient
 from . import pss_crew as crew
 from . import pss_daily as daily
 from . import pss_dropship as dropship
-from .pss_exception import Error, MaintenanceError, SelectTimeoutError
+from .pss_exception import Error, MaintenanceError, NotFound, SelectTimeoutError
 from . import pss_item as item
 from . import pss_login as login
 from . import pss_marker as marker
@@ -263,7 +264,7 @@ async def autodaily_loop() -> None:
             daily_info = await daily.get_daily_info()
             attempts = 0
         except Exception as ex:
-            print(f'ERROR: There was an error while tryiny to retrieve daily info:\n{ex}')
+            print(f'ERROR: There was an error while trying to retrieve daily info:\n{ex}')
             attempts -= 1
             if attempts == 0:
                 print(f'ERROR: Could not retrieve the daily info after {MAX_GET_INFO_ATTEMPTS} attempts.')
@@ -323,11 +324,21 @@ __SECOND_AUTOTRADER_POST_TIME = datetime.time(12, 0, 30, 0, datetime.timezone.ut
 @tasks.loop(time=(__FIRST_AUTOTRADER_POST_TIME, __SECOND_AUTOTRADER_POST_TIME))
 async def autotrader_loop() -> None:
     utc_now = utils.get_utc_now()
-    # Get auto-trader message contents
-    autotrader_message_embed, autotrader_message_text = await marker.get_autotrader_details()
-    # Get auto-trader settings
+
+    autotrader_message_embed, autotrader_message_text = None, None
+    trader_details_attempts = 0
+
+    while not autotrader_message_embed and not autotrader_message_text:
+        try:
+            autotrader_message_embed, autotrader_message_text = await marker.get_autotrader_details()
+            print(f'[autotrader_loop] Retrieved trader info after {trader_details_attempts + 1} attempts.')
+        except NotFound:
+            print(f'[autotrader_loop] ERROR: Could not retrieve the trader info. Trying again in 5 seconds.')
+            trader_details_attempts += 1
+            await asyncio.sleep(5)
+
     all_autotrader_settings = server_settings.GUILD_SETTINGS.autotrader_settings
-    # for each auto-trader settings:
+
     if all_autotrader_settings:
         posted_count = 0
         for autotrader_settings in all_autotrader_settings:
