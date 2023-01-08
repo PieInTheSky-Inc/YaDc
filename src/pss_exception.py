@@ -78,3 +78,7 @@ class ParameterTypeError(TypeError):
 
 class SelectTimeoutError(Error):
     pass
+
+
+class TooManyResults(Error):
+    pass

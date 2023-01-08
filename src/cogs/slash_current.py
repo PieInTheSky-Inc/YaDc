@@ -261,12 +261,8 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
         """
         self._log_command_use(ctx)
 
-        # Matches MkI -> MkX), case insensitive
-        # And removes all multiple spaces
-        sanitized_name = ' '.join(_re.sub("mk(x|ix|iv|v?i{0,3})", "", name, 0, _re.I).split())
-
         await ctx.interaction.response.defer()
-        output = await _item.get_item_details_by_name(ctx, sanitized_name, as_embed=(await _server_settings.get_use_embeds(ctx)))
+        output = await _item.get_item_details_by_name(ctx, name, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.respond_with_output(ctx, output)
 
 

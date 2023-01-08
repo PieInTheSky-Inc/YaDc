@@ -710,6 +710,11 @@ class EntityDetailsCollection():
         self.__add_empty_lines: bool = add_empty_lines or False
 
 
+    @property
+    def count(self) -> int:
+        return self.__set_size
+
+
     async def get_entities_details_as_embed(self, ctx: Context, custom_detail_property_separator: str = None, custom_title: str = None, custom_footer_text: str = None, custom_thumbnail_url: str = None, display_inline: bool = True, big_set_threshold: int = None) -> List[Embed]:
         """
         custom_title: only relevant for big sets

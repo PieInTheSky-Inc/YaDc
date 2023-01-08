@@ -8,7 +8,7 @@ from . import pss_assert
 from . import pss_core as core
 from . import emojis
 from . import pss_entity as entity
-from .pss_exception import Error, NotFound
+from .pss_exception import Error, NotFound, TooManyResults
 from . import pss_lookups as lookups
 from . import pss_sprites as sprites
 from . import pss_training as training
@@ -37,12 +37,13 @@ ITEM_DESIGN_KEY_NAME: str = 'ItemDesignId'
 
 NOT_ALLOWED_ITEM_NAMES: List[str] = [
     'AI',
+    'MK',
     'I',
     'II',
     'III',
     'IV',
     'V',
-    'VI'
+    'VI',
 ]
 
 RX_ARTIFACTS_INDICATORS: re.Pattern = re.compile(r'\(\w{1,2}\)|fragment', re.IGNORECASE)
@@ -71,6 +72,8 @@ async def get_item_details_by_name(ctx: Context, item_name: str, as_embed: bool 
             __get_key_for_base_items_sort(item_info, items_data_for_sort)
         ))
         items_details_collection = __create_base_details_collection_from_infos(item_infos, items_data, trainings_data)
+        if items_details_collection.count > 50:
+            raise TooManyResults('The search returned too many results. Please narrow down your search and try again.')
 
         if as_embed:
             return (await items_details_collection.get_entities_details_as_embed(ctx, custom_footer_text=resources.get_resource('PRICE_NOTE_EMBED')))
