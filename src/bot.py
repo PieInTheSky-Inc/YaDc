@@ -540,7 +540,7 @@ def run_bot() -> None:
         load_cog('src.cogs.slash_general')
         load_cog('src.cogs.slash_current')
         #load_cog('src.cogs.slash_raw')
-        #load_cog('src.cogs.slash_settings')
+        load_cog('src.cogs.slash_settings')
         #load_cog('src.cogs.slash_wiki')
         #load_cog('src.cogs.slash_owner')
         if settings.FEATURE_TOURNEYDATA_ENABLED:

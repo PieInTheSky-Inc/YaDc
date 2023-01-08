@@ -1,6 +1,12 @@
-from typing import Any, List, Optional
+from typing import Any as _Any
+from typing import List as _List
+from typing import Optional as _Optional
+from typing import Sequence as _Sequence
 
-from . import settings
+from discord import Permissions as _Permissions
+
+
+from . import settings as _settings
 
 
 # ---------- Classes -----------
@@ -11,7 +17,7 @@ class Error(Exception):
     Attributes:
         msg -- explanation of the error
     """
-    def __init__(self, msg: Optional[str] = None) -> None:
+    def __init__(self, msg: _Optional[str] = None) -> None:
         super().__init__()
         self.__msg: str = msg or ''
 
@@ -20,13 +26,21 @@ class Error(Exception):
         return self.__msg
 
 
+class BotError(Error):
+    pass
+
+
+class BotPermissionError(Error):
+    pass
+
+
 class InvalidParameterValueError(Error):
     """Exception raised for invalid parameter values."""
-    def __init__(self, parameter_name: str = None, invalid_value: Any = None, min_length: int = None, valid_values: List[str] = None, allow_none_or_empty: bool = False) -> None:
+    def __init__(self, parameter_name: str = None, invalid_value: _Any = None, min_length: int = None, valid_values: _List[str] = None, allow_none_or_empty: bool = False) -> None:
         self.__parameter_name: str = parameter_name or '<unknown>'
         self.__invalid_value: str = invalid_value
-        self.__min_length: int = min_length if min_length is not None else settings.MIN_ENTITY_NAME_LENGTH
-        self.__valid_values: List[str] = valid_values or []
+        self.__min_length: int = min_length if min_length is not None else _settings.MIN_ENTITY_NAME_LENGTH
+        self.__valid_values: _List[str] = valid_values or []
         self.__add_validity_hint: bool = min_length is not None or self.__valid_values
         if allow_none_or_empty:
             self.__valid_values.append('<empty>')

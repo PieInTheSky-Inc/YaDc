@@ -6,7 +6,7 @@ from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 import discord.ext.commands.errors as _command_errors
 
-from .base import CogBase as _CogBase
+from .base import SettingCogBase as _SettingCogBase
 from ..pss_exception import Error as _Error
 from .. import settings as _settings
 from .. import server_settings as _server_settings
@@ -15,9 +15,9 @@ from ..yadc_bot import YadcBot as _YadcBot
 
 
 
-class SettingsCog(_CogBase, name='Settings'):
+class SettingsCog(_SettingCogBase, name='Settings'):
     @_command_group(name='settings', brief='Display or change server settings', invoke_without_command=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings(self, ctx: _Context, *args):
         """
         Retrieve settings for this Discord server/guild.
@@ -47,7 +47,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @_command(name='prefix', brief='Retrieve prefix settings')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def prefix(self, ctx: _Context, *args):
         """
         Retrieve the prefix setting for this server.
@@ -83,7 +83,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings.group(name='reset', brief='Reset server settings', invoke_without_command=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset(self, ctx: _Context):
         """
         Reset settings for this server.
@@ -110,7 +110,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset.group(name='autodaily', aliases=['daily'], brief='Reset auto-daily settings to defaults')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily(self, ctx: _Context):
         """
         Reset the auto-daily settings for this server.
@@ -139,7 +139,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset_autodaily.command(name='channel', aliases=['ch'], brief='Reset auto-daily channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily_channel(self, ctx: _Context):
         """
         Reset the auto-daily channel settings for this server.
@@ -168,7 +168,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset_autodaily.command(name='changemode', aliases=['mode'], brief='Reset auto-daily change mode')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autodaily_mode(self, ctx: _Context):
         """
         Reset the auto-daily change mode settings for this server.
@@ -197,7 +197,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset.group(name='autotrader', aliases=['trader'], brief='Reset auto-trader settings to defaults')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autotrader(self, ctx: _Context):
         """
         Reset the auto-trader settings for this server.
@@ -226,7 +226,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset_autotrader.command(name='channel', aliases=['ch'], brief='Reset auto-trader channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autotrader_channel(self, ctx: _Context):
         """
         Reset the auto-trader channel settings for this server.
@@ -255,7 +255,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset_autotrader.command(name='changemode', aliases=['mode'], brief='Reset auto-trader change mode')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_autotrader_mode(self, ctx: _Context):
         """
         Reset the auto-trader change mode settings for this server.
@@ -284,7 +284,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset.command(name='embed', aliases=['embeds'], brief='Reset embed settings')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_embeds(self, ctx: _Context):
         """
         Reset the embed settings for this server to 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
@@ -313,7 +313,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset.command(name='pagination', aliases=['pages'], brief='Reset pagination settings')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_pagination(self, ctx: _Context):
         """
         Reset the pagination settings for this server to 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -342,7 +342,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_reset.command(name='prefix', brief='Reset prefix settings')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_reset_prefix(self, ctx: _Context):
         """
         Reset the prefix settings for this server to '/'.
@@ -373,7 +373,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings.group(name='set', brief='Change server settings', invoke_without_command=False)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set(self, ctx: _Context):
         """
         Set settings for this server.
@@ -393,7 +393,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set.group(name='autodaily', aliases=['daily'], brief='Change auto-daily settings', invoke_without_command=False)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily(self, ctx: _Context):
         """
         Set auto-daily settings for this server.
@@ -407,10 +407,10 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set_autodaily.command(name='channel', aliases=['ch'], brief='Set auto-daily channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily_channel(self, ctx: _Context, text_channel: _TextChannel = None):
         """
-        Set the auto-daily channel for this server. This channel will receive an automatic /daily message at 1 am UTC.
+        Set the auto-daily channel for this server. This channel will receive an automatic /daily message around 1 am UTC.
 
         You need the 'Manage Server' permission to use this command.
         This command can only be used on Discord servers/guilds.
@@ -449,7 +449,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set_autodaily.command(name='changemode', aliases=['mode'], brief='Set auto-daily change mode')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autodaily_mode(self, ctx: _Context):
         """
         Set the auto-daily change mode for this server. If the contents of the daily post change during the current star day, this setting decides, whether an existing trader post gets edited, or if it gets deleted and a new one gets posted instead or if a new message will posted without deleting the old one.
@@ -476,7 +476,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set.group(name='autotrader', aliases=['trader'], brief='Change auto-trader settings', invoke_without_command=False)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autotrader(self, ctx: _Context):
         """
         Set auto-trader settings for this server.
@@ -490,7 +490,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set_autotrader.command(name='channel', aliases=['ch'], brief='Set auto-trader channel')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autotrader_channel(self, ctx: _Context, text_channel: _TextChannel = None):
         """
         Set the auto-daily channel for this server. This channel will receive automatic /trader messages shortly after 12 pm and am UTC.
@@ -533,7 +533,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set_autotrader.command(name='changemode', aliases=['mode'], brief='Set auto-trader change mode')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_autotrader_mode(self, ctx: _Context):
         """
         Set the auto-trader change mode for this server. When the contents of the /trader message change, this setting decides, what happens. There are 3 modes:
@@ -563,7 +563,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set.command(name='embed', aliases=['embeds'], brief='Set embed settings')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_embeds(self, ctx: _Context, switch: str = None):
         """
         Set or toggle the pagination for this server. The default is 'ON'. It determines, whether the bot output on this server will be served in embeds or in plain text.
@@ -597,7 +597,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set.command(name='pagination', aliases=['pages'], brief='Set pagination')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_pagination(self, ctx: _Context, switch: str = None):
         """
         Set or toggle the pagination for this server. The default is 'ON'. For information on what pagination is and what it does, use this command: /help pagination
@@ -631,7 +631,7 @@ class SettingsCog(_CogBase, name='Settings'):
 
 
     @settings_set.command(name='prefix', brief='Set prefix')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_SettingCogBase.RATE, per=_SettingCogBase.COOLDOWN, type=_BucketType.user)
     async def settings_set_prefix(self, ctx: _Context, prefix: str):
         """
         Set the prefix for this server. The default is '/'.

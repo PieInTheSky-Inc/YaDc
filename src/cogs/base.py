@@ -8,11 +8,17 @@ from typing import Tuple as _Tuple
 from typing import Union as _Union
 
 from discord import ApplicationContext as _ApplicationContext
+from discord import ClientUser as _ClientUser
 from discord import Embed as _Embed
+from discord import Member as _Member
+from discord import TextChannel as _TextChannel
+from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import Cog as _Cog
 from discord.ext.commands import Context as _Context
+import discord.ext.commands.errors as _command_errors
 
 from .. import pss_dropship as _dropship
+from ..pss_exception import BotPermissionError as _BotPermissionError
 from .. import server_settings as _server_settings
 from .. import settings as _settings
 from .. import utils as _utils
@@ -224,3 +230,30 @@ class GeneralCogBase(CogBase):
 class RawCogBase(CogBase):
     COOLDOWN: float = 10.0
     RATE: int = 5
+
+
+
+
+
+
+class SettingCogBase(CogBase):
+    COOLDOWN_TYPE = _BucketType.guild
+
+
+    async def _assert_settings_command_valid(self, ctx: _Union[_ApplicationContext, _Context]) -> None:
+        if _utils.discord.is_guild_channel(ctx.channel):
+            permissions = ctx.channel.permissions_for(ctx.author)
+            if permissions.manage_guild is not True:
+                raise _command_errors.MissingPermissions(['manage_guild'])
+        else:
+            raise Exception('This command cannot be used in DMs or group chats, but only in Discord servers/guilds.')
+
+
+    async def _assert_automessage_channel_permissions(self, channel: _TextChannel, me: _Union[_ClientUser, _Member]) -> None:
+        permissions = channel.permissions_for(me)
+        if permissions.read_messages is not True:
+            raise _BotPermissionError('I don\'t have access to that channel.')
+        if permissions.read_message_history is not True:
+            raise _BotPermissionError('I don\'t have access to the messages history in that channel.')
+        if permissions.send_messages is not True:
+            raise _BotPermissionError('I don\'t have permission to post in that channel.')
