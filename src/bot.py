@@ -333,9 +333,9 @@ async def autotrader_loop() -> None:
             autotrader_message_embed, autotrader_message_text = await marker.get_autotrader_details()
             print(f'[autotrader_loop] Retrieved trader info after {trader_details_attempts + 1} attempts.')
         except NotFound:
-            print(f'[autotrader_loop] ERROR: Could not retrieve the trader info. Trying again in 5 seconds.')
+            print(f'[autotrader_loop] ERROR: Could not retrieve the trader info. Trying again in 15 seconds.')
             trader_details_attempts += 1
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
 
     all_autotrader_settings = server_settings.GUILD_SETTINGS.autotrader_settings
 
