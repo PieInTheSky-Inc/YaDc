@@ -29,7 +29,7 @@ from ..yadc_bot import YadcBot as _YadcBot
 
 
 
-class SettingsSlashCog(_SettingCogBase, name='Settings'):
+class SettingsSlashCog(_SettingCogBase, name='Settings Slash'):
     _ON_OFF_CHOICES = [
         _OptionChoice(name='on', value='on'),
         _OptionChoice(name='off', value='off'),
