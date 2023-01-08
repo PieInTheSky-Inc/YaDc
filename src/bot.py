@@ -405,8 +405,8 @@ async def post_autodaily(text_channel: TextChannel, latest_message_id: int, chan
 
 
 
-__FIRST_AUTOTRADER_POST_TIME = datetime.time(0, 0, 30, 0, datetime.timezone.utc)
-__SECOND_AUTOTRADER_POST_TIME = datetime.time(12, 0, 30, 0, datetime.timezone.utc)
+__FIRST_AUTOTRADER_POST_TIME = datetime.time(0, 5, 0, 0, datetime.timezone.utc)
+__SECOND_AUTOTRADER_POST_TIME = datetime.time(12, 5, 0, 0, datetime.timezone.utc)
 
 @tasks.loop(time=(__FIRST_AUTOTRADER_POST_TIME, __SECOND_AUTOTRADER_POST_TIME))
 async def autotrader_loop() -> None:
