@@ -83,10 +83,10 @@ async def get_trader_details(ctx: _Context, as_embed: bool = _settings.USE_EMBED
     trader_details.update_entity_info(trader_info)
 
     if as_embed:
-        result = await trader_details.get_details_as_embed(ctx)
+        result = [(await trader_details.get_details_as_embed(ctx))]
     else:
         result = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
-    return [result]
+    return result
 
 
 def get_star_system_marker_details_by_id(star_system_marker_id: str, stars_systems_markers_data: _EntitiesData) -> _entity.EntityDetails:
@@ -234,7 +234,8 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
             _entity.EntityDetailProperty('Offer 4', True, transform_function=__get_offer_details, index=3, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 5', True, transform_function=__get_offer_details, index=4, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 6', True, transform_function=__get_offer_details, index=5, display_inline_for_embeds=False),
-            _entity.EntityDetailProperty('Expiring at', True, transform_function=__get_expiration_dates, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Expiring at', True, transform_function=__get_expiration_dates, embed_only=True, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('Expiring at', False, transform_function=__get_expiration_dates, text_only=True, display_inline_for_embeds=False),
         ],
         ),
     'embed_settings': {
