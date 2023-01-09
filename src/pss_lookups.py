@@ -224,6 +224,16 @@ RARITY_EMOJIS_LOOKUP: Dict[str, str] = {
     'Legendary': emojis.pss_rarity_legendary
 }
 
+RARITY_INDICTAOR_EMOJIS_LOOKUP: Dict[str, str] = {
+    'Common': emojis.rarity_indicator_common,
+    'Elite': emojis.rarity_indicator_elite,
+    'Unique': emojis.rarity_indicator_unique,
+    'Epic': emojis.rarity_indicator_epic,
+    'Hero': emojis.rarity_indicator_hero,
+    'Special': emojis.rarity_indicator_special,
+    'Legendary': emojis.rarity_indicator_legendary
+}
+
 
 PROMO_REQUIREMENT_TYPE_LOOKUP: Dict[str, Dict[str, str]] = {
     'en': {

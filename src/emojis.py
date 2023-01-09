@@ -3,6 +3,13 @@ star = '\u2b50'
 trophy = '\U0001f3c6'
 
 
+rarity_indicator_common = '<:rarity_common:1062036969900752997>'
+rarity_indicator_elite = '<:rarity_elite:1062037007137775746>'
+rarity_indicator_epic = '<:rarity_epic:1062037060153778257>'
+rarity_indicator_hero = '<:rarity_hero:1062037083990016030>'
+rarity_indicator_legendary = '<:rarity_legendary:1062037127187140648>'
+rarity_indicator_special = '<:rarity_special:1062037105171238972>'
+rarity_indicator_unique = '<:rarity_unique:1062037030449717278>'
 pss_bux = '<:bux:582495505905352725>'
 pss_dove = '<:dove:615878722431483904>'
 pss_dropship = '<:dropship:638677070108688385>'
@@ -35,6 +42,7 @@ pss_stat_xp = '<:xp:631777425524654080>'
 pss_supply_big = '<:supply:697054912378437773>'
 pss_titanium = '<:titanium:805465771345707048>'
 pss_trophy_big = '<:trophy_big:615878873157992459>'
+
 
 
 page_first = '\u23ee'

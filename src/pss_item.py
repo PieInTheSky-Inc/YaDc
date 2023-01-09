@@ -509,6 +509,11 @@ def __get_price(item_info: EntityInfo, items_data: EntitiesData, trainings_data:
     return result
 
 
+def __get_rarity_emoji(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
+    result = lookups.RARITY_INDICTAOR_EMOJIS_LOOKUP.get(item_info['Rarity'])
+    return result
+
+
 def __get_requirements(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
     requirement_string = entity.get_property_from_entity_info(item_info, 'RequirementString')
     result = None
@@ -880,7 +885,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty('Savy\'s Fair price', True, entity_property_name='FairPrice', transform_function=__get_price),
         ],
         properties_short=[
-            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
+            entity.EntityDetailProperty('Rarity', False, transform_function=__get_rarity_emoji),
             entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value, use_emojis=True),
             entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
         ],
