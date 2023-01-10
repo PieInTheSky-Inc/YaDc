@@ -14,6 +14,7 @@ from .pss_exception import Error as _Error
 from .pss_exception import NotFound as _NotFound
 from . import pss_item as _item
 from . import pss_login as _login
+from . import pss_lookups as _lookups
 from . import pss_sprites as _sprites
 from . import settings as _settings
 from . import utils as _utils
@@ -161,16 +162,18 @@ async def __get_trader_offerings(trader_info: _EntityInfo, items_data: _Entities
         currency_amount = costs[i][2]
         if currency_type == 'item':
             currency_item_design_id = costs[i][1]
-            currency_item_design_details = _item.get_item_details_by_id(currency_item_design_id, items_data, None)
+            currency_txt = _lookups.TRADER_CURRENCY_EMOJI_LOOKUP.get(int(currency_item_design_id))
+            if not currency_txt:
+                currency_item_design_details = _item.get_item_details_by_id(currency_item_design_id, items_data, None)
+                currency_txt = currency_item_design_details.entity_info[_item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME]
             result.append(
                 (
                     item_design_details,
                     currency_amount,
-                    currency_item_design_details.entity_info[_item.ITEM_DESIGN_DESCRIPTION_PROPERTY_NAME],
+                    currency_txt,
                 )
             )
         else:
-
             result.append(
                 (
                     item_design_details,

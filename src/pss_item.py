@@ -178,7 +178,7 @@ def __get_best_items_title(stat: str, slot: str, is_equipment_slot: bool, use_ma
 
 async def __get_collection_groups(best_items: Dict[str, List[entity.EntityDetails]], stat: str, as_embed: bool) -> Dict[str, entity.EntityDetailsCollection]:
     result = {}
-    group_names_sorted = sorted(best_items.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_ORDER_LOOKUP.index(x))
+    group_names_sorted = sorted(best_items.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_EMOJI_LOOKUP.index(x))
 
     for group_name in group_names_sorted:
         group = best_items[group_name]
@@ -480,12 +480,15 @@ def __get_item_price(item_info: EntityInfo, items_data: EntitiesData, trainings_
 
 
 def __get_item_slot(item_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData = None, **kwargs) -> Optional[str]:
+    result = None
+    use_emojis = kwargs.get('use_emojis')
     item_type = item_info['ItemType']
     item_sub_type = item_info['ItemSubType']
     if item_type == 'Equipment' and 'Equipment' in item_sub_type:
-        result = item_sub_type.replace('Equipment', '')
-    else:
-        result = None
+        if use_emojis:
+            result = lookups.EQUIPMENT_SLOTS_EMOJI_LOOKUP.get(item_sub_type)
+        else:
+            result = item_sub_type.replace('Equipment', '')
     return result
 
 
@@ -887,7 +890,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         properties_short=[
             entity.EntityDetailProperty('Rarity', False, transform_function=__get_rarity_emoji),
             entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value, use_emojis=True),
-            entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
+            entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot, use_emojis=True),
         ],
         properties_mini=[]
     ),
@@ -911,13 +914,6 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         properties_medium=[
             entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity', embed_only=True),
             entity.EntityDetailProperty('Market price (Fair price)', False, transform_function=__get_item_price)
-        ]
-    ),
-    'trader': entity.EntityDetailPropertyListCollection(
-        [
-            entity.EntityDetailProperty('Rarity', False, entity_property_name='Rarity'),
-            entity.EntityDetailProperty('Bonus', False, transform_function=__get_item_bonus_type_and_value),
-            entity.EntityDetailProperty('Slot', False, transform_function=__get_item_slot),
         ]
     ),
     'upgrade': entity.EntityDetailPropertyListCollection(

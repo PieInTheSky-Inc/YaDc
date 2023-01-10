@@ -280,8 +280,8 @@ def __get_crew_costs(from_level: int, to_level: int, gas_costs_lookup: List[int]
 def __get_crew_costs_as_text(from_level: int, to_level: int, costs: Tuple[int, int, int, int]) -> List[str]:
     result = []
     if from_level == 1:
-        result.append(f'Getting from level {to_level - 1:d} to {to_level:d} requires {costs[1]:,} {emojis.pss_stat_xp} and {costs[0]:,}{emojis.pss_gas_big}.')
-    result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas_big}.')
+        result.append(f'Getting from level {to_level - 1:d} to {to_level:d} requires {costs[1]:,} {emojis.pss_stat_xp} and {costs[0]:,}{emojis.pss_gas}.')
+    result.append(f'Getting from level {from_level:d} to {to_level:d} requires {costs[3]:,} {emojis.pss_stat_xp} and {costs[2]:,}{emojis.pss_gas}.')
 
     return result
 

@@ -41,15 +41,15 @@ CURRENCY_EMOJI_LOOKUP: Dict[str, str] = {
     'android': 'droids',
     'capacity': 'rounds',
     'equipment': 'items',
-    'gas': emojis.pss_gas_big,
+    'gas': emojis.pss_gas,
     'item101': emojis.pss_gold,
     'item102': emojis.pss_carbon,
     'item103': emojis.pss_iron,
     'item104': emojis.pss_titanium,
     'item105': emojis.pss_silicon,
-    'mineral': emojis.pss_min_big,
+    'mineral': emojis.pss_min,
     'starbux': emojis.pss_bux,
-    'supply': emojis.pss_supply_big,
+    'supply': emojis.pss_supply,
 }
 
 CURRENCY_EMOJI_LOOKUP_REVERSE: Dict[str, str] = {value: key for key, value in CURRENCY_EMOJI_LOOKUP.items()}
@@ -103,7 +103,7 @@ EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
-EQUIPMENT_SLOTS_ORDER_LOOKUP: List[str] = [
+EQUIPMENT_SLOTS_EMOJI_LOOKUP: List[str] = [
     'EquipmentHead',
     'EquipmentAccessory',
     'EquipmentBody',
@@ -260,6 +260,16 @@ SPECIAL_ABILITIES_LOOKUP: Dict[str, str] = {
 }
 
 
+EQUIPMENT_SLOTS_EMOJI_LOOKUP: Dict[str, str] = {
+    'EquipmentHead': emojis.pss_slot_head,
+    'EquipmentAccessory': emojis.pss_slot_accessory,
+    'EquipmentBody': emojis.pss_slot_body,
+    'EquipmentWeapon': emojis.pss_slot_weapon,
+    'EquipmentLeg': emojis.pss_slot_leg,
+    'EquipmentPet': emojis.pss_slot_pet,
+}
+
+
 STAT_EMOJI_LOOKUP: Dict[str, str] = {
     'Ability': emojis.pss_stat_ability,
     'Attack': emojis.pss_stat_attack,
@@ -268,7 +278,7 @@ STAT_EMOJI_LOOKUP: Dict[str, str] = {
     'Hp': emojis.pss_stat_hp,
     'Pilot': emojis.pss_stat_pilot,
     'Repair': emojis.pss_stat_repair,
-    'Science': emojis.pss_stat_research,
+    'Science': emojis.pss_stat_science,
     'Stamina': emojis.pss_stat_stamina,
     'Weapon': emojis.pss_stat_weapon,
     'Xp': emojis.pss_stat_xp,
@@ -344,6 +354,15 @@ STATS_RIGHT: List[str] = [
     'Weapon',
     'FireResistance'
 ]
+
+
+TRADER_CURRENCY_EMOJI_LOOKUP: Dict[int, str] = { # Use ItemDesignId for lookup
+    741: emojis.pss_stardust_common,
+    742: emojis.pss_stardust_elite,
+    743: emojis.pss_stardust_unique,
+    744: emojis.pss_stardust_epic,
+    778: emojis.pss_void_particle,
+}
 
 
 TRAINING_RANK_ROOM_LOOKUP: Dict[int, Tuple[str, str]] = {

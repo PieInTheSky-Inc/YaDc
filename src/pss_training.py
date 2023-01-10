@@ -69,7 +69,7 @@ def __get_costs(training_info: EntityInfo, trainings_data: EntitiesData, items_d
     cost = int(training_info['MineralCost'])
     if cost:
         cost_compact = utils.format.get_reduced_number_compact(cost)
-        result = f'{cost_compact} {emojis.pss_min_big}'
+        result = f'{cost_compact} {emojis.pss_min}'
     else:
         result = None
     return result

@@ -35,7 +35,7 @@ SITUATION_CHANGE_TYPE_LOOKUP: Dict[str, str] = {
 SITUATION_CHANGE_TYPE_TITLE_LOOKUP: Dict[str, str] = {
     'AddCrew': 'Crew added to ship',
     'AddEXP': 'Extra EXP',
-    'AddLeagueBonusGas': f'Extra {emojis.pss_gas_big} from league bonus',
+    'AddLeagueBonusGas': f'Extra {emojis.pss_gas} from league bonus',
     'AddLoot': 'Item dropped',
 }
 
@@ -124,7 +124,7 @@ async def __get_event_reward(change_type: str, change_argument: str, chars_data:
         else:
             result = details_text
     elif change_type == 'AddLeagueBonusGas':
-        result = f'{reward_amount+100} % league bonus for {emojis.pss_gas_big}'
+        result = f'{reward_amount+100} % league bonus for {emojis.pss_gas}'
     elif change_type == 'AddEXP':
         result = f'{reward_amount} % exp from battles'
     else:

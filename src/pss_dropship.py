@@ -163,7 +163,7 @@ async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_dat
             common_crew_info.append(' - any unique & above crew that costs minerals is probably worth buying (just blend it if you don\'t need it)!')
 
         if common_crew_info:
-            result.append(f'{emojis.pss_min_big}  {"".join(common_crew_info)}')
+            result.append(f'{emojis.pss_min}  {"".join(common_crew_info)}')
         if hero_crew_info:
             result.append(f'{emojis.pss_bux}  {hero_crew_info[0]}')
     else:
