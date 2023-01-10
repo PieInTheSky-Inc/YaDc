@@ -246,7 +246,7 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
         'color': _entity.NO_PROPERTY,
         'description': _entity.EntityDetailProperty('description', False, entity_property_name='Description'),
         'footer': _entity.NO_PROPERTY,
-        'icon_url': _entity.NO_PROPERTY,
+        'icon_url': _entity.EntityDetailProperty('image_url', False, transform_function=_sprites.get_download_sprite_link_by_property, entity_property='12841'),
         'image_url': _entity.EntityDetailProperty('image_url', False, entity_property_name='SpriteId', transform_function=_sprites.get_download_sprite_link_by_property),
         'thumbnail_url': _entity.NO_PROPERTY,
         'timestamp': _entity.NO_PROPERTY,
