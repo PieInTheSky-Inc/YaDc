@@ -82,7 +82,9 @@ async def get_inspect_ship_for_user(user_id: str) -> Tuple[Dict, Dict]:
     inspect_ship_path = await __get_inspect_ship_base_path(user_id)
     inspect_ship_data = await core.get_data_from_path(inspect_ship_path)
     result = utils.convert.xmltree_to_dict2(inspect_ship_data)
-    return result.get('User', None), result.get('Ship', None)
+    user = result.pop(user_id)
+    ship = list(result.values())[0]
+    return user, ship
 
 
 async def get_ship_level(ship_info: EntityInfo, ship_design_data: EntitiesData = None) -> Optional[str]:
