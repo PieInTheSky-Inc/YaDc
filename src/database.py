@@ -172,11 +172,13 @@ async def update_schema_v_1_4_0_0() -> bool:
     ]
 
     query_add_columns = '\n'.join([f'ALTER TABLE serversettings ADD COLUMN {column_name} {column_type};' for column_name, column_type, _, _ in column_definitions_trader])
-    success_add_column = await try_execute(query_add_columns)
+    success_add_columns = await try_execute(query_add_columns)
 
-    if not success_add_column:
+    if not success_add_columns:
         print(f'[update_schema_v_1_4_0_0] ERROR: Failed to add auto-trader columns to table \'serversettings\'!')
         return False
+
+    await try_execute(f'UPDATE serversettings SET traderchangemode=1 WHERE traderchangemode is null;')
 
     success = await try_set_schema_version('1.4.0.0')
     return success
