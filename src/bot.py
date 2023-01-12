@@ -352,7 +352,7 @@ async def autotrader_loop() -> None:
                     guild_id = autotrader_settings.guild_id
                     channel_name = f'#{autotrader_settings.channel.name}' if autotrader_settings.channel else '<not accessible>'
                     channel_id = autotrader_settings.channel_id
-                    print(f'[post_dailies] Failed to post to guild \'{guild_name}\' ({guild_id}), channel \'{channel_name}\' ({channel_id})')
+                    print(f'[autotrader_loop] Failed to post to guild \'{guild_name}\' ({guild_id}), channel \'{channel_name}\' ({channel_id})')
                 await autotrader_settings.update(can_post=can_post, latest_message=latest_message, store_now_as_created_at=(not can_post and not latest_message))
 
         print(f'[autotrader_loop] posted to {posted_count} of {len(all_autotrader_settings)} guilds')
