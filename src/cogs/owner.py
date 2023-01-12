@@ -675,7 +675,7 @@ class OwnerCog(_CogBase, name='Owner commands'):
     @_is_owner()
     async def send_bot_news(self, ctx: _Context, *, news: str = None):
         """
-        Sends an embed to all guilds which have a bot news channel configured.
+        Sends an embed to all guilds which have a bot news channel configured. If an image is attached, this will be sent with the embed.
 
         Usage:
         /sendnews [--test] [--<property_key>=<property_value> ...]
@@ -696,18 +696,27 @@ class OwnerCog(_CogBase, name='Owner commands'):
         _, for_testing, title, content = self._extract_dash_parameters(news, None, '--test', '--title=', '--content=')
         if not title:
             raise ValueError('You need to specify a title!')
-        avatar_url = self.bot.user.avatar.url
+        avatar_url = self.bot.user.avatar.url if self.bot.user.avatar else _Embed.Empty
+
+        attachment_url = None
+        if ctx.message.attachments:
+            _os.mkdir(str(ctx.message.id))
+            for att in ctx.message.attachments:
+                if 'image/' in att.content_type:
+                    attachment_url = att.proxy_url
+                    break
+
         if not for_testing:
             for bot_news_channel in _server_settings.GUILD_SETTINGS.bot_news_channels:
                 embed_colour = _utils.discord.get_bot_member_colour(self.bot, bot_news_channel.guild)
-                embed: _Embed = _utils.discord.create_embed(title, description=content, colour=embed_colour)
+                embed = _utils.discord.create_embed(title, description=content, colour=embed_colour, image_url=attachment_url)
                 embed.set_thumbnail(url=avatar_url)
                 try:
                     await bot_news_channel.send(embed=embed)
                 except _errors.Forbidden:
                     pass
         embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        embed = _utils.discord.create_embed(title, description=content, colour=embed_colour)
+        embed = _utils.discord.create_embed(title, description=content, colour=embed_colour, image_url=attachment_url)
         embed.set_thumbnail(url=avatar_url)
         await ctx.send(embed=embed)
 
