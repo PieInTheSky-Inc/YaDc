@@ -301,7 +301,7 @@ class SettingsSlashCog(_SettingCogBase, name='Settings Slash'):
         if not channel:
             channel = ctx.channel
 
-        self._assert_automessage_channel_permissions(channel, ctx.me)
+        await self._assert_automessage_channel_permissions(channel, ctx.me)
 
         success = await autodaily_settings.set_channel(channel)
         if success:
@@ -348,7 +348,7 @@ class SettingsSlashCog(_SettingCogBase, name='Settings Slash'):
         if not channel:
             channel = ctx.channel
 
-        self._assert_automessage_channel_permissions(channel, ctx.me)
+        await self._assert_automessage_channel_permissions(channel, ctx.me)
 
         success = await autotrader_settings.set_channel(channel)
         if success:
