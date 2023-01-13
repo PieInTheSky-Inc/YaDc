@@ -433,13 +433,7 @@ class SettingsCog(_SettingCogBase, name='Settings'):
         if not text_channel:
             text_channel = ctx.channel
 
-        permissions = text_channel.permissions_for(ctx.me)
-        if permissions.read_messages is not True:
-            raise _Error('I don\'t have access to that channel.')
-        if permissions.read_message_history is not True:
-            raise _Error('I don\'t have access to the messages history in that channel.')
-        if permissions.send_messages is not True:
-            raise _Error('I don\'t have permission to post in that channel.')
+        await self._assert_automessage_channel_permissions(text_channel, ctx.me)
 
         success = await autodaily_settings.set_channel(text_channel)
         if success:
@@ -516,13 +510,7 @@ class SettingsCog(_SettingCogBase, name='Settings'):
         if not text_channel:
             text_channel = ctx.channel
 
-        permissions = text_channel.permissions_for(ctx.me)
-        if permissions.read_messages is not True:
-            raise _Error('I don\'t have access to that channel.')
-        if permissions.read_message_history is not True:
-            raise _Error('I don\'t have access to the messages history in that channel.')
-        if permissions.send_messages is not True:
-            raise _Error('I don\'t have permission to post in that channel.')
+        await self._assert_automessage_channel_permissions(text_channel, ctx.me)
 
         success = await autotrader_settings.set_channel(text_channel)
         if success:
