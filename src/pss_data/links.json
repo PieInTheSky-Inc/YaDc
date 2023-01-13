@@ -1,33 +1,34 @@
 {
     "en": {
         "Pixel Starships official": [
-            ["website", "https://www.pixelstarships.com"],
-            ["blog", "https://blog.pixelstarships.com/"]
+            ["Website", "https://www.pixelstarships.com"],
+            ["Blog", "https://blog.pixelstarships.com/"]
         ],
         "Social media outlets": [
-            ["discord", "https://discord.gg/pss"],
-            ["discord (RU)", "https://discord.gg/pss"],
-            ["facebook", "https://www.facebook.com/pixelstarships"],
-            ["instagram", "https://www.instagram.com/pixelstarships"],
-            ["tumblr", "https://pixelstarships.tumblr.com/"],
-            ["twitter", "https://twitter.com/pixelstarships"],
-            ["vk", "https://vk.com/pixelstarshipsofficial"],
-            ["weibo", "https://weibo.com/u/5374597037"]
+            ["Discord", "https://discord.gg/pss"],
+            ["Discord (RU)", "https://discord.gg/pss"],
+            ["Facebook", "https://www.facebook.com/pixelstarships"],
+            ["Instagram", "https://www.instagram.com/pixelstarships"],
+            ["Tumblr", "https://pixelstarships.tumblr.com/"],
+            ["Twitter", "https://twitter.com/pixelstarships"],
+            ["VK", "https://vk.com/pixelstarshipsofficial"],
+            ["Weibo", "https://weibo.com/u/5374597037"]
         ],
         "Guides and help": [
-            ["ai guide", "https://bit.ly/AIGuidePSS"],
-            ["beginner's faq", "https://www.battleshipcobra.com/pixel-starships"],
-            ["pixel perfect guide", "https://www.pixelperfectguide.com"],
-            ["pixel prestige", "https://pixel-prestige.com/index.php"],
-            ["pixyship", "https://pixyship.com"],
-            ["orion boards", "https://orions.boards.net"],
-            ["wiki", "https://pixelstarships.fandom.com"]
+            ["AI Guide", "https://bit.ly/AIGuidePSS"],
+            ["Beginner's FAQ", "https://www.battleshipcobra.com/pixel-starships"],
+            ["Pixel Perfect Guide", "https://www.pixelperfectguide.com"],
+            ["Pixel-Prestige", "https://pixel-prestige.com/index.php"],
+            ["Pixyship", "https://pixyship.com"],
+            ["Orion/Sirius Boards", "https://orions.boards.net"],
+            ["Wiki", "https://pixelstarships.fandom.com"]
         ],
         "This bot": [
-            ["add bot to your server", "https://invite.dolores2.xyz"],
-            ["github", "https://github.dolores2.xyz"],
-            ["github (original dolores)", "https://github.com/jzx3/heroku-pss"],
-            ["support server", "https://support.dolores2.xyz"]
+            ["Invite bot to your server", "https://invite.dolores2.xyz"],
+            ["Join the support server", "https://support.dolores2.xyz"],
+            ["Github", "https://github.dolores2.xyz"],
+            ["Dolores 2.0 Emote Server", "https://discord.gg/wTp8e5jAcc"],
+            ["Github (original dolores)", "https://github.com/jzx3/heroku-pss"]
         ]
     }
 }
