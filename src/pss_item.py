@@ -178,7 +178,7 @@ def __get_best_items_title(stat: str, slot: str, is_equipment_slot: bool, use_ma
 
 async def __get_collection_groups(best_items: Dict[str, List[entity.EntityDetails]], stat: str, as_embed: bool) -> Dict[str, entity.EntityDetailsCollection]:
     result = {}
-    group_names_sorted = sorted(best_items.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_EMOJI_LOOKUP.index(x))
+    group_names_sorted = sorted(best_items.keys(), key=lambda x: lookups.EQUIPMENT_SLOTS_ORDER_LOOKUP.index(x))
 
     for group_name in group_names_sorted:
         group = best_items[group_name]

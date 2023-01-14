@@ -103,7 +103,7 @@ EQUIPMENT_MASK_LOOKUP: Dict[int, str] = {
 }
 
 
-EQUIPMENT_SLOTS_EMOJI_LOOKUP: List[str] = [
+EQUIPMENT_SLOTS_ORDER_LOOKUP: List[str] = [
     'EquipmentHead',
     'EquipmentAccessory',
     'EquipmentBody',
