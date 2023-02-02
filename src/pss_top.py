@@ -337,11 +337,33 @@ async def get_alliances_with_division() -> EntitiesData:
     return fleet_infos
 
 
+def get_criteria_lines(min_star_value: int, max_star_value: int, min_trophies: int, max_trophies: int, max_highest_trophies: int) -> List[str]:
+    result = []
+    if min_star_value:
+        if max_star_value:
+            result.append(f'Star value: {min_star_value} - {max_star_value}')
+        else:
+            result.append(f'Minimum star value: {min_star_value}')
+    elif max_star_value:
+        result.append(f'Maximum star value: {min_star_value}')
+
+    if min_trophies:
+        if max_trophies:
+            result.append(f'Trophy count: {min_trophies} - {max_trophies}')
+        else:
+            result.append(f'Minimum trophy count: {min_trophies}')
+    elif max_trophies:
+        result.append(f'Maximum trophy count: {max_trophies}')
+
+    if max_highest_trophies:
+        result.append(f'Maximum highest trophy count: {max_highest_trophies}')
+
+    return result
+
+
 def get_targets_parameters(star_value: str = None, trophies: str = None, max_highest_trophies: int = None) -> Tuple[List[str], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
     star_values = [int(value) for value in (star_value or '').split('-') if value]
     trophies_values = [int(value) for value in (trophies or '').split('-') if value]
-
-    criteria_lines = []
 
     if star_values and len(star_values) > 2:
         raise ValueError('Only 1 minimum and 1 maximum star value may be specified.')
@@ -351,10 +373,8 @@ def get_targets_parameters(star_value: str = None, trophies: str = None, max_hig
         min_star_value = min(star_values)
         if len(star_values) > 1:
             max_star_value = max(star_values)
-            criteria_lines.append(f'Star value: {min_star_value} - {max_star_value}')
         else:
             max_star_value = None
-            criteria_lines.append(f'Minimum star value: {min_star_value}')
 
     if trophies_values and len(trophies_values) > 2:
         raise ValueError('Only 1 minimum and 1 maximum trophy count may be specified.')
@@ -364,17 +384,16 @@ def get_targets_parameters(star_value: str = None, trophies: str = None, max_hig
         max_trophies_value = max(trophies_values)
         if len(trophies_values) > 1:
             min_trophies_value = min(trophies_values)
-            criteria_lines.append(f'Trophy count: {min_trophies_value} - {max_trophies_value}')
         else:
             min_trophies_value = None
-            criteria_lines.append(f'Maximum trophy count: {max_trophies_value}')
 
     if max_highest_trophies is not None:
         if max_highest_trophies < 0:
             raise ValueError('The highest trophy count must not be negative.')
         elif any(value > max_highest_trophies for value in trophies_values):
             raise ValueError('The highest trophy count for a player must not be lower than any current trophy count value.')
-        criteria_lines.append(f'Maximum highest trophy count: {max_highest_trophies}')
+
+    criteria_lines = get_criteria_lines(min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
 
     return criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies
 
