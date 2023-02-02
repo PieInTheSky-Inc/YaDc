@@ -21,6 +21,14 @@ _EntityDict = Union[List['_EntityDict'], Dict[str, '_EntityDict']]
 # ---------- Functions ----------
 
 
+def hundredth_to_seconds(hundredth: int) -> float:
+    if hundredth:
+        hundredth = float(hundredth)
+        return hundredth / 100.0
+    else:
+        return 0.0
+
+
 def iap_options_mask(iap_options_mask: int) -> str:
     result = []
     for flag in _lookups.IAP_OPTIONS_MASK_LOOKUP.keys():
