@@ -224,6 +224,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
                 output.append(title)
                 output.extend(output_lines)
                 output.append(_utils.discord.ZERO_WIDTH_SPACE)
+                output.append(footer)
 
             await _utils.discord.respond_with_output(ctx, output)
         else:
@@ -323,6 +324,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
                 output.append(division_title)
                 output.extend(output_lines)
                 output.append(_utils.discord.ZERO_WIDTH_SPACE)
+                output.append(footer)
 
             await _utils.discord.respond_with_output(ctx, output)
         else:
