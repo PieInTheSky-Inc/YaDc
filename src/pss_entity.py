@@ -435,10 +435,10 @@ class EntityDetails(object):
 
 
     @property
-    def entities_data(self) -> EntitiesData:
+    def entities_data(self) -> Tuple[EntitiesData]:
         if self.__entities_data is None:
             return None
-        return dict(self.__entities_data)
+        return tuple(self.__entities_data)
 
     @property
     def entity_info(self) -> EntityInfo:
