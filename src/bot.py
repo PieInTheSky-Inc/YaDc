@@ -178,7 +178,7 @@ async def on_application_command_error(ctx: ApplicationContext, err: Exception):
         if isinstance(err, command_errors.CommandOnCooldown):
             error_message += f'\nThis message will delete itself, when you may use the command again.'
             retry_after = err.retry_after
-        elif isinstance(err, CheckFailure):
+        elif isinstance(err, (CheckFailure, command_errors.MissingPermissions)):
             error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
         elif isinstance(err, ApplicationCommandInvokeError):
             # Check err.original here for custom exceptions
@@ -193,16 +193,8 @@ async def on_application_command_error(ctx: ApplicationContext, err: Exception):
                         error_message = f'{err.original.msg}'
                 else:
                     error_message = f'{err.original}'
-        else:
-            if not isinstance(err, command_errors.MissingRequiredArgument):
+        elif not isinstance(err, command_errors.MissingRequiredArgument):
                 logging.getLogger().error(err, exc_info=True)
-            command_args = utils.discord.get_exact_args(ctx)
-            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-            command = BOT.get_command(help_args)
-            try:
-                await ctx.send_help(command)
-            except errors.Forbidden:
-                __log_command_use_error(ctx, err, force_printing=True)
 
         title = ' '.join(utils.parse.camel_case(error_type))
         as_embed = await server_settings.get_use_embeds(ctx)
