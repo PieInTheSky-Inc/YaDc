@@ -24,10 +24,12 @@ from . import utils
 BIG_SET_THRESHOLD: int = 4
 
 # RoomType: 'unit'
-CAPACITY_PER_TICK_UNITS: Dict[str, str] = {
+CAPACITY_PER_HUNDREDTH_UNITS: Dict[str, str] = {
     'Lift': ' pixel/s',
+}
+CAPACITY_PER_TICK_UNITS: Dict[str, str] = {
     'Radar': 's',
-    'Stealth': 's'
+    'Stealth': 's',
 }
 
 MISSILE_DESIGN_BASE_PATH: str = 'RoomService/ListMissileDesigns'
@@ -68,9 +70,12 @@ __DISPLAY_NAMES: Dict[str, Dict[str, str]] = {
     'build_requirement': {
         'default': 'Build requirement'
     },
+    'cap_per_hundredth': {
+        'default': 'Cap per hundredth',
+        'Lift': 'Speed',
+    },
     'cap_per_tick': {
         'default': 'Cap per tick',
-        'Lift': 'Speed',
         'Radar': 'Cloak reduction',
         'Stealth': 'Cloak duration'
     },
@@ -337,6 +342,20 @@ def __get_capacity_per_tick(room_info: EntityInfo, rooms_data: EntitiesData, ite
         if entity.entity_property_has_value(capacity) and room_type:
             cap_per_tick = utils.convert.ticks_to_seconds(int(capacity))
             result = f'{utils.format.number_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_TICK_UNITS[room_type]}'
+            return result
+        else:
+            return None
+    else:
+        return None
+
+
+def __get_capacity_per_hundredth(room_info: EntityInfo, rooms_data: EntitiesData, items_data: EntitiesData, researches_data: EntitiesData, rooms_designs_sprites_data: EntitiesData, **kwargs) -> Optional[str]:
+    if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
+        room_type = room_info.get(ROOM_DESIGN_TYPE_PROPERTY_NAME)
+        capacity = room_info.get('Capacity')
+        if entity.entity_property_has_value(capacity) and room_type:
+            cap_per_tick = utils.convert.hundredth_to_seconds(int(capacity))
+            result = f'{utils.format.number_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_HUNDREDTH_UNITS[room_type]}'
             return result
         else:
             return None
@@ -1089,6 +1108,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
             entity.EntityDetailProperty(__display_name_properties['emp_duration'], True, entity_property_name='MissileDesign.EMPLength', transform_function=__get_value_as_seconds),
             entity.EntityDetailProperty(__display_name_properties['max_storage'], True, transform_function=__get_max_storage_and_type, forbidden_room_types=['Anticraft', 'Corridor', 'Lift', 'Radar', 'Reactor', 'Stealth', 'Training']),
             entity.EntityDetailProperty(__display_name_properties['cap_per_tick'], True, transform_function=__get_capacity_per_tick, allowed_room_types=CAPACITY_PER_TICK_UNITS.keys()),
+            entity.EntityDetailProperty(__display_name_properties['cap_per_hundredth'], True, transform_function=__get_capacity_per_hundredth, allowed_room_types=CAPACITY_PER_HUNDREDTH_UNITS.keys()),
             entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit_float, allowed_room_types=['Shield']),
             entity.EntityDetailProperty(__display_name_properties['queue_limit'], True, transform_function=__get_queue_limit, forbidden_room_types=['Shield']),
             entity.EntityDetailProperty(__display_name_properties['manufacture_speed'], True, transform_function=__get_manufacture_rate, forbidden_room_types=['Recycling']),
