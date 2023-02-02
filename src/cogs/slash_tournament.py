@@ -172,16 +172,20 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await ctx.interaction.response.defer()
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
-        star_value = _utils.format.range_string(min_star_value, max_star_value)
-        trophies_value = _utils.format.range_string(min_trophies, max_trophies)
-        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
+        if max_highest_trophies:
+            if min_trophies < max_highest_trophies:
+                raise ValueError('The specified highest trophy count for a player must not be lower than the specified minimum trophy count.')
+            if max_trophies < max_highest_trophies:
+                raise ValueError('The specified highest trophy count for a player must not be lower than the specified maximum trophy count.')
+
+        criteria_lines = _top.get_criteria_lines(min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
         last_month_user_data = self.bot.tournament_data_client.get_latest_monthly_data().users
         current_fleet_data = await _top.get_alliances_with_division()
 
         if yesterday_tourney_data:
-            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
             if not yesterday_user_infos:
                 error_lines = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
                 raise _Error('\n'.join(error_lines))
@@ -253,9 +257,13 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await ctx.interaction.response.defer()
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
-        star_value = _utils.format.range_string(min_star_value, max_star_value)
-        trophies_value = _utils.format.range_string(min_trophies, max_trophies)
-        criteria_lines, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies = _top.get_targets_parameters(star_value, trophies_value, max_highest_trophies)
+        if max_highest_trophies:
+            if min_trophies < max_highest_trophies:
+                raise ValueError('The specified highest trophy count for a player must not be lower than the specified minimum trophy count.')
+            if max_trophies < max_highest_trophies:
+                raise ValueError('The specified highest trophy count for a player must not be lower than the specified maximum trophy count.')
+
+        criteria_lines = _top.get_criteria_lines(min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
 
         max_count = _lookups.DIVISION_MAX_COUNT_TARGETS_TOP[division_design_id]
         if count:
@@ -269,7 +277,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         current_fleet_data = await _top.get_alliances_with_division()
 
         if yesterday_tourney_data:
-            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
             if not yesterday_user_infos:
                 error_text = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
                 raise _Error('\n'.join(error_text))
