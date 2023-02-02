@@ -189,6 +189,11 @@ async def __get_stars_systems_markers_data() -> _EntitiesData:
     path = await __get_list_system_star_markers_base_path()
     raw_data = await _core.get_data_from_path(path)
     data = _utils.convert.xmltree_to_dict3(raw_data)
+    if data:
+        try:
+            int(data.keys())
+        except:
+            data = {marker['StarSystemMarkerId']: marker for marker in data.values()}
     return data
 
 

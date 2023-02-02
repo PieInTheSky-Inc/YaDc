@@ -142,10 +142,9 @@ class Device():
         result = utils.convert.raw_xml_to_dict(data)
         self.__last_login = utc_now
         if 'UserService' in result.keys():
-            user_id = result['UserService']['UserLogin']['UserId']
-            user = result['UserService']['UserLogin'][user_id]
+            user = result['UserService']['UserLogin'].get('User')
 
-            if user.get('Name', None):
+            if user and user.get('Name', None):
                 self.__user = None
                 self.__access_token = None
                 raise DeviceInUseError('Cannot login. The device is already in use.')
