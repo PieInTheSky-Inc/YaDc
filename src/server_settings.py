@@ -475,8 +475,10 @@ class GuildSettings(object):
         return _convert_to_on_off(self.use_pagination)
 
     @property
-    def prefix(self) -> str:
-        return self.__prefix or app_settings.DEFAULT_PREFIX
+    def prefixes(self) -> Tuple[str]:
+        if self.__prefix:
+            return (self.__prefix,)
+        return app_settings.DEFAULT_PREFIXES
 
     @property
     def use_embeds(self) -> bool:
@@ -517,7 +519,8 @@ class GuildSettings(object):
 
 
     def get_prefix_setting(self) -> Dict[str, str]:
-        return {'prefix': self.prefix}
+        key = 'prefixes' if len(self.prefixes) > 1 else 'prefix'
+        return {key: ', '.join((f'`{prefix}`' for prefix in self.prefixes))}
 
 
     def get_use_embeds_setting(self) -> Dict[str, str]:
@@ -818,13 +821,11 @@ async def get_autotrader_settings_without_post(autotrader_settings: List[AutoMes
     return result
 
 
-async def get_prefix(bot: Bot, message: Message) -> str:
+async def get_prefixes(bot: Bot, message: Message) -> Tuple[str]:
     if utils.discord.is_guild_channel(message.channel):
         guild_settings = await GUILD_SETTINGS.get(bot, message.channel.guild.id)
-        result = guild_settings.prefix
-    else:
-        result = app_settings.DEFAULT_PREFIX
-    return result
+        return guild_settings.prefixes
+    return app_settings.DEFAULT_PREFIXES
 
 
 async def get_prefix_or_default(guild_id: int) -> str:
@@ -847,7 +848,8 @@ async def get_pretty_guild_settings(ctx: Context, full_guild_settings: Dict[str,
             result.append(f'**```{title}```**')
         if note:
             result.append(f'_{note}_')
-        result.extend([f'{pretty_setting[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}' for pretty_setting in pretty_guild_settings])
+        for pretty_setting in pretty_guild_settings:
+            result.append(f'{pretty_setting[0]}{entity.DEFAULT_DETAIL_PROPERTY_LONG_SEPARATOR}{pretty_setting[1]}')
     return result
 
 
@@ -913,6 +915,8 @@ def __prettify_guild_settings(guild_settings: Dict[str, str]) -> List[Tuple[str,
         result.append(('Pagination', guild_settings['pagination']))
     if 'prefix' in guild_settings:
         result.append(('Prefix', guild_settings['prefix']))
+    if 'prefixes' in guild_settings:
+        result.append(('Prefixes', guild_settings['prefixes']))
     if 'use_embeds' in guild_settings:
         result.append(('Use Embeds', guild_settings['use_embeds']))
     return result

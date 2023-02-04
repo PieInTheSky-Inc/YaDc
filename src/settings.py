@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import json
 import os
 from typing import List
+from typing import Tuple
 
 
 # ---------- Settings ----------
@@ -19,6 +20,7 @@ DATABASE_URL: str = f'{os.environ.get("DATABASE_URL")}?sslmode={DATABASE_SSL_MOD
 DEBUG_GUILDS: List[int] = json.loads(str(os.environ.get('DEBUG_GUILDS', '[]')))
 DEFAULT_HYPHEN: str = '–'
 DEFAULT_PREFIX: str = '/'
+DEFAULT_PREFIXES: Tuple[str] = ('//', '\\', '/')
 DEFAULT_USE_EMOJI_PAGINATOR: bool = True
 
 DEVICE_LOGIN_CHECKSUM_KEY: str = os.environ.get('PSS_DEVICE_LOGIN_CHECKSUM_KEY')

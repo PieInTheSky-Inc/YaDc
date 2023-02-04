@@ -69,7 +69,8 @@ class SettingsCog(_SettingCogBase, name='Settings'):
             prefix_settings = guild_settings.get_prefix_setting()
         else:
             title = 'Bot settings'
-            prefix_settings = {'prefix': _settings.DEFAULT_PREFIX}
+            prefixes = ', '.join((f'`{prefix}`' for prefix in _settings.DEFAULT_PREFIXES))
+            prefix_settings = {'prefixes': prefixes}
         note = None
         if on_reset:
             note = 'Successfully reset prefix for this server!'

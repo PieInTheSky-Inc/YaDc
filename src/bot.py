@@ -41,8 +41,8 @@ from . yadc_bot import YadcBot
 # ############################################################################ #
 
 async def get_prefix(bot: YadcBot, message: Message) -> str:
-    result = await server_settings.get_prefix(bot, message)
-    return when_mentioned_or(result)(bot, message)
+    prefixes = await server_settings.get_prefixes(bot, message)
+    return when_mentioned_or(*prefixes)(bot, message)
 
 INTENTS: Intents = Intents.default()
 if settings.INTENT_MESSAGE_CONTENT:
@@ -119,7 +119,8 @@ async def on_command_error(ctx: Context, err: Exception) -> None:
             error_message += f'\nThis message will delete itself, when you may use the command again.'
             retry_after = err.retry_after
         elif isinstance(err, command_errors.CommandNotFound):
-            prefix = await server_settings.get_prefix(BOT, ctx.message)
+            prefixes = await server_settings.get_prefixes(BOT, ctx.message)
+            prefix = prefixes[0]
             invoked_with = ctx.invoked_with.split(' ')[0]
             commands_map = utils.get_similarity_map(__COMMANDS, invoked_with)
             bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]

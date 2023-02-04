@@ -51,7 +51,8 @@ class SettingsSlashCog(_SettingCogBase, name='Settings Slash'):
             guild_settings = await _server_settings.GUILD_SETTINGS.get(self.bot, ctx.guild.id)
             prefix_settings = guild_settings.get_prefix_setting()
         else:
-            prefix_settings = {'prefix': _settings.DEFAULT_PREFIX}
+            prefixes = ', '.join((f'`{prefix}`' for prefix in _settings.DEFAULT_PREFIXES))
+            prefix_settings = {'prefixes': prefixes}
         await self._respond_with_server_settings(ctx, prefix_settings, note='Prefixed commands may not work on Discord servers/guilds. Use Slash Commands instead.')
 
 
