@@ -1099,7 +1099,7 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
         use_embeds = await _server_settings.get_use_embeds(ctx)
 
         embed_colour = _utils.discord.get_bot_member_colour(self.bot, ctx.guild)
-        start_of_tourney = _tourney.get_current_tourney_start()
+        start_of_tourney = _tourney.get_current_tourney_start(utc_now=utc_now)
         tourney_embed = _tourney.get_tourney_start_as_embed(start_of_tourney, utc_now, embed_colour)
 
         if (use_embeds):
@@ -1108,13 +1108,14 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
             output = _tourney.convert_tourney_embed_to_plain_text(tourney_embed)
 
         if start_of_tourney < utc_now:
-            start_of_next_tourney = _tourney.get_next_tourney_start()
+            start_of_next_tourney = _tourney.get_next_tourney_start(utc_now=utc_now)
             next_tourney_embed = _tourney.get_tourney_start_as_embed(start_of_next_tourney, utc_now, embed_colour)
 
             if (use_embeds):
                 output.append(next_tourney_embed)
             else:
-                output.extend(('\n', _tourney.convert_tourney_embed_to_plain_text(tourney_embed)))
+                output.append('\n')
+                output.extend(_tourney.convert_tourney_embed_to_plain_text(tourney_embed))
 
         await _utils.discord.reply_with_output(ctx, output)
 
