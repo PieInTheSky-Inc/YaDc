@@ -613,7 +613,7 @@ def __get_shots_fired(room_info: EntityInfo, rooms_data: EntitiesData, items_dat
     if __is_allowed_room_type(room_info, kwargs.get('allowed_room_types'), kwargs.get('forbidden_room_types')):
         volley = entity.get_property_from_entity_info(room_info, 'MissileDesign.Volley')
         volley_delay = entity.get_property_from_entity_info(room_info, 'MissileDesign.VolleyDelay')
-        if entity.entity_property_has_value(volley) and volley != '1':
+        if entity.entity_property_has_value(volley) and volley != '1' and entity.entity_property_has_value(volley_delay):
             volley = int(volley)
             volley_delay = int(volley_delay)
             volley_delay_seconds = utils.format.number_up_to_decimals(utils.convert.ticks_to_seconds(volley_delay), 3)
