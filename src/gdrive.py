@@ -716,17 +716,22 @@ class TourneyDataClient():
 
     @staticmethod
     def create_service_account_credential_json(project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, service_account_file_path: str) -> None:
-        contents = {}
-        contents['type'] = 'service_account'
-        contents['project_id'] = project_id
-        contents['private_key_id'] = private_key_id
-        contents['private_key'] = private_key
-        contents['client_email'] = client_email
-        contents['client_id'] = client_id
-        contents['auth_uri'] = 'https://accounts.google.com/o/oauth2/auth'
-        contents['token_uri'] = 'https://oauth2.googleapis.com/token'
-        contents['auth_provider_x509_cert_url'] = 'https://www.googleapis.com/oauth2/v1/certs'
-        contents['client_x509_cert_url'] = f'https://www.googleapis.com/robot/v1/metadata/x509/{urllib.parse.quote(client_email)}'
+        if os.path.exists(service_account_file_path):
+            print(f'Using existing service account connection file at: {service_account_file_path}')
+            return
+        
+        contents = {
+            'type': 'service_account',
+            'project_id': project_id,
+            'private_key_id': private_key_id,
+            'private_key': private_key,
+            'client_email': client_email,
+            'client_id': client_id,
+            'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+            'token_uri': 'https://oauth2.googleapis.com/token',
+            'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+            'client_x509_cert_url': f'https://www.googleapis.com/robot/v1/metadata/x509/{urllib.parse.quote(client_email)}',
+        }
         with open(service_account_file_path, 'w+') as service_file:
             json.dump(contents, service_file, indent=2)
         print(f'Created service account connection file at: {service_account_file_path}')
