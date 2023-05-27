@@ -8,7 +8,6 @@ jellyfish
 openpyxl==3.0.10
 pandas
 pillow
-pip
-py-cord==2.3.2
+py-cord==2.4.1
+PyDrive
 pytz
-git+https://github.com/googledrive/PyDrive.git#egg=PyDrive
