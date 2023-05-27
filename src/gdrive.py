@@ -716,6 +716,10 @@ class TourneyDataClient():
 
     @staticmethod
     def create_service_account_credential_json(project_id: str, private_key_id: str, private_key: str, client_email: str, client_id: str, service_account_file_path: str) -> None:
+        if os.path.exists(service_account_file_path):
+            print(f'Using existing service account connection file at: {service_account_file_path}')
+            return
+        
         contents = {}
         contents['type'] = 'service_account'
         contents['project_id'] = project_id
