@@ -173,9 +173,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
         if max_highest_trophies:
-            if min_trophies < max_highest_trophies:
+            if min_trophies and min_trophies > max_highest_trophies:
                 raise ValueError('The specified highest trophy count for a player must not be lower than the specified minimum trophy count.')
-            if max_trophies < max_highest_trophies:
+            if max_trophies and max_trophies < max_highest_trophies:
                 raise ValueError('The specified highest trophy count for a player must not be lower than the specified maximum trophy count.')
 
         criteria_lines = _top.get_criteria_lines(min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
@@ -258,9 +258,9 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         division_design_id = _lookups.DIVISION_CHAR_TO_DESIGN_ID.get(division.upper())
 
         if max_highest_trophies:
-            if min_trophies < max_highest_trophies:
+            if min_trophies and min_trophies > max_highest_trophies:
                 raise ValueError('The specified highest trophy count for a player must not be lower than the specified minimum trophy count.')
-            if max_trophies < max_highest_trophies:
+            if max_trophies and max_trophies < max_highest_trophies:
                 raise ValueError('The specified highest trophy count for a player must not be lower than the specified maximum trophy count.')
 
         criteria_lines = _top.get_criteria_lines(min_star_value, max_star_value, min_trophies, max_trophies, max_highest_trophies)
