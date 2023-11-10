@@ -597,7 +597,8 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Stars', True, transform_function=__get_stars),
         entity.EntityDetailProperty('Type', True, transform_function=__get_type),
         entity.EntityDetailProperty('Championship score', True, entity_property_name='ChampionshipScore'),
-        entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
+        entity.EntityDetailProperty('Fleet ID', True, entity_property_name=FLEET_KEY_NAME),
+        entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True),
     ]),
     'embed_settings': {
         'icon_url': entity.EntityDetailProperty('icon_url', False, entity_property_name='AllianceSpriteId', transform_function=sprites.get_download_sprite_link_by_property),
