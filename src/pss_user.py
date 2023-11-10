@@ -502,6 +502,7 @@ __properties: entity.EntityDetailsCreationPropertiesCollection = {
         entity.EntityDetailProperty('Level', True, transform_function=__get_level),
         entity.EntityDetailProperty('Championship score', True, entity_property_name='ChampionshipScore'),
         entity.EntityDetailProperty('User type', True, transform_function=__get_user_type),
+        entity.EntityDetailProperty('Player ID', True, entity_property_name=USER_KEY_NAME),
         entity.EntityDetailProperty('history_note', False, transform_function=__get_historic_data_note, text_only=True)
     ]),
     'embed_settings': {
