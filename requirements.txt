@@ -3,11 +3,11 @@ aiohttp[speedups]
 asyncio
 asyncpg==0.27.0
 google-api-python-client==2.41.0
-holidays
-jellyfish
+holidays==0.25
+jellyfish==0.11.2
 openpyxl==3.0.10
-pandas
-pillow
+pandas==2.0.1
+pillow==9.5.0
 py-cord==2.4.1
-PyDrive
-pytz
+PyDrive==1.3.1
+pytz==2023.3.post1
