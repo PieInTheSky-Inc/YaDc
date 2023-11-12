@@ -794,9 +794,14 @@ class TourneyDataClient():
                 month = None
 
         args_provided_count = (0 if month is None else 1) + (0 if year is None else 1)
-        param = utils.discord.get_exact_args(ctx, args_provided_count)
-        if not param:
-            param = None
+        if args_provided_count == 1:
+            param = month or year
+            month = None
+            year = None
+        else:
+            param = utils.discord.get_exact_args(ctx, args_provided_count)
+            if not param:
+                param = None
 
         return (month, year, param)
 

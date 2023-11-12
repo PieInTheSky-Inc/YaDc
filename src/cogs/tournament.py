@@ -237,14 +237,14 @@ class TournamentCog(_CogBase, name='Tournament'):
 
     @past.command(name='player', aliases=['user'], brief='Get historic player data')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def past_player(self, ctx: _Context, month: str = None, year: str = None, *, player_name: str = None):
+    async def past_player(self, ctx: _Context, month: str = None, year: str = None, *, player_name_or_id: str = None):
         """
         Get historic tournament player data.
 
         Parameters:
         month:       Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
         year:        Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-        player_name: Mandatory. The player for which the data should be displayed.
+        player_name_or_id: Mandatory. The player for which the data should be displayed.
 
         If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
         """
@@ -252,11 +252,11 @@ class TournamentCog(_CogBase, name='Tournament'):
         output = []
         error = None
         utc_now = _utils.get_utc_now()
-        (month, year, player_name) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        (month, year, player_name_or_id) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-        if not player_name:
-            raise _MissingParameterError('The parameter `player_name` is mandatory.')
+        if not player_name_or_id:
+            raise _MissingParameterError('The parameter `player_name_or_id` is mandatory.')
 
         day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
         try:
@@ -268,14 +268,14 @@ class TournamentCog(_CogBase, name='Tournament'):
         if tourney_data is None:
             user_infos = []
         else:
-            user_infos = await _user.get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+            user_infos = await _user.get_user_infos_from_tournament_data_by_name_or_id(player_name_or_id, tourney_data.users)
 
         if user_infos:
             if len(user_infos) == 1:
                 user_info = user_infos[0]
             else:
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
+                paginator = _pagination.Paginator(ctx, player_name_or_id, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
@@ -284,9 +284,9 @@ class TournamentCog(_CogBase, name='Tournament'):
             raise _Error(str(error))
         else:
             leading_space_note = ''
-            if player_name.startswith(' '):
+            if player_name_or_id.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a player named `{player_name}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
+            raise _NotFound(f'Could not find a player named `{player_name_or_id}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
         await _utils.discord.reply_with_output(ctx, output)
 
 
@@ -563,14 +563,18 @@ class TournamentCog(_CogBase, name='Tournament'):
 
     @yesterday.command(name='player', aliases=['user'], brief='Get yesterday\'s player data')
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
-    async def yesterday_player(self, ctx: _Context, *, player_name: str = None):
+    async def yesterday_player(self, ctx: _Context, *, player_name_or_id: str):
         """
         Get yesterday's tournament player data.
 
         Parameters:
-        player_name: Mandatory. The player for which the data should be displayed.
+        player_name_or_id: Mandatory. The player for which the data should be displayed.
         """
         self._log_command_use(ctx)
+        
+        if not player_name_or_id:
+            raise _MissingParameterError('The parameter `player_name_or_id` is mandatory.')
+        
         utc_now = _utils.get_utc_now()
         tourney_day = _tourney.get_tourney_day(utc_now)
         if tourney_day is None:
@@ -583,14 +587,14 @@ class TournamentCog(_CogBase, name='Tournament'):
         if yesterday_tourney_data is None:
             user_infos = []
         else:
-            user_infos = await _user.get_user_infos_from_tournament_data_by_name(player_name, yesterday_tourney_data.users)
+            user_infos = await _user.get_user_infos_from_tournament_data_by_name_or_id(player_name_or_id, yesterday_tourney_data.users)
 
         if user_infos:
             if len(user_infos) == 1:
                 user_info = user_infos[0]
             else:
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
+                paginator = _pagination.Paginator(ctx, player_name_or_id, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
@@ -601,9 +605,9 @@ class TournamentCog(_CogBase, name='Tournament'):
                 output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=yesterday_tourney_data.retrieved_at, past_fleet_infos=yesterday_tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
         else:
             leading_space_note = ''
-            if player_name.startswith(' '):
+            if player_name_or_id.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a player named `{player_name}` participating in the current tournament.{leading_space_note}')
+            raise _NotFound(f'Could not find a player with the name or ID `{player_name_or_id}` participating in the current tournament.{leading_space_note}')
         await _utils.discord.reply_with_output(ctx, output)
 
 
