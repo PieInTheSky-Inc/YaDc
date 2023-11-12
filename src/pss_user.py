@@ -44,6 +44,7 @@ SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
 GET_USER_BASE_PATH = f'UserService/GetUser'
 
 USER_DESCRIPTION_PROPERTY_NAME = 'Name'
+USER_CURRENT_NAME_PROPERTY_NAME = 'CurrentName'
 USER_KEY_NAME = 'Id'
 USER_SHIP_KEY_NAME = 'Ship'
 
@@ -65,12 +66,13 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
         current_user_info = await __get_user_info_by_id(user_id) or {}
         current_user_name = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
         if current_user_name and current_user_name != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
-            user_info['CurrentName'] = current_user_name
+            user_info[USER_CURRENT_NAME_PROPERTY_NAME] = current_user_name
     else:
         if not user_info.get(USER_SHIP_KEY_NAME):
             _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         else:
             ship_info = user_info.get(USER_SHIP_KEY_NAME)
+        user_info = await __get_user_info_by_exact_name(user_info[USER_DESCRIPTION_PROPERTY_NAME]) # user_info might come from InspectShip endpoint, which doesn't contain some data.
         fleet_info = await __get_fleet_info_by_user_info(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
@@ -102,12 +104,12 @@ async def get_user_infos_from_tournament_data_by_name_or_id(user_name_or_id: str
                 if user_id not in result:
                     result[user_id] = users_data[user_id]
                 if current_user_name and current_user_name != result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME]:
-                    result[user_id]['CurrentName'] = current_user_name
+                    result[user_id][USER_CURRENT_NAME_PROPERTY_NAME] = current_user_name
     else:
         for tournament_user_id, tournament_user_info in result.items():
             user_info = await __get_user_info_by_id(tournament_user_id)
             if result[tournament_user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                result[tournament_user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+                result[tournament_user_id][USER_CURRENT_NAME_PROPERTY_NAME] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
@@ -161,11 +163,6 @@ def get_user_search_details(user_info: EntityInfo) -> str:
     return result
 
 
-def __create_get_user_path(user_id: Union[int, str], access_token: str):
-    result = f'{GET_USER_BASE_PATH}?userId={user_id}&accessToken={access_token}'
-    return result
-
-
 async def __get_users_data(user_name_or_id: str) -> EntitiesData:
     users_by_name_path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name_or_id)}'
     users_data_by_name_raw = await core.get_data_from_path(users_by_name_path)
@@ -177,11 +174,6 @@ async def __get_users_data(user_name_or_id: str) -> EntitiesData:
     except:
         pass
     if user_id:
-        #access_token = await login.DEVICES.get_access_token()
-        #if access_token:
-            #user_by_id_path = __create_get_user_path(user_name_or_id, access_token)
-            #user_data_by_id_raw = await core.get_data_from_path(user_by_id_path)
-            #user_info_by_id = utils.convert.xmltree_to_dict3(user_data_by_id_raw)
         user_info_by_id, ship_info_by_id = await ship.get_inspect_ship_for_user(user_name_or_id,)
         if user_info_by_id:
             user_info_by_id[USER_SHIP_KEY_NAME] = user_info_by_id.get('Ship', ship_info_by_id)
@@ -363,7 +355,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
     user_name = user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
     if user_name is not None:
         result = user_name
-        current_user_name = user_info.get('CurrentName')
+        current_user_name = user_info.get(USER_CURRENT_NAME_PROPERTY_NAME)
         if current_user_name is not None:
             result += f' (now: {current_user_name})'
     return result
@@ -487,6 +479,13 @@ def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> i
 async def __get_user_info_by_id(user_id: int) -> EntityInfo:
     result, _ = await ship.get_inspect_ship_for_user(user_id)
     return result
+
+
+async def __get_user_info_by_exact_name(user_name: str) -> EntityInfo:
+    users_data = await __get_users_data(f'"{user_name}"')
+    if users_data:
+        return users_data.get('User', {})
+    return {}
 
 
 def __parse_timestamp(user_info: EntityInfo, field_name: str) -> Optional[str]:
