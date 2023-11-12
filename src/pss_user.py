@@ -71,6 +71,7 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
             _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         else:
             ship_info = user_info.get(USER_SHIP_KEY_NAME)
+        user_info = await __get_user_info_by_exact_name(user_info[USER_DESCRIPTION_PROPERTY_NAME])
         fleet_info = await __get_fleet_info_by_user_info(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
@@ -161,6 +162,10 @@ def get_user_search_details(user_info: EntityInfo) -> str:
     return result
 
 
+def get_user_by_id(user_id: int, access_token: str):
+    pass
+
+
 def __create_get_user_path(user_id: Union[int, str], access_token: str):
     result = f'{GET_USER_BASE_PATH}?userId={user_id}&accessToken={access_token}'
     return result
@@ -177,11 +182,6 @@ async def __get_users_data(user_name_or_id: str) -> EntitiesData:
     except:
         pass
     if user_id:
-        #access_token = await login.DEVICES.get_access_token()
-        #if access_token:
-            #user_by_id_path = __create_get_user_path(user_name_or_id, access_token)
-            #user_data_by_id_raw = await core.get_data_from_path(user_by_id_path)
-            #user_info_by_id = utils.convert.xmltree_to_dict3(user_data_by_id_raw)
         user_info_by_id, ship_info_by_id = await ship.get_inspect_ship_for_user(user_name_or_id,)
         if user_info_by_id:
             user_info_by_id[USER_SHIP_KEY_NAME] = user_info_by_id.get('Ship', ship_info_by_id)
@@ -487,6 +487,13 @@ def __get_tourney_battle_attempts(user_info: EntityInfo, utc_now: datetime) -> i
 async def __get_user_info_by_id(user_id: int) -> EntityInfo:
     result, _ = await ship.get_inspect_ship_for_user(user_id)
     return result
+
+
+async def __get_user_info_by_exact_name(user_name: str) -> EntityInfo:
+    users_data = await __get_users_data(f'"{user_name}"')
+    if users_data:
+        return users_data.get('User', {})
+    return {}
 
 
 def __parse_timestamp(user_info: EntityInfo, field_name: str) -> Optional[str]:
