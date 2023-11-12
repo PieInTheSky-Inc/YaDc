@@ -71,7 +71,7 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
             _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         else:
             ship_info = user_info.get(USER_SHIP_KEY_NAME)
-        user_info = await __get_user_info_by_exact_name(user_info[USER_DESCRIPTION_PROPERTY_NAME])
+        user_info = await __get_user_info_by_exact_name(user_info[USER_DESCRIPTION_PROPERTY_NAME]) # user_info might come from InspectShip endpoint, which doesn't contain some data.
         fleet_info = await __get_fleet_info_by_user_info(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
