@@ -21,7 +21,6 @@ FIVE_MINUTES: _timedelta = _timedelta(minutes=5)
 ONE_DAY: _timedelta = _timedelta(days=1)
 ONE_SECOND: _timedelta = _timedelta(seconds=1)
 ONE_WEEK: _timedelta = _timedelta(days=7)
-THREE_MINUTES: _timedelta = _timedelta(minutes=3)
 
 UNIX_START_DATE: _datetime = _datetime(1970, 1, 1, tzinfo=_timezone.utc)
 
