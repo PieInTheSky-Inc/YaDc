@@ -44,6 +44,7 @@ SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
 GET_USER_BASE_PATH = f'UserService/GetUser'
 
 USER_DESCRIPTION_PROPERTY_NAME = 'Name'
+USER_CURRENT_NAME_PROPERTY_NAME = 'CurrentName'
 USER_KEY_NAME = 'Id'
 USER_SHIP_KEY_NAME = 'Ship'
 
@@ -65,7 +66,7 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
         current_user_info = await __get_user_info_by_id(user_id) or {}
         current_user_name = current_user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
         if current_user_name and current_user_name != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
-            user_info['CurrentName'] = current_user_name
+            user_info[USER_CURRENT_NAME_PROPERTY_NAME] = current_user_name
     else:
         if not user_info.get(USER_SHIP_KEY_NAME):
             _, ship_info = await ship.get_inspect_ship_for_user(user_id)
@@ -103,12 +104,12 @@ async def get_user_infos_from_tournament_data_by_name_or_id(user_name_or_id: str
                 if user_id not in result:
                     result[user_id] = users_data[user_id]
                 if current_user_name and current_user_name != result[user_id][user.USER_DESCRIPTION_PROPERTY_NAME]:
-                    result[user_id]['CurrentName'] = current_user_name
+                    result[user_id][USER_CURRENT_NAME_PROPERTY_NAME] = current_user_name
     else:
         for tournament_user_id, tournament_user_info in result.items():
             user_info = await __get_user_info_by_id(tournament_user_id)
             if result[tournament_user_id][user.USER_DESCRIPTION_PROPERTY_NAME] != user_info[user.USER_DESCRIPTION_PROPERTY_NAME]:
-                result[tournament_user_id]['CurrentName'] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
+                result[tournament_user_id][USER_CURRENT_NAME_PROPERTY_NAME] = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     return list(result.values())
 
 
@@ -354,7 +355,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
     user_name = user_info.get(USER_DESCRIPTION_PROPERTY_NAME)
     if user_name is not None:
         result = user_name
-        current_user_name = user_info.get('CurrentName')
+        current_user_name = user_info.get(USER_CURRENT_NAME_PROPERTY_NAME)
         if current_user_name is not None:
             result += f' (now: {current_user_name})'
     return result
