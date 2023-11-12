@@ -162,15 +162,6 @@ def get_user_search_details(user_info: EntityInfo) -> str:
     return result
 
 
-def get_user_by_id(user_id: int, access_token: str):
-    pass
-
-
-def __create_get_user_path(user_id: Union[int, str], access_token: str):
-    result = f'{GET_USER_BASE_PATH}?userId={user_id}&accessToken={access_token}'
-    return result
-
-
 async def __get_users_data(user_name_or_id: str) -> EntitiesData:
     users_by_name_path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name_or_id)}'
     users_data_by_name_raw = await core.get_data_from_path(users_by_name_path)
