@@ -70,7 +70,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def past_player_slash(self,
         ctx: _ApplicationContext,
-        name: _Option(str, 'Enter player name.'),
+        name_or_id: _Option(str, 'Enter player name or ID.'),
         month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
         year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019, required=False, default=None) = None
     ):
@@ -80,7 +80,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         self._log_command_use(ctx)
 
         tourney_data = await self._get_tourney_data(ctx, month, year)
-        user_info, response = await _user.find_tournament_user(ctx, name, tourney_data)
+        user_info, response = await _user.find_tournament_user(ctx, name_or_id, tourney_data)
 
         output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.edit_original_response(ctx, response, output=output)
@@ -379,7 +379,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
     async def yesterday_player_slash(self,
         ctx: _ApplicationContext,
-        name: _Option(str, 'Enter player name.')
+        name_or_id: _Option(str, 'Enter player name or ID.')
     ):
         """
         Get yesterday's tournament player data.
@@ -388,7 +388,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         self._assure_yesterday_command_valid()
 
         yesterday_tourney_data = await self._get_yesterday_tourney_data(ctx)
-        user_info, response = await _user.find_tournament_user(ctx, name, yesterday_tourney_data)
+        user_info, response = await _user.find_tournament_user(ctx, name_or_id, yesterday_tourney_data)
 
         day_before_yesterday_tourney_data = self.bot.tournament_data_client.get_second_latest_daily_data()
         day_before_user_info = day_before_yesterday_tourney_data.users.get(user_info[_user.USER_KEY_NAME])

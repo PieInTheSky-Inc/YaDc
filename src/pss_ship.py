@@ -34,7 +34,10 @@ SHIP_DESIGN_KEY_NAME: str = 'ShipDesignId'
 # ---------- Ship builder links ----------
 
 async def get_ship_builder_links(ctx: Context, user_info: entity.EntityInfo, as_embed: bool = settings.USE_EMBEDS) -> Union[List[Embed], List[str]]:
-    user_info, user_ship_info = await get_inspect_ship_for_user(user_info[user.USER_KEY_NAME])
+    if not user_info.get(user.USER_SHIP_KEY_NAME):
+        user_info, user_ship_info = await get_inspect_ship_for_user(user_info[user.USER_KEY_NAME])
+    else:
+        user_ship_info = user_info[user.USER_SHIP_KEY_NAME]
     ship_design_id = user_ship_info[SHIP_DESIGN_KEY_NAME]
     ships_designs_data = await ships_designs_retriever.get_data_dict3()
     ship_design_info = ships_designs_data[ship_design_id]
@@ -56,6 +59,7 @@ async def get_ship_builder_links(ctx: Context, user_info: entity.EntityInfo, as_
     fields += [
         ('Trophies', user_info['Trophy'], None),
         ('Ship', f'{ship_design_info["ShipDesignName"]} (level {ship_design_info["ShipLevel"]})', None),
+        ('Player ID', user_info[user.USER_KEY_NAME], None),
     ]
     post_title = user_info[user.USER_DESCRIPTION_PROPERTY_NAME]
     if as_embed:

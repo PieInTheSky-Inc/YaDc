@@ -281,7 +281,11 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
 
         if user_info:
             await _utils.discord.edit_original_response(ctx, response, content='Player found.')
-            _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
+            if not user_info.get(_user.USER_SHIP_KEY_NAME):
+                _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
+            else:
+                user_ship_info = user_info[_user.USER_SHIP_KEY_NAME]
+
             if user_ship_info:
                 await _utils.discord.edit_original_response(ctx, response, content='Building layout, please wait...', embeds=[], view=None)
                 output, file_path = await _user.get_user_ship_layout(ctx, user_info[_user.USER_KEY_NAME], as_embed=(await _server_settings.get_use_embeds(ctx)))

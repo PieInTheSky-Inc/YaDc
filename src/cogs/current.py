@@ -103,7 +103,7 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
 
     @_command(name='builder', brief='Get ship builder links')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def builder(self, ctx: _Context, *, player_name: str):
+    async def builder(self, ctx: _Context, *, player_name_or_id: str):
         """
         Get links to websites offering a ship builder tool with the specific player's ship layout loaded. Currently there'll be links produced for pixelprestige.com and pixyship.com.
 
@@ -120,16 +120,16 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
 
         exact_name = _utils.discord.get_exact_args(ctx)
         if exact_name:
-            player_name = exact_name
-        if not player_name:
-            raise _MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await _user.get_users_infos_by_name(player_name)
+            player_name_or_id = exact_name
+        if not player_name_or_id:
+            raise _MissingParameterError('The parameter `player_name_or_id` is mandatory.')
+        user_infos = await _user.get_users_infos_by_name_or_id(player_name_or_id)
         if user_infos:
             if len(user_infos) == 1:
                 user_info = user_infos[0]
             else:
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
+                paginator = _pagination.Paginator(ctx, player_name_or_id, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
@@ -137,9 +137,9 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
                 await _utils.discord.reply_with_output(ctx, output)
         else:
             leading_space_note = ''
-            if player_name.startswith(' '):
+            if player_name_or_id.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
-            raise _NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
+            raise _NotFound(f'Could not find a player with the name or ID `{player_name_or_id}`.{leading_space_note}')
 
 
     @_command(name='char', aliases=['crew'], brief='Get character stats')
@@ -396,7 +396,7 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
             player_name = exact_name
         if not player_name:
             raise _MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await _user.get_users_infos_by_name(player_name)
+        user_infos = await _user.get_users_infos_by_name_or_id(player_name)
 
         if user_infos:
             if len(user_infos) == 1:
@@ -407,7 +407,10 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
-                _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
+                if not user_info.get(_user.USER_SHIP_KEY_NAME):
+                    _, user_ship_info = await _ship.get_inspect_ship_for_user(user_info[_user.USER_KEY_NAME])
+                else:
+                    user_ship_info = user_info[_user.USER_SHIP_KEY_NAME]
                 if user_ship_info:
                     as_embed = await _server_settings.get_use_embeds(ctx)
                     info_message = await _utils.discord.reply_with_output(ctx, ['```Building layout, please wait...```'])
@@ -421,7 +424,7 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
             leading_space_note = ''
             if player_name.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
-            raise _NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
+            raise _NotFound(f'Could not find a player with the name or ID `{player_name}`.{leading_space_note}')
 
 
     @_command(name='level', aliases=['lvl'], brief='Get crew levelling costs')
@@ -492,34 +495,35 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
 
     @_command(name='player', aliases=['user'], brief='Get infos on a player')
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
-    async def player(self, ctx: _Context, *, player_name: str = None):
+    async def player(self, ctx: _Context, *, player_name_or_id: str = None):
         """
         Get details on a player. If the provided player name does not match any player exactly, you will be prompted to select from a list of results. The selection prompt will time out after 60 seconds. Due to restrictions by SavySoda, it will print 10 options max at a time.
 
         Usage:
-        /player [player_name]
-        /user [player_name]
+        /player [player_name_or_id]
+        /user [player_name_or_id]
 
         Parameters:
-        player_name: Mandatory. The (beginning of the) name of the player to search for.
+        player_name_or_id: Mandatory. The (beginning of the) name of the player to search for or the Player ID.
 
         Examples:
         /player Namith - Offers a list of players having a name starting with 'Namith'. Upon selection prints player details.
+        /player 4510693 - Searches for players having a name starting with '4510693' or having this Player ID.
         """
         self._log_command_use(ctx)
         exact_name = _utils.discord.get_exact_args(ctx)
         if exact_name:
-            player_name = exact_name
-        if not player_name:
+            player_name_or_id = exact_name
+        if not player_name_or_id:
             raise _MissingParameterError('The parameter `player_name` is mandatory.')
-        user_infos = await _user.get_users_infos_by_name(player_name)
+        user_infos = await _user.get_users_infos_by_name_or_id(player_name_or_id)
 
         if user_infos:
             if len(user_infos) == 1:
                 user_info = user_infos[0]
             else:
                 use_pagination = await _server_settings.db_get_use_pagination(ctx.guild)
-                paginator = _pagination.Paginator(ctx, player_name, user_infos, _user.get_user_search_details, use_pagination)
+                paginator = _pagination.Paginator(ctx, player_name_or_id, user_infos, _user.get_user_search_details, use_pagination)
                 _, user_info = await paginator.wait_for_option_selection()
 
             if user_info:
@@ -533,9 +537,9 @@ class CurrentDataCog(_CurrentCogBase, name='Current PSS Data'):
                 await _utils.discord.reply_with_output(ctx, output)
         else:
             leading_space_note = ''
-            if player_name.startswith(' '):
+            if player_name_or_id.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the player name.'
-            raise _NotFound(f'Could not find a player named `{player_name}`.{leading_space_note}')
+            raise _NotFound(f'Could not find a player named `{player_name_or_id}`.{leading_space_note}')
 
 
     @_command(name='prestige', brief='Get prestige combos of crew')

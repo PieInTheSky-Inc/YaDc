@@ -18,6 +18,7 @@ from . import pss_core as core
 from . import pss_entity as entity
 from .pss_exception import NotFound
 from . import pss_fleet as fleet
+from . import pss_login as login
 from . import pss_lookups as lookups
 from . import pss_room as room
 from . import pss_ship as ship
@@ -40,9 +41,11 @@ LEAGUE_INFO_KEY_NAME = 'LeagueId'
 LEAGUE_INFOS_CACHE = []
 
 SEARCH_USERS_BASE_PATH = f'UserService/SearchUsers?searchString='
+GET_USER_BASE_PATH = f'UserService/GetUser'
 
 USER_DESCRIPTION_PROPERTY_NAME = 'Name'
 USER_KEY_NAME = 'Id'
+USER_SHIP_KEY_NAME = 'Ship'
 
 
 
@@ -64,7 +67,10 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
         if current_user_name and current_user_name != user_info.get(USER_DESCRIPTION_PROPERTY_NAME):
             user_info['CurrentName'] = current_user_name
     else:
-        _, ship_info = await ship.get_inspect_ship_for_user(user_id)
+        if not user_info.get(USER_SHIP_KEY_NAME):
+            _, ship_info = await ship.get_inspect_ship_for_user(user_id)
+        else:
+            ship_info = user_info.get(USER_SHIP_KEY_NAME)
         fleet_info = await __get_fleet_info_by_user_info(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
@@ -76,17 +82,17 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
         return (await user_details.get_details_as_text(entity.EntityDetailsType.LONG))
 
 
-async def get_users_infos_by_name(user_name: str) -> List[EntityInfo]:
-    pss_assert.valid_parameter_value(user_name, 'user_name', min_length=0)
+async def get_users_infos_by_name_or_id(user_name_or_id: str) -> List[EntityInfo]:
+    pss_assert.valid_parameter_value(user_name_or_id, 'user_name', min_length=0)
 
-    user_infos = list((await __get_users_data(user_name)).values())
+    user_infos = list((await __get_users_data(user_name_or_id)).values())
     return user_infos
 
 
-async def get_user_infos_from_tournament_data_by_name(user_name: str, users_data: EntitiesData) -> List[EntityInfo]:
-    user_name_lower = user_name.lower()
+async def get_user_infos_from_tournament_data_by_name_or_id(user_name_or_id: str, users_data: EntitiesData) -> List[EntityInfo]:
+    user_name_lower = user_name_or_id.lower()
     result = {user_id: user_info for (user_id, user_info) in users_data.items() if user_name_lower in user_info.get(user.USER_DESCRIPTION_PROPERTY_NAME, '').lower()}
-    user_infos_current = await __get_users_data(user_name)
+    user_infos_current = await __get_users_data(user_name_or_id)
     if user_infos_current:
         for user_info in user_infos_current.values():
             user_id = user_info[user.USER_KEY_NAME]
@@ -121,6 +127,7 @@ async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = sett
         fields.append(('Fleet', escape_markdown(fleet_name), None))
     fields.append(('Trophies', user_info['Trophy'], None))
     fields.append(('Ship', f'{ship_design_info["ShipDesignName"]} (level {ship_design_info["ShipLevel"]})', None))
+    fields.append(('Player ID', user_info[user.USER_KEY_NAME], None))
 
     if as_embed:
         miniship_sprite_url = await sprites.get_download_sprite_link(ship_design_info.get('MiniShipSpriteId'))
@@ -135,6 +142,7 @@ async def get_user_ship_layout(ctx: Context, user_id: str, as_embed: bool = sett
 
 def get_user_search_details(user_info: EntityInfo) -> str:
     user_name = __get_user_name(user_info)
+    user_id = user_info.get(USER_KEY_NAME)
     user_trophies = user_info.get('Trophy', '?')
     user_stars = int(user_info.get('AllianceScore', '0'))
 
@@ -144,18 +152,42 @@ def get_user_search_details(user_info: EntityInfo) -> str:
         if fleet_name is not None:
             details.append(f'({fleet_name})')
 
+    details.append(f'(ID: {user_id}')
     details.append(f'{emojis.trophy} {user_trophies}')
+
     if user_stars > 0:
         details.append(f'{emojis.star} {user_stars}')
-    result = f'{user_name} ' + ' '.join(details)
+    result = f'{user_name} {" ".join(details)})'
     return result
 
 
-async def __get_users_data(user_name: str) -> EntitiesData:
-    path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name)}'
-    user_data_raw = await core.get_data_from_path(path)
-    user_infos = utils.convert.xmltree_to_dict3(user_data_raw)
-    return user_infos
+def __create_get_user_path(user_id: Union[int, str], access_token: str):
+    result = f'{GET_USER_BASE_PATH}?userId={user_id}&accessToken={access_token}'
+    return result
+
+
+async def __get_users_data(user_name_or_id: str) -> EntitiesData:
+    users_by_name_path = f'{SEARCH_USERS_BASE_PATH}{utils.convert.url_escape(user_name_or_id)}'
+    users_data_by_name_raw = await core.get_data_from_path(users_by_name_path)
+    result = utils.convert.xmltree_to_dict3(users_data_by_name_raw)
+    
+    user_id = None
+    try:
+        user_id = int(user_name_or_id)
+    except:
+        pass
+    if user_id:
+        #access_token = await login.DEVICES.get_access_token()
+        #if access_token:
+            #user_by_id_path = __create_get_user_path(user_name_or_id, access_token)
+            #user_data_by_id_raw = await core.get_data_from_path(user_by_id_path)
+            #user_info_by_id = utils.convert.xmltree_to_dict3(user_data_by_id_raw)
+        user_info_by_id, ship_info_by_id = await ship.get_inspect_ship_for_user(user_name_or_id,)
+        if user_info_by_id:
+            user_info_by_id[USER_SHIP_KEY_NAME] = user_info_by_id.get('Ship', ship_info_by_id)
+            result[user_info_by_id[USER_KEY_NAME]] = user_info_by_id
+
+    return result
 
 
 
@@ -344,7 +376,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.edit_original_response(ctx, ctx.interaction, ['Searching player...'])
-    user_infos = await get_user_infos_from_tournament_data_by_name(player_name, tourney_data.users)
+    user_infos = await get_user_infos_from_tournament_data_by_name_or_id(player_name, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -362,9 +394,9 @@ async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourne
         raise NotFound(f'Could not find a player named `{player_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
 
 
-async def find_user(ctx: ApplicationContext, player_name: str) -> Tuple[EntityInfo, Interaction]:
+async def find_user(ctx: ApplicationContext, player_name_or_id: str) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.respond_with_output(ctx, ['Searching player...'])
-    user_infos = await get_users_infos_by_name(player_name)
+    user_infos = await get_users_infos_by_name_or_id(player_name_or_id)
     if user_infos:
         user_info = None
         if len(user_infos) == 1:
@@ -376,7 +408,7 @@ async def find_user(ctx: ApplicationContext, player_name: str) -> Tuple[EntityIn
 
         return user_info, response
     else:
-        raise NotFound(f'Could not find a player named `{player_name}`.')
+        raise NotFound(f'Could not find a player named `{player_name_or_id}`.')
 
 
 def get_star_value_from_user_info(user_info: EntityInfo, star_count: Union[int, str] = None) -> Tuple[Optional[int], Optional[int]]:
