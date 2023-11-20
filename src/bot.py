@@ -109,61 +109,61 @@ async def on_ready() -> None:
 async def on_command_error(ctx: Context, err: Exception) -> None:
     __log_command_use_error(ctx, err)
 
-    if settings.THROW_COMMAND_ERRORS:
-        raise err
-    else:
-        error_type = type(err).__name__
-        error_message = str(err)
-        retry_after = None
-        if isinstance(err, command_errors.CommandOnCooldown):
-            error_message += f'\nThis message will delete itself, when you may use the command again.'
-            retry_after = err.retry_after
-        elif isinstance(err, command_errors.CommandNotFound):
-            prefixes = await server_settings.get_prefixes(BOT, ctx.message)
-            prefix = prefixes[0]
-            invoked_with = ctx.invoked_with.split(' ')[0]
-            commands_map = utils.get_similarity_map(__COMMANDS, invoked_with)
-            bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
-            error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {utils.format.get_or_list(bot_commands)}?'
-        elif isinstance(err, command_errors.CheckFailure):
-            error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
-        elif isinstance(err, command_errors.CommandInvokeError):
-            # Check err.original here for custom exceptions
-            if err.original:
-                error_type = type(err.original).__name__
-                if isinstance(err.original, Error):
-                    if isinstance(err.original, MaintenanceError):
-                        error_type = 'Pixel Starships is under maintenance'
-                    error_message = f'{err.original.msg}'
-                else:
-                    error_message = f'{err.original}'
-        else:
-            if not isinstance(err, command_errors.MissingRequiredArgument):
-                logging.getLogger().error(err, exc_info=True)
-            command_args = utils.discord.get_exact_args(ctx)
-            help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
-            command = BOT.get_command(help_args)
-            try:
-                await ctx.send_help(command)
-            except errors.Forbidden:
-                __log_command_use_error(ctx, err, force_printing=True)
-
-        title = ' '.join(utils.parse.camel_case(error_type))
-        as_embed = await server_settings.get_use_embeds(ctx)
-        try:
-            if as_embed:
-                colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
-                if retry_after:
-                    error_message = f'{ctx.author.mention}\n{error_message}'
-                embed = utils.discord.create_embed(title, description=error_message, colour=colour)
-                await ctx.reply(embed=embed, delete_after=retry_after, mention_author=False)
+    error_type = type(err).__name__
+    error_message = str(err)
+    retry_after = None
+    if isinstance(err, command_errors.CommandOnCooldown):
+        error_message += f'\nThis message will delete itself, when you may use the command again.'
+        retry_after = err.retry_after
+    elif isinstance(err, command_errors.CommandNotFound):
+        prefixes = await server_settings.get_prefixes(BOT, ctx.message)
+        prefix = prefixes[0]
+        invoked_with = ctx.invoked_with.split(' ')[0]
+        commands_map = utils.get_similarity_map(__COMMANDS, invoked_with)
+        bot_commands = [f'`{prefix}{command}`' for command in sorted(commands_map[max(commands_map.keys())])]
+        error_message = f'Command `{prefix}{invoked_with}` not found. Do you mean {utils.format.get_or_list(bot_commands)}?'
+    elif isinstance(err, command_errors.CheckFailure):
+        error_message = error_message or 'You don\'t have the required permissions in order to be able to use this command!'
+    elif isinstance(err, command_errors.CommandInvokeError):
+        # Check err.original here for custom exceptions
+        if err.original:
+            error_type = type(err.original).__name__
+            if isinstance(err.original, Error):
+                if isinstance(err.original, MaintenanceError):
+                    error_type = 'Pixel Starships is under maintenance'
+                error_message = f'{err.original.msg}'
             else:
-                error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
-                if retry_after:
-                    error_message = f'> {ctx.author.mention}\n{error_message}'
-                await ctx.reply(f'**{title}**\n{error_message}', delete_after=retry_after, mention_author=False)
+                error_message = f'{err.original}'
+    else:
+        if not isinstance(err, command_errors.MissingRequiredArgument):
+            logging.getLogger().error(err, exc_info=True)
+        command_args = utils.discord.get_exact_args(ctx)
+        help_args = ctx.message.clean_content.replace(command_args, '').strip()[1:]
+        command = BOT.get_command(help_args)
+        try:
+            await ctx.send_help(command)
         except errors.Forbidden:
             __log_command_use_error(ctx, err, force_printing=True)
+
+    title = ' '.join(utils.parse.camel_case(error_type))
+    as_embed = await server_settings.get_use_embeds(ctx)
+    try:
+        if as_embed:
+            colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
+            if retry_after:
+                error_message = f'{ctx.author.mention}\n{error_message}'
+            embed = utils.discord.create_embed(title, description=error_message, colour=colour)
+            await ctx.reply(embed=embed, delete_after=retry_after, mention_author=False)
+        else:
+            error_message = '\n'.join([f'> {x}' for x in error_message.splitlines()])
+            if retry_after:
+                error_message = f'> {ctx.author.mention}\n{error_message}'
+            await ctx.reply(f'**{title}**\n{error_message}', delete_after=retry_after, mention_author=False)
+    except errors.Forbidden:
+        __log_command_use_error(ctx, err, force_printing=True)
+
+    if settings.THROW_COMMAND_ERRORS:
+        raise err
 
 
 @BOT.event

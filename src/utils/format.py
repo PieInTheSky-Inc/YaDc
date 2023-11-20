@@ -163,6 +163,11 @@ def timedelta(delta: _timedelta, include_relative_indicator: bool = True, includ
         return ''
 
 
+def timestamp_for_filename(dt: _datetime) -> str:
+    result = f'{dt.year:0=4}{dt.month:0=2}{dt.day:0=2}-{dt.hour:0=2}{dt.minute:0=2}{dt.second:0=2}'
+    return result
+
+
 def __get_comma_separated_list_with_separate_last_element(values: _Iterable[str], last_element_separator: str, emphasis: str = '') -> str:
     if not values:
         return ''

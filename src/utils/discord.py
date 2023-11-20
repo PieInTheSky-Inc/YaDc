@@ -313,13 +313,15 @@ async def respond_with_output(ctx: _ApplicationContext, output: _Union[_List[_Em
         if output_is_embeds:
             posts = output
             post_groups = _chunk_embeds(posts)
-            for post_group in post_groups:
-                result = await ctx.respond(embeds=post_group, ephemeral=ephemeral, view=view)
+            if post_groups:
+                result = await ctx.respond(embeds=post_groups[0], ephemeral=ephemeral, view=view)
+                for post_group in post_groups[1:]:
+                    result = await ctx.followup.send(embeds=post_group, ephemeral=ephemeral, view=view)
         else:
             posts = create_posts_from_lines(output, maximum_characters)
             if posts:
                 result = await ctx.respond(content=posts[0], ephemeral=ephemeral, view=view)
-                for i, post in enumerate(posts[1:], 2):
+                for _, post in enumerate(posts[1:], 2):
                     result = await ctx.respond(content=post, ephemeral=ephemeral, view=view)
     return result
 
@@ -489,12 +491,13 @@ def _chunk_embeds(embeds: _List[_Embed]) -> _List[_List[_Embed]]:
     result = []
     while embeds:
         embed = embeds.pop(0)
-        if current_length + len(embed) >= 6000 or len(current_result) == 10:
+        embed_len = len(embed)
+        if current_length + embed_len >= 6000 or len(current_result) == 10:
             result.append(current_result)
             current_result = []
             current_length = 0
         current_result.append(embed)
-        current_length += len(embed)
+        current_length += embed_len
     if current_result:
         result.append(current_result)
     return result
