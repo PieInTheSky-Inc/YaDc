@@ -72,7 +72,8 @@ async def get_user_details_by_info(ctx: Context, user_info: EntityInfo, max_tour
             _, ship_info = await ship.get_inspect_ship_for_user(user_id)
         else:
             ship_info = user_info.get(USER_SHIP_KEY_NAME)
-        user_info = await __get_user_info_by_exact_name(user_info[USER_DESCRIPTION_PROPERTY_NAME]) # user_info might come from InspectShip endpoint, which doesn't contain some data.
+        if user_info.get('RetrievedById', False):
+            user_info = await __update_user_info(user_info) # user_info might come from InspectShip endpoint, which doesn't contain some data.
         fleet_info = await __get_fleet_info_by_user_info(user_info)
 
     is_in_tourney_fleet = fleet.is_tournament_fleet(fleet_info) and tourney_running
@@ -178,6 +179,7 @@ async def __get_users_data(user_name_or_id: str) -> EntitiesData:
         if user_info_by_id:
             user_info_by_id[USER_SHIP_KEY_NAME] = user_info_by_id.get('Ship', ship_info_by_id)
             result[user_info_by_id[USER_KEY_NAME]] = user_info_by_id
+            user_info_by_id['RetrievedById'] = True
 
     return result
 
@@ -481,10 +483,13 @@ async def __get_user_info_by_id(user_id: int) -> EntityInfo:
     return result
 
 
-async def __get_user_info_by_exact_name(user_name: str) -> EntityInfo:
-    users_data = await __get_users_data(f'"{user_name}"')
+async def __update_user_info(user_info: EntityInfo) -> EntityInfo:
+    users_data = await __get_users_data(user_info[USER_DESCRIPTION_PROPERTY_NAME])
     if users_data:
-        return users_data.get('User', {})
+        result = users_data.get('User', {})
+        if not result:
+            result = users_data.get(user_info[USER_KEY_NAME])
+        return result
     return {}
 
 
