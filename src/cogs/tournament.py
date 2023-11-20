@@ -1,6 +1,7 @@
 import calendar as _calendar
 import os as _os
 
+from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
 from discord.ext.commands import Context as _Context
 from discord.ext.commands import BucketType as _BucketType
@@ -28,6 +29,27 @@ class TournamentCog(_CogBase, name='Tournament'):
     """
     This module offers commands to get information about fleets and players from past tournaments.
     """
+
+    @_command(name='fleets', brief='Get most recent fleet data', invoke_without_command=True)
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def fleets(self, ctx: _Context):
+        """
+        Get the full, most recently collected data on top 100 fleets and players.
+        """
+        self._log_command_use(ctx)
+
+        utc_now = _utils.get_utc_now()
+        tourney_data = self.bot.tournament_data_client.get_data(utc_now.year, utc_now.month, utc_now.day)
+
+        if tourney_data and tourney_data.fleets and tourney_data.users:
+            file_name = f'fleets_data_{_utils.format.timestamp_for_filename(tourney_data.retrieved_at)}.csv'
+            file_paths = [_fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+            await _utils.discord.reply_with_output_and_files(ctx, [], file_paths)
+            for file_path in file_paths:
+                _os.remove(file_path)
+        else:
+            raise _Error(f'An error occured while retrieving the full, most recently collected data on top 100 fleets and players. Please contact the bot\'s author!')
+
 
     @_command_group(name='past', aliases=['history'], brief='Get historic data', invoke_without_command=True)
     @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
@@ -209,7 +231,6 @@ class TournamentCog(_CogBase, name='Tournament'):
         Parameters:
         month:      Optional. The month for which the data should be retrieved. Can be a number from 1 to 12, the month's name (January, ...) or the month's short name (Jan, ...)
         year:       Optional. The year for which the data should be retrieved. If the year is specified, the month has to be specified, too.
-        fleet_name: Mandatory. The fleet for which the data should be displayed.
 
         If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
         """
