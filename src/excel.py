@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from enum import IntEnum
+import re
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import openpyxl
@@ -15,9 +16,14 @@ from . import utils
 
 __BASE_TABLE_STYLE: TableStyleInfo = TableStyleInfo(name="TableStyleLight1", showFirstColumn=False, showLastColumn=False, showRowStripes=True, showColumnStripes=False)
 
+__DEFAULT_CSV_DELIMITER: str = '\t'
+
 __EARLIEST_EXCEL_DATETIME: datetime = datetime(1900, 1, 1, tzinfo=timezone.utc)
 
 __FILE_ENDING_LOOKUP: Dict['FILE_ENDING', str] = None
+
+RX_INT: re.Pattern = re.compile('\d+')
+RX_HAS_NUMBER: re.Pattern = re.compile('\d')
 
 
 
@@ -38,30 +44,51 @@ class FILE_ENDING(IntEnum):
 # ---------- Functions ----------
 
 
-def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: Optional[str] = None, delimiter: Optional[str] = '\t') -> str:
+def create_csv_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, file_name: Optional[str] = None, delimiter: Optional[str] = None, fix_columns: Optional[Iterable[int]] = None) -> str:
     if data_retrieved_at is None:
         data_retrieved_at = utils.get_utc_now()
+
     if file_name:
         save_to = file_name
     else:
         save_to = get_file_name(file_prefix, data_retrieved_at, FILE_ENDING.CSV)
 
     if not delimiter:
-        delimiter = '\t'
+        delimiter = __DEFAULT_CSV_DELIMITER
+    if fix_columns is None:
+        fix_columns = []
 
     lines = [
         delimiter.join([
-            str(field)
-            for field
-            in line
+            __fix_field_for_csv(field, delimiter, fix_columns, current_column)
+            for current_column, field
+            in enumerate(line)
         ])
         for line
         in data
     ]
 
     with open(save_to, mode='w') as fp:
-        fp.write('\n'.join(lines))
+        fp.write('\n'.join(lines))  
     return save_to
+
+
+def __fix_field_for_csv(value: Any, delimiter: str, fix_columns: Iterable[int], current_column: int) -> str:
+    if current_column not in fix_columns:
+        return str(value)
+    
+    if value is None:
+        return ''
+    
+    if isinstance(value, (int, float)):
+        return str(value)
+    
+    if isinstance(value, str):
+        if value.startswith('"') and value.endswith('"'):
+            value = f'""{value}""'
+        elif delimiter in value or RX_HAS_NUMBER.match(value):
+            value = f'"{value}"'
+    return value
 
 
 def create_xl_from_data(data: List[Iterable[Any]], file_prefix: str, data_retrieved_at: datetime, column_formats: List[str], file_name: Optional[str] = None) -> str:
