@@ -559,6 +559,10 @@ class TourneyDataClient():
             self.__cache_data(result)
 
         return result
+    
+
+    def get_data_by_date(self, dt: datetime, initializing: bool = False) -> TourneyData:
+        pass
 
 
     def get_latest_daily_data(self, initializing: bool = False) -> TourneyData:
@@ -671,7 +675,12 @@ class TourneyDataClient():
         self.__initialized = True
 
 
-    def __read_data(self, year: int, month: int, day: Optional[int] = None) -> TourneyData:
+    def __read_data(self, year: int, month: int, day: Optional[int] = None, hour: Optional[int] = None) -> TourneyData:
+        if day is None:
+            day = 1
+        if hour is None:
+            hour = 0
+        
         can_read = False
         while not can_read:
             can_read = not self.__get_write_requested()
