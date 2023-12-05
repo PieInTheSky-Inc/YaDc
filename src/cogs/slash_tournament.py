@@ -1,9 +1,11 @@
+import datetime as _datetime
 import os as _os
 from typing import Optional as _Optional
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
+from discord import slash_command as _slash_command
 from discord import SlashCommandGroup as _SlashCommandGroup
 from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
@@ -39,6 +41,46 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         _OptionChoice('November', 11),
         _OptionChoice('December', 12),
     ]
+
+
+    @_slash_command(name='pastfleets', brief='Get historic tournament data')
+    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    async def fleets_slash(self,
+        ctx: _ApplicationContext,
+        day: _Option(int, 'Enter day.', min_value=1, max_value=31),
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES),
+        year: _Option(int, 'Enter year. If entered, a month has to be selected.', min_value=2019),
+    ):
+        """
+        Get historic fleet data for all fleets.
+        """
+        self._log_command_use(ctx)
+
+        if year is not None and month is None:
+            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+        
+        utc_now = _utils.get_utc_now()
+        data_from = _datetime.datetime(year, month, day, tzinfo=_datetime.timezone.utc)
+        if data_from > utc_now:
+            raise ValueError('The requested date is in the future. I can\'t predict the future, sorry.')
+        
+        output = ['Retrieving data...']
+        if ctx.interaction.response.is_done():
+            response = await _utils.discord.edit_original_response(ctx, ctx.interaction, output=output)
+        else:
+            response = await _utils.discord.respond_with_output(ctx, output)
+        
+        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+
+        if tourney_data and tourney_data.fleets and tourney_data.users:
+            await _utils.discord.edit_original_response(ctx, response, ['Found data:'])
+            file_name = f'fleets_data_{_utils.format.timestamp_for_filename(tourney_data.retrieved_at)}.csv'
+            file_paths = [_fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+            await _utils.discord.post_output_with_files(ctx, [], file_paths)
+            for file_path in file_paths:
+                _os.remove(file_path)
+        else:
+            raise _Error(f'An error occured while retrieving the full, most recently collected data on top 100 fleets and players. Please contact the bot\'s author!')
 
 
     past_slash: _SlashCommandGroup = _SlashCommandGroup('past', 'Get historic data')
