@@ -873,12 +873,9 @@ class TourneyDataClient():
     @staticmethod
     def make_data_date(year: int, month: int, day: int = None, hour: int = None, make_future_data_date: bool = True) -> datetime:
         if year is None:
-            raise ValueError()
+            raise ValueError('Parameter "year" must not be None.')
         
         if hour is not None:
-            if day is None:
-                raise Exception()
-            
             return datetime(year, month, day, hour, tzinfo=timezone.utc) + make_future_data_date * utils.datetime.ONE_HOUR
         
         if day is not None:
@@ -886,7 +883,6 @@ class TourneyDataClient():
         
         if month is not None:
             if make_future_data_date:
-                #month += 1
                 add_years = month // 12
                 if add_years:
                     month %= 12
