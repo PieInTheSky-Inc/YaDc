@@ -39,7 +39,7 @@ class TournamentCog(_CogBase, name='Tournament'):
         self._log_command_use(ctx)
 
         utc_now = _utils.get_utc_now()
-        tourney_data = self.bot.tournament_data_client.get_data(utc_now.year, utc_now.month, utc_now.day)
+        tourney_data = self.bot.tournament_data_client.get_data(utc_now)
 
         if tourney_data and tourney_data.fleets and tourney_data.users:
             file_name = f'fleets_data_{_utils.format.timestamp_for_filename(tourney_data.retrieved_at)}.csv'
@@ -95,8 +95,8 @@ class TournamentCog(_CogBase, name='Tournament'):
             await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
             return
         else:
-            day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-            tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+            data_date = self.bot.tournament_data_client.make_data_date(year, month)
+            tourney_data = self.bot.tournament_data_client.get_data(data_date)
             if tourney_data:
                 output = await _top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
@@ -124,8 +124,8 @@ class TournamentCog(_CogBase, name='Tournament'):
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+        data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
 
         if tourney_data is None:
             fleet_infos = []
@@ -162,8 +162,8 @@ class TournamentCog(_CogBase, name='Tournament'):
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+        data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
 
         output = await _top.get_top_captains(ctx, 100, as_embed=(await _server_settings.get_use_embeds(ctx)), tourney_data=tourney_data)
         await _utils.discord.reply_with_output(ctx, output)
@@ -191,8 +191,8 @@ class TournamentCog(_CogBase, name='Tournament'):
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+        data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
 
         if tourney_data is None:
             fleet_infos = []
@@ -241,8 +241,8 @@ class TournamentCog(_CogBase, name='Tournament'):
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
-        tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+        data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
 
         if tourney_data and tourney_data.fleets and tourney_data.users:
             file_name = f'tournament_results_{year}-{_utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
@@ -279,9 +279,9 @@ class TournamentCog(_CogBase, name='Tournament'):
         if not player_name_or_id:
             raise _MissingParameterError('The parameter `player_name_or_id` is mandatory.')
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, utc_now)
+        data_date = self.bot.tournament_data_client.make_data_date(year, month)
         try:
-            tourney_data = self.bot.tournament_data_client.get_data(year, month, day=day)
+            tourney_data = self.bot.tournament_data_client.get_data(data_date)
         except ValueError as err:
             error = str(err)
             tourney_data = None

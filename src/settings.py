@@ -95,7 +95,7 @@ SPRITE_CACHE_SUB_PATH: str = 'sprite_cache'
 
 THROW_COMMAND_ERRORS: int = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
 
-TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, hour=12)
+TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, tzinfo=timezone.utc)
 
 
 USE_EMBEDS: bool = True
