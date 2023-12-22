@@ -4,6 +4,7 @@ from datetime import date as _date
 from datetime import datetime as _datetime
 from datetime import timedelta as _timedelta
 from datetime import timezone as _timezone
+from typing import Optional as _Optional
 
 from . import constants as _constants
 from . import format as _format
@@ -19,6 +20,7 @@ MONTH_SHORT_NAME_TO_NUMBER = {v.lower(): k for k, v in enumerate(_month_abbr) if
 FIFTEEN_HOURS: _timedelta = _timedelta(hours=15)
 FIVE_MINUTES: _timedelta = _timedelta(minutes=5)
 ONE_DAY: _timedelta = _timedelta(days=1)
+ONE_HOUR: _timedelta = _timedelta(hours=1)
 ONE_SECOND: _timedelta = _timedelta(seconds=1)
 ONE_WEEK: _timedelta = _timedelta(days=7)
 
@@ -26,6 +28,10 @@ UNIX_START_DATE: _datetime = _datetime(1970, 1, 1, tzinfo=_timezone.utc)
 
 
 # ---------- Functions ----------
+
+def convert_to_data_date(dt: _datetime) -> _datetime:
+    result = dt.replace(minute=0, second=0, microsecond=0) + _timedelta(hours=1)
+    return result
 
 def get_discord_datestamp(dt: _datetime, include_time: bool = False, include_seconds: bool = False) -> str:
     unix_timestamp = get_unix_timestamp(dt)
@@ -134,3 +140,9 @@ def is_valid_month(month: str) -> bool:
         except (TypeError, ValueError):
             pass
     return result
+
+
+def strip_time(dt: _datetime) -> _datetime:
+    if dt:
+        return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    return None

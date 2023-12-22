@@ -1,14 +1,17 @@
+import datetime as _datetime
 import os as _os
 from typing import Optional as _Optional
 
 from discord import ApplicationContext as _ApplicationContext
 from discord import Option as _Option
 from discord import OptionChoice as _OptionChoice
+from discord import slash_command as _slash_command
 from discord import SlashCommandGroup as _SlashCommandGroup
 from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
 from .base import CogBase as _CogBase
+from .base import TournamentCogBase as _TournamentCogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from .. import pss_fleet as _fleet
@@ -19,12 +22,13 @@ from .. import pss_top as _top
 from .. import pss_tournament as _tourney
 from .. import pss_user as _user
 from .. import server_settings as _server_settings
+from .. import settings as _bot_settings
 from .. import utils as _utils
 from ..yadc_bot import YadcBot as _YadcBot
 
 
 
-class TournamentSlashCog(_CogBase, name='Tournament Slash'):
+class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     _PAST_MONTH_CHOICES = [
         _OptionChoice('January', 1),
         _OptionChoice('February', 2),
@@ -39,6 +43,45 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         _OptionChoice('November', 11),
         _OptionChoice('December', 12),
     ]
+
+
+    @_slash_command(name='pastfleets', brief='Get historic tournament data')
+    @_cooldown(rate=_TournamentCogBase.FLEETS_RATE, per=_TournamentCogBase.FLEETS_COOLDOWN, type=_BucketType.user)
+    async def fleets_slash(self,
+        ctx: _ApplicationContext,
+        year: _Option(int, 'Enter year.', min_value=_bot_settings.TOURNAMENT_DATA_START_DATE.year),
+        month: _Option(int, 'Select month.', choices=_PAST_MONTH_CHOICES, required=False, default=None) = None,
+        day: _Option(int, 'Enter day.', min_value=1, max_value=31, required=False, default=None) = None,
+        hour: _Option(int, 'Enter hour.', min_value=0, max_value=24, required=False, default=None) = None,
+    ):
+        """
+        Get historic fleet data for all fleets.
+        """
+        self._log_command_use(ctx)
+        
+        utc_now = _utils.get_utc_now()
+        data_from = self.bot.tournament_data_client.make_data_date(year, month, day, hour, make_future_data_date=False)
+        if data_from > utc_now:
+            raise ValueError('The requested date is in the future. I can\'t predict the future, sorry.')
+        
+        output = ['Retrieving data...']
+        if ctx.interaction.response.is_done():
+            response = await _utils.discord.edit_original_response(ctx, ctx.interaction, output=output)
+        else:
+            response = await _utils.discord.respond_with_output(ctx, output)
+        
+        data_date = self.bot.tournament_data_client.make_data_date(year, month, day, hour)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+
+        if tourney_data and tourney_data.fleets and tourney_data.users:
+            await _utils.discord.edit_original_response(ctx, response, ['Found data:'])
+            file_name = f'fleets_data_{_utils.format.timestamp_for_filename(tourney_data.retrieved_at)}.csv'
+            file_paths = [_fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
+            await _utils.discord.post_output_with_files(ctx, [], file_paths)
+            for file_path in file_paths:
+                _os.remove(file_path)
+        else:
+            raise _Error(f'An error occured while retrieving the full, most recently collected data on top 100 fleets and players. Please contact the bot\'s author!')
 
 
     past_slash: _SlashCommandGroup = _SlashCommandGroup('past', 'Get historic data')
@@ -437,7 +480,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         await _utils.discord.edit_original_response(ctx, response, output=output)
 
 
-    async def _get_tourney_data(self, ctx: _ApplicationContext, month: int, year: int) -> _TourneyData:
+    async def _get_tourney_data(self, ctx: _ApplicationContext, month: _Optional[int] = None, year: _Optional[int] = None) -> _TourneyData:
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         output = ['Retrieving data...']
@@ -446,8 +489,19 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
         else:
             await _utils.discord.respond_with_output(ctx, output)
 
-        day, month, year = self.bot.tournament_data_client.retrieve_past_day_month_year(month, year, _utils.get_utc_now())
-        return self.bot.tournament_data_client.get_data(year, month, day=day)
+        utc_now = _utils.get_utc_now()
+        if year is None and month is None:
+            year = utc_now.year
+            month = utc_now.month
+            data_date = self.bot.tournament_data_client.make_data_date(year, month, make_future_data_date=False)
+        else:
+            if year is None:
+                year = utc_now.year
+                if month >= utc_now.month:
+                    year -= 1
+            data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        return tourney_data
 
 
     async def _get_yesterday_tourney_data(self, ctx: _ApplicationContext) -> _TourneyData:
