@@ -164,7 +164,7 @@ async def get_full_fleet_info_as_text(ctx: Context, fleet_info: EntityInfo, max_
 
     post_content = await __get_fleet_details_by_info(ctx, fleet_info, fleet_users_data, max_tourney_battle_attempts=max_tourney_battle_attempts, retrieved_at=retrieved_at, is_past_data=is_past_data, as_embed=as_embed)
     fleet_sheet_file_name = excel.get_file_name(fleet_name, retrieved_at, excel.FILE_ENDING.XL, consider_tourney=False)
-    file_path = __create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts)
+    file_path = __create_fleet_sheet_xl(fleet_users_data, retrieved_at, fleet_sheet_file_name, max_tourney_battle_attempts=max_tourney_battle_attempts, include_player_id=True)
     file_paths = []
     if file_path:
         file_paths.append(file_path)

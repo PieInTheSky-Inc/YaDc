@@ -95,14 +95,14 @@ SPRITE_CACHE_SUB_PATH: str = 'sprite_cache'
 
 THROW_COMMAND_ERRORS: int = int(os.environ.get('THROW_COMMAND_ERRORS', '0'))
 
-TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, hour=12)
+TOURNAMENT_DATA_START_DATE: datetime = datetime(year=2019, month=10, day=9, tzinfo=timezone.utc)
 
 
 USE_EMBEDS: bool = True
 USE_ACCESS_TOKEN: int = int(os.environ.get('USE_ACCESS_TOKEN', 0))
 
 
-VERSION: str = '1.4.2.3'
+VERSION: str = '1.4.2.4'
 
 
 WIKI_COMMAND_GUILDS: List[str] = json.loads(os.environ.get('WIKI_COMMAND_GUILDS', '[]'))

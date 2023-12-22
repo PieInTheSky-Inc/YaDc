@@ -419,9 +419,11 @@ def has_daily_changed(daily_info: Dict[str, str], retrieved_date: datetime, db_d
         return False
     else:
         daily_info = daily_info.copy()
-        daily_info.pop('News', None)
+        daily_info.pop('News', None) # News and SaleTitle are language-dependent
+        daily_info.pop('SaleTitle', None) 
         db_daily_info = db_daily_info.copy()
         db_daily_info.pop('News', None)
+        db_daily_info.pop('SaleTitle', None)
         return not utils.dicts_equal(daily_info, db_daily_info)
 
 

@@ -257,3 +257,13 @@ class SettingCogBase(CogBase):
             raise _BotPermissionError('I don\'t have access to the messages history in that channel.')
         if permissions.send_messages is not True:
             raise _BotPermissionError('I don\'t have permission to post in that channel.')
+
+
+
+
+
+
+class TournamentCogBase(CogBase):
+    FLEETS_RATE: int = 1
+    FLEETS_COOLDOWN: float = 60.0
+    
