@@ -11,6 +11,7 @@ from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
 from .base import CogBase as _CogBase
+from .base import TournamentCogBase as _TournamentCogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from .. import pss_fleet as _fleet
@@ -27,7 +28,7 @@ from ..yadc_bot import YadcBot as _YadcBot
 
 
 
-class TournamentSlashCog(_CogBase, name='Tournament Slash'):
+class TournamentSlashCog(_TournamentCogBase, name='Tournament Slash'):
     _PAST_MONTH_CHOICES = [
         _OptionChoice('January', 1),
         _OptionChoice('February', 2),
@@ -45,7 +46,7 @@ class TournamentSlashCog(_CogBase, name='Tournament Slash'):
 
 
     @_slash_command(name='pastfleets', brief='Get historic tournament data')
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_TournamentCogBase.FLEETS_RATE, per=_TournamentCogBase.FLEETS_COOLDOWN, type=_BucketType.user)
     async def fleets_slash(self,
         ctx: _ApplicationContext,
         year: _Option(int, 'Enter year.', min_value=_bot_settings.TOURNAMENT_DATA_START_DATE.year),

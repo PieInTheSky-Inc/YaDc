@@ -8,6 +8,7 @@ from discord.ext.commands import BucketType as _BucketType
 from discord.ext.commands import cooldown as _cooldown
 
 from .base import CogBase as _CogBase
+from .base import TournamentCogBase as _TournamentCogBase
 from ..pss_exception import Error as _Error
 from ..pss_exception import MissingParameterError as _MissingParameterError
 from ..pss_exception import NotFound as _NotFound
@@ -25,13 +26,13 @@ from ..yadc_bot import YadcBot as _YadcBot
 
 
 
-class TournamentCog(_CogBase, name='Tournament'):
+class TournamentCog(_TournamentCogBase, name='Tournament'):
     """
     This module offers commands to get information about fleets and players from past tournaments.
     """
 
     @_command(name='fleets', brief='Get most recent fleet data', invoke_without_command=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_TournamentCogBase.FLEETS_RATE, per=_TournamentCogBase.FLEETS_COOLDOWN, type=_BucketType.user)
     async def fleets(self, ctx: _Context):
         """
         Get the full, most recently collected data on top 100 fleets and players.
@@ -223,7 +224,7 @@ class TournamentCog(_CogBase, name='Tournament'):
 
 
     @past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
-    @_cooldown(rate=_CogBase.RATE, per=_CogBase.COOLDOWN, type=_BucketType.user)
+    @_cooldown(rate=_TournamentCogBase.FLEETS_RATE, per=_TournamentCogBase.FLEETS_COOLDOWN, type=_BucketType.user)
     async def past_fleets(self, ctx: _Context, month: str = None, year: str = None):
         """
         Get historic tournament fleet data.
@@ -272,7 +273,7 @@ class TournamentCog(_CogBase, name='Tournament'):
         self._log_command_use(ctx)
         output = []
         error = None
-        utc_now = _utils.get_utc_now()
+        
         (month, year, player_name_or_id) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
