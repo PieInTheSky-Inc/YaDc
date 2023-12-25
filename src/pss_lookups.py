@@ -22,6 +22,7 @@ ALLIANCE_MEMBERSHIP_LOOKUP: List[str] = [
     'Lieutenant',
     'Ensign',
     'Candidate',
+    'None',
     None # Must always be the last element, for Tourney Data
 ]
 
