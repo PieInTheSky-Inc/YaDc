@@ -1,5 +1,6 @@
 import calendar as _calendar
 import os as _os
+from typing import Optional as _Optional
 
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
@@ -22,6 +23,7 @@ from .. import pss_tournament as _tourney
 from .. import pss_user as _user
 from .. import server_settings as _server_settings
 from .. import utils as _utils
+from ..gdrive import TourneyData as _TourneyData
 from ..yadc_bot import YadcBot as _YadcBot
 
 
@@ -40,6 +42,7 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         self._log_command_use(ctx)
 
         utc_now = _utils.get_utc_now()
+        
         tourney_data = self.bot.tournament_data_client.get_data(utc_now)
 
         if tourney_data and tourney_data.fleets and tourney_data.users:
@@ -84,20 +87,16 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
         """
         self._log_command_use(ctx)
-        utc_now = _utils.get_utc_now()
         output = []
 
         (month, year, division) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
         if not _top.is_valid_division_letter(division):
             subcommand = self.bot.get_command('past stars fleet')
             await ctx.invoke(subcommand, month=month, year=year, fleet_name=division)
             return
         else:
-            data_date = self.bot.tournament_data_client.make_data_date(year, month)
-            tourney_data = self.bot.tournament_data_client.get_data(data_date)
+            tourney_data = self._get_tourney_data(month, year)
             if tourney_data:
                 output = await _top.get_division_stars(ctx, division=division, fleet_data=tourney_data.fleets, retrieved_date=tourney_data.retrieved_at, as_embed=(await _server_settings.get_use_embeds(ctx)))
         await _utils.discord.reply_with_output(ctx, output)
@@ -118,19 +117,14 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         """
         self._log_command_use(ctx)
         output = []
-        utc_now = _utils.get_utc_now()
         (month, year, fleet_name) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        data_date = self.bot.tournament_data_client.make_data_date(year, month)
-        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        tourney_data = self._get_tourney_data(month, year)
+        fleet_infos = []
 
-        if tourney_data is None:
-            fleet_infos = []
-        else:
+        if tourney_data:
             fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
         if fleet_infos:
@@ -147,7 +141,7 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
             leading_space_note = ''
             if fleet_name.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
+            raise _NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {tourney_data.retrieved_year} {_calendar.month_name[int(tourney_data.retrieved_month)]} tournament.{leading_space_note}')
         await _utils.discord.reply_with_output(ctx, output)
 
 
@@ -158,13 +152,8 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         Get historic top 100 captains.
         """
         self._log_command_use(ctx)
-
-        utc_now = _utils.get_utc_now()
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
-
-        data_date = self.bot.tournament_data_client.make_data_date(year, month)
-        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        
+        tourney_data = self._get_tourney_data(month, year)
 
         output = await _top.get_top_captains(ctx, 100, as_embed=(await _server_settings.get_use_embeds(ctx)), tourney_data=tourney_data)
         await _utils.discord.reply_with_output(ctx, output)
@@ -184,20 +173,15 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
         """
         self._log_command_use(ctx)
-        error = None
-        utc_now = _utils.get_utc_now()
+        
         (month, year, fleet_name) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not fleet_name:
             raise _MissingParameterError('The parameter `fleet_name` is mandatory.')
 
-        data_date = self.bot.tournament_data_client.make_data_date(year, month)
-        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        tourney_data = self._get_tourney_data(month, year)
+        fleet_infos = []
 
-        if tourney_data is None:
-            fleet_infos = []
-        else:
+        if tourney_data:
             fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, tourney_data.fleets)
 
         if fleet_infos:
@@ -214,13 +198,11 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
                 await _utils.discord.reply_with_output_and_files(ctx, output, file_paths, output_is_embeds=as_embed)
                 for file_path in file_paths:
                     _os.remove(file_path)
-        elif error:
-            raise _Error(str(error))
         else:
             leading_space_note = ''
             if fleet_name.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
+            raise _NotFound(f'Could not find a fleet named `{fleet_name}` that participated in the {tourney_data.retrieved_year} {_calendar.month_name[int(tourney_data.retrieved_month)]} tournament.{leading_space_note}')
 
 
     @past.command(name='fleets', aliases=['alliances'], brief='Get historic fleet data', hidden=True)
@@ -236,25 +218,18 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         If one or more of the date parameters are not specified, the bot will attempt to select the best matching month.
         """
         self._log_command_use(ctx)
-        error = None
-        utc_now = _utils.get_utc_now()
-        (month, year, _) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
-        data_date = self.bot.tournament_data_client.make_data_date(year, month)
-        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        (month, year, _) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
+        tourney_data = self._get_tourney_data(month, year)
 
         if tourney_data and tourney_data.fleets and tourney_data.users:
-            file_name = f'tournament_results_{year}-{_utils.datetime.get_month_short_name(tourney_data.retrieved_at).lower()}.csv'
+            file_name = f'tournament_results_{tourney_data.retrieved_year}-{tourney_data.retrieved_month:02d}.csv'
             file_paths = [_fleet.create_fleets_sheet_csv(tourney_data.users, tourney_data.retrieved_at, file_name)]
             await _utils.discord.reply_with_output_and_files(ctx, [], file_paths)
             for file_path in file_paths:
                 _os.remove(file_path)
-        elif error:
-            raise _Error(str(error))
         else:
-            raise _Error(f'An error occured while retrieving tournament results for the {year} {_calendar.month_name[int(month)]} tournament. Please contact the bot\'s author!')
+            raise _Error(f'An error occured while retrieving tournament results for the {tourney_data.retrieved_year} {_calendar.month_name[int(tourney_data.retrieved_month)]} tournament. Please contact the bot\'s author!')
 
 
     @past.command(name='player', aliases=['user'], brief='Get historic player data')
@@ -272,24 +247,15 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         """
         self._log_command_use(ctx)
         output = []
-        error = None
         
         (month, year, player_name_or_id) = self.bot.tournament_data_client.retrieve_past_parameters(ctx, month, year)
-        if year is not None and month is None:
-            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
         if not player_name_or_id:
             raise _MissingParameterError('The parameter `player_name_or_id` is mandatory.')
 
-        data_date = self.bot.tournament_data_client.make_data_date(year, month)
-        try:
-            tourney_data = self.bot.tournament_data_client.get_data(data_date)
-        except ValueError as err:
-            error = str(err)
-            tourney_data = None
+        tourney_data = self._get_tourney_data(month, year)
+        user_infos = []
 
-        if tourney_data is None:
-            user_infos = []
-        else:
+        if tourney_data:
             user_infos = await _user.get_user_infos_from_tournament_data_by_name_or_id(player_name_or_id, tourney_data.users)
 
         if user_infos:
@@ -302,13 +268,11 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
 
             if user_info:
                 output = await _user.get_user_details_by_info(ctx, user_info, retrieved_at=tourney_data.retrieved_at, past_fleet_infos=tourney_data.fleets, as_embed=(await _server_settings.get_use_embeds(ctx)))
-        elif error:
-            raise _Error(str(error))
         else:
             leading_space_note = ''
             if player_name_or_id.startswith(' '):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
-            raise _NotFound(f'Could not find a player named `{player_name_or_id}` that participated in the {year} {_calendar.month_name[int(month)]} tournament.{leading_space_note}')
+            raise _NotFound(f'Could not find a player named `{player_name_or_id}` that participated in the {tourney_data.retrieved_year} {_calendar.month_name[int(tourney_data.retrieved_month)]} tournament.{leading_space_note}')
         await _utils.discord.reply_with_output(ctx, output)
 
 
@@ -549,9 +513,8 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         output = []
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            yesterday_fleet_infos = []
-        else:
+        yesterday_fleet_infos = []
+        if yesterday_tourney_data:
             yesterday_fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
 
         if yesterday_fleet_infos:
@@ -606,9 +569,9 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         output = []
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            user_infos = []
-        else:
+        user_infos = []
+
+        if yesterday_tourney_data:
             user_infos = await _user.get_user_infos_from_tournament_data_by_name_or_id(player_name_or_id, yesterday_tourney_data.users)
 
         if user_infos:
@@ -678,9 +641,8 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         output = []
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
-        if yesterday_tourney_data is None:
-            fleet_infos = []
-        else:
+        fleet_infos = []
+        if yesterday_tourney_data:
             fleet_infos = await _fleet.get_fleet_infos_from_tourney_data_by_name(fleet_name, yesterday_tourney_data.fleets)
 
         if fleet_infos:
@@ -699,6 +661,25 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
                 leading_space_note = '\n**Note:** on some devices, leading spaces won\'t show. Please check, if you\'ve accidently added _two_ spaces in front of the fleet name.'
             raise _NotFound(f'Could not find a fleet named `{fleet_name}` participating in the current tournament.{leading_space_note}')
         await _utils.discord.reply_with_output(ctx, output)
+
+
+    def _get_tourney_data(self, month: _Optional[int] = None, year: _Optional[int] = None) -> _TourneyData:
+        if year is not None and month is None:
+            raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
+
+        utc_now = _utils.get_utc_now()
+        if year is None and month is None:
+            year = utc_now.year
+            month = utc_now.month
+            data_date = self.bot.tournament_data_client.make_data_date(year, month, make_future_data_date=False)
+        else:
+            if year is None:
+                year = utc_now.year
+                if month >= utc_now.month:
+                    year -= 1
+            data_date = self.bot.tournament_data_client.make_data_date(year, month)
+        tourney_data = self.bot.tournament_data_client.get_data(data_date)
+        return tourney_data
 
 
 
