@@ -12,11 +12,9 @@ from discord.utils import escape_markdown
 
 
 from . import emojis
-from.pagination import SelectView
 from . import pss_assert
 from . import pss_core as core
 from . import pss_entity as entity
-from .pss_exception import NotFound
 from . import pss_fleet as fleet
 from . import pss_login as login
 from . import pss_lookups as lookups
@@ -27,8 +25,11 @@ from . import pss_top as top
 from . import pss_tournament as tourney
 from . import pss_user as user
 from . import settings
-from .typehints import EntitiesData, EntityInfo
 from . import utils
+from .gdrive import TourneyData
+from .pagination import SelectView
+from .pss_exception import NotFound
+from .typehints import EntitiesData, EntityInfo
 
 
 # ---------- Constants ----------
@@ -368,7 +369,7 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 
 # ---------- Helper functions ----------
 
-async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data) -> Tuple[EntityInfo, Interaction]:
+async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.edit_original_response(ctx, ctx.interaction, ['Searching player...'])
     user_infos = await get_user_infos_from_tournament_data_by_name_or_id(player_name, tourney_data.users)
 
@@ -385,7 +386,7 @@ async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourne
 
         return user_info, ctx.interaction
     else:
-        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {tourney_data.year} {calendar.month_name[int(tourney_data.month)]} tournament.')
+        raise NotFound(f'Could not find a player named `{player_name}` that participated in the {tourney_data.retrieved_year} {calendar.month_name[int(tourney_data.retrieved_month)]} tournament.')
 
 
 async def find_user(ctx: ApplicationContext, player_name_or_id: str) -> Tuple[EntityInfo, Interaction]:
