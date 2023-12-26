@@ -22,6 +22,7 @@ ALLIANCE_MEMBERSHIP_LOOKUP: List[str] = [
     'Lieutenant',
     'Ensign',
     'Candidate',
+    'None',
     None # Must always be the last element, for Tourney Data
 ]
 
@@ -425,3 +426,4 @@ def select_next_element(lookup: List[Any], current_element: Any) -> Any:
         return lookup[index_of_next_element]
     else:
         return current_element
+
