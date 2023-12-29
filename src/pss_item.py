@@ -761,7 +761,7 @@ def __get_item_infos_by_name(item_name: str, items_data: EntitiesData, return_be
 def __get_pretty_enhancement(enhancement_type: str, enhancement_value: float, use_emojis: bool = False) -> str:
     modifier = lookups.STAT_UNITS_ENHANCEMENT_MODIFIER_LOOKUP.get(enhancement_type) or ''
     if use_emojis:
-        enhancement_type = lookups.STAT_EMOJI_LOOKUP.get(enhancement_type)
+        enhancement_type = lookups.STAT_EMOJI_LOOKUP.get(enhancement_type, enhancement_type)
     result = f'{enhancement_type} +{enhancement_value}{modifier}'
     return result
 
