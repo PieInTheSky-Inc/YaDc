@@ -1,8 +1,17 @@
 {
     "en": {
-        "description": "This bot is based on the Discord bot _Dolores_ by jzx3.\nIt has been modified heavily to provide more functionality and respond faster than before.",
+        "description": "This bot is based on the Discord bot _Dolores_ by jzx3.\nIt's been modified heavily to provide more functionality and respond faster than before.",
         "support": "https://support.dolores2.xyz",
-        "authors": ["The worst.", "jzx3", "Raf"],
-        "pfp": "Skepster"
+        "authors": [
+            "The worst.",
+            "jzx3",
+            "archi-telos",
+            "Bril",
+            "NubCakeMcG",
+            "pieps",
+            "Raf",
+            "Solevis"
+        ],
+        "pfp": "Kilgia"
     }
 }
