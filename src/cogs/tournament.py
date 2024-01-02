@@ -1,6 +1,6 @@
 import calendar as _calendar
 import os as _os
-from typing import Optional as _Optional
+from typing import Optional as _Optional, Union as _Union
 
 from discord.ext.commands import command as _command
 from discord.ext.commands import group as _command_group
@@ -663,7 +663,7 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
         await _utils.discord.reply_with_output(ctx, output)
 
 
-    def _get_tourney_data(self, month: _Optional[int] = None, year: _Optional[int] = None) -> _TourneyData:
+    def _get_tourney_data(self, month: _Optional[_Union[int, str]] = None, year: _Optional[_Union[int, str]] = None) -> _TourneyData:
         if year is not None and month is None:
             raise _MissingParameterError('If the parameter `year` is specified, the parameter `month` must be specified, too.')
 
@@ -673,10 +673,12 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
             month = utc_now.month
             data_date = self.bot.tournament_data_client.make_data_date(year, month, make_future_data_date=False)
         else:
+            month = int(month)
             if year is None:
                 year = utc_now.year
                 if month >= utc_now.month:
                     year -= 1
+            year = int(year)
             data_date = self.bot.tournament_data_client.make_data_date(year, month)
         tourney_data = self.bot.tournament_data_client.get_data(data_date)
         return tourney_data
