@@ -1,5 +1,5 @@
 import aiohttp as _aiohttp
-from jellyfish import jaro_winkler as _jaro_winkler
+from jellyfish import jaro_winkler_similarity as _jaro_winkler
 import subprocess as _subprocess
 from threading import get_ident as _get_ident
 from typing import Any as _Any, Optional
