@@ -272,6 +272,7 @@ def __get_description_as_text(fleet_info: EntityInfo, fleet_users_data: Entities
     description = fleet_info.get('AllianceDescription')
     if description is not None:
         result = description.strip()
+        result = utils.text.remove_html_tags(result)
     return result
 
 
