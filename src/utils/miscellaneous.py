@@ -157,8 +157,3 @@ def make_dict_value_lists_unique(d: _Dict[str, _Iterable[object]]) -> _Dict[str,
     for key in d.keys():
         d[key] = list(set(d[key]))
     return d
-
-
-def shell_cmd(cmd: str) -> str:
-    result = _subprocess.run(cmd.split(), stdout=_subprocess.PIPE)
-    return result.stdout.decode('utf-8')
