@@ -102,7 +102,7 @@ USE_EMBEDS: bool = True
 USE_ACCESS_TOKEN: int = int(os.environ.get('USE_ACCESS_TOKEN', 0))
 
 
-VERSION: str = '1.4.2.7'
+VERSION: str = '1.4.2.8'
 
 
 WIKI_COMMAND_GUILDS: List[str] = json.loads(os.environ.get('WIKI_COMMAND_GUILDS', '[]'))

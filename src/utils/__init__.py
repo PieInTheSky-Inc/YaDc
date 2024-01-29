@@ -14,3 +14,4 @@ from . import io
 from . import json
 from . import parse
 from .singleton import Singleton
+from . import text
