@@ -4,7 +4,7 @@
 
 ## 1. Agreement to Terms
 
-By inviting the Discord bot **Dolores 2.0** (hereinafter referred to as "the Bot" or "the Service") to your Discord server, using its features, or interacting with it in any way, you agree to be bound by these Terms of Service ("Terms"), the accompanying Privacy Policy, and all applicable policies referenced herein.
+By inviting the Discord bot **Dolores 2.0** (hereinafter referred to as "the Bot" or "the Service") to your Discord server, using its features, or interacting with it in any way, you agree to be bound by these Terms of Service ("Terms"), the accompanying [Privacy Policy](https://pieinthesky-inc.github.io/YaDc/privacy_policy.html), and all applicable policies referenced herein.
 
 You must have the appropriate permissions to add the Bot to a Discord server. Continued use of the Bot implies your acceptance of these Terms.
 
@@ -101,9 +101,9 @@ The hosted Bot service is provided without warranties of any kind, whether expre
 
 ## 7. Data Collection and Privacy
 
-The hosted Bot service may collect and process certain user data to provide its functionality. For detailed information about what data is collected, how it is used, stored, and protected, please refer to our Privacy Policy.
+The hosted Bot service may collect and process certain user data to provide its functionality. For detailed information about what data is collected, how it is used, stored, and protected, please refer to our [Privacy Policy](https://pieinthesky-inc.github.io/YaDc/privacy_policy.html).
 
-By using the hosted Bot service, you acknowledge and agree to the data collection and processing practices described in the Privacy Policy.
+By using the hosted Bot service, you acknowledge and agree to the data collection and processing practices described in the [Privacy Policy](https://pieinthesky-inc.github.io/YaDc/privacy_policy.html).
 
 **Self-hosting:** If you self-host the Bot, you are the data controller and are responsible for your own data collection and privacy practices in compliance with applicable laws (including GDPR if applicable).
 
