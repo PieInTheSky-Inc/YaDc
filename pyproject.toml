@@ -1,0 +1,97 @@
+[project]
+name = "YaDc"
+version = "1.4.2.9"
+description = "This is a Discord Bot for Pixel Starships."
+authors = [
+    { name = "The worst.", email = "theworstpss@gmail.com" },
+    { name = "jzx3" },
+    { name = "archi-telos" },
+    { name = "Bril" },
+    { name = "NubCakeMcG" },
+    { name = "pieps" },
+    { name = "Raf" },
+    { name = "Solevis" }
+]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+keywords = [
+    "Pixel Starships",
+    "PSS",
+]
+classifiers = [
+    "Framework :: AsyncIO",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Internet",
+]
+dependencies = [
+    "aiofiles>=23.2.1",
+    "aiohttp[speedups]",
+    "asyncpg>=0.29.0",
+    "holidays==0.40",
+    "jellyfish>=1.0.3",
+    "openpyxl>=3.1.2",
+    "pandas>=2.1.4",
+    "pssapi@git+https://github.com/PSS-Tools-Development/pssapi.py.git@release/v0.7.0 ",
+    "pillow>=10.2.0",
+    "py-cord==2.7.0",
+    "PyDrive==1.3.1",
+    "pytz>=2022.7.1"
+]
+
+[project.urls]
+Repository = "https://github.com/PieInTheSky-Inc/YaDc/"
+Issues = "https://github.com/PieInTheSky-Inc/YaDc/issues"
+Changelog = "https://github.com/PieInTheSky-Inc/YaDc/releases"
+
+[tool.uv]
+managed = true
+dev-dependencies = [
+    "autoflake>=2.3.1",
+    "black>=24.4.2",
+    "coverage>=7.6.0",
+    "flake8>=7.1.0",
+    "flake8-black>=0.3.6",
+    "flake8-bugbear>=24.4.26",
+    "isort>=5.13.2",
+    "pre-commit>=3.8.0",
+    "pyment>=0.3.3",
+    "pytest>=7.2.1",
+    "pytest-asyncio>=0.23.7",
+    "pytest-cov>=5.0.0",
+    "pytest-env>=1.1.3",
+    "pytest_httpx>=0.30.0",
+    "pytest-vcr>=1.0.2",
+    "vulture>=2.11",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.autoflake]
+in-place = true
+remove-all-unused-imports = true
+ignore-init-module-imports = true
+recursive = true
+
+[tool.isort]
+src_paths = ["./src", "./tests", "./showcase.py"]
+profile = "black"
+line_length = 200
+lines_after_imports = 2
+
+[tool.black]
+line-length = 200
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.vulture]
+min_confidence = 100
+paths = ["./src/pssapi"]
+sort_by_size = true
