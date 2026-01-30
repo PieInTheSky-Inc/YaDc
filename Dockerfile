@@ -1,10 +1,13 @@
-FROM python:3.11
+# The builder image, used to build the virtual environment
+FROM python:3.11.7-slim AS runtime
 
-RUN mkdir -p /usr/bot
-WORKDIR /usr/bot
+WORKDIR /app
 
-COPY . .
+COPY requirements.txt ./
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* && PYTHONDONTWRITEBYTECODE=1 pip install --no-cache-dir -r requirements.txt
 
-RUN pip3 install -r requirements.txt
+COPY src ./src
+COPY fonts ./fonts
+COPY main.py ./main.py
 
-CMD [ "python3", "main.py" ]
+ENTRYPOINT ["python3", "main.py"]

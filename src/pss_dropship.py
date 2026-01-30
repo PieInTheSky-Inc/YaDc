@@ -174,8 +174,8 @@ async def __get_dropship_msg_from_info_as_text(daily_info: EntityInfo, chars_dat
 async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items_data: EntitiesData, trainings_data: EntitiesData) -> List[str]:
     result = [f'{emojis.pss_merchantship} **Merchant ship**']
     if daily_info:
-        cargo_items = daily_info['CargoItems'].split('|')
-        cargo_prices = daily_info['CargoPrices'].split('|')
+        cargo_items = daily_info['CargoItems'].replace('||', '|').split('|')
+        cargo_prices = daily_info['CargoPrices'].replace('||', '|').split('|')
         for i, cargo_info in enumerate(cargo_items):
             _, item_id, amount, _ = utils.parse.entity_string(cargo_info)
             if item_id:
@@ -189,6 +189,7 @@ async def __get_merchantship_msg_from_info_as_text(daily_info: EntityInfo, items
                     if not currency:
                         currency_item_details = item.get_item_details_by_id(currency_id, items_data, trainings_data)
                         currency = ''.join(await currency_item_details.get_details_as_text(entity.EntityDetailsType.MINI))
+                        currency_amount = str(currency_amount) + 'x'
                 else:
                     currency_amount = currency_id
                     currency = lookups.get_lookup_value_or_default(lookups.CURRENCY_EMOJI_LOOKUP, currency_type, default=currency_type)
