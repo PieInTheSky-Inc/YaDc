@@ -1,6 +1,6 @@
 [project]
 name = "YaDc"
-version = "1.4.2.9"
+version = "1.5.0.0"
 description = "This is a Discord Bot for Pixel Starships."
 authors = [
     { name = "The worst.", email = "theworstpss@gmail.com" },
