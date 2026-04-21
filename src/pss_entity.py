@@ -764,7 +764,7 @@ class EntityRetriever:
         self.__sorted_key_function: Callable[[dict, dict], str] = sorted_key_function
         self.__fix_data_delegate: Callable[[str], str] = fix_data_delegate
 
-        self.__cache = PssCache(self.__base_path, self.__cache_name, key_name=self.__key_name, update_interval=cache_update_interval)
+        self._cache = PssCache(self.__base_path, self.__cache_name, key_name=self.__key_name, update_interval=cache_update_interval)
 
     @property
     def base_path(self) -> str:
@@ -779,7 +779,7 @@ class EntityRetriever:
         return self.__key_name
 
     async def get_data_dict3(self) -> Dict[str, Dict[str, object]]:
-        return await self.__cache.get_data_dict3()
+        return await self._cache.get_data_dict3()
 
     async def get_entity_info_by_name(self, entity_name: str, entities_data: EntitiesData = None) -> Dict[str, object]:
         entities_data = entities_data or await self.get_data_dict3()
@@ -812,11 +812,11 @@ class EntityRetriever:
         return results
 
     async def get_raw_data(self) -> str:
-        return await self.__cache.get_raw_data()
+        return await self._cache.get_raw_data()
 
     async def get_raw_entity_info_by_id_as_xml(self, entity_id: str) -> str:
         result = None
-        raw_data = await self.__cache.get_raw_data()
+        raw_data = await self._cache.get_raw_data()
         for element in ElementTree.fromstring(raw_data).iter():
             element_id = element.attrib.get(self.__key_name)
             if element_id == entity_id:
@@ -834,7 +834,7 @@ class EntityRetriever:
         return result
 
     async def update_cache(self) -> None:
-        await self.__cache.update_data()
+        await self._cache.update_data()
 
 
 # ---------- Helper ----------
