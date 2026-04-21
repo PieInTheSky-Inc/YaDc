@@ -334,14 +334,14 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
     @_cooldown(rate=_CurrentCogBase.RATE, per=_CurrentCogBase.COOLDOWN, type=_BucketType.user)
     async def player_slash(self,
         ctx: _ApplicationContext,
-        name: _Option(str, 'Enter player name.')
+        name_or_id: _Option(str, 'Enter player name or ID.')
     ):
         """
         Get details on a player.
         """
         self._log_command_use(ctx)
 
-        user_info, response = await _user.find_user(ctx, name)
+        user_info, response = await _user.find_user(ctx, name_or_id)
 
         await _utils.discord.edit_original_response(ctx, response, content='Player found. Compiling player info...', embeds=[], view=None)
         if _tourney.is_tourney_running() and _settings.FEATURE_TOURNEYDATA_ENABLED:
