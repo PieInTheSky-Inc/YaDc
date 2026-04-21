@@ -367,9 +367,9 @@ def __get_user_name(user_info: EntityInfo, **kwargs) -> Optional[str]:
 # ---------- Helper functions ----------
 
 
-async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
+async def find_tournament_user(ctx: ApplicationContext, player_name_or_id: str, tourney_data: TourneyData) -> Tuple[EntityInfo, Interaction]:
     response = await utils.discord.edit_original_response(ctx, ctx.interaction, ["Searching player..."])
-    user_infos = await get_user_infos_from_tournament_data_by_name_or_id(player_name, tourney_data.users)
+    user_infos = await get_user_infos_from_tournament_data_by_name_or_id(player_name_or_id, tourney_data.users)
 
     if user_infos:
         if len(user_infos) == 1:
@@ -384,7 +384,9 @@ async def find_tournament_user(ctx: ApplicationContext, player_name: str, tourne
 
         return user_info, ctx.interaction
     else:
-        raise NotFound(f"Could not find a player named `{player_name}` that participated in the {tourney_data.retrieved_year} {calendar.month_name[int(tourney_data.retrieved_month)]} tournament.")
+        raise NotFound(
+            f"Could not find a player with name or ID `{player_name_or_id}` that participated in the {tourney_data.retrieved_year} {calendar.month_name[int(tourney_data.retrieved_month)]} tournament."
+        )
 
 
 async def find_user(ctx: ApplicationContext, player_name_or_id: str) -> Tuple[EntityInfo, Interaction]:
@@ -401,7 +403,7 @@ async def find_user(ctx: ApplicationContext, player_name_or_id: str) -> Tuple[En
 
         return user_info, response
     else:
-        raise NotFound(f"Could not find a player named `{player_name_or_id}`.")
+        raise NotFound(f"Could not find a player with name or ID `{player_name_or_id}`.")
 
 
 def get_star_value_from_user_info(user_info: EntityInfo, star_count: Union[int, str] = None) -> Tuple[Optional[int], Optional[int]]:
