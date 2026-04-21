@@ -85,6 +85,7 @@ SETTINGS_TABLE_NAME: str = "settings"
 SETTINGS_TYPES: List[str] = ["boolean", "float", "int", "text", "timestamputc"]
 
 SPRITE_CACHE_SUB_PATH: str = "sprite_cache"
+FILES_CACHE_SUB_PATH: str = "files_cache"
 
 
 THROW_COMMAND_ERRORS: int = int(os.environ.get("THROW_COMMAND_ERRORS", "0"))
@@ -96,7 +97,7 @@ USE_EMBEDS: bool = True
 USE_ACCESS_TOKEN: int = int(os.environ.get("USE_ACCESS_TOKEN", 0))
 
 
-VERSION: str = "1.5.0.0"
+VERSION: str = "1.5.0.1"
 
 
 WIKI_COMMAND_GUILDS: List[str] = json.loads(os.environ.get("WIKI_COMMAND_GUILDS", "[]"))

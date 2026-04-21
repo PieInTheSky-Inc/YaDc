@@ -4,6 +4,7 @@ items-*.txt
 *.db
 *.csv
 sprite_cache/
+files_cache/
 bin/
 pyvenv.cfg
 *.lua
