@@ -781,7 +781,8 @@ class CurrentDataSlashCog(_CurrentCogBase, name='Current PSS Data Slash'):
             if (use_embeds):
                 output.append(next_tourney_embed)
             else:
-                output.extend(('\n', _tourney.convert_tourney_embed_to_plain_text(tourney_embed)))
+                output.append('')
+                output.extend(_tourney.convert_tourney_embed_to_plain_text(next_tourney_embed))
 
         await _utils.discord.respond_with_output(ctx, output)
 
