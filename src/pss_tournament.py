@@ -10,7 +10,7 @@ from . import utils
 # ---------- Tournament ----------
 
 def convert_tourney_embed_to_plain_text(embed: Embed) -> List[str]:
-    result = [f'**{embed.author.name}**']
+    result = [f'## {embed.author.name}']
     for field in embed.fields:
         result.append(f'{field.name} {field.value}')
     return result
