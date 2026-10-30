@@ -312,10 +312,11 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
 
             yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
             last_month_user_data = self.bot.tournament_data_client.get_latest_monthly_data().users
+            latest_user_data = self.bot.tournament_data_client.get_latest_data().users
             current_fleet_data = await _top.get_alliances_with_division()
 
             if yesterday_tourney_data:
-                yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+                yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, latest_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
                 if not yesterday_user_infos:
                     error_lines = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
                     raise _Error('\n'.join(error_lines))
@@ -417,10 +418,11 @@ class TournamentCog(_TournamentCogBase, name='Tournament'):
 
         yesterday_tourney_data = self.bot.tournament_data_client.get_latest_daily_data()
         last_month_user_data = self.bot.tournament_data_client.get_latest_monthly_data().users
+        latest_user_data = self.bot.tournament_data_client.get_latest_data().users
         current_fleet_data = await _top.get_alliances_with_division()
 
         if yesterday_tourney_data:
-            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
+            yesterday_user_infos = _top.filter_targets(yesterday_tourney_data.users.values(), division_design_id, last_month_user_data, latest_user_data, current_fleet_data, min_star_value, max_star_value, min_trophies_value, max_trophies_value, max_highest_trophies)
             if not yesterday_user_infos:
                 error_text = [f'No ships in division {division.upper()} match the criteria.'] + criteria_lines
                 raise _Error('\n'.join(error_text))
