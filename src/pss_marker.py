@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict as _Dict
 from typing import List as _List
 from typing import Optional as _Optional
@@ -49,20 +50,21 @@ STAR_SYSTEM_MARKER_KEY_NAME: str = 'StarSystemMarkerId'
 async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
-    trader_details = get_trader_info(stars_systems_markers_data)
+    trader_details = get_trader_info(stars_systems_markers_data, False)[0]
 
     if not trader_details:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
 
+    
     offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
 
     trader_info = trader_details.entity_info
     trader_info['offerings'] = offerings
+    trader_info['as_embed'] = True
     trader_details.update_entity_info(trader_info)
 
     message = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
 
-    trader_info['as_embed'] = True
     trader_details.update_entity_info(trader_info)
     embed = await trader_details.get_details_as_embed(None)
 
@@ -72,21 +74,28 @@ async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
 async def get_trader_details(ctx: _Context, as_embed: bool = _settings.USE_EMBEDS) -> _Union[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
-    trader_details = get_trader_info(stars_systems_markers_data)
+    trader_details: list[_entity.EntityDetails] = get_trader_info(stars_systems_markers_data, True)
 
     if not trader_details:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
 
-    offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
-    trader_info = trader_details.entity_info
-    trader_info['offerings'] = offerings
-    trader_info['as_embed'] = as_embed
-    trader_details.update_entity_info(trader_info)
+    for trader_detail in trader_details:
+        offerings = await __get_trader_offerings(trader_detail.entity_info, items_data)
+        trader_info = trader_detail.entity_info
+        trader_info['offerings'] = offerings
+        trader_info['as_embed'] = as_embed
+        trader_detail.update_entity_info(trader_info)
 
     if as_embed:
-        result = [(await trader_details.get_details_as_embed(ctx))]
+        result = [(await trader_detail.get_details_as_embed(ctx)) for trader_detail in trader_details]
     else:
-        result = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
+        result = []
+        for trader_detail in trader_details:
+            message = await trader_detail.get_details_as_text(_entity.EntityDetailsType.LONG)
+            result.extend(message)
+            result.append("\n\n")
+        if result:
+            result.pop()
     return result
 
 
@@ -97,11 +106,20 @@ def get_star_system_marker_details_by_id(star_system_marker_id: str, stars_syste
     return None
 
 
-def get_trader_info(stars_systems_markers_data: _EntitiesData) -> _entity.EntityDetails:
+def get_trader_info(stars_systems_markers_data: _EntitiesData, return_all: bool) -> list[_entity.EntityDetails]:
+    result = []
+
     for star_system_marker_id, star_system_marker_info in stars_systems_markers_data.items():
-        if star_system_marker_info['MarkerType'] == 'MerchantShip':
-            return get_star_system_marker_details_by_id(star_system_marker_id, stars_systems_markers_data)
-    return None
+        travel_start_date = _utils.parse.pss_datetime(star_system_marker_info["TravelStartDate"])
+        expiry_date = _utils.parse.pss_datetime(star_system_marker_info["ExpiryDate"])
+        remaining_travel_hours = (travel_start_date - expiry_date).total_seconds() / 3600
+
+        if star_system_marker_info['MarkerType'] == 'MerchantShip' and (return_all or remaining_travel_hours < 12):
+            result.append(get_star_system_marker_details_by_id(star_system_marker_id, stars_systems_markers_data))
+            if not return_all:
+                break
+
+    return result
 
 
 
