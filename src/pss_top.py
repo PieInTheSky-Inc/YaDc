@@ -310,7 +310,7 @@ def get_division_title(division_design_id: str, divisions_designs_infos: Entitie
 
 # ---------- Helper functions ----------
 
-def filter_targets(user_infos: List[EntityInfo], division_design_id: str, last_month_user_data: EntitiesData, current_fleet_data: EntitiesData = {}, min_star_value: int = None, max_star_value: int = None, min_trophies_value: int = None, max_trophies_value: int = None, max_highest_trophies: int = None) -> List[EntityInfo]:
+def filter_targets(user_infos: List[EntityInfo], division_design_id: str, last_month_user_data: EntitiesData, latest_user_data: EntitiesData, current_fleet_data: EntitiesData = {}, min_star_value: int = None, max_star_value: int = None, min_trophies_value: int = None, max_trophies_value: int = None, max_highest_trophies: int = None) -> List[EntityInfo]:
     result = []
     for user_info in user_infos:
         current_division_design_id = current_fleet_data.get(user_info.get(fleet.FLEET_KEY_NAME), {}).get(DIVISION_DESIGN_KEY_NAME)
@@ -320,7 +320,8 @@ def filter_targets(user_infos: List[EntityInfo], division_design_id: str, last_m
         highest_trophies = int(user_info.get('HighestTrophy', 0))
         division_matches = division_design_id == alliance_division_design_id
         if division_matches and (not min_trophies_value or trophies >= min_trophies_value) and (not max_trophies_value or trophies <= max_trophies_value) and (not max_highest_trophies or highest_trophies <= max_highest_trophies):
-            star_value, _ = user.get_star_value_from_user_info(user_info, star_count=user_info.get('AllianceScore'))
+            latest_user_info = latest_user_data.get(user_info[user.USER_KEY_NAME], {})
+            star_value, _ = user.get_star_value_from_user_info(latest_user_info, star_count=user_info.get('AllianceScore'))
             if (not min_star_value or star_value >= min_star_value) and (not max_star_value or star_value <= max_star_value):
                 user_id = user_info[user.USER_KEY_NAME]
                 user_info['StarValue'] = star_value or 0
