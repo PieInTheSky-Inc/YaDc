@@ -10,17 +10,16 @@ from discord.ext.commands import Context as _Context
 from . import pss_assert as _assert
 from . import pss_core as _core
 from . import pss_entity as _entity
-from .pss_exception import Error as _Error
-from .pss_exception import NotFound as _NotFound
 from . import pss_item as _item
 from . import pss_login as _login
 from . import pss_lookups as _lookups
 from . import pss_sprites as _sprites
 from . import settings as _settings
 from . import utils as _utils
+from .pss_exception import Error as _Error
+from .pss_exception import NotFound as _NotFound
 from .typehints import EntitiesData as _EntitiesData
 from .typehints import EntityInfo as _EntityInfo
-
 
 # ---------- Typehint definitions ----------
 
@@ -114,7 +113,7 @@ async def __get_expiration_dates(star_system_marker_info: _EntityInfo, stars_sys
     expiration_date_2 = _utils.parse.pss_datetime(star_system_marker_info.get('ExpiryDate'))
     result = [
         f'Offers 1 & 2 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_1)} ({_utils.datetime.get_discord_timedelta(expiration_date_1)})',
-        f'Offers 3 - 6 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_2)} ({_utils.datetime.get_discord_timedelta(expiration_date_2)})',
+        f'Offers 3 - 6 & VIP expire at: {_utils.datetime.get_discord_timestamp(expiration_date_2)} ({_utils.datetime.get_discord_timedelta(expiration_date_2)})',
     ]
     return '\n'.join(result)
 
@@ -242,6 +241,7 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
             _entity.EntityDetailProperty('Offer 4', True, transform_function=__get_offer_details, index=3, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 5', True, transform_function=__get_offer_details, index=4, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 6', True, transform_function=__get_offer_details, index=5, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('VIP offer', True, transform_function=__get_offer_details, index=6, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Expiring at', True, transform_function=__get_expiration_dates, embed_only=True, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Expiring at', False, transform_function=__get_expiration_dates, text_only=True, display_inline_for_embeds=False),
         ],
