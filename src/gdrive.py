@@ -606,6 +606,12 @@ class TourneyDataClient():
         return result
 
 
+    def get_latest_data(self, initializing: bool = False) -> TourneyData:
+        utc_now = utils.get_utc_now()
+        result = self.get_data(utc_now, initializing=initializing)
+        return result
+
+
     def get_latest_monthly_data(self, initializing: bool = False) -> TourneyData:
         utc_now = utils.get_utc_now()
         data_date = datetime(utc_now.year, utc_now.month, 1, tzinfo=timezone.utc)
