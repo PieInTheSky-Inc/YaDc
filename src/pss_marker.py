@@ -50,7 +50,7 @@ async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
     trader_details = get_trader_info(stars_systems_markers_data, False)
-    
+
     if trader_details and len(trader_details):
         trader_details = trader_details[0]
     else:
@@ -112,9 +112,9 @@ def get_trader_info(stars_systems_markers_data: _EntitiesData, return_all: bool)
     for star_system_marker_id, star_system_marker_info in stars_systems_markers_data.items():
         travel_start_date = _utils.parse.pss_datetime(star_system_marker_info["TravelStartDate"])
         expiry_date = _utils.parse.pss_datetime(star_system_marker_info["ExpiryDate"])
-        remaining_travel_hours = (travel_start_date - expiry_date).total_seconds() / 3600
+        remaining_travel_hours = (travel_start_date - expiry_date).total_seconds() / 3600.0
 
-        if star_system_marker_info['MarkerType'] == 'MerchantShip' and (return_all or remaining_travel_hours < 12):
+        if star_system_marker_info['MarkerType'] == 'MerchantShip' and (return_all or remaining_travel_hours <= 12.0):
             result.append(get_star_system_marker_details_by_id(star_system_marker_id, stars_systems_markers_data))
             if not return_all:
                 break
