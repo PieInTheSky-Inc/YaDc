@@ -50,12 +50,12 @@ async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
     trader_details = get_trader_info(stars_systems_markers_data, False)
+    
     if trader_details and len(trader_details):
         trader_details = trader_details[0]
-
-    if not trader_details:
+    else:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
-    
+
     offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
 
     trader_info = trader_details.entity_info
