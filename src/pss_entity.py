@@ -1,7 +1,18 @@
 import inspect
 import json
 from enum import IntEnum
-from typing import Any, Awaitable, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from xml.etree import ElementTree
 
 from discord import Embed
@@ -13,7 +24,6 @@ from . import settings, utils
 from .cache import PssCache
 from .pss_exception import Error
 from .typehints import EntitiesData, EntityInfo
-
 
 # ---------- Constants ----------
 
@@ -673,7 +683,7 @@ class EntityDetailsCollection:
         display_names = []
         if self._get_is_big_set(big_set_threshold):
             detail_property_separator = custom_detail_property_separator if custom_detail_property_separator is not None else DEFAULT_DETAILS_PROPERTIES_SEPARATOR
-            title = custom_title
+            title = custom_title or ''
             colour = utils.discord.get_bot_member_colour(ctx.bot, ctx.guild)
             display_names = await self.__entities_details[0].get_display_names(True, EntityDetailsType.MEDIUM)
             fields = []

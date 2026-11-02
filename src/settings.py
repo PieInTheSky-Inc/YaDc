@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timezone
 from typing import List, Tuple
 
-
 # ---------- Settings ----------
 
 ACCESS_TOKEN: str = os.environ.get("PSS_ACCESS_TOKEN")
@@ -97,7 +96,7 @@ USE_EMBEDS: bool = True
 USE_ACCESS_TOKEN: int = int(os.environ.get("USE_ACCESS_TOKEN", 0))
 
 
-VERSION: str = "1.5.0.1"
+VERSION: str = "1.5.0.2"
 
 
 WIKI_COMMAND_GUILDS: List[str] = json.loads(os.environ.get("WIKI_COMMAND_GUILDS", "[]"))

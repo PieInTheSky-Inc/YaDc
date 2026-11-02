@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict as _Dict
 from typing import List as _List
 from typing import Optional as _Optional
@@ -10,17 +11,16 @@ from discord.ext.commands import Context as _Context
 from . import pss_assert as _assert
 from . import pss_core as _core
 from . import pss_entity as _entity
-from .pss_exception import Error as _Error
-from .pss_exception import NotFound as _NotFound
 from . import pss_item as _item
 from . import pss_login as _login
 from . import pss_lookups as _lookups
 from . import pss_sprites as _sprites
 from . import settings as _settings
 from . import utils as _utils
+from .pss_exception import Error as _Error
+from .pss_exception import NotFound as _NotFound
 from .typehints import EntitiesData as _EntitiesData
 from .typehints import EntityInfo as _EntityInfo
-
 
 # ---------- Typehint definitions ----------
 
@@ -49,20 +49,22 @@ STAR_SYSTEM_MARKER_KEY_NAME: str = 'StarSystemMarkerId'
 async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
-    trader_details = get_trader_info(stars_systems_markers_data)
+    trader_details = get_trader_info(stars_systems_markers_data, False)
 
-    if not trader_details:
+    if trader_details and len(trader_details):
+        trader_details = trader_details[0]
+    else:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
 
     offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
 
     trader_info = trader_details.entity_info
     trader_info['offerings'] = offerings
+    trader_info['as_embed'] = True
     trader_details.update_entity_info(trader_info)
 
     message = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
 
-    trader_info['as_embed'] = True
     trader_details.update_entity_info(trader_info)
     embed = await trader_details.get_details_as_embed(None)
 
@@ -72,21 +74,28 @@ async def get_autotrader_details() -> _Tuple[_List[_Embed], _List[str]]:
 async def get_trader_details(ctx: _Context, as_embed: bool = _settings.USE_EMBEDS) -> _Union[_List[_Embed], _List[str]]:
     items_data = await _item.items_designs_retriever.get_data_dict3()
     stars_systems_markers_data = await __get_stars_systems_markers_data()
-    trader_details = get_trader_info(stars_systems_markers_data)
+    trader_details: list[_entity.EntityDetails] = get_trader_info(stars_systems_markers_data, True)
 
     if not trader_details:
         raise _NotFound('Could not find information on the trader ship. Please try again later.')
 
-    offerings = await __get_trader_offerings(trader_details.entity_info, items_data)
-    trader_info = trader_details.entity_info
-    trader_info['offerings'] = offerings
-    trader_info['as_embed'] = as_embed
-    trader_details.update_entity_info(trader_info)
+    for trader_detail in trader_details:
+        offerings = await __get_trader_offerings(trader_detail.entity_info, items_data)
+        trader_info = trader_detail.entity_info
+        trader_info['offerings'] = offerings
+        trader_info['as_embed'] = as_embed
+        trader_detail.update_entity_info(trader_info)
 
     if as_embed:
-        result = [(await trader_details.get_details_as_embed(ctx))]
+        result = [(await trader_detail.get_details_as_embed(ctx)) for trader_detail in trader_details]
     else:
-        result = await trader_details.get_details_as_text(_entity.EntityDetailsType.LONG)
+        result = []
+        for trader_detail in trader_details:
+            message = await trader_detail.get_details_as_text(_entity.EntityDetailsType.LONG)
+            result.extend(message)
+            result.append("\n\n")
+        if result:
+            result.pop()
     return result
 
 
@@ -97,11 +106,20 @@ def get_star_system_marker_details_by_id(star_system_marker_id: str, stars_syste
     return None
 
 
-def get_trader_info(stars_systems_markers_data: _EntitiesData) -> _entity.EntityDetails:
+def get_trader_info(stars_systems_markers_data: _EntitiesData, return_all: bool) -> list[_entity.EntityDetails]:
+    result = []
+
     for star_system_marker_id, star_system_marker_info in stars_systems_markers_data.items():
-        if star_system_marker_info['MarkerType'] == 'MerchantShip':
-            return get_star_system_marker_details_by_id(star_system_marker_id, stars_systems_markers_data)
-    return None
+        travel_start_date = _utils.parse.pss_datetime(star_system_marker_info["TravelStartDate"])
+        expiry_date = _utils.parse.pss_datetime(star_system_marker_info["ExpiryDate"])
+        remaining_travel_hours = (travel_start_date - expiry_date).total_seconds() / 3600.0
+
+        if star_system_marker_info['MarkerType'] == 'MerchantShip' and (return_all or remaining_travel_hours <= 12.0):
+            result.append(get_star_system_marker_details_by_id(star_system_marker_id, stars_systems_markers_data))
+            if not return_all:
+                break
+
+    return result
 
 
 
@@ -114,7 +132,7 @@ async def __get_expiration_dates(star_system_marker_info: _EntityInfo, stars_sys
     expiration_date_2 = _utils.parse.pss_datetime(star_system_marker_info.get('ExpiryDate'))
     result = [
         f'Offers 1 & 2 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_1)} ({_utils.datetime.get_discord_timedelta(expiration_date_1)})',
-        f'Offers 3 - 6 expire at: {_utils.datetime.get_discord_timestamp(expiration_date_2)} ({_utils.datetime.get_discord_timedelta(expiration_date_2)})',
+        f'Offers 3 - 6 & VIP expire at: {_utils.datetime.get_discord_timestamp(expiration_date_2)} ({_utils.datetime.get_discord_timedelta(expiration_date_2)})',
     ]
     return '\n'.join(result)
 
@@ -242,6 +260,7 @@ __properties: _entity.EntityDetailsCreationPropertiesCollection = {
             _entity.EntityDetailProperty('Offer 4', True, transform_function=__get_offer_details, index=3, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 5', True, transform_function=__get_offer_details, index=4, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Offer 6', True, transform_function=__get_offer_details, index=5, display_inline_for_embeds=False),
+            _entity.EntityDetailProperty('VIP offer', True, transform_function=__get_offer_details, index=6, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Expiring at', True, transform_function=__get_expiration_dates, embed_only=True, display_inline_for_embeds=False),
             _entity.EntityDetailProperty('Expiring at', False, transform_function=__get_expiration_dates, text_only=True, display_inline_for_embeds=False),
         ],

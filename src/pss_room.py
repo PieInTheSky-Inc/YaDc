@@ -24,7 +24,7 @@ BIG_SET_THRESHOLD: int = 4
 
 # RoomType: 'unit'
 CAPACITY_PER_HUNDREDTH_UNITS: Dict[str, str] = {
-    "Lift": " pixel/s",
+    "Lift": " pixels/s",
 }
 CAPACITY_PER_TICK_UNITS: Dict[str, str] = {
     "Radar": "s",
@@ -292,6 +292,8 @@ def __get_capacity_per_hundredth(
         capacity = room_info.get("Capacity")
         if entity.entity_property_has_value(capacity) and room_type:
             cap_per_tick = utils.convert.hundredth_to_seconds(int(capacity))
+            if room_type == "Lift":
+                cap_per_tick = cap_per_tick * 40.0
             result = f"{utils.format.number_up_to_decimals(cap_per_tick, 3)}{CAPACITY_PER_HUNDREDTH_UNITS[room_type]}"
             return result
         else:

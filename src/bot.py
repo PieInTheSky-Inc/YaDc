@@ -1,40 +1,47 @@
 import asyncio
 import datetime
-import logging
 import json
+import logging
 import os
 import sys
 from typing import List, Optional, Tuple, Type
 
-from discord import Activity, ActivityType, ApplicationCommand, ApplicationContext, Embed, Guild, Intents, Message, SlashCommand, SlashCommandGroup, TextChannel
-from discord import ApplicationCommandInvokeError, CheckFailure
-from discord import __version__ as discord_version
-from discord.ext.commands import Context, when_mentioned_or
 import discord.errors as errors
 import discord.ext.commands.errors as command_errors
 import discord.ext.tasks as tasks
+from discord import (
+    Activity,
+    ActivityType,
+    ApplicationCommand,
+    ApplicationCommandInvokeError,
+    ApplicationContext,
+    CheckFailure,
+    Embed,
+    Guild,
+    Intents,
+    Message,
+    SlashCommand,
+    SlashCommandGroup,
+    TextChannel,
+)
+from discord import __version__ as discord_version
+from discord.ext.commands import Context, when_mentioned_or
 
 from . import database as db
-from .gdrive import TourneyDataClient
 from . import pss_crew as crew
 from . import pss_daily as daily
 from . import pss_dropship as dropship
-from .pss_exception import Error, MaintenanceError, NotFound, SelectTimeoutError
 from . import pss_item as item
 from . import pss_login as login
 from . import pss_marker as marker
 from . import pss_room as room
 from . import pss_sprites as sprites
 from . import pss_user as user
-from . import server_settings
+from . import server_settings, settings, utils
+from .gdrive import TourneyDataClient
+from .pss_exception import Error, MaintenanceError, NotFound, SelectTimeoutError
 from .server_settings import GUILD_SETTINGS
-from . import settings
-from . import utils
-from . yadc_bot import YadcBot
-
-
-
-
+from .yadc_bot import YadcBot
 
 # ############################################################################ #
 # ----------                       Bot Setup                        ---------- #
@@ -362,7 +369,12 @@ async def __post_automessage(text_channel: TextChannel, latest_message_id: int, 
     Returns (posted, can_post, latest_message)
     """
     posted = False
-    if text_channel and current_daily_message:
+    if isinstance(current_daily_message, list):
+        msg_content = "\n".join(current_daily_message)
+    else:
+        msg_content = current_daily_message
+
+    if text_channel and msg_content:
         error_msg_delete = f'could not delete message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_edit = f'could not edit message [{latest_message_id}] from channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
         error_msg_post = f'could not post a message in channel [{text_channel.id}] on guild [{text_channel.guild.id}]'
@@ -406,7 +418,7 @@ async def __post_automessage(text_channel: TextChannel, latest_message_id: int, 
                         if use_embeds:
                             await latest_message.edit(embed=embed)
                         else:
-                            await latest_message.edit(content=current_daily_message)
+                            await latest_message.edit(content=msg_content)
                         posted = True
                         utils.dbg_prnt(f'[post_automessage] edited message [{latest_message_id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                     except errors.NotFound:
@@ -425,7 +437,7 @@ async def __post_automessage(text_channel: TextChannel, latest_message_id: int, 
                     if use_embeds:
                         latest_message = await text_channel.send(embed=embed)
                     else:
-                        latest_message = await text_channel.send(current_daily_message)
+                        latest_message = await text_channel.send(msg_content)
                     posted = True
                     utils.dbg_prnt(f'[post_automessage] posted message [{latest_message.id}] in channel [{text_channel.id}] on guild [{text_channel.guild.id}]')
                 except errors.Forbidden:
